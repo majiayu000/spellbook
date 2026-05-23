@@ -100,8 +100,8 @@
   {
     "name": "comprehensive-testing",
     "category": "Delivery Workflow",
-    "format": "file",
-    "path": "skills/comprehensive-testing.SKILL.md",
+    "format": "directory",
+    "path": "skills/comprehensive-testing/SKILL.md",
     "description": "Complete testing strategy covering TDD workflow, test pyramid, unit/integration/E2E/property testing, framework best practices (Jest, Vitest, pytest), mock strategies, and CI integration. Use when writing tests, reviewing test quality, or establishing testing standards."
   },
   {
@@ -156,15 +156,15 @@
   {
     "name": "figma-to-code",
     "category": "UI/UX & Frontend",
-    "format": "file",
-    "path": "skills/figma-to-code.SKILL.md",
+    "format": "directory",
+    "path": "skills/figma-to-code/SKILL.md",
     "description": "Extract Figma designs and generate production-ready React/Next.js components with TypeScript, Tailwind CSS, and pixel-perfect accuracy. Use when a user provides a Figma URL or asks to convert Figma designs to code."
   },
   {
     "name": "figma-to-react",
     "category": "UI/UX & Frontend",
-    "format": "file",
-    "path": "skills/figma-to-react.SKILL.md",
+    "format": "directory",
+    "path": "skills/figma-to-react/SKILL.md",
     "description": "Extract Figma designs and generate production-ready React/Next.js components with TypeScript, Tailwind CSS, and pixel-perfect accuracy."
   },
   {
@@ -338,8 +338,8 @@
   {
     "name": "react-hooks-best-practices",
     "category": "Development Architecture",
-    "format": "file",
-    "path": "skills/react-hooks-best-practices.SKILL.md",
+    "format": "directory",
+    "path": "skills/react-hooks-best-practices/SKILL.md",
     "description": "Provides React patterns for hooks, effects, refs, and component design. Covers escape hatches, anti-patterns, and correct effect usage. Use when reading or writing React components with hooks or effects."
   },
   {
@@ -401,8 +401,8 @@
   {
     "name": "structured-logging",
     "category": "API & Backend",
-    "format": "file",
-    "path": "skills/structured-logging.SKILL.md",
+    "format": "directory",
+    "path": "skills/structured-logging/SKILL.md",
     "description": "Comprehensive logging system design guide. Use when designing log architecture, establishing logging standards, adding observability, or debugging production issues. Covers centralized configuration, field standards, and distributed tracing."
   },
   {

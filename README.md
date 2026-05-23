@@ -109,7 +109,7 @@ End-to-end product development from discovery to deployment.
 | [`ui-design-system`](./skills/ui-design-system/) | Design system toolkit and design-dev handoff support |
 | [`web-artifacts-builder`](./skills/web-artifacts-builder/) | Claude.ai HTML artifacts |
 | [`react-best-practices`](./skills/react-best-practices/) | React and Next.js performance patterns distilled from Vercel guidance |
-| [`react-hooks-best-practices`](./skills/react-hooks-best-practices.SKILL.md) | React hooks, effects, refs, and component design patterns |
+| [`react-hooks-best-practices`](./skills/react-hooks-best-practices/) | React hooks, effects, refs, and component design patterns |
 | [`slides`](./skills/slides/) | Speech-friendly slide deck and background slide generation |
 | [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | 50+ styles, 97 palettes, 57 font pairings, 9 stacks |
 
