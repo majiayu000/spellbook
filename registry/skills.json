@@ -252,6 +252,13 @@
     "description": "Discover and deliver repository optimization work end to end: identify performance/reliability/maintainability/security/dx/cost optimization points, prioritize by impact-effort-risk, then execute fixes step by step with continuous testing and explicit commit policy (`final_only`, `per_step`, `milestone`). Default to `per_step` for implementation work so each feature is tested then committed before the next feature. Supports optional BDD (Given/When/Then)."
   },
   {
+    "name": "optimize-network",
+    "category": "Operations & Deploy",
+    "format": "directory",
+    "path": "skills/optimize-network/SKILL.md",
+    "description": "Safely diagnose and improve local network speed, latency, jitter, DNS, Wi-Fi, Ethernet, macOS network services, and bufferbloat. Use this skill whenever the user asks to optimize internet/network speed, make the network faster, diagnose slow Wi-Fi, latency, packet loss, DNS delay, unstable Codex/AI tool connectivity, or asks about the viral Codex network optimization workflow. Always protect VPN/proxy tools such as Clash Verge, Mihomo, Shadowrocket, Tailscale, V2Ray, Surge, and corporate VPNs; do not modify or disable them unless the user explicitly asks for that specific change."
+  },
+  {
     "name": "plan-flow",
     "category": "Delivery Workflow",
     "format": "directory",

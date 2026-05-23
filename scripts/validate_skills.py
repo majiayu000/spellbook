@@ -101,6 +101,7 @@ CATEGORY_BY_NAME = {
     "disk-cleaner": "Operations & Deploy",
     "gpu-use": "Operations & Deploy",
     "openclaw-deploy": "Operations & Deploy",
+    "optimize-network": "Operations & Deploy",
     "rustdesk-doctor": "Operations & Deploy",
     "server-deploy": "Operations & Deploy",
     "server-security": "Operations & Deploy",
