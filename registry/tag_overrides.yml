@@ -1,0 +1,75 @@
+# Manual tag overrides for the skill registry.
+#
+# Maintainers add tags here that the heuristic keyword matcher in
+# scripts/validate_skills.py cannot infer reliably. Overrides are unioned
+# with auto-detected tags, so they extend (never replace) the safety net.
+#
+# Format:
+#   skill-name:
+#     - tag-one
+#     - tag-two
+#
+# Conventions:
+#   - Tags are kebab-case lowercase strings.
+#   - Prefer reusing existing tags listed in registry/tags.json.
+#   - Keep tags coarse (typically 2-5 per skill).
+#
+# Run `python3 scripts/validate_skills.py --check` after editing.
+
+contribution-architect:
+  - architecture
+  - code-review
+  - refactoring
+
+fixflow:
+  - agent
+  - testing
+  - debugging
+
+git-commit-smart:
+  - code-review
+  - documentation
+
+github-trending:
+  - content
+  - research
+
+gpu-use:
+  - system
+  - deploy
+
+humanizer:
+  - writing
+  - content
+
+product-analytics:
+  - product-management
+  - documentation
+
+project-health-auditor:
+  - code-review
+  - architecture
+
+push-all:
+  - code-review
+
+rustdesk-doctor:
+  - debugging
+  - system
+
+slides:
+  - content
+
+strategic-compact:
+  - agent
+  - prompt
+
+systematic-debugging:
+  - debugging
+
+trip-planner:
+  - content
+
+weekly:
+  - content
+  - documentation

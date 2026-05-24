@@ -11,4 +11,5 @@ Why is this change needed?
 - [ ] Tests pass
 - [ ] Tested manually
 - [ ] `python3 scripts/validate_skills.py --check`
+- [ ] `python3 scripts/validate_skills.py search <skill-or-tag>` (when adding skills)
 - [ ] `bash -n install.sh`
