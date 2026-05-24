@@ -1,0 +1,276 @@
+{
+  "total_skills": 74,
+  "total_tags": 36,
+  "tag_counts": {
+    "agent": 5,
+    "architecture": 14,
+    "auth": 3,
+    "backend": 9,
+    "browser": 3,
+    "code-review": 10,
+    "content": 6,
+    "database": 2,
+    "debugging": 5,
+    "deploy": 5,
+    "design-system": 2,
+    "devops": 2,
+    "documentation": 7,
+    "frontend": 13,
+    "go": 4,
+    "harmonyos": 1,
+    "javascript": 5,
+    "mcp": 1,
+    "multi-ai": 5,
+    "observability": 3,
+    "performance": 6,
+    "product-management": 4,
+    "prompt": 1,
+    "proxy": 3,
+    "python": 3,
+    "react": 7,
+    "refactoring": 3,
+    "research": 1,
+    "rust": 3,
+    "security": 3,
+    "system": 5,
+    "testing": 6,
+    "typescript": 4,
+    "ux": 3,
+    "writing": 2,
+    "zig": 1
+  },
+  "index": {
+    "agent": [
+      "auto-optimize",
+      "claude-mem",
+      "codex-agent",
+      "fixflow",
+      "strategic-compact"
+    ],
+    "architecture": [
+      "brainstorming",
+      "codebase-audit",
+      "contribution-architect",
+      "elegant-architecture",
+      "golang-web",
+      "plan-flow",
+      "project-health-auditor",
+      "python-project",
+      "rust-project",
+      "structured-logging",
+      "structured-logging-lite",
+      "technical-spec",
+      "typescript-project",
+      "zig-project"
+    ],
+    "auth": [
+      "auth-security",
+      "cliproxy-deploy",
+      "cliproxy-newapi-stack"
+    ],
+    "backend": [
+      "api-design",
+      "ask-opencli",
+      "auth-security",
+      "clash-routes",
+      "cliproxy-deploy",
+      "cliproxy-newapi-stack",
+      "codebase-audit",
+      "harmonyos-app",
+      "rust-best-practices"
+    ],
+    "browser": [
+      "ask-opencli",
+      "clash-routes",
+      "playwright-automation"
+    ],
+    "code-review": [
+      "codebase-audit",
+      "codex-agent",
+      "contribution-architect",
+      "contributor",
+      "git-commit-smart",
+      "plan-flow",
+      "project-health-auditor",
+      "push-all",
+      "ui-ux-pro-max",
+      "vibeguard"
+    ],
+    "content": [
+      "github-trending",
+      "humanizer",
+      "slides",
+      "trip-planner",
+      "weekly",
+      "xiaohongshu"
+    ],
+    "database": [
+      "cliproxy-newapi-stack",
+      "database-patterns"
+    ],
+    "debugging": [
+      "css-debug",
+      "fixflow",
+      "optimize-network",
+      "rustdesk-doctor",
+      "systematic-debugging"
+    ],
+    "deploy": [
+      "cliproxy-deploy",
+      "cliproxy-newapi-stack",
+      "gpu-use",
+      "openclaw-deploy",
+      "server-deploy"
+    ],
+    "design-system": [
+      "figma-to-code",
+      "figma-to-react"
+    ],
+    "devops": [
+      "cliproxy-newapi-stack",
+      "devops-excellence"
+    ],
+    "documentation": [
+      "auth-security",
+      "git-commit-smart",
+      "prd-master",
+      "product-analytics",
+      "product-manager-toolkit",
+      "technical-spec",
+      "weekly"
+    ],
+    "frontend": [
+      "app-ui-design",
+      "codebase-audit",
+      "css-debug",
+      "figma-to-code",
+      "figma-to-react",
+      "frontend-design",
+      "playwright-automation",
+      "product-ux-expert",
+      "ui-design-system",
+      "ui-designer",
+      "ui-ux-pro-max",
+      "web-artifacts-builder",
+      "web-asset-generator"
+    ],
+    "go": [
+      "cliproxy-deploy",
+      "golang-web",
+      "product-manager-toolkit",
+      "server-deploy"
+    ],
+    "harmonyos": [
+      "harmonyos-app"
+    ],
+    "javascript": [
+      "figma-to-code",
+      "figma-to-react",
+      "react-best-practices",
+      "server-deploy",
+      "ui-ux-pro-max"
+    ],
+    "mcp": [
+      "ui-ux-pro-max"
+    ],
+    "multi-ai": [
+      "ask-opencli",
+      "cliproxy-deploy",
+      "cliproxy-newapi-stack",
+      "codex",
+      "multi-ai-research"
+    ],
+    "observability": [
+      "observability-sre",
+      "structured-logging",
+      "structured-logging-lite"
+    ],
+    "performance": [
+      "optflow",
+      "optimize-network",
+      "react-best-practices",
+      "rust-best-practices",
+      "skill-creator",
+      "zig-project"
+    ],
+    "product-management": [
+      "prd-master",
+      "product-analytics",
+      "product-discovery",
+      "product-manager-toolkit"
+    ],
+    "prompt": [
+      "strategic-compact"
+    ],
+    "proxy": [
+      "clash-doctor",
+      "clash-routes",
+      "optimize-network"
+    ],
+    "python": [
+      "comprehensive-testing",
+      "python-project",
+      "server-deploy"
+    ],
+    "react": [
+      "css-debug",
+      "figma-to-code",
+      "figma-to-react",
+      "react-best-practices",
+      "react-hooks-best-practices",
+      "ui-ux-pro-max",
+      "web-artifacts-builder"
+    ],
+    "refactoring": [
+      "contribution-architect",
+      "test-driven-development",
+      "ui-ux-pro-max"
+    ],
+    "research": [
+      "github-trending"
+    ],
+    "rust": [
+      "rust-best-practices",
+      "rust-project",
+      "server-deploy"
+    ],
+    "security": [
+      "auth-security",
+      "optflow",
+      "server-security"
+    ],
+    "system": [
+      "claude-mem",
+      "disk-cleaner",
+      "gpu-use",
+      "rustdesk-doctor",
+      "system-doctor"
+    ],
+    "testing": [
+      "comprehensive-testing",
+      "elegant-architecture",
+      "fixflow",
+      "optflow",
+      "playwright-automation",
+      "test-driven-development"
+    ],
+    "typescript": [
+      "figma-to-code",
+      "figma-to-react",
+      "typescript-project",
+      "ui-ux-pro-max"
+    ],
+    "ux": [
+      "app-ui-design",
+      "product-ux-expert",
+      "ui-ux-pro-max"
+    ],
+    "writing": [
+      "humanizer",
+      "ui-ux-pro-max"
+    ],
+    "zig": [
+      "zig-project"
+    ]
+  }
+}

@@ -22,7 +22,23 @@ jobs:
       - name: Validate skill registry
         run: python3 scripts/validate_skills.py --check
 
+      - name: Smoke-test registry search
+        run: |
+          python3 scripts/validate_skills.py search rust >/tmp/claude-arsenal-search-rust.txt
+          grep -q rust-project /tmp/claude-arsenal-search-rust.txt
+          python3 scripts/validate_skills.py search --tag agent --json >/tmp/claude-arsenal-search-agent.json
+          python3 -c "import json; data=json.load(open('/tmp/claude-arsenal-search-agent.json')); assert data, 'expected at least one agent skill'; assert all('agent' in s['tags'] for s in data), 'tag filter regression'"
+
+      - name: Validate tags index shape
+        run: |
+          python3 -c "import json; data=json.load(open('registry/tags.json')); assert data['total_skills'] > 0; assert data['total_tags'] > 0; assert isinstance(data['index'], dict)"
+
       - name: Validate installer syntax
         run: |
           bash -n install.sh
           bash install.sh --help >/tmp/claude-arsenal-install-help.txt
+
+      - name: Validate optimize-network assets
+        run: |
+          bash -n skills/optimize-network/scripts/macos_network_snapshot.sh
+          python3 -m json.tool skills/optimize-network/evals/evals.json >/tmp/claude-arsenal-optimize-network-evals.json

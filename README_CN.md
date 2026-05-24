@@ -54,6 +54,24 @@ cd claude-arsenal
 
 > 完整的自动生成清单位于 [Skill Registry](./docs/skill-registry.md)。
 
+### 检索技能
+
+```bash
+# 关键词检索（在 name / description / category / tags 中按 AND 语义匹配）
+python3 scripts/validate_skills.py search rust testing
+
+# 按标签筛选
+python3 scripts/validate_skills.py search --tag agent
+
+# 按描述语言筛选（en / zh / mixed）
+python3 scripts/validate_skills.py search --language zh deploy
+
+# 机器可读输出
+python3 scripts/validate_skills.py search --tag react --json
+```
+
+标签索引位于 [`registry/tags.json`](./registry/tags.json)，可供面板/工具直接消费。无法被关键词启发式识别的标签可在 [`registry/tag_overrides.yml`](./registry/tag_overrides.yml) 中手动维护。
+
 ### 开发架构
 
 使用语言特定的最佳实践构建生产级项目。

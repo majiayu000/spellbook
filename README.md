@@ -54,6 +54,24 @@ In Claude Code, type `/` to see your installed skills.
 
 > The generated full skill inventory lives in [Skill Registry](./docs/skill-registry.md).
 
+### Search the Registry
+
+```bash
+# Free-text query (AND semantics across name, description, category, tags)
+python3 scripts/validate_skills.py search rust testing
+
+# Filter by tag
+python3 scripts/validate_skills.py search --tag agent
+
+# Restrict to a description language
+python3 scripts/validate_skills.py search --language zh deploy
+
+# Machine-readable output
+python3 scripts/validate_skills.py search --tag react --json
+```
+
+The tag index lives in [`registry/tags.json`](./registry/tags.json) for tooling and dashboards. Curated overrides for skills the keyword heuristic cannot infer live in [`registry/tag_overrides.yml`](./registry/tag_overrides.yml).
+
 ### Development Architecture
 
 Build production-ready projects with language-specific best practices.
