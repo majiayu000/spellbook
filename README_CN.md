@@ -127,7 +127,7 @@ python3 scripts/validate_skills.py search --tag react --json
 | [`ui-design-system`](./skills/ui-design-system/) | 设计系统工具包与设计交付支持 |
 | [`web-artifacts-builder`](./skills/web-artifacts-builder/) | Claude.ai HTML 组件 |
 | [`react-best-practices`](./skills/react-best-practices/) | 基于 Vercel 指南整理的 React / Next.js 性能实践 |
-| [`react-hooks-best-practices`](./skills/react-hooks-best-practices.SKILL.md) | React hooks、effects、refs 与组件设计模式 |
+| [`react-hooks-best-practices`](./skills/react-hooks-best-practices/) | React hooks、effects、refs 与组件设计模式 |
 | [`slides`](./skills/slides/) | 口播视频背景和演示用幻灯片生成 |
 | [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | 50+ 风格、97 配色、57 字体配对、9 技术栈 |
 
