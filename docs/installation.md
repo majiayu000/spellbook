@@ -34,11 +34,33 @@ git clone https://github.com/majiayu000/claude-arsenal.git
 
 ### Skills
 
+For marketplace-style installation, use:
+
+```bash
+npx skills add majiayu000/claude-arsenal
+```
+
+For repository-local installation, prefer `install.sh --skills <skill-name>` because it supports both repository layouts:
+
+- Directory skills: `skills/<skill-name>/SKILL.md`
+- File skills: `skills/<skill-name>.SKILL.md`
+
+Use the generated [Skill Registry](./skill-registry.md) to check a skill's `format` and source path.
+
+#### Directory skill
+
+```bash
+# Copy the full skill directory so references/templates/scripts stay available
+cp -R skills/<skill-name> ~/.claude/skills/<skill-name>
+```
+
+#### File skill
+
 ```bash
 # Create skill directory (each skill needs its own subdirectory)
 mkdir -p ~/.claude/skills/<skill-name>
 
-# Download a skill
+# Download a file-based skill
 curl -o ~/.claude/skills/<skill-name>/SKILL.md \
   https://raw.githubusercontent.com/majiayu000/claude-arsenal/main/skills/<skill-name>.SKILL.md
 ```

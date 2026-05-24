@@ -6,7 +6,7 @@
 my-plugin/
 ├── .claude-plugin/
 │   └── plugin.json      # Required: Plugin manifest
-├── skills/              # Optional: SKILL.md files
+├── skills/              # Optional: plugin skill files
 ├── commands/            # Optional: Slash commands
 ├── agents/              # Optional: Agent definitions
 └── hooks/               # Optional: Hook configurations
@@ -48,7 +48,12 @@ my-plugin/
 
 ## Creating Skills
 
-Place `*.SKILL.md` files in the `skills/` directory:
+Plugin packages in this repository currently use file skills under `skills/*.SKILL.md`.
+Use this layout for plugin marketplace compatibility unless the plugin runtime you target documents directory skill support.
+
+For the top-level Claude Arsenal catalog installed by `install.sh`, see [Skill Format Policy](./skill-format-policy.md). New catalog skills should generally use the directory layout when they need progressive disclosure, templates, scripts, evals, or other companion files.
+
+Plugin skill files use this frontmatter:
 
 ```markdown
 ---

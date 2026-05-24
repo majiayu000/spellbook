@@ -1,18 +1,20 @@
 <div align="center">
   <h1>Claude Arsenal</h1>
-  <p><strong>74 Production-Ready Skills | 7 Specialized Agents | One Command Install</strong></p>
+  <p><strong>74 Production-Ready Skills | 7 Specialized Agents | One Command Install | Validated Registry</strong></p>
 
-  <p>The most comprehensive skill library for Claude Code</p>
+  <p>An opinionated Claude Code skill pack for real engineering work: debugging, code review, frontend design, DevOps, product specs, deployment, and AI-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/claude-arsenal/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/claude-arsenal?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/claude-arsenal/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/claude-arsenal?style=flat-square" alt="License"></a>
     <img src="https://img.shields.io/badge/skills-74-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
+    <img src="https://img.shields.io/badge/registry-validated-brightgreen?style=flat-square" alt="Registry validated">
   </p>
 
   <p>
     <a href="#quick-start">Quick Start</a> •
+    <a href="#pick-a-workflow">Pick a Workflow</a> •
     <a href="#skills">Skills</a> •
     <a href="#agents">Agents</a> •
     <a href="#contributing">Contributing</a> •
@@ -24,13 +26,19 @@
 
 ## Quick Start
 
-### One-Line Install (All Skills)
+### Marketplace Install
+
+```bash
+npx skills add majiayu000/claude-arsenal
+```
+
+### One-Line Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/majiayu000/claude-arsenal/main/install.sh | bash
 ```
 
-### Manual Install (Selective)
+### Selective Install
 
 ```bash
 # Clone the repository
@@ -50,9 +58,37 @@ In Claude Code, type `/` to see your installed skills.
 
 ---
 
+## Pick a Workflow
+
+Start with a small bundle that matches the job, then add more skills when the workflow sticks.
+
+| Workflow | Install | Good for |
+|---|---|---|
+| Frontend and UI | `./install.sh --skills frontend-design,app-ui-design,ui-design-system,figma-to-react` | Product UI, landing pages, design systems, Figma handoff |
+| Code quality | `./install.sh --skills codebase-audit,fixflow,optflow,systematic-debugging` | Audits, bug fixes, refactors, root-cause debugging |
+| Ops and deploy | `./install.sh --skills server-deploy,server-security,clash-doctor,system-doctor` | Shipping apps, hardening servers, diagnosing local and network issues |
+| Product and docs | `./install.sh --skills product-discovery,prd-master,technical-spec,product-analytics` | Discovery, PRDs, technical specs, metrics plans |
+| Agent workflows | `./install.sh --skills codex-agent,multi-ai-research,strategic-compact,vibeguard` | Cross-review, multi-AI research, context handoff, anti-hallucination checks |
+
+High-signal individual skills to try first: `github-trending`, `harmonyos-app`, `app-ui-design`, `product-discovery`, `xiaohongshu`, `codebase-audit`, and `server-deploy`.
+
+See [Showcase](./docs/showcase.md) for copy-paste prompts and expected outputs.
+
+---
+
+## Why Claude Arsenal
+
+- **Validated registry**: every installable skill is checked by `python3 scripts/validate_skills.py --check`.
+- **Progressive disclosure**: larger skills use `references/`, `templates/`, `scripts/`, and support files instead of one giant prompt.
+- **Practical coverage**: engineering, operations, product, UI, content, and agent workflows live in one catalog.
+- **Bilingual coverage**: English and Chinese workflows are both represented in the registry.
+
+---
+
 ## Skills
 
 > The generated full skill inventory lives in [Skill Registry](./docs/skill-registry.md).
+> Skill layout rules live in [Skill Format Policy](./docs/skill-format-policy.md).
 
 ### Search the Registry
 
@@ -206,6 +242,8 @@ Every skill in Claude Arsenal follows these principles:
 | Document | Description |
 |----------|-------------|
 | [Installation Guide](./docs/installation.md) | Detailed setup instructions |
+| [Showcase](./docs/showcase.md) | Copy-paste workflow demos |
+| [Skill Format Policy](./docs/skill-format-policy.md) | Directory vs file skill layout rules |
 | [Skill Testing Guide](./docs/skill-testing-guide.md) | How to validate skills work |
 | [Creating Plugins](./docs/creating-plugins.md) | Build your own skills |
 | [Product Lifecycle (EN)](./docs/product-lifecycle-skills-en.md) | Full lifecycle coverage |
