@@ -1,0 +1,23 @@
+{
+  "skill_name": "optimize-network",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我安全优化 macOS 网络，Clash 和 Tailscale 绝对不能动。先诊断再给方案。",
+      "expected_output": "Uses read-only diagnostics first, explicitly preserves VPN/proxy tools, records before metrics, and does not modify Clash/Tailscale without explicit confirmation.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "我的 Wi-Fi 信号很好但 ping 路由器偶尔 100ms，帮我诊断，不要直接改配置。",
+      "expected_output": "Focuses on gateway jitter, Wi-Fi channel/AWDL/router load hypotheses, proposes reversible A/B tests, and avoids destructive network changes.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "把 Codex 网络优化流程跑一遍，输出 before/after 报告和可回滚建议。",
+      "expected_output": "Runs or proposes baseline measurements, applies only confirmed reversible changes, repeats metrics after changes, and reports rollback commands and remaining risk.",
+      "files": []
+    }
+  ]
+}

@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Claude Arsenal</h1>
-  <p><strong>73 个生产级 Skills | 7 个专业 Agents | 一键安装</strong></p>
+  <p><strong>74 个生产级 Skills | 7 个专业 Agents | 一键安装</strong></p>
 
   <p>最全面的 Claude Code 技能库</p>
 
   <p>
     <a href="https://github.com/majiayu000/claude-arsenal/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/claude-arsenal?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/claude-arsenal/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/claude-arsenal?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-73-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-74-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -127,7 +127,7 @@ python3 scripts/validate_skills.py search --tag react --json
 | [`ui-design-system`](./skills/ui-design-system/) | 设计系统工具包与设计交付支持 |
 | [`web-artifacts-builder`](./skills/web-artifacts-builder/) | Claude.ai HTML 组件 |
 | [`react-best-practices`](./skills/react-best-practices/) | 基于 Vercel 指南整理的 React / Next.js 性能实践 |
-| [`react-hooks-best-practices`](./skills/react-hooks-best-practices.SKILL.md) | React hooks、effects、refs 与组件设计模式 |
+| [`react-hooks-best-practices`](./skills/react-hooks-best-practices/) | React hooks、effects、refs 与组件设计模式 |
 | [`slides`](./skills/slides/) | 口播视频背景和演示用幻灯片生成 |
 | [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | 50+ 风格、97 配色、57 字体配对、9 技术栈 |
 
@@ -144,6 +144,7 @@ python3 scripts/validate_skills.py search --tag react --json
 | [`vibeguard`](./skills/vibeguard/) | 任务契约、问题评分与轻量防幻觉复盘 |
 | [`clash-doctor`](./skills/clash-doctor/) | Clash 代理与网络诊断 |
 | [`clash-routes`](./skills/clash-routes/) | 通过 Mihomo API 查看指定进程的代理线路 |
+| [`optimize-network`](./skills/optimize-network/) | 带 VPN/代理保护的本地网络速度、延迟、DNS、Wi-Fi 与 bufferbloat 安全诊断 |
 | [`disk-cleaner`](./skills/disk-cleaner/) | 扫描磁盘占用并交互式清理可安全删除的内容 |
 | [`system-doctor`](./skills/system-doctor/) | 诊断 CPU、内存和进程级系统卡顿问题 |
 | [`server-deploy`](./skills/server-deploy/) | 将 Node、Python、Rust、Go 或静态站部署到远程服务器 |

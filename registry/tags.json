@@ -1,5 +1,5 @@
 {
-  "total_skills": 73,
+  "total_skills": 74,
   "total_tags": 36,
   "tag_counts": {
     "agent": 5,
@@ -10,7 +10,7 @@
     "code-review": 10,
     "content": 6,
     "database": 2,
-    "debugging": 4,
+    "debugging": 5,
     "deploy": 5,
     "design-system": 2,
     "devops": 2,
@@ -22,10 +22,10 @@
     "mcp": 1,
     "multi-ai": 5,
     "observability": 3,
-    "performance": 5,
+    "performance": 6,
     "product-management": 4,
     "prompt": 1,
-    "proxy": 2,
+    "proxy": 3,
     "python": 3,
     "react": 7,
     "refactoring": 3,
@@ -111,6 +111,7 @@
     "debugging": [
       "css-debug",
       "fixflow",
+      "optimize-network",
       "rustdesk-doctor",
       "systematic-debugging"
     ],
@@ -186,6 +187,7 @@
     ],
     "performance": [
       "optflow",
+      "optimize-network",
       "react-best-practices",
       "rust-best-practices",
       "skill-creator",
@@ -202,7 +204,8 @@
     ],
     "proxy": [
       "clash-doctor",
-      "clash-routes"
+      "clash-routes",
+      "optimize-network"
     ],
     "python": [
       "comprehensive-testing",

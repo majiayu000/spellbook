@@ -37,3 +37,8 @@ jobs:
         run: |
           bash -n install.sh
           bash install.sh --help >/tmp/claude-arsenal-install-help.txt
+
+      - name: Validate optimize-network assets
+        run: |
+          bash -n skills/optimize-network/scripts/macos_network_snapshot.sh
+          python3 -m json.tool skills/optimize-network/evals/evals.json >/tmp/claude-arsenal-optimize-network-evals.json
