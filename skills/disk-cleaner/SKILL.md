@@ -3,7 +3,7 @@ name: disk-cleaner
 description: 扫描磁盘空间占用，找出可安全删除的缓存、编译产物、安装包等，交互式清理释放空间
 allowed-tools: Bash
 metadata:
-  argument-hint: "[扫描路径，默认 ~]"
+  argument-hint: '[扫描路径，默认 ~]'
 ---
 
 # 磁盘空间清理工具
@@ -15,19 +15,13 @@ metadata:
 
 ## 扫描流程
 
-### 第一步：磁盘概况
+### 第一步：全量并行扫描
 
+**一次性并行执行以下所有扫描（每个一个 Bash 调用）：**
+
+1. **磁盘概况 + 主目录一级**
 ```bash
-df -h /
-```
-
-### 第二步：并行扫描各类占用
-
-**同时执行以下所有扫描：**
-
-1. **用户主目录一级概览**
-```bash
-du -sh ~/Desktop ~/Downloads ~/Documents ~/Pictures ~/Music ~/Movies ~/Library 2>/dev/null | sort -rh
+df -h / && echo "---" && du -sh ~/Desktop ~/Downloads ~/Documents ~/Pictures ~/Music ~/Movies ~/Library 2>/dev/null | sort -rh
 ```
 
 2. **隐藏目录占用**
@@ -35,63 +29,54 @@ du -sh ~/Desktop ~/Downloads ~/Documents ~/Pictures ~/Music ~/Movies ~/Library 2
 du -sh ~/.[!.]* 2>/dev/null | sort -rh | head -20
 ```
 
-3. **代码目录占用**（如果存在）
+3. **Rust target 编译缓存**（用 -prune 避免递归进入）
 ```bash
-du -sh ~/Desktop/code/*/* 2>/dev/null | sort -rh | head -20
+find ~/Desktop/code -name "target" -type d -maxdepth 5 -not -path "*/node_modules/*" -prune -exec du -sh {} \; 2>/dev/null | sort -rh
 ```
 
-4. **Application Support 大户**
+4. **node_modules 依赖**
 ```bash
-du -d1 -h ~/Library/Application\ Support/ 2>/dev/null | sort -rh | head -15
+find ~/Desktop/code -name "node_modules" -type d -maxdepth 5 -prune -exec du -sh {} \; 2>/dev/null | sort -rh | head -15
 ```
 
-5. **废纸篓**
-```bash
-du -sh ~/.Trash/ 2>/dev/null
-```
-
-### 第三步：定向扫描可清理项
-
-**并行执行以下扫描：**
-
-1. **Rust target 编译缓存**
-```bash
-find ~/Desktop/code -name "target" -type d -maxdepth 5 -exec du -sh {} \; 2>/dev/null | sort -rh
-```
-
-2. **node_modules 依赖**
-```bash
-find ~/Desktop/code -name "node_modules" -type d -maxdepth 5 -exec du -sh {} \; 2>/dev/null | sort -rh | head -15
-```
-
-3. **.next 构建缓存**
+5. **.next 构建缓存**
 ```bash
 find ~/Desktop/code -name ".next" -type d -maxdepth 5 -exec du -sh {} \; 2>/dev/null | sort -rh
 ```
 
-4. **包管理器缓存**
+6. **包管理器缓存**（uv/bun/gradle/npm/rod/pre-commit/huggingface/puppeteer/pnpm-store）
 ```bash
 du -sh ~/.cache/uv ~/.cache/huggingface ~/.cache/pre-commit ~/.cache/puppeteer ~/.cache/rod ~/.npm/_cacache ~/.pnpm-store ~/.bun ~/.gradle 2>/dev/null | sort -rh
 ```
 
-5. **Downloads 中的安装包**
+7. **Library/Caches 大户**
 ```bash
-find ~/Downloads -maxdepth 1 \( -name "*.dmg" -o -name "*.pkg" -o -name "*.app" \) -exec ls -lhS {} \; 2>/dev/null
+du -d1 -h ~/Library/Caches 2>/dev/null | sort -rh | head -15
 ```
 
-6. **大的 .git 目录**
+8. **Application Support 大户**
+```bash
+du -d1 -h ~/Library/Application\ Support/ 2>/dev/null | sort -rh | head -10
+```
+
+9. **Downloads 安装包 + 废纸篓**
+```bash
+du -sh ~/.Trash/ 2>/dev/null; echo "---"; find ~/Downloads -maxdepth 1 \( -name "*.dmg" -o -name "*.pkg" -o -name "*.app" -o -name "*.zip" \) -exec ls -lhS {} \; 2>/dev/null
+```
+
+10. **大的 .git 目录**（仅供参考）
 ```bash
 find ~/Desktop/code -name ".git" -type d -maxdepth 4 -exec du -sh {} \; 2>/dev/null | sort -rh | head -10
 ```
 
-7. **Docker 占用**（如果 Docker 在运行）
+11. **Docker 占用**
 ```bash
 docker system df 2>/dev/null || true
 ```
 
-### 第四步：生成清理报告
+### 第二步：生成清理报告 + 编号菜单
 
-按以下格式输出报告：
+汇总所有扫描结果，按以下格式输出：
 
 ```
 ## 磁盘概况
@@ -99,32 +84,86 @@ docker system df 2>/dev/null || true
 
 ## 可清理项目（按释放空间排序）
 
-### 🔴 高价值（可安全删除，释放大量空间）
-| 类别 | 大小 | 说明 |
-|------|------|------|
-| Rust target 编译缓存 | XXG | 重新 cargo build 即可恢复 |
-| 包管理器缓存 | XXG | 按需自动重新下载 |
-| ... | ... | ... |
+### 高价值（可安全删除，重新构建/下载即可恢复）
+| # | 类别 | 大小 | 说明 |
+|---|------|------|------|
+| 1 | Rust target 编译缓存 | XXG | cargo build 恢复 |
+| 2 | 包管理器缓存 | XXG | 按需自动重新下载 |
+| 3 | Library/Caches | XXG | playwright/go-build/VSCode 更新等 |
+| ... | ... | ... | ... |
 
-### 🟡 中等价值（按需清理）
-| 类别 | 大小 | 说明 |
-|------|------|------|
-| node_modules | XXG | 不常用项目可删，bun install 恢复 |
-| Downloads 安装包 | XXXM | 已安装的 .dmg/.pkg 可删 |
-| ... | ... | ... |
+### 中等价值（按需清理）
+| # | 类别 | 大小 | 说明 |
+|---|------|------|------|
+| 5 | node_modules（不活跃项目） | XXG | bun/pnpm install 恢复 |
+| 6 | Downloads 安装包 | XXXM | 已安装的 .dmg/.pkg 可删 |
+| ... | ... | ... | ... |
 
-### 🔵 低价值 / 需谨慎
+### 仅供参考（不建议删除）
 | 类别 | 大小 | 说明 |
 |------|------|------|
-| 应用数据 | XXG | 删除可能丢失应用配置 |
+| .git 大仓库 | XXG | 删除即丢失历史 |
+| .rustup | XXG | 工具链，删除需重装 |
 | ... | ... | ... |
 
 ## 预计可释放: XXG
+
+---
+选择要清理的编号（如 1,2,3 或 "全部"）：
 ```
 
-### 第五步：交互式清理
+### 第三步：执行清理
 
-报告输出后，询问用户要清理哪些类别。用户确认后执行删除。
+用户选择编号后，**按类别并行执行删除**。
+
+**关键：删除命令必须使用绝对路径（`/Users/xxx/...`），不要用 `~` 或 `$HOME`。**
+
+**缓存目录删除必须精确到子目录**（避免 hook 拦截顶层隐藏目录）：
+```bash
+# ✅ 正确 — 精确子目录
+rm -rf /Users/xxx/.cache/uv/cache /Users/xxx/.cache/uv/sdists-v9
+rm -rf /Users/xxx/.gradle/caches /Users/xxx/.gradle/wrapper /Users/xxx/.gradle/daemon
+rm -rf /Users/xxx/.npm/_cacache
+rm -rf /Users/xxx/.bun/install/cache
+rm -rf /Users/xxx/.cache/pre-commit
+rm -rf /Users/xxx/.cache/rod/browser
+
+# ❌ 错误 — 会被 hook 拦截
+rm -rf ~/.cache/uv ~/.gradle ~/.bun
+```
+
+**Library/Caches 常见可清理项**（按扫描结果选择性清理）：
+```bash
+rm -rf /Users/xxx/Library/Caches/ms-playwright
+rm -rf /Users/xxx/Library/Caches/go-build
+rm -rf /Users/xxx/Library/Caches/com.microsoft.VSCode.ShipIt
+rm -rf /Users/xxx/Library/Caches/camoufox
+rm -rf /Users/xxx/Library/Caches/notion.id.ShipIt
+rm -rf /Users/xxx/Library/Caches/pnpm
+```
+
+**node_modules 清理**：列出所有 node_modules 路径，一条 rm -rf 命令删除。
+
+**Docker 清理**（如用户选择）：
+```bash
+docker system prune -af --volumes
+```
+
+### 第四步：验证
+
+```bash
+df -h /
+```
+
+输出清理前后对比表：
+```
+| 指标 | 清理前 | 清理后 |
+|------|--------|--------|
+| 可用空间 | XXG | XXG |
+| 使用率 | XX% | XX% |
+
+释放了约 XXG
+```
 
 ## 安全规则
 
@@ -132,11 +171,12 @@ docker system df 2>/dev/null || true
 - **绝不删除** `.git` 目录（只报告大小供参考）
 - **绝不删除**当前工作目录下的 `target/` 或 `node_modules/`
 - 只删除缓存、编译产物、安装包等可恢复的内容
-- 每次删除前列出完整路径，等用户确认
 - 删除后运行 `df -h /` 报告释放了多少空间
+- 删除命令使用绝对路径，缓存目录精确到子目录级别
 
 ## 注意事项
 
 - 用中文输出所有信息
-- 扫描时最大化并行执行，减少等待时间
+- 扫描时最大化并行执行（所有扫描一步完成），减少等待时间
 - 如果遇到权限问题，先用 `chmod -R u+w` 尝试，不要用 sudo
+- `du` 对大目录可能很慢，给所有 Bash 调用设置 `timeout: 120000`
