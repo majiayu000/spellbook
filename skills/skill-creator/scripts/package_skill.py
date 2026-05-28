@@ -24,6 +24,15 @@ EXCLUDE_FILES = {".DS_Store"}
 ROOT_EXCLUDE_DIRS = {"evals"}
 
 
+def is_relative_to(path: Path, directory: Path) -> bool:
+    """Return whether path is contained by directory after resolution."""
+    try:
+        path.relative_to(directory)
+        return True
+    except ValueError:
+        return False
+
+
 def should_exclude(rel_path: Path) -> bool:
     """Check if a path should be excluded from packaging."""
     parts = rel_path.parts
@@ -37,6 +46,27 @@ def should_exclude(rel_path: Path) -> bool:
     if name in EXCLUDE_FILES:
         return True
     return any(fnmatch.fnmatch(name, pat) for pat in EXCLUDE_GLOBS)
+
+
+def collect_package_entries(skill_path: Path):
+    """Collect package entries after rejecting unsafe filesystem paths."""
+    entries = []
+
+    for file_path in skill_path.rglob('*'):
+        arcname = file_path.relative_to(skill_path.parent)
+        if should_exclude(arcname):
+            continue
+        if file_path.is_symlink():
+            raise ValueError(f"Symlinks are not allowed in skill packages: {arcname}")
+        if not file_path.is_file():
+            continue
+
+        resolved_file = file_path.resolve(strict=True)
+        if not is_relative_to(resolved_file, skill_path):
+            raise ValueError(f"Refusing to package file outside skill folder: {arcname}")
+        entries.append((file_path, arcname))
+
+    return entries
 
 
 def package_skill(skill_path, output_dir=None):
@@ -88,15 +118,9 @@ def package_skill(skill_path, output_dir=None):
 
     # Create the .skill file (zip format)
     try:
+        package_entries = collect_package_entries(skill_path)
         with zipfile.ZipFile(skill_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            # Walk through the skill directory, excluding build artifacts
-            for file_path in skill_path.rglob('*'):
-                if not file_path.is_file():
-                    continue
-                arcname = file_path.relative_to(skill_path.parent)
-                if should_exclude(arcname):
-                    print(f"  Skipped: {arcname}")
-                    continue
+            for file_path, arcname in package_entries:
                 zipf.write(file_path, arcname)
                 print(f"  Added: {arcname}")
 
