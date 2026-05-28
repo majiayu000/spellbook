@@ -1,5 +1,5 @@
 {
-  "total_skills": 74,
+  "total_skills": 76,
   "total_tags": 36,
   "tag_counts": {
     "agent": 5,
@@ -7,7 +7,7 @@
     "auth": 3,
     "backend": 9,
     "browser": 3,
-    "code-review": 10,
+    "code-review": 11,
     "content": 6,
     "database": 2,
     "debugging": 5,
@@ -87,6 +87,7 @@
     "code-review": [
       "codebase-audit",
       "codex-agent",
+      "codex-retrospective",
       "contribution-architect",
       "contributor",
       "git-commit-smart",

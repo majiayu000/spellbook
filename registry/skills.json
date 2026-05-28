@@ -176,6 +176,26 @@
     ]
   },
   {
+    "name": "codex-fluent",
+    "category": "Uncategorized",
+    "format": "directory",
+    "path": "skills/codex-fluent/SKILL.md",
+    "description": "Use when Codex feels slow, bloated, or heavy after heavy use. Provides safe session hygiene, archive strategy, and handoff discipline to keep daily Codex usage responsive and low-friction. Always pairs with comprehensive handoffs before archiving active work.",
+    "language": "en",
+    "tags": []
+  },
+  {
+    "name": "codex-retrospective",
+    "category": "Uncategorized",
+    "format": "directory",
+    "path": "skills/codex-retrospective/SKILL.md",
+    "description": "Use when you want Codex to review its own recent history (last N days or specific period) and improve its behavior. Produces minimal, high-signal updates to AGENTS.md and tiny reusable skills. The goal is long-term fluency — Codex gradually becomes better at your specific style, constraints, and workflows.",
+    "language": "en",
+    "tags": [
+      "code-review"
+    ]
+  },
+  {
     "name": "comprehensive-testing",
     "category": "Delivery Workflow",
     "format": "directory",
