@@ -1,6 +1,8 @@
 import importlib.util
 import os
+import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
@@ -16,10 +18,35 @@ TRACKED_ENV = [
 ]
 
 
+class StubRequestException(Exception):
+    """Minimal requests exception type used by the config-only test loader."""
+
+
+class StubTimeout(StubRequestException):
+    """Minimal requests timeout type used by the config-only test loader."""
+
+
+def build_requests_stub():
+    requests_stub = types.ModuleType("requests")
+    requests_stub.exceptions = types.SimpleNamespace(
+        RequestException=StubRequestException,
+        Timeout=StubTimeout,
+    )
+    return requests_stub
+
+
 def load_script_module():
     spec = importlib.util.spec_from_file_location("generate_image_script", SCRIPT_PATH)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    original_requests = sys.modules.get("requests")
+    sys.modules["requests"] = build_requests_stub()
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        if original_requests is None:
+            sys.modules.pop("requests", None)
+        else:
+            sys.modules["requests"] = original_requests
     return module
 
 
@@ -79,6 +106,17 @@ class XiaohongshuGenerateImageConfigTests(unittest.TestCase):
     def test_missing_explicit_env_file_fails_loudly(self):
         with self.assertRaises(self.module.ConfigError) as context:
             self.module.resolve_config("/tmp/xhs-missing-env-file")
+
+        self.assertIn("配置文件不存在", str(context.exception))
+
+    def test_missing_explicit_env_file_fails_even_when_env_vars_are_complete(self):
+        os.environ["ATLAS_API_KEY"] = "atlas-key"
+        os.environ["ATLAS_API_BASE"] = "https://atlas.example/v1"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            missing_path = Path(tmpdir) / "missing.env"
+            with self.assertRaises(self.module.ConfigError) as context:
+                self.module.resolve_config(str(missing_path))
 
         self.assertIn("配置文件不存在", str(context.exception))
 

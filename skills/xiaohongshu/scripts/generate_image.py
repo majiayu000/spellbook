@@ -50,8 +50,8 @@ def resolve_config(env_file: Optional[str] = None) -> Tuple[str, str]:
 
     # 只在显式指定时读取.env文件，避免从作者本机路径或隐式文件读取凭据
     explicit_env_file = env_file or os.environ.get(ENV_FILE_ENV_VAR)
-    if explicit_env_file and (not api_key or not api_base):
-        env_config = load_env_file(explicit_env_file)
+    env_config = load_env_file(explicit_env_file) if explicit_env_file else {}
+    if env_config and (not api_key or not api_base):
         api_key = api_key or env_config.get("ATLAS_API_KEY") or env_config.get("LLM_API_KEY")
         api_base = api_base or env_config.get("ATLAS_API_BASE") or env_config.get("LLM_API_BASE")
 
