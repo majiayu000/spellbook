@@ -11,49 +11,69 @@ import time
 import argparse
 import requests
 from pathlib import Path
+from typing import Dict, Optional, Tuple
 
-# 默认配置文件路径
-DEFAULT_ENV_PATH = "/Users/lifcc/Desktop/code/work/mutil-om/om-generator/.env"
+DEFAULT_API_BASE = "https://api.atlascloud.ai/v1"
+ENV_FILE_ENV_VAR = "XHS_ENV_FILE"
 
 
-def load_env_file(env_path: str) -> dict:
+class ConfigError(RuntimeError):
+    """Raised when required API configuration is missing or invalid."""
+
+
+def load_env_file(env_path: str) -> Dict[str, str]:
     """从.env文件加载配置"""
+    config_path = Path(env_path).expanduser()
+    if not config_path.is_file():
+        raise ConfigError(f"配置文件不存在: {config_path}")
+
     config = {}
-    if Path(env_path).exists():
-        with open(env_path) as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, value = line.split("=", 1)
-                    # 去除行内注释 (# 后面的内容)
-                    if " #" in value:
-                        value = value.split(" #")[0]
-                    # 去除可能的引号和空白
-                    value = value.strip().strip('"').strip("'")
-                    config[key.strip()] = value
+    with open(config_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                # 去除行内注释 (# 后面的内容)
+                if " #" in value:
+                    value = value.split(" #")[0]
+                # 去除可能的引号和空白
+                value = value.strip().strip('"').strip("'")
+                config[key.strip()] = value
     return config
 
 
-def get_config():
+def resolve_config(env_file: Optional[str] = None) -> Tuple[str, str]:
     """获取API配置"""
     # 优先从环境变量获取
     api_key = os.environ.get("ATLAS_API_KEY") or os.environ.get("LLM_API_KEY")
     api_base = os.environ.get("ATLAS_API_BASE") or os.environ.get("LLM_API_BASE")
 
-    # 如果环境变量没有，从默认.env文件读取
-    if not api_key or not api_base:
-        env_config = load_env_file(DEFAULT_ENV_PATH)
-        api_key = api_key or env_config.get("LLM_API_KEY")
-        api_base = api_base or env_config.get("LLM_API_BASE")
+    # 只在显式指定时读取.env文件，避免从作者本机路径或隐式文件读取凭据
+    explicit_env_file = env_file or os.environ.get(ENV_FILE_ENV_VAR)
+    env_config = load_env_file(explicit_env_file) if explicit_env_file else {}
+    if env_config and (not api_key or not api_base):
+        api_key = api_key or env_config.get("ATLAS_API_KEY") or env_config.get("LLM_API_KEY")
+        api_base = api_base or env_config.get("ATLAS_API_BASE") or env_config.get("LLM_API_BASE")
 
     if not api_key:
-        print("错误: 未找到 API Key，请设置 LLM_API_KEY 环境变量或检查 .env 文件", file=sys.stderr)
-        sys.exit(1)
+        raise ConfigError(
+            "未找到 API Key，请设置 ATLAS_API_KEY/LLM_API_KEY，"
+            "或通过 --env-file/XHS_ENV_FILE 显式指定配置文件"
+        )
 
     if not api_base:
-        api_base = "https://api.atlascloud.ai/v1"
+        api_base = DEFAULT_API_BASE
 
     return api_key, api_base
+
+
+def get_config(env_file: Optional[str] = None) -> Tuple[str, str]:
+    """获取API配置，CLI入口使用清晰错误信息退出。"""
+    try:
+        return resolve_config(env_file)
+    except ConfigError as exc:
+        sys.stderr.write(f"错误: {exc}\n")
+        sys.exit(1)
 
 
 def generate_image(
@@ -61,7 +81,8 @@ def generate_image(
     aspect_ratio: str = "3:4",
     num_images: int = 1,
     output_dir: str = None,
-    model: str = "google/nano-banana/text-to-image"
+    model: str = "google/nano-banana/text-to-image",
+    env_file: Optional[str] = None
 ):
     """
     生成图片
@@ -72,8 +93,9 @@ def generate_image(
         num_images: 生成数量
         output_dir: 输出目录
         model: 模型名称
+        env_file: 显式指定的.env配置文件路径
     """
-    api_key, api_base = get_config()
+    api_key, api_base = get_config(env_file)
 
     # Atlas Cloud 图片生成 endpoint
     # 将 /v1 替换为完整的图片生成路径
@@ -194,9 +216,10 @@ def main():
                             "google/nano-banana-pro/text-to-image"
                         ],
                         help="模型 (默认: nano-banana)")
+    parser.add_argument("--env-file", help="显式指定 .env 配置文件；也可设置 XHS_ENV_FILE")
 
     args = parser.parse_args()
-    generate_image(args.prompt, args.ratio, args.num, args.output, args.model)
+    generate_image(args.prompt, args.ratio, args.num, args.output, args.model, args.env_file)
 
 
 if __name__ == "__main__":
