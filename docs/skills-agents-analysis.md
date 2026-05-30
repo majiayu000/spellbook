@@ -438,7 +438,7 @@ Curated collection of patterns, tools, and techniques for Claude Code workflows 
 
 ---
 
-## Skills Worth Adding to claude-arsenal
+## Skills Worth Adding to Spellbook
 
 ### High Priority (Recommended)
 | Skill/Agent | Source | Reason |
@@ -466,4 +466,4 @@ Curated collection of patterns, tools, and techniques for Claude Code workflows 
 ---
 
 *Generated: 2025-12-09*
-*For: [claude-arsenal](https://github.com/majiayu000/claude-arsenal)*
+*For: [Spellbook](https://github.com/majiayu000/spellbook)*

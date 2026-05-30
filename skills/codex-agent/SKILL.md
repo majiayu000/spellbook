@@ -1,6 +1,6 @@
 ---
 name: codex-agent
-description: MANDATORY for code review - must use Codex CLI for all code reviews, then apply fixes based on Codex feedback. Also use for cross-verification, debugging, and getting alternative implementations.
+description: Use when you want a second-opinion review via Codex CLI, cross-verification after another agent implements changes, debugging help, or alternative implementation proposals. Requires Codex CLI to be installed and authenticated.
 allowed-tools:
   - Bash
   - Read
@@ -14,9 +14,9 @@ allowed-tools:
 
 This skill enables Claude Code to collaborate with OpenAI's Codex CLI agent.
 
-## MANDATORY: Code Review Workflow
+## Optional Codex Review Workflow
 
-**IMPORTANT**: When performing code review, you MUST follow this workflow:
+Use this workflow when the user asks for Codex review, wants a second opinion, or needs cross-verification from a separate coding agent.
 
 ### Step 1: Call Codex for Review
 
@@ -64,7 +64,7 @@ codex exec -C /project -s read-only -o /tmp/codex-review.md \
 cat /tmp/codex-review.md
 ```
 
-Then Claude reads the feedback, applies fixes with Edit tool, and optionally re-verifies.
+Then the primary agent reads the feedback, applies fixes with Edit tool, and optionally re-verifies.
 
 ### Example 2: Review Recent Changes
 

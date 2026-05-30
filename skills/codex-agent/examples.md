@@ -136,7 +136,7 @@ codex exec -C /project --json "Implement logging" \
 codex exec -C /project -s read-only -o /tmp/review.md \
   "Review the uncommitted changes. Check for bugs, security issues, and code style."
 ```
-3. Claude reads review and addresses issues
+3. Primary agent reads review and addresses issues
 
 ### Parallel Analysis
 

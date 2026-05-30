@@ -7,7 +7,7 @@ description: React and Next.js performance playbook distilled from Vercel Engine
 
 Practical React and Next.js guidance for performance-sensitive product work.
 
-This skill is a self-contained distillation of the Vercel React performance guidance so it can be installed and used directly inside Claude Arsenal.
+This skill is a self-contained distillation of the Vercel React performance guidance so it can be installed and used directly inside Spellbook.
 
 ## When To Use
 

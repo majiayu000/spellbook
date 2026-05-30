@@ -21,7 +21,7 @@ ln -s $(pwd)/skills/typescript-project ~/.claude/skills/typescript-project
 ```bash
 # 在你的项目根目录创建 .claude/skills 目录
 mkdir -p .claude/skills
-cp -r /path/to/claude-arsenal/skills/typescript-project .claude/skills/
+cp -r /path/to/spellbook/skills/typescript-project .claude/skills/
 ```
 
 ---

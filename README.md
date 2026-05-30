@@ -1,18 +1,19 @@
 <div align="center">
-  <h1>Claude Arsenal</h1>
-  <p><strong>76 Production-Ready Skills | 7 Specialized Agents | One Command Install</strong></p>
+  <h1>Spellbook</h1>
+  <p><strong>76 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
-  <p>The most comprehensive skill library for Claude Code</p>
+  <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
-    <a href="https://github.com/majiayu000/claude-arsenal/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/claude-arsenal?style=flat-square&logo=github" alt="Stars"></a>
-    <a href="https://github.com/majiayu000/claude-arsenal/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/claude-arsenal?style=flat-square" alt="License"></a>
+    <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
+    <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
     <img src="https://img.shields.io/badge/skills-76-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
   <p>
     <a href="#quick-start">Quick Start</a> •
+    <a href="#runtime-targets">Runtime Targets</a> •
     <a href="#skills">Skills</a> •
     <a href="#agents">Agents</a> •
     <a href="#contributing">Contributing</a> •
@@ -27,26 +28,42 @@
 ### One-Line Install (All Skills)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/majiayu000/claude-arsenal/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/majiayu000/spellbook/main/install.sh | bash -s -- --target all
 ```
 
 ### Manual Install (Selective)
 
 ```bash
 # Clone the repository
-git clone https://github.com/majiayu000/claude-arsenal.git
-cd claude-arsenal
+git clone https://github.com/majiayu000/spellbook.git
+cd spellbook
 
-# Install specific skills
-./install.sh --skills typescript-project,python-project,devops-excellence
+# Install specific skills for Claude Code and Codex
+./install.sh --target all --skills typescript-project,python-project,devops-excellence
 
-# Or install everything
-./install.sh --all
+# Or install everything for one runtime
+./install.sh --target claude --all
+./install.sh --target codex --all
 ```
 
 ### Verify Installation
 
-In Claude Code, type `/` to see your installed skills.
+- Claude Code: type `/` to see your installed skills.
+- Codex: restart Codex so it reloads `~/.codex/skills`.
+
+---
+
+## Runtime Targets
+
+Spellbook keeps the skill source in one place and installs it into the runtime you use.
+
+| Target | Installed To | Status |
+|--------|--------------|--------|
+| Claude Code | `~/.claude/skills` plus `~/.claude/agents` | Skills and agents supported |
+| Codex | `~/.codex/skills` | Skills supported; agents skipped |
+| All | Both Claude Code and Codex paths | Recommended for multi-tool users |
+
+Claude Code remains a first-class target and search entry. The project was formerly known as Claude Arsenal; the new Spellbook name reflects the broader goal: reusable skills that can travel across coding agents.
 
 ---
 
@@ -113,8 +130,18 @@ End-to-end product development from discovery to deployment.
 | [`contributor`](./skills/contributor/) | End-to-end open source contribution workflow from issue discovery to PR submission | Custom |
 | [`strategic-compact`](./skills/strategic-compact/) | Compress context at logical boundaries while preserving decisions and constraints | Custom |
 | [`skill-creator`](./skills/skill-creator/) | Create, improve, and benchmark reusable skills | Custom |
-| [`codex-agent`](./skills/codex-agent/) | Code review, cross-verification, and alternative implementations through Codex CLI | Custom |
 | [`humanizer`](./skills/humanizer/) | Remove obvious AI writing patterns from user-facing text | External guide + custom adaptation |
+
+### Cross-Tool Interop
+
+Skills for using multiple coding agents and CLI tools together.
+
+| Skill | Description |
+|-------|-------------|
+| [`codex`](./skills/codex/) | Invoke Codex CLI sessions from another agent workflow |
+| [`codex-agent`](./skills/codex-agent/) | Optional second-opinion review, cross-verification, and alternatives through Codex CLI |
+| [`ask-opencli`](./skills/ask-opencli/) | Ask Grok or Gemini through opencli and an existing browser session |
+| [`multi-ai-research`](./skills/multi-ai-research/) | Parallel research across multiple AI tools and internal agents |
 
 ### UI/UX & Design
 
@@ -192,7 +219,7 @@ Specialized agents for complex tasks.
 
 ## Skill Design Philosophy
 
-Every skill in Claude Arsenal follows these principles:
+Every skill in Spellbook follows these principles:
 
 1. **Hard Rules** - Mandatory constraints with `FORBIDDEN` / `REQUIRED` markers
 2. **Practical Examples** - Real code, not just theory
@@ -206,6 +233,7 @@ Every skill in Claude Arsenal follows these principles:
 | Document | Description |
 |----------|-------------|
 | [Installation Guide](./docs/installation.md) | Detailed setup instructions |
+| [Runtime Targets](./docs/runtime-targets.md) | Claude Code and Codex installation targets |
 | [Skill Testing Guide](./docs/skill-testing-guide.md) | How to validate skills work |
 | [Creating Plugins](./docs/creating-plugins.md) | Build your own skills |
 | [Product Lifecycle (EN)](./docs/product-lifecycle-skills-en.md) | Full lifecycle coverage |
@@ -228,9 +256,9 @@ Built on the shoulders of giants:
 
 Contributions welcome! Please read our [Contributing Guide](./CONTRIBUTING.md) first.
 
-- Found a bug? [Open an issue](https://github.com/majiayu000/claude-arsenal/issues)
-- Have a skill idea? [Start a discussion](https://github.com/majiayu000/claude-arsenal/discussions)
-- Want to contribute? [Submit a PR](https://github.com/majiayu000/claude-arsenal/pulls)
+- Found a bug? [Open an issue](https://github.com/majiayu000/spellbook/issues)
+- Have a skill idea? [Start a discussion](https://github.com/majiayu000/spellbook/discussions)
+- Want to contribute? [Submit a PR](https://github.com/majiayu000/spellbook/pulls)
 
 ---
 
@@ -242,5 +270,5 @@ Contributions welcome! Please read our [Contributing Guide](./CONTRIBUTING.md) f
 
 <div align="center">
   <p>If this helps you, consider giving it a ⭐</p>
-  <p>Made with ❤️ for the Claude Code community</p>
+  <p>Made for builders using Claude Code, Codex, and multi-agent workflows</p>
 </div>

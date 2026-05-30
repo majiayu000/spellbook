@@ -1,12 +1,12 @@
-# Contributing to claude-arsenal
+# Contributing to Spellbook
 
 Thanks for your interest in contributing!
 
 ## Development Setup
 
 ```bash
-git clone https://github.com/majiayu000/claude-arsenal.git
-cd claude-arsenal
+git clone https://github.com/majiayu000/spellbook.git
+cd spellbook
 python3 scripts/validate_skills.py --check
 bash -n install.sh
 ```

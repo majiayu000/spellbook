@@ -5,7 +5,7 @@ description: Lightweight anti-hallucination workflow for task kickoff, review pr
 
 # VibeGuard
 
-Lightweight VibeGuard for everyday use inside Claude Arsenal.
+Lightweight VibeGuard for everyday use inside Spellbook.
 
 This skill helps with three moments where AI-assisted work usually drifts:
 - before implementation starts
