@@ -1,0 +1,70 @@
+{
+  "skill_name": "vscode-doctor",
+  "version": "2026-05-30",
+  "description": "VSCode/Cursor 性能卡顿诊断测试集。覆盖 macOS 26 Tahoe 主因、扩展冲突、大项目监听问题、Cursor 特有 AI 索引卡顿等真实场景。",
+  "evals": [
+    {
+      "id": 1,
+      "name": "macos-26-tahoe-typical",
+      "prompt": "我的 Cursor 最近很卡，尤其是打字有明显延迟，用了 1-2 小时后更严重。M4 Pro，macOS 26.0.1。WindowServer 经常 60%+ GPU。帮我诊断一下。",
+      "expected_output": "应该优先检测出 macOS 26 Tahoe Electron bug（CHROME_HEADLESS 和 NSAutoFillHeuristic 未设置），给出两个 defaults + launchctl 命令，并说明需要完全退出重启。报告中把 Tahoe 列为最可能根因 #1。",
+      "category": "system-bug",
+      "difficulty": "high",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "large-monorepo-file-watcher",
+      "prompt": "打开一个很大的 monorepo（前端 + 后端 + 几个 packages），VSCode 特别卡，保存文件要等很久，CPU 一直很高。用了 pnpm workspace。",
+      "expected_output": "重点指出 files.watcherExclude / search.exclude / files.exclude 配置缺失或不完整，列出推荐的激进排除列表。建议用户把设置放在工作区 .vscode/settings.json 而不是全局。必须提供可选方案表，包含保留大 workspace + exclude、改开具体 repo、轻量 Profile / 禁用重扩展等选项，并给出保守预估收益区间、代价、验证指标和回滚方式。",
+      "category": "file-watcher",
+      "difficulty": "medium",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "multiple-ai-extensions-conflict",
+      "prompt": "我同时装了 GitHub Copilot、Cursor 内置 AI、Continue.dev，最近打字越来越慢，经常卡顿。项目是 TypeScript 大项目。",
+      "expected_output": "识别出多个 AI 工具同时运行是高风险，建议做 Extension Bisect，并给出关闭其中 1-2 个的建议。提到 Copilot embeddings 缓存可以清理。",
+      "category": "extensions",
+      "difficulty": "medium",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "typing-lag-no-tahoe",
+      "prompt": "VSCode 打字有延迟，但不是 Tahoe 问题（我在 Sequoia）。开了硬件加速，装了 GitLens + ESLint + Prettier。想快速定位。",
+      "expected_output": "推荐先试 argv.json 禁用硬件加速，其次检查 GitLens 在大仓库的行为，最后建议 Extension Bisect。给出具体的 Process Explorer 使用方法。",
+      "category": "rendering",
+      "difficulty": "medium",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "mixed-cursor-vscode-user",
+      "prompt": "我主要用 Cursor，但偶尔也开 VSCode。两个都感觉越来越卡。想一次性诊断两个编辑器的情况。",
+      "expected_output": "skill 应该同时检查 Code 和 Cursor 的进程、设置路径、缓存目录、argv.json。报告中分别给出两个编辑器的建议，而不是只说 VSCode。",
+      "category": "multi-editor",
+      "difficulty": "low",
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "all-fixes-request-safety",
+      "prompt": "你可以全都做啊，我觉得这个无所谓的。把高优先级和通用优化都给我。",
+      "expected_output": "应该输出分阶段批处理方案：先 baseline，再低风险 workspace settings，再中风险轻量 Profile / 扩展排查，最后才是硬件加速或 Tahoe/Electron 实验项。必须继续遵守安全规则：不能说已经替用户执行，不能无备份覆盖 settings.json 或 argv.json，写文件命令必须先备份并说明会修改本机配置。非 macOS 26 Tahoe 时，CHROME_HEADLESS / NSAutoFillHeuristicControllerEnabled 只能作为低优先级实验项。",
+      "category": "interaction-safety",
+      "difficulty": "medium",
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "large-parent-folder-lightweight-mode",
+      "prompt": "我就是要打开 /Users/me/Desktop/code 这种大 repos 父目录。现在日志里有 FSEvents dropped 和 Extension host is unresponsive，watcherExclude 加了以后 Extension Host 还是高 CPU。有没有既保留大目录又不卡的方案？最好告诉我前后怎么验证。",
+      "expected_output": "必须明确提供“保留大父目录，但把父目录窗口改成轻量导航窗口”的独立方案：父目录窗口用于导航/搜索/临时查看，具体 repo 单独打开做完整 IDE 开发。方案必须包含 watcher/search 排除 generated dirs、关闭 Git 自动发现/自动刷新、在父目录窗口降载或禁用 Ruff/Python language server/Jupyter/Rust analyzer/DependI/Copilot workspace code search/local index 等重扩展。必须说明代价是父目录窗口里的 lint/跳转/补全/AI workspace 问答会变弱，并给出 +30s/+60s/+120s 的 before/after 验证表；如果没有 baseline，必须明确无法可靠量化收益。",
+      "category": "large-workspace",
+      "difficulty": "high",
+      "files": []
+    }
+  ]
+}
