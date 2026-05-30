@@ -23,6 +23,10 @@
 
 ---
 
+> **Rename notice:** Spellbook was formerly **Claude Arsenal**. Claude Code remains a first-class target; the new name reflects the broader roadmap for Claude Code, Codex, and cross-runtime agent skills. See the [migration note](./docs/migration-from-claude-arsenal.md) for details.
+
+---
+
 ## Quick Start
 
 ### One-Line Install (All Skills)
