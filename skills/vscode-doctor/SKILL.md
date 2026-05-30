@@ -55,9 +55,9 @@ metadata:
 
 ```bash
 # 必须把用户实际打开的 workspace/root 传进去，不能在 skill 目录里用 "$PWD"
-# 示例：用户说打开的是 /Users/lifcc/Desktop/code
-cd /path/to/claude-arsenal/skills/vscode-doctor
-./scripts/collect_vscode_diagnostics.sh /Users/lifcc/Desktop/code
+# 示例：用户说打开的是 <workspace-root>
+cd <path-to-vscode-doctor-skill>
+./scripts/collect_vscode_diagnostics.sh <workspace-root>
 ```
 
 **参数规则（必须遵守）**：
@@ -191,7 +191,7 @@ ps aux | grep -E 'Code Helper \(Renderer\)|Cursor Helper \(Renderer\)' | grep -v
 
 #### 大父目录轻量导航窗口（必须作为独立选项）
 
-当用户明确表示“我就是要打开父目录 / 大 repos 目录 / Desktop/code”时，不要只建议“别打开大目录”。必须提供一个保留大目录的方案：
+当用户明确表示“我就是要打开父目录 / repo parent / workspace parent”时，不要只建议“别打开大目录”。必须提供一个保留大目录的方案：
 
 - **定位**：父目录窗口只做导航、搜索、临时查看；具体 repo 另开窗口做完整 IDE 开发。
 - **核心动作**：
