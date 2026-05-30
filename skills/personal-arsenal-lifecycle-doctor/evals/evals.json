@@ -1,0 +1,27 @@
+{
+  "skill_name": "personal-arsenal-lifecycle-doctor",
+  "description": "测试该技能能否准确发现个人技能集合中的时间腐烂、升级失效、外部依赖僵尸化等问题，并给出可执行的修复建议。",
+  "evals": [
+    {
+      "id": 1,
+      "name": "检测长期未更新的技能",
+      "prompt": "我维护了好几年的个人技能，现在很多都不好用了，帮我检查一下哪些有问题。",
+      "expected_behavior": "能扫描并识别出 last_tested 较早或缺少时间元数据的技能，给出风险分级和具体修复建议。",
+      "type": "objective"
+    },
+    {
+      "id": 2,
+      "name": "发现外部依赖僵尸化",
+      "prompt": "我的部署相关技能最近执行不了了，可能是外部项目的问题。",
+      "expected_behavior": "能检测到技能中硬编码的 GitHub 仓库、特定 commit 或 unpinned 依赖，并标记为高风险 + 给出替代建议。",
+      "type": "objective"
+    },
+    {
+      "id": 3,
+      "name": "升级后行为改变诊断",
+      "prompt": "Claude Code 升级后，我以前特别好用的一个老技能突然不触发了。",
+      "expected_behavior": "能结合 description 质量、版本信息、已知 Claude 机制变化，给出合理的失效分析和激活建议。",
+      "type": "objective"
+    }
+  ]
+}
