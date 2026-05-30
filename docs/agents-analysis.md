@@ -612,4 +612,4 @@ From [hesreallyhim/a-list-of-claude-code-agents](https://github.com/hesreallyhim
 ---
 
 *Generated: 2025-12-09*
-*For: [claude-arsenal](https://github.com/majiayu000/claude-arsenal)*
+*For: [Spellbook](https://github.com/majiayu000/spellbook)*

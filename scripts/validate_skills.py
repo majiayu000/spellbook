@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Claude Arsenal skill metadata and generated registry files."""
+"""Validate Spellbook skill metadata and generated registry files."""
 
 from __future__ import annotations
 
@@ -562,8 +562,8 @@ def check_file(path: Path, expected: str) -> list[str]:
 def check_readme_counts(skill_count: int) -> list[str]:
     messages: list[str] = []
     checks = [
-        (ROOT / "README.md", rf"{skill_count} Production-Ready Skills", rf"skills-{skill_count}-"),
-        (ROOT / "README_CN.md", rf"{skill_count} 个生产级 Skills", rf"skills-{skill_count}-"),
+        (ROOT / "README.md", rf"{skill_count} Cross-Runtime Skills", rf"skills-{skill_count}-"),
+        (ROOT / "README_CN.md", rf"{skill_count} 个跨 Runtime Skills", rf"skills-{skill_count}-"),
         (ROOT / "install.sh", rf"{skill_count} Skills | 7 Agents", None),
     ]
 

@@ -2,16 +2,38 @@
 
 ## Prerequisites
 
-- Claude Code CLI installed
+- Claude Code CLI and/or Codex installed
 - Git
 
+## One Command Install
+
+```bash
+# Install skills for both Claude Code and Codex
+curl -fsSL https://raw.githubusercontent.com/majiayu000/spellbook/main/install.sh | bash -s -- --target all
+
+# Install only for Claude Code
+curl -fsSL https://raw.githubusercontent.com/majiayu000/spellbook/main/install.sh | bash -s -- --target claude
+
+# Install only for Codex
+curl -fsSL https://raw.githubusercontent.com/majiayu000/spellbook/main/install.sh | bash -s -- --target codex
+```
+
+Target paths:
+
+| Target | Skills | Agents |
+|--------|--------|--------|
+| Claude Code | `~/.claude/skills` | `~/.claude/agents` |
+| Codex | `~/.codex/skills` | Not supported by this installer |
+
 ## Installing Plugins
+
+Plugins are currently Claude Code-specific because they use the `.claude-plugin` manifest format.
 
 ### Method 1: Via Plugin Marketplace (Recommended)
 
 ```bash
 # Add the plugin as a marketplace source
-/plugin marketplace add https://github.com/majiayu000/claude-arsenal/plugins/<plugin-name>
+/plugin marketplace add https://github.com/majiayu000/spellbook/plugins/<plugin-name>
 
 # Install the plugin
 /plugin install <plugin-name>
@@ -21,10 +43,10 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/majiayu000/claude-arsenal.git
+git clone https://github.com/majiayu000/spellbook.git
 
 # Add local plugin as marketplace
-/plugin marketplace add /path/to/claude-arsenal/plugins/<plugin-name>
+/plugin marketplace add /path/to/spellbook/plugins/<plugin-name>
 
 # Install
 /plugin install <plugin-name>
@@ -35,12 +57,17 @@ git clone https://github.com/majiayu000/claude-arsenal.git
 ### Skills
 
 ```bash
-# Create skill directory (each skill needs its own subdirectory)
+# Claude Code: create skill directory (each skill needs its own subdirectory)
 mkdir -p ~/.claude/skills/<skill-name>
 
-# Download a skill
+# Claude Code: download a skill
 curl -o ~/.claude/skills/<skill-name>/SKILL.md \
-  https://raw.githubusercontent.com/majiayu000/claude-arsenal/main/skills/<skill-name>.SKILL.md
+  https://raw.githubusercontent.com/majiayu000/spellbook/main/skills/<skill-name>.SKILL.md
+
+# Codex: create skill directory and download the same source
+mkdir -p ~/.codex/skills/<skill-name>
+curl -o ~/.codex/skills/<skill-name>/SKILL.md \
+  https://raw.githubusercontent.com/majiayu000/spellbook/main/skills/<skill-name>.SKILL.md
 ```
 
 ### Commands
@@ -51,7 +78,7 @@ mkdir -p ~/.claude/commands
 
 # Download a command
 curl -o ~/.claude/commands/<command-name>.md \
-  https://raw.githubusercontent.com/majiayu000/claude-arsenal/main/commands/<command-name>.md
+  https://raw.githubusercontent.com/majiayu000/spellbook/main/commands/<command-name>.md
 ```
 
 ### Agents
@@ -62,7 +89,7 @@ mkdir -p ~/.claude/agents
 
 # Download an agent
 curl -o ~/.claude/agents/<agent-name>.md \
-  https://raw.githubusercontent.com/majiayu000/claude-arsenal/main/agents/<agent-name>.md
+  https://raw.githubusercontent.com/majiayu000/spellbook/main/agents/<agent-name>.md
 ```
 
 ### CLAUDE.md Templates
@@ -70,7 +97,7 @@ curl -o ~/.claude/agents/<agent-name>.md \
 ```bash
 # Download to your project root
 curl -o ./CLAUDE.md \
-  https://raw.githubusercontent.com/majiayu000/claude-arsenal/main/claude-md/<template-name>.md
+  https://raw.githubusercontent.com/majiayu000/spellbook/main/claude-md/<template-name>.md
 ```
 
 ## Verification
@@ -86,6 +113,9 @@ After installation, verify components are loaded:
 
 # Ask Claude about available skills
 "What skills do you have available?"
+
+# Codex
+# Restart Codex so it reloads ~/.codex/skills.
 ```
 
 ## Uninstallation

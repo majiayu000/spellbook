@@ -1,6 +1,6 @@
-# Claude-Codex Skill
+# Codex Agent Skill
 
-A Claude Code skill that **enforces Codex-based code review** - Claude must use Codex for all code reviews, then apply fixes based on Codex's feedback.
+A Spellbook skill for optional Codex-based second-opinion reviews, cross-verification, debugging, and alternative implementation proposals.
 
 ## Core Workflow
 
@@ -8,7 +8,7 @@ A Claude Code skill that **enforces Codex-based code review** - Claude must use 
 Code Review Request
        ↓
    ┌───────────────────┐
-   │  Codex Reviews    │  ← Claude calls Codex CLI
+   │  Codex Reviews    │  ← Primary agent calls Codex CLI
    │  (read-only)      │
    └───────────────────┘
        ↓
@@ -17,7 +17,7 @@ Code Review Request
    └───────────────────┘
        ↓
    ┌───────────────────┐
-   │  Claude Applies   │  ← Claude fixes code using Edit tool
+   │  Primary Agent    │  ← Primary agent fixes code using Edit tool
    │  Fixes            │
    └───────────────────┘
        ↓
@@ -29,8 +29,8 @@ Code Review Request
 
 ## Features
 
-- **Mandatory Code Review**: All code reviews MUST go through Codex first
-- **Guided Fixes**: Claude applies fixes based on Codex's specific feedback
+- **Second-Opinion Review**: Use Codex when you want an independent review pass
+- **Guided Fixes**: Apply fixes based on Codex's specific feedback
 - **Structured Output**: Codex provides file paths, line numbers, and severity levels
 - **Re-verification**: Optional second pass to confirm fixes
 
@@ -57,19 +57,20 @@ codex login
 ### Option 1: User-level (all projects)
 
 ```bash
-cp -r claude-codex-skill ~/.claude/skills/codex-agent
+cp -r codex-agent ~/.claude/skills/codex-agent
+cp -r codex-agent ~/.codex/skills/codex-agent
 ```
 
 ### Option 2: Project-level
 
 ```bash
 mkdir -p .claude/skills
-cp -r claude-codex-skill .claude/skills/codex-agent
+cp -r codex-agent .claude/skills/codex-agent
 ```
 
 ## Usage
 
-When you ask Claude to review code, it will:
+When you ask for a Codex second opinion, the primary agent will:
 
 1. **Call Codex** to perform the review
 2. **Parse feedback** from Codex (file, line, severity, issue, fix)
@@ -94,7 +95,7 @@ Review the recent changes and fix problems Codex finds
 
 ### Step 1: Codex Review
 
-Claude executes:
+The primary agent executes:
 ```bash
 codex exec -C /project -s read-only -o /tmp/codex-review.md \
   "Review src/auth/. Check for security, performance, code quality.
@@ -112,9 +113,9 @@ Codex outputs structured feedback:
 - Fix: Use parameterized query instead of string concatenation
 ```
 
-### Step 3: Claude Applies Fixes
+### Step 3: Primary Agent Applies Fixes
 
-Claude reads the file, applies the fix with Edit tool:
+The primary agent reads the file, applies the fix with Edit tool:
 ```
 old_string: `SELECT * FROM users WHERE id = '${userId}'`
 new_string: `SELECT * FROM users WHERE id = $1`, [userId]
@@ -130,8 +131,8 @@ codex exec -C /project -s read-only \
 ## File Structure
 
 ```
-claude-codex-skill/
-├── SKILL.md           # Main skill with mandatory workflow
+codex-agent/
+├── SKILL.md           # Main skill with optional Codex review workflow
 ├── sandbox-modes.md   # Sandbox security documentation
 ├── examples.md        # Usage examples
 ├── advanced.md        # Advanced configuration

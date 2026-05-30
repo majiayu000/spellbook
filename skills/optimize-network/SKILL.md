@@ -74,7 +74,7 @@ Run the bandwidth/responsiveness portion only when the user is ready for a bandw
 RUN_NETWORKQUALITY=1 ~/.claude/skills/optimize-network/scripts/macos_network_snapshot.sh
 ```
 
-If testing from a local Codex skill copy instead of an installed Claude Arsenal copy, use the equivalent path under `~/.codex/skills/optimize-network/scripts/`.
+If testing from a local Codex skill copy instead of an installed Spellbook copy, use the equivalent path under `~/.codex/skills/optimize-network/scripts/`.
 
 ### 2. Baseline
 

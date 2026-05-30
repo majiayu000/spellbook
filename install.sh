@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Claude Arsenal Installer
-# https://github.com/majiayu000/claude-arsenal
+# Spellbook Installer
+# https://github.com/majiayu000/spellbook
 
 set -e
 
@@ -13,18 +13,24 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Config
-REPO_URL="https://github.com/majiayu000/claude-arsenal.git"
+REPO_URL="${SPELLBOOK_REPO_URL:-https://github.com/majiayu000/spellbook.git}"
+LEGACY_REPO_URL="https://github.com/majiayu000/claude-arsenal.git"
 CLAUDE_DIR="$HOME/.claude"
-SKILLS_DIR="$CLAUDE_DIR/skills"
-INSTALL_DIR="$HOME/.claude-arsenal"
+CODEX_DIR="$HOME/.codex"
+CLAUDE_SKILLS_DIR="$CLAUDE_DIR/skills"
+CLAUDE_AGENTS_DIR="$CLAUDE_DIR/agents"
+CODEX_SKILLS_DIR="$CODEX_DIR/skills"
+INSTALL_DIR="$HOME/.spellbook"
+LEGACY_INSTALL_DIR="$HOME/.claude-arsenal"
+TARGET="claude"
 
 # Print banner
 print_banner() {
     echo -e "${BLUE}"
     echo "╔═══════════════════════════════════════════════════════════╗"
     echo "║                                                           ║"
-    echo "║              Claude Arsenal Installer                     ║"
-    echo "║     76 Skills | 7 Agents | Production Ready               ║"
+    echo "║                  Spellbook Installer                      ║"
+    echo "║     76 Skills | 7 Agents | Claude + Codex Ready           ║"
     echo "║                                                           ║"
     echo "╚═══════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
@@ -49,26 +55,57 @@ check_prerequisites() {
 
 # Clone or update repository
 setup_repo() {
-    info "Setting up Claude Arsenal repository..."
+    info "Setting up Spellbook repository..."
 
     if [ -d "$INSTALL_DIR" ]; then
         info "Updating existing installation..."
         cd "$INSTALL_DIR"
         git pull --quiet
+    elif [ -d "$LEGACY_INSTALL_DIR" ]; then
+        info "Migrating existing Claude Arsenal checkout..."
+        mv "$LEGACY_INSTALL_DIR" "$INSTALL_DIR"
+        cd "$INSTALL_DIR"
+        git remote set-url origin "$REPO_URL" 2>/dev/null || true
+        git pull --quiet || git pull --quiet "$LEGACY_REPO_URL" main
     else
         info "Cloning repository..."
-        git clone --quiet "$REPO_URL" "$INSTALL_DIR"
+        if ! git clone --quiet "$REPO_URL" "$INSTALL_DIR"; then
+            warn "Primary Spellbook URL unavailable; falling back to legacy Claude Arsenal URL"
+            git clone --quiet "$LEGACY_REPO_URL" "$INSTALL_DIR"
+        fi
     fi
 
     success "Repository ready at $INSTALL_DIR"
 }
 
-# Create claude directories
-setup_directories() {
-    info "Setting up Claude directories..."
+# Target helpers
+target_includes_claude() {
+    [ "$TARGET" = "claude" ] || [ "$TARGET" = "all" ]
+}
 
-    mkdir -p "$SKILLS_DIR"
-    mkdir -p "$CLAUDE_DIR/agents"
+target_includes_codex() {
+    [ "$TARGET" = "codex" ] || [ "$TARGET" = "all" ]
+}
+
+validate_target() {
+    case "$TARGET" in
+        claude|codex|all) ;;
+        *) error "Invalid target: $TARGET (expected claude, codex, or all)" ;;
+    esac
+}
+
+# Create target directories
+setup_directories() {
+    info "Setting up target directories for: $TARGET"
+
+    if target_includes_claude; then
+        mkdir -p "$CLAUDE_SKILLS_DIR"
+        mkdir -p "$CLAUDE_AGENTS_DIR"
+    fi
+
+    if target_includes_codex; then
+        mkdir -p "$CODEX_SKILLS_DIR"
+    fi
 
     success "Directories created"
 }
@@ -109,24 +146,31 @@ validate_registry() {
     python3 "$INSTALL_DIR/scripts/validate_skills.py" --check
 }
 
+is_managed_path() {
+    local path="$1"
+    [[ "$path" == *"claude-arsenal"* ]] || [[ "$path" == *"spellbook"* ]]
+}
+
 prepare_directory_skill_target() {
-    local skill_name="$1"
-    local target="$SKILLS_DIR/$skill_name"
+    local skills_dir="$1"
+    local skill_name="$2"
+    local target="$skills_dir/$skill_name"
 
     if [ -L "$target" ]; then
         rm -f "$target"
     elif [ -d "$target" ] && [ -L "$target/SKILL.md" ]; then
         local linked_skill
         linked_skill=$(readlink "$target/SKILL.md" 2>/dev/null || true)
-        if [[ "$linked_skill" == *"claude-arsenal"* ]]; then
+        if is_managed_path "$linked_skill"; then
             rm -rf "$target"
         fi
     fi
 }
 
 prepare_file_skill_target() {
-    local skill_name="$1"
-    local target="$SKILLS_DIR/$skill_name"
+    local skills_dir="$1"
+    local skill_name="$2"
+    local target="$skills_dir/$skill_name"
 
     if [ -L "$target" ]; then
         rm -f "$target"
@@ -135,9 +179,12 @@ prepare_file_skill_target() {
     mkdir -p "$target"
 }
 
-# Install all skills
-install_all_skills() {
-    info "Installing all skills..."
+# Install all skills into one runtime target
+install_all_skills_to_dir() {
+    local skills_dir="$1"
+    local runtime_name="$2"
+
+    info "Installing all skills for $runtime_name..."
 
     local count=0
 
@@ -145,8 +192,8 @@ install_all_skills() {
     for skill_dir in "$INSTALL_DIR/skills"/*/; do
         if [ -f "$skill_dir/SKILL.md" ]; then
             skill_name=$(basename "$skill_dir")
-            prepare_directory_skill_target "$skill_name"
-            ln -sfn "$skill_dir" "$SKILLS_DIR/$skill_name"
+            prepare_directory_skill_target "$skills_dir" "$skill_name"
+            ln -sfn "$skill_dir" "$skills_dir/$skill_name"
             count=$((count + 1))
         fi
     done
@@ -155,19 +202,33 @@ install_all_skills() {
     for skill_file in "$INSTALL_DIR/skills"/*.SKILL.md; do
         if [ -f "$skill_file" ]; then
             skill_name=$(basename "$skill_file" .SKILL.md)
-            prepare_file_skill_target "$skill_name"
-            ln -sfn "$skill_file" "$SKILLS_DIR/$skill_name/SKILL.md"
+            prepare_file_skill_target "$skills_dir" "$skill_name"
+            ln -sfn "$skill_file" "$skills_dir/$skill_name/SKILL.md"
             count=$((count + 1))
         fi
     done
 
-    success "Installed $count skills"
+    success "Installed $count skills for $runtime_name"
 }
 
-# Install specific skills
-install_skills() {
-    local skills_list="$1"
-    info "Installing selected skills: $skills_list"
+# Install all skills
+install_all_skills() {
+    if target_includes_claude; then
+        install_all_skills_to_dir "$CLAUDE_SKILLS_DIR" "Claude Code"
+    fi
+
+    if target_includes_codex; then
+        install_all_skills_to_dir "$CODEX_SKILLS_DIR" "Codex"
+    fi
+}
+
+# Install specific skills into one runtime target
+install_skills_to_dir() {
+    local skills_dir="$1"
+    local runtime_name="$2"
+    local skills_list="$3"
+
+    info "Installing selected skills for $runtime_name: $skills_list"
 
     IFS=',' read -ra SKILLS <<< "$skills_list"
     local count=0
@@ -177,14 +238,14 @@ install_skills() {
 
         # Check if directory-based skill
         if [ -f "$INSTALL_DIR/skills/$skill/SKILL.md" ]; then
-            prepare_directory_skill_target "$skill"
-            ln -sfn "$INSTALL_DIR/skills/$skill" "$SKILLS_DIR/$skill"
+            prepare_directory_skill_target "$skills_dir" "$skill"
+            ln -sfn "$INSTALL_DIR/skills/$skill" "$skills_dir/$skill"
             count=$((count + 1))
             info "  ✓ $skill"
         # Check if file-based skill
         elif [ -f "$INSTALL_DIR/skills/$skill.SKILL.md" ]; then
-            prepare_file_skill_target "$skill"
-            ln -sfn "$INSTALL_DIR/skills/$skill.SKILL.md" "$SKILLS_DIR/$skill/SKILL.md"
+            prepare_file_skill_target "$skills_dir" "$skill"
+            ln -sfn "$INSTALL_DIR/skills/$skill.SKILL.md" "$skills_dir/$skill/SKILL.md"
             count=$((count + 1))
             info "  ✓ $skill"
         else
@@ -192,7 +253,20 @@ install_skills() {
         fi
     done
 
-    success "Installed $count skills"
+    success "Installed $count skills for $runtime_name"
+}
+
+# Install specific skills
+install_skills() {
+    local skills_list="$1"
+
+    if target_includes_claude; then
+        install_skills_to_dir "$CLAUDE_SKILLS_DIR" "Claude Code" "$skills_list"
+    fi
+
+    if target_includes_codex; then
+        install_skills_to_dir "$CODEX_SKILLS_DIR" "Codex" "$skills_list"
+    fi
 }
 
 # Install all agents
@@ -204,7 +278,7 @@ install_agents() {
     for agent_file in "$INSTALL_DIR/agents"/*.md; do
         if [ -f "$agent_file" ]; then
             agent_name=$(basename "$agent_file")
-            ln -sfn "$agent_file" "$CLAUDE_DIR/agents/$agent_name"
+            ln -sfn "$agent_file" "$CLAUDE_AGENTS_DIR/$agent_name"
             count=$((count + 1))
         fi
     done
@@ -232,33 +306,54 @@ list_skills() {
 }
 
 # Uninstall
+uninstall_from_skills_dir() {
+    local skills_dir="$1"
+
+    for skill_path in "$skills_dir"/*; do
+        [ -e "$skill_path" ] || continue
+
+        if [ -L "$skill_path" ]; then
+            target=$(readlink -f "$skill_path" 2>/dev/null || readlink "$skill_path" 2>/dev/null)
+            if is_managed_path "$target"; then
+                rm -f "$skill_path"
+            fi
+        elif [ -d "$skill_path" ] && [ -L "$skill_path/SKILL.md" ]; then
+            target=$(readlink -f "$skill_path/SKILL.md" 2>/dev/null || readlink "$skill_path/SKILL.md" 2>/dev/null)
+            if is_managed_path "$target"; then
+                rm -rf "$skill_path"
+            fi
+        fi
+    done
+}
+
 uninstall() {
-    warn "Uninstalling Claude Arsenal..."
+    warn "Uninstalling Spellbook..."
 
-    # Remove skill symlinks
-    for skill_dir in "$SKILLS_DIR"/*/; do
-        if [ -L "$skill_dir" ] || [ -L "${skill_dir%/}" ]; then
-            target=$(readlink -f "$skill_dir" 2>/dev/null || readlink "$skill_dir" 2>/dev/null)
-            if [[ "$target" == *"claude-arsenal"* ]]; then
-                rm -f "$skill_dir"
+    if target_includes_claude; then
+        uninstall_from_skills_dir "$CLAUDE_SKILLS_DIR"
+
+        for agent_file in "$CLAUDE_AGENTS_DIR"/*.md; do
+            if [ -L "$agent_file" ]; then
+                target=$(readlink -f "$agent_file" 2>/dev/null || readlink "$agent_file" 2>/dev/null)
+                if is_managed_path "$target"; then
+                    rm -f "$agent_file"
+                fi
             fi
-        fi
-    done
+        done
+    fi
 
-    # Remove agent symlinks
-    for agent_file in "$CLAUDE_DIR/agents"/*.md; do
-        if [ -L "$agent_file" ]; then
-            target=$(readlink -f "$agent_file" 2>/dev/null || readlink "$agent_file" 2>/dev/null)
-            if [[ "$target" == *"claude-arsenal"* ]]; then
-                rm -f "$agent_file"
-            fi
-        fi
-    done
+    if target_includes_codex; then
+        uninstall_from_skills_dir "$CODEX_SKILLS_DIR"
+    fi
 
-    # Remove installation directory
-    rm -rf "$INSTALL_DIR"
+    if [ "$TARGET" = "all" ]; then
+        rm -rf "$INSTALL_DIR"
+        rm -rf "$LEGACY_INSTALL_DIR"
+    else
+        warn "Leaving shared source checkout at $INSTALL_DIR; use --target all --uninstall to remove it"
+    fi
 
-    success "Claude Arsenal uninstalled"
+    success "Spellbook uninstalled for target: $TARGET"
 }
 
 # Print usage
@@ -266,34 +361,67 @@ usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  --all                 Install all skills and agents"
+    echo "  --target TARGET       Install target: claude, codex, or all (default: claude)"
+    echo "  --all                 Install all skills and supported agents"
     echo "  --skills SKILL_LIST   Install specific skills (comma-separated)"
-    echo "  --agents              Install only agents"
+    echo "  --agents              Install only Claude Code agents"
     echo "  --list                List available skills"
     echo "  --validate            Validate skill registry and metadata"
-    echo "  --uninstall           Remove Claude Arsenal"
+    echo "  --uninstall           Remove Spellbook symlinks for the selected target"
     echo "  --help                Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 --all"
-    echo "  $0 --skills typescript-project,python-project,devops-excellence"
+    echo "  $0 --target all --all"
+    echo "  $0 --target codex --skills typescript-project,python-project"
     echo "  $0 --list"
+}
+
+parse_args() {
+    POSITIONAL=()
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --target)
+                if [ -z "${2:-}" ]; then
+                    error "Please provide a target: claude, codex, or all"
+                fi
+                TARGET="$2"
+                shift 2
+                ;;
+            *)
+                POSITIONAL+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    set -- "${POSITIONAL[@]}"
+    PARSED_ARGS=("$@")
+}
+
+install_supported_agents() {
+    if target_includes_claude; then
+        install_agents
+    elif [ "$TARGET" = "codex" ]; then
+        warn "Agents are Claude Code-specific; skipping agents for Codex target"
+    fi
 }
 
 # Main
 main() {
-    print_banner
+    parse_args "$@"
+    set -- "${PARSED_ARGS[@]}"
 
-    # Parse arguments
+    print_banner
+    validate_target
+
     if [ $# -eq 0 ]; then
-        # Default: install all
         check_prerequisites
         setup_repo
         check_skill_conflicts
         validate_registry
         setup_directories
         install_all_skills
-        install_agents
+        install_supported_agents
     else
         case "$1" in
             --all)
@@ -303,10 +431,10 @@ main() {
                 validate_registry
                 setup_directories
                 install_all_skills
-                install_agents
+                install_supported_agents
                 ;;
             --skills)
-                if [ -z "$2" ]; then
+                if [ -z "${2:-}" ]; then
                     error "Please provide a comma-separated list of skills"
                 fi
                 check_prerequisites
@@ -320,7 +448,7 @@ main() {
                 check_prerequisites
                 setup_repo
                 setup_directories
-                install_agents
+                install_supported_agents
                 ;;
             --list)
                 setup_repo
@@ -352,12 +480,21 @@ main() {
     success "Installation complete!"
     echo ""
     info "Next steps:"
-    echo "  1. Open Claude Code"
-    echo "  2. Type '/' to see your installed skills"
-    echo "  3. Start using skills like /typescript-project"
+    if target_includes_claude; then
+        echo "  - Claude Code: type '/' to see installed skills"
+    fi
+    if target_includes_codex; then
+        echo "  - Codex: restart Codex so it reloads ~/.codex/skills"
+    fi
+    echo "  - Start using skills like /typescript-project"
     echo ""
     info "Installation directory: $INSTALL_DIR"
-    info "Skills directory: $SKILLS_DIR"
+    if target_includes_claude; then
+        info "Claude skills directory: $CLAUDE_SKILLS_DIR"
+    fi
+    if target_includes_codex; then
+        info "Codex skills directory: $CODEX_SKILLS_DIR"
+    fi
     echo ""
 }
 

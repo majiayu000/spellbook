@@ -168,7 +168,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/codex-agent/SKILL.md",
-    "description": "MANDATORY for code review - must use Codex CLI for all code reviews, then apply fixes based on Codex feedback. Also use for cross-verification, debugging, and getting alternative implementations.",
+    "description": "Use when you want a second-opinion review via Codex CLI, cross-verification after another agent implements changes, debugging help, or alternative implementation proposals. Requires Codex CLI to be installed and authenticated.",
     "language": "en",
     "tags": [
       "agent",

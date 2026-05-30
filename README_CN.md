@@ -1,18 +1,19 @@
 <div align="center">
-  <h1>Claude Arsenal</h1>
-  <p><strong>76 个生产级 Skills | 7 个专业 Agents | 一键安装</strong></p>
+  <h1>Spellbook</h1>
+  <p><strong>76 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
-  <p>最全面的 Claude Code 技能库</p>
+  <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
-    <a href="https://github.com/majiayu000/claude-arsenal/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/claude-arsenal?style=flat-square&logo=github" alt="Stars"></a>
-    <a href="https://github.com/majiayu000/claude-arsenal/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/claude-arsenal?style=flat-square" alt="License"></a>
+    <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
+    <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
     <img src="https://img.shields.io/badge/skills-76-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
   <p>
     <a href="#快速开始">快速开始</a> •
+    <a href="#runtime-目标">Runtime 目标</a> •
     <a href="#技能列表">技能列表</a> •
     <a href="#智能体">智能体</a> •
     <a href="#贡献">贡献</a> •
@@ -27,26 +28,42 @@
 ### 一键安装（所有技能）
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/majiayu000/claude-arsenal/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/majiayu000/spellbook/main/install.sh | bash -s -- --target all
 ```
 
 ### 手动安装（选择性）
 
 ```bash
 # 克隆仓库
-git clone https://github.com/majiayu000/claude-arsenal.git
-cd claude-arsenal
+git clone https://github.com/majiayu000/spellbook.git
+cd spellbook
 
-# 安装特定技能
-./install.sh --skills typescript-project,python-project,devops-excellence
+# 为 Claude Code 和 Codex 安装特定技能
+./install.sh --target all --skills typescript-project,python-project,devops-excellence
 
-# 或安装全部
-./install.sh --all
+# 或为单个 Runtime 安装全部
+./install.sh --target claude --all
+./install.sh --target codex --all
 ```
 
 ### 验证安装
 
-在 Claude Code 中输入 `/` 查看已安装的技能。
+- Claude Code：输入 `/` 查看已安装的技能。
+- Codex：重启 Codex，让它重新加载 `~/.codex/skills`。
+
+---
+
+## Runtime 目标
+
+Spellbook 将 skill 源文件保存在一个地方，再安装到你实际使用的 runtime。
+
+| 目标 | 安装位置 | 状态 |
+|------|----------|------|
+| Claude Code | `~/.claude/skills` 和 `~/.claude/agents` | 支持 skills 和 agents |
+| Codex | `~/.codex/skills` | 支持 skills；跳过 agents |
+| all | 同时安装到 Claude Code 和 Codex 路径 | 推荐给多工具用户 |
+
+Claude Code 仍是一等支持目标，也是用户搜索和认知入口。项目原名 Claude Arsenal；改名为 Spellbook 是为了表达更长期的目标：让可复用 skills 在不同 coding agents 之间流动。
 
 ---
 
@@ -113,8 +130,18 @@ python3 scripts/validate_skills.py search --tag react --json
 | [`contributor`](./skills/contributor/) | 从 Issue 扫描到 PR 提交的端到端开源贡献工作流 | 自研 |
 | [`strategic-compact`](./skills/strategic-compact/) | 在逻辑边界压缩上下文，保留关键决策与约束 | 自研 |
 | [`skill-creator`](./skills/skill-creator/) | 创建、优化并评估可复用 skill | 自研 |
-| [`codex-agent`](./skills/codex-agent/) | 通过 Codex CLI 做代码审查、交叉验证和替代实现 | 自研 |
 | [`humanizer`](./skills/humanizer/) | 消除明显 AI 痕迹，让文本更自然可读 | 外部指南 + 自研整理 |
+
+### 跨工具互操作
+
+用于组合多个 coding agents 与 CLI 工具的 skills。
+
+| 技能 | 描述 |
+|------|------|
+| [`codex`](./skills/codex/) | 在其他 agent 工作流中调用 Codex CLI session |
+| [`codex-agent`](./skills/codex-agent/) | 通过 Codex CLI 做可选的二次审查、交叉验证和替代实现 |
+| [`ask-opencli`](./skills/ask-opencli/) | 通过 opencli 和已有浏览器登录态询问 Grok 或 Gemini |
+| [`multi-ai-research`](./skills/multi-ai-research/) | 跨多个 AI 工具和内部 agents 并行研究 |
 
 ### UI/UX 与设计
 
@@ -190,7 +217,7 @@ python3 scripts/validate_skills.py search --tag react --json
 
 ## 技能设计理念
 
-Claude Arsenal 中的每个技能都遵循以下原则：
+Spellbook 中的每个技能都遵循以下原则：
 
 1. **硬性规则** - 使用 `FORBIDDEN` / `REQUIRED` 标记的强制约束
 2. **实用示例** - 真实代码，而非纯理论
@@ -204,6 +231,7 @@ Claude Arsenal 中的每个技能都遵循以下原则：
 | 文档 | 描述 |
 |------|------|
 | [安装指南](./docs/installation.md) | 详细的安装说明 |
+| [Runtime 目标](./docs/runtime-targets.md) | Claude Code 与 Codex 安装目标 |
 | [技能测试指南](./docs/skill-testing-guide.md) | 如何验证技能是否生效 |
 | [创建插件](./docs/creating-plugins.md) | 构建你自己的技能 |
 | [产品生命周期（英文）](./docs/product-lifecycle-skills-en.md) | 完整生命周期覆盖 |
@@ -226,9 +254,9 @@ Claude Arsenal 中的每个技能都遵循以下原则：
 
 欢迎贡献！请先阅读我们的[贡献指南](./CONTRIBUTING.md)。
 
-- 发现 Bug？[提交 Issue](https://github.com/majiayu000/claude-arsenal/issues)
-- 有技能想法？[发起讨论](https://github.com/majiayu000/claude-arsenal/discussions)
-- 想要贡献？[提交 PR](https://github.com/majiayu000/claude-arsenal/pulls)
+- 发现 Bug？[提交 Issue](https://github.com/majiayu000/spellbook/issues)
+- 有技能想法？[发起讨论](https://github.com/majiayu000/spellbook/discussions)
+- 想要贡献？[提交 PR](https://github.com/majiayu000/spellbook/pulls)
 
 ---
 
@@ -240,5 +268,5 @@ Claude Arsenal 中的每个技能都遵循以下原则：
 
 <div align="center">
   <p>如果对你有帮助，考虑给个 ⭐</p>
-  <p>为 Claude Code 社区用心打造 ❤️</p>
+  <p>为使用 Claude Code、Codex 与多智能体工作流的构建者打造</p>
 </div>
