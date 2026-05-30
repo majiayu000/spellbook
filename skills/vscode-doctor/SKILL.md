@@ -131,6 +131,36 @@ ps aux | grep -E 'Code Helper \(Renderer\)|Cursor Helper \(Renderer\)' | grep -v
 - `Emmet`：父目录/后端场景可关，前端 repo 保留。
 - `Git / Git 基础 / GitHub`：先调 Git 设置，不要作为第一步直接关。
 
+#### 扩展关闭确认模板（看到 Running Extensions 后必须询问）
+
+只要报告里列出“可以关 / 建议降载”的扩展，就必须主动问用户是否要处理，不能只停在建议表格。
+
+固定话术：
+
+```markdown
+这些扩展我建议只在当前大父目录窗口里处理，不建议全局关闭。
+
+你要不要我继续给你关闭/降载方案？
+
+可选：
+1. **只降载 Copilot Chat（推荐先试）**：关闭 workspace code search / local index，保留登录和基础聊天。
+2. **关闭低风险组**：VS Code 的终端建议、Node 调试自动附加、合并冲突、Emmet。
+3. **大目录轻量扩展集**：同时做 1 + 2；如果还有 Python/Ruff/DependI/Jupyter/Rust Analyzer，再按 workspace 降载。
+4. **先不关扩展，只继续观察**：保留现状，继续采样 Extension Host CPU。
+
+直接回复：
+- “先做 1”
+- “做低风险组”
+- “做大目录轻量扩展集”
+- “先不关”
+```
+
+要求：
+- 在用户选择前，不要提供会实际修改扩展状态的命令或步骤。
+- 用户选择后，优先给 **Disable (Workspace)** / workspace settings 方案，避免全局禁用。
+- 必须明确“Git / Git 基础 / GitHub / GitHub Authentication 不在默认关闭列表里”。
+- 执行后必须回到前后对比模板，观察 `+30s / +60s / +120s`。
+
 ### 第四步：生成修复选项 + 预估收益（必须出现）
 
 报告必须把「能做什么」拆成用户可选项，不要只给一个结论。每个选项都要明确：

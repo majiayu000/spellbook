@@ -70,7 +70,7 @@
       "id": 8,
       "name": "running-extensions-screenshot-classification",
       "prompt": "我打开了 Developer: Show Running Extensions，截图里有 VS Code 的终端建议、Git 基础、合并冲突、Node 调试自动附加、GitHub Copilot Chat、GitHub、Emmet、Git。大父目录窗口还是会卡。哪些能关？这个判断能做到 skill 里面吗？",
-      "expected_output": "必须按扩展类别分级回答：GitHub Copilot Chat 在大父目录里优先降载 workspace code search/local index 或 workspace disable；VS Code 的终端建议可关且代价较低；Node 调试自动附加在不调试 Node 时可关；合并冲突不处理冲突时可关；Emmet 在父目录/后端场景可关、前端 repo 建议保留；Git/Git 基础/GitHub/GitHub Authentication 不建议第一步直接关，应先用 git.autorefresh=false 和 git.autoRepositoryDetection=false。必须说明这些建议应优先作用于大父目录轻量窗口，而不是全局禁用，并给出验证指标。",
+      "expected_output": "必须按扩展类别分级回答：GitHub Copilot Chat 在大父目录里优先降载 workspace code search/local index 或 workspace disable；VS Code 的终端建议可关且代价较低；Node 调试自动附加在不调试 Node 时可关；合并冲突不处理冲突时可关；Emmet 在父目录/后端场景可关、前端 repo 建议保留；Git/Git 基础/GitHub/GitHub Authentication 不建议第一步直接关，应先用 git.autorefresh=false 和 git.autoRepositoryDetection=false。必须说明这些建议应优先作用于大父目录轻量窗口，而不是全局禁用，并给出验证指标。列出建议后必须主动问用户是否要继续关闭/降载，并提供四个选择：只降载 Copilot Chat、关闭低风险组、大目录轻量扩展集、先不关扩展继续观察。",
       "category": "extensions",
       "difficulty": "medium",
       "files": []
