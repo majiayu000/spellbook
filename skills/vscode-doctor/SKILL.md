@@ -106,6 +106,30 @@ ps aux | grep -E 'Code Helper \(Renderer\)|Cursor Helper \(Renderer\)' | grep -v
 - 日志里是否有 "Extension host unresponsive" 或 "File Watcher" 相关错误
 - `code --status` / `cursor --status` 中的 workspace folder 是否是大父目录（例如 `Folder (...): more than 20000 files`）
 - Extension Host 高 CPU 是否在 watcher/search 排除后仍持续存在；如果是，优先怀疑重扩展的 workspace 索引/语言服务，而不是继续堆更多 watcher exclude
+- 如果用户提供 “Developer: Show Running Extensions” 截图或输出，必须按下面的扩展分级矩阵给出「可关 / 按需关 / 不建议先关」建议。
+
+#### Running Extensions 分级矩阵（用于截图/运行中扩展列表）
+
+原则：优先在**大父目录轻量导航窗口**里禁用或降载，不要默认全局禁用。具体 repo 单独打开时可以保留完整 IDE 功能。
+
+| 分类 | 截图/显示名示例 | 大父目录建议 | 影响 | 验证 |
+|----|----|----|----|----|
+| AI workspace / code search | GitHub Copilot Chat、Copilot | 高优先级降载；先关 workspace code search/local index，仍高 CPU 再 workspace disable | 父目录里的 AI 问答、补全、workspace 理解变弱 | Extension Host CPU、Copilot 日志、`code --status` |
+| 语言服务 / lint / notebook | Python、Ruff、Jupyter、Rust Analyzer、Go、ESLint | 高优先级按 workspace 降载或禁用；具体 repo 再打开 | 父目录里跳转、补全、lint、测试发现变弱 | 语言服务子进程、Extension Host CPU |
+| 依赖/漏洞扫描 | DependI、依赖分析类扩展 | 高优先级在父目录禁用 | 依赖提示、漏洞提示减少 | Extension Host CPU、扩展日志 |
+| 调试自动附加 | Node 调试自动附加、js-debug auto attach | 如果当前不调试 Node，可关闭 | 自动 attach 调试不可用；手动调试仍可按需打开 | Extension Host CPU、Running Extensions 是否减少 |
+| 终端建议 | VS Code 的终端建议、Terminal Suggest | 可关闭，低到中收益 | 终端命令补全/建议减少 | 体感输入、Running Extensions |
+| 合并冲突辅助 | 合并冲突、Merge Conflict | 可按需关闭 | 冲突 UI 辅助减少；Git 本身不受影响 | Running Extensions |
+| Web/HTML 辅助 | Emmet | 后端/文档/父目录窗口可关；前端 repo 建议保留 | HTML/CSS 缩写补全减少 | 体感、Running Extensions |
+| Git UI 核心 | Git、Git Base、GitHub、GitHub Authentication | 不建议第一步直接关；先用 `git.autorefresh=false`、`git.autoRepositoryDetection=false` | 关闭会影响 SCM 面板、登录、PR/issue 相关能力 | Source Control 扫描、Git 日志 |
+
+截图中若出现类似：
+- `GitHub Copilot Chat`：大目录高 CPU 时优先降载/禁用 workspace 索引。
+- `VS Code 的终端建议`：可以关，代价较低。
+- `Node 调试自动附加`：不调试 Node 时可以关。
+- `合并冲突`：不处理冲突时可关。
+- `Emmet`：父目录/后端场景可关，前端 repo 保留。
+- `Git / Git 基础 / GitHub`：先调 Git 设置，不要作为第一步直接关。
 
 ### 第四步：生成修复选项 + 预估收益（必须出现）
 
