@@ -1,402 +1,114 @@
 ---
 name: github-trending
-description: GitHub Trending 探索与分析。用于发现热门开源项目、技术趋势、开发者偏好，帮助理解技术社区的兴趣走向。
+description: GitHub Trending 探索与分析。用于发现热门开源项目、技术趋势、开发者偏好，帮助理解技术社区的兴趣走向。使用场景包括“看看今天 GitHub 什么火了”、“Rust 最近热门项目”、“AI 领域趋势日报”、“这个方向有没有值得关注的开源项目”、“帮我做个 GitHub trending 分析”。
 ---
+
 # GitHub Trending 探索
 
-## 核心能力
+**2026 版核心认知**：GitHub Trending 已是严重被 hype 和 AI slop 污染的榜单（Karpathy 等反复确认）。**本 skill 的唯一价值是「结构化数据 + 严格过滤 + 写出真实 angle」**，而不是再输出一份 list。
 
-- **趋势发现** — 实时获取 GitHub Trending 仓库和开发者
-- **技术洞察** — 分析热门项目背后的技术栈和架构
-- **社区脉搏** — 理解开发者社区的兴趣偏好和需求
-- **机会识别** — 发现潜在的开源贡献机会和学习方向
-
----
-
-## 使用场景
-
-| 场景 | 命令示例 |
-|------|----------|
-| 探索今日热门 | "看看今天 GitHub 上什么项目火了" |
-| 语言趋势 | "Rust 最近有什么热门项目" |
-| 领域研究 | "AI/ML 领域最近的趋势项目" |
-| 竞品分析 | "看看有没有类似 X 的热门项目" |
-| 技术选型 | "有什么热门的 React 组件库" |
-| 学习方向 | "最近什么技术在快速增长" |
+**职责边界**（严格遵守）：
+- 只负责**发现 + 趋势分析 + 日报/洞察报告**
+- **不负责**把结果加工成公众号/小红书/X 帖（用 `/scout-to-article` 或 `/blog-write`）
+- **不负责**多 AI 深度竞品/社区反应调研（用 `/multi-ai-research`）
 
 ---
 
-## 数据源
+## 何时触发（推荐触发词）
 
-### Primary: GitHub Trending
+- 探索今日/本周热门
+- “Rust / Python / Go 最近有什么好项目”
+- “AI / Agent / LLM 领域现在 trending 什么”
+- “帮我看看 GitHub trending，有没有类似 X 的项目”
+- “最近什么技术在快速增长，值得关注”
+- “做个 GitHub trending 日报 / 周报”
+- 想过滤 hype、要真实增长信号时
 
-```
-https://github.com/trending                    # 总榜
-https://github.com/trending/{language}         # 按语言
-https://github.com/trending?since=daily        # 今日
-https://github.com/trending?since=weekly       # 本周
-https://github.com/trending?since=monthly      # 本月
-https://github.com/trending/developers         # 热门开发者
-```
-
-### Secondary: GitHub API
-
-```
-# 搜索高星项目
-https://api.github.com/search/repositories?q=stars:>1000+pushed:>2024-01-01&sort=stars
-
-# 最近创建的热门项目
-https://api.github.com/search/repositories?q=created:>2024-06-01+stars:>100&sort=stars
-```
-
-### Supplementary Sources
-
-- **Hacker News** — https://news.ycombinator.com (Show HN)
-- **Product Hunt** — https://producthunt.com (开发者工具)
-- **Reddit** — r/programming, r/webdev, r/rust, r/golang
-- **X/Twitter** — 技术热点讨论
+**不适合**：纯快速事实查询（直接让 Claude 回答即可）。
 
 ---
 
-## 分析框架
+## 完整工作流（必须按顺序，不要跳步）
 
-### 项目评估维度
+1. **拿干净数据（优先用脚本）**
+   ```bash
+   # 在 skill 目录执行；如果 skill 已安装到 ~/.claude/skills，也可以换成对应安装路径
+   cd /path/to/claude-arsenal/skills/github-trending
 
-```markdown
-## 基础指标
-- Stars / Star 增长速度
-- Forks / Fork 活跃度
-- Contributors 数量
-- Issue/PR 活跃度
-- 最近提交频率
+   # 今日总榜 TOP 8
+   python3 scripts/fetch_trending.py --since daily --limit 8
 
-## 质量指标
-- README 完整度
-- 文档质量
-- 测试覆盖率
-- CI/CD 配置
-- License 类型
+   # Rust 周榜
+   python3 scripts/fetch_trending.py --since weekly --language Rust --limit 6
 
-## 社区指标
-- Issue 响应时间
-- PR 合并效率
-- Discussions 活跃度
-- 社区友好度 (good first issue)
+   # 开发者榜
+   python3 scripts/fetch_trending.py --developers --since daily --limit 10
+   ```
+   脚本输出结构化 JSON，**绝不直接 WebFetch 原始 HTML**。
 
-## 趋势指标
-- Star 增长曲线 (线性/指数/爆发)
-- 媒体曝光度
-- 被 fork/依赖的情况
-- 相关生态项目
-```
+2. **筛 TOP N + 过滤 hype**
+   - 默认 5-8 个
+   - 优先选 **stars_today 有真实增量 + forks 跟上 + 不是纯 awesome-list** 的
+   - 参考 `reference/extended.md` 中的「Hype 红旗」快速排除
 
-### 趋势解读模板
+3. **必要时轻度 enrich**
+   - 只对最终入榜的 2-3 个项目，必要时再用 WebFetch 看 README 头部或 Releases
+   - 不要一上来就读全量 README
 
-```markdown
-## 项目名称: {name}
+4. **套模板 + 必写 Angle**
+   - 用参考模板组织
+   - **最后必须有独立一段「今日观察 / Angle」**，这是产出价值所在
 
-### 一句话总结
-{这个项目解决什么问题，为什么火}
-
-### 核心数据
-- Stars: X (本周 +Y)
-- Language: Z
-- Created: YYYY-MM-DD
-- License: MIT/Apache/etc
-
-### 为什么火
-1. {原因1: 解决了什么痛点}
-2. {原因2: 技术上有何创新}
-3. {原因3: 社区/营销做得好}
-
-### 技术亮点
-- {亮点1}
-- {亮点2}
-
-### 适用场景
-- {场景1}
-- {场景2}
-
-### 潜在风险/局限
-- {风险1}
-- {风险2}
-
-### 相关/竞品项目
-- {项目A}: 区别是...
-- {项目B}: 区别是...
-```
+5. **输出 + 归档（可选）**
+   - 普通用户：直接给 Markdown 日报
+   - 想后续发文：把 JSON + angle 结构喂给下游 skill
 
 ---
 
-## 趋势分类
+## 脚本安装与依赖
 
-### 按热度类型
-
-```markdown
-## 1. 爆发型 (Viral)
-- 特征: 短时间内 star 暴涨 (1天1000+)
-- 原因: HN/Reddit 首页、名人推荐、解决热点问题
-- 风险: 可能只是 hype，需观察持续性
-
-## 2. 稳定增长型 (Steady)
-- 特征: 持续稳定增长 (每天 10-100 stars)
-- 原因: 真正解决问题，口碑传播
-- 信号: 通常质量较高，值得关注
-
-## 3. 周期型 (Cyclical)
-- 特征: 随特定事件周期性上榜
-- 例如: 年度总结类项目、面试题库
-- 特点: 可预测，有特定时间窗口
-
-## 4. 长尾型 (Long Tail)
-- 特征: 低调但持续有用
-- 原因: 特定领域的刚需工具
-- 价值: 往往是真正的生产力工具
+首次使用执行：
+```bash
+python3 -m pip install -r requirements.txt
 ```
 
-### 按项目类型
-
-```markdown
-## 工具类
-- CLI 工具
-- 开发者效率工具
-- 系统工具
-
-## 框架类
-- Web 框架
-- UI 组件库
-- 测试框架
-
-## AI/ML 类
-- LLM 应用
-- AI 工具链
-- 模型相关
-
-## 学习资源类
-- Awesome 列表
-- 教程/指南
-- 面试准备
-
-## 基础设施类
-- 数据库
-- 消息队列
-- 监控运维
+如果没有 `requirements.txt`，手动安装：
+```bash
+python3 -m pip install requests beautifulsoup4 lxml
 ```
+
+脚本位置：`scripts/fetch_trending.py`（相对本 skill 目录）。
+
+支持参数见脚本 `--help`。所有错误都会以清晰 JSON 返回，绝不静默失败。
 
 ---
 
-## 深度分析技巧
+## 输出硬性要求
 
-### 识别真正有价值的项目
+**日报结尾必须包含「Angle」段**，否则视为不合格输出。
 
-```markdown
-## 真正有价值的项目通常具备:
-✓ 解决明确的痛点问题
-✓ 有清晰的使用场景
-✓ 代码质量高，架构合理
-✓ 文档完善，易于上手
-✓ 维护活跃，响应及时
-✓ 社区友好，欢迎贡献
-
-## 可能只是 Hype 的信号:
-✗ 只有 README，代码很少
-✗ 概念大于实现
-✗ Star 多但 Fork 少
-✗ Issue 积压严重
-✗ 只有一个维护者
-✗ 没有实际使用案例
-```
-
-### 预测潜力项目
-
-```markdown
-## 早期信号
-- 知名开发者/公司背书
-- 解决新兴技术的痛点
-- 独特的技术方案
-- 清晰的 Roadmap
-- 活跃的早期社区
-
-## 增长潜力判断
-1. 市场: 目标用户群体大小
-2. 竞争: 是否有强力竞品
-3. 技术: 是否有护城河
-4. 团队: 维护者背景和投入
-5. 生态: 是否容易集成
-```
+好 Angle 特征：
+- 指出 1-2 个跨项目模式（技术演进、社区偏好、 hype 信号）
+- 给出可行动建议（“这个方向值得跟进，但优先看 fork 增长”）
+- 基于**今日真实数据**，不复述旧知识
 
 ---
 
-## 技术趋势追踪
+## 进阶场景
 
-### 2024-2025 热点领域
-
-```markdown
-## AI/LLM 工具链
-- RAG 框架 (LangChain, LlamaIndex)
-- Agent 框架 (AutoGPT, CrewAI)
-- 本地 LLM (Ollama, llama.cpp)
-- AI Code Assistant
-
-## Rust 生态爆发
-- 系统工具 Rust 重写
-- Web 框架 (Axum, Actix)
-- 前端工具链 (SWC, Turbopack)
-
-## Developer Experience
-- AI 辅助开发
-- 开发环境容器化
-- 类型安全全栈
-
-## 边缘计算
-- Edge Runtime (Cloudflare Workers, Deno Deploy)
-- WASM 应用
-
-## 可观测性
-- OpenTelemetry 生态
-- eBPF 工具
-```
-
-### 语言趋势
-
-```markdown
-## 上升趋势
-- Rust: 系统编程、WebAssembly
-- Go: 云原生、CLI 工具
-- TypeScript: 全栈开发、类型安全
-- Zig: 系统编程新秀
-
-## 稳定主流
-- Python: AI/ML、脚本
-- JavaScript: Web 开发
-- Java/Kotlin: 企业后端
-
-## 特定领域
-- Swift: Apple 生态
-- C#: 游戏、Windows
-- Elixir: 高并发系统
-```
+- **领域深度报告**：先用脚本按 language 拉月榜，再结合 `reference/extended.md` 里的评估框架写对比表。
+- **长期跟踪**：用 `/loop` 技能每天定时跑脚本 + 分析，输出到固定目录。
+- **想知道社区真实反应**：对重点项目再调用 `/multi-ai-research`。
+- **想发内容**：把结构化结果 + angle 交给 `scout-to-article`。
 
 ---
 
-## 输出格式
+## Extended Reference
 
-### 趋势日报
+所有详细框架（数据源、评估维度、hype 识别、趋势分类、好/坏 Angle 示例、scraper 维护提示、2026 社区共识）已移至 [`reference/extended.md`](reference/extended.md)。
 
-```markdown
-# GitHub Trending 日报 - {date}
-
-## 今日亮点
-{简短总结今日最值得关注的趋势}
-
-## 热门项目 TOP 5
-
-### 1. {project_name} ⭐ {stars} (+{daily_increase})
-> {one_line_description}
-
-**语言**: {language} | **License**: {license}
-**为什么火**: {reason}
-**适合谁**: {target_audience}
-
-[GitHub]({url}) | [Demo]({demo_url})
+日常触发时**不需要**读它。只有你要定制模板、维护脚本、或做高精度分析时再加载。
 
 ---
 
-### 2. ...
-
-## 技术趋势观察
-- {trend_observation_1}
-- {trend_observation_2}
-
-## 值得关注的新项目
-{刚起步但有潜力的项目}
-
-## 本周回顾
-{如果是周末，加入周总结}
-```
-
-### 领域深度报告
-
-```markdown
-# {领域} 技术趋势报告
-
-## 概述
-{领域现状和趋势概述}
-
-## 主流方案对比
-
-| 项目 | Stars | 特点 | 适用场景 |
-|------|-------|------|----------|
-| A    | 10k   | ...  | ...      |
-| B    | 8k    | ...  | ...      |
-
-## 技术演进
-{技术发展脉络}
-
-## 选型建议
-{根据不同需求的推荐}
-
-## 未来展望
-{预测未来发展方向}
-```
-
----
-
-## 实践建议
-
-### 如何利用 Trending
-
-```markdown
-## 学习
-- 阅读热门项目源码
-- 学习最佳实践
-- 了解新技术方向
-
-## 贡献
-- 寻找 good first issue
-- 提交 bug fix
-- 完善文档
-
-## 灵感
-- 发现创业/产品机会
-- 技术选型参考
-- 解决方案借鉴
-
-## 社交
-- 关注活跃开发者
-- 参与技术讨论
-- 建立行业联系
-```
-
-### 避免的陷阱
-
-```markdown
-✗ 不要盲目追热点
-✗ 不要只看 star 数
-✗ 不要忽视项目成熟度
-✗ 不要低估维护成本
-✗ 不要忽略社区活跃度
-```
-
----
-
-## 工具推荐
-
-### 趋势追踪
-
-- **GitHub Trending** — 官方趋势榜
-- **Star History** — https://star-history.com
-- **OSS Insight** — https://ossinsight.io
-- **GitHunt** — 每日推送热门项目
-
-### 项目分析
-
-- **Repobeats** — 仓库活跃度分析
-- **Snyk Advisor** — 安全和维护评分
-- **Libraries.io** — 依赖关系分析
-
-### 开发者洞察
-
-- **GitHub Profile README** — 了解开发者
-- **Git Awards** — 开发者排名
-- **Commit History** — 了解项目演进
+**更新记录**：2026-05 完整重构（引入可靠 scraper 层 + 严格 pipeline + 拆分 reference + 移除所有硬编码日期/旧趋势列表）。数据永远以脚本实时输出为准。

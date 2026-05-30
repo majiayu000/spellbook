@@ -14,3 +14,7 @@ Thumbs.db
 # Local testing
 .local/
 tmp/
+
+# Python
+__pycache__/
+*.py[cod]
