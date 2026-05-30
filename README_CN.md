@@ -23,6 +23,10 @@
 
 ---
 
+> **改名说明：** Spellbook 原名 **Claude Arsenal**。Claude Code 仍是一等支持目标；新名称是为了覆盖 Claude Code、Codex 与跨 Runtime agent skills 的长期路线。详情见[迁移说明](./docs/migration-from-claude-arsenal.md)。
+
+---
+
 ## 快速开始
 
 ### 一键安装（所有技能）
