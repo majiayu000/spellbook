@@ -20,8 +20,8 @@ metadata:
 读取 Clash Verge 配置获取 API secret：
 
 ```bash
-SECRET=$(grep '^secret:' "/Users/lifcc/Library/Application Support/io.github.clash-verge-rev.clash-verge-rev/clash-verge.yaml" 2>/dev/null | awk '{print $2}')
-[ -z "$SECRET" ] && SECRET=$(grep '^secret:' "/Users/lifcc/.config/clash/config.yaml" 2>/dev/null | awk '{print $2}')
+SECRET=$(grep '^secret:' "$HOME/Library/Application Support/io.github.clash-verge-rev.clash-verge-rev/clash-verge.yaml" 2>/dev/null | awk '{print $2}')
+[ -z "$SECRET" ] && SECRET=$(grep '^secret:' "$HOME/.config/clash/config.yaml" 2>/dev/null | awk '{print $2}')
 echo "Secret: ${SECRET:-(未找到)}"
 ```
 
@@ -36,7 +36,7 @@ if [ -S "$SOCKET" ]; then
   CONNECTIONS=$(curl -s --unix-socket "$SOCKET" "http://localhost/connections" -H "Authorization: Bearer $SECRET" 2>/dev/null)
 else
   # HTTP fallback
-  CONTROLLER=$(grep '^external-controller:' "/Users/lifcc/Library/Application Support/io.github.clash-verge-rev.clash-verge-rev/clash-verge.yaml" 2>/dev/null | awk '{print $2}' | tr -d "'\"")
+  CONTROLLER=$(grep '^external-controller:' "$HOME/Library/Application Support/io.github.clash-verge-rev.clash-verge-rev/clash-verge.yaml" 2>/dev/null | awk '{print $2}' | tr -d "'\"")
   [ -z "$CONTROLLER" ] && CONTROLLER="127.0.0.1:9090"
   CONNECTIONS=$(curl -s "http://$CONTROLLER/connections" -H "Authorization: Bearer $SECRET" 2>/dev/null)
 fi
@@ -110,14 +110,14 @@ for process, conns in sorted(grouped.items()):
 将上面的步骤组合成一个完整的 bash 命令执行：
 
 ```bash
-SECRET=$(grep '^secret:' "/Users/lifcc/Library/Application Support/io.github.clash-verge-rev.clash-verge-rev/clash-verge.yaml" 2>/dev/null | awk '{print $2}')
+SECRET=$(grep '^secret:' "$HOME/Library/Application Support/io.github.clash-verge-rev.clash-verge-rev/clash-verge.yaml" 2>/dev/null | awk '{print $2}')
 SOCKET="/var/tmp/verge/verge-mihomo.sock"
 FILTER="$ARGUMENTS"
 
 if [ -S "$SOCKET" ]; then
   DATA=$(curl -s --unix-socket "$SOCKET" "http://localhost/connections" -H "Authorization: Bearer $SECRET" 2>/dev/null)
 else
-  CONTROLLER=$(grep '^external-controller:' "/Users/lifcc/Library/Application Support/io.github.clash-verge-rev.clash-verge-rev/clash-verge.yaml" 2>/dev/null | awk '{print $2}' | tr -d "'\"")
+  CONTROLLER=$(grep '^external-controller:' "$HOME/Library/Application Support/io.github.clash-verge-rev.clash-verge-rev/clash-verge.yaml" 2>/dev/null | awk '{print $2}' | tr -d "'\"")
   [ -z "$CONTROLLER" ] && CONTROLLER="127.0.0.1:9090"
   DATA=$(curl -s "http://$CONTROLLER/connections" -H "Authorization: Bearer $SECRET" 2>/dev/null)
 fi

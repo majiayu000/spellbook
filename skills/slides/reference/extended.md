@@ -4,6 +4,8 @@ This file preserves detailed material moved out of `SKILL.md` for progressive di
 
 Moved content starts at: `## 工作流程`.
 
+> 本文中的 `<设计系统目录>` 指你的设计系统 CSS 所在目录，使用时替换为绝对路径（例如 `~/Desktop/code/work/life/xhh`）。
+
 ## 工作流程
 
 ### 第一步：确认输入 + 判断内容类型
@@ -84,7 +86,7 @@ Moved content starts at: `## 工作流程`.
 ### 第四步：创建输出目录 + 逐页写 HTML
 
 ```bash
-mkdir -p /Users/lifcc/Desktop/code/work/life/xhh/voiceover/<slug>
+mkdir -p <设计系统目录>/voiceover/<slug>
 ```
 
 先写 cover.html，然后用 Write 工具逐页生成 HTML 文件：`slide_01.html`, `slide_02.html`, ...
@@ -348,8 +350,8 @@ CSS 通过 Google Fonts CDN 加载 Noto Sans SC + Space Grotesk。Chrome headles
 每页 HTML 引用两个 CSS 文件：
 
 ```html
-<link rel="stylesheet" href="file:///Users/lifcc/Desktop/code/work/life/xhh/design-system.css">
-<link rel="stylesheet" href="file:///Users/lifcc/Desktop/code/work/life/xhh/design-system-slides.css">
+<link rel="stylesheet" href="file://<设计系统目录>/design-system.css">
+<link rel="stylesheet" href="file://<设计系统目录>/design-system-slides.css">
 ```
 
 ## 文件组织
@@ -383,7 +385,7 @@ CSS 通过 Google Fonts CDN 加载 Noto Sans SC + Space Grotesk。Chrome headles
 | data | 顶部标题+数据卡片网格 | `.slide-data` | `templates/slides/data.html` |
 | ending | 居中总结+CTA+品牌 | `.slide-ending` | `templates/slides/ending.html` |
 
-模板文件路径前缀：`/Users/lifcc/Desktop/code/work/life/xhh/`
+模板文件路径前缀：`<设计系统目录>/`
 
 ## 结构规则
 

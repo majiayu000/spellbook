@@ -31,12 +31,12 @@ git config user.name
 
 **前端仓库**：
 ```bash
-git -C /Users/lifcc/Desktop/code/work/mutil-om/om-generator-web log --author="<用户名>" --after="<DATE_START>" --before="<DATE_END + 1天>" --oneline --no-merges --all
+git -C $HOME/Desktop/code/work/mutil-om/om-generator-web log --author="<用户名>" --after="<DATE_START>" --before="<DATE_END + 1天>" --oneline --no-merges --all
 ```
 
 **后端仓库**：
 ```bash
-git -C /Users/lifcc/Desktop/code/work/mutil-om/om-generator log --author="<用户名>" --after="<DATE_START>" --before="<DATE_END + 1天>" --oneline --no-merges --all
+git -C $HOME/Desktop/code/work/mutil-om/om-generator log --author="<用户名>" --after="<DATE_START>" --before="<DATE_END + 1天>" --oneline --no-merges --all
 ```
 
 对每个有意义的提交，用 `git show --stat <hash>` 查看改动范围。
@@ -45,8 +45,10 @@ git -C /Users/lifcc/Desktop/code/work/mutil-om/om-generator log --author="<用�
 
 读取两个项目的 sessions-index.json：
 
-- 前端：`~/.claude/projects/-Users-lifcc-Desktop-code-work-mutil-om-om-generator-web/sessions-index.json`
-- 后端：`~/.claude/projects/-Users-lifcc-Desktop-code-work-mutil-om-om-generator/sessions-index.json`
+- 前端：`~/.claude/projects/<om-generator-web 绝对路径转义>/sessions-index.json`
+- 后端：`~/.claude/projects/<om-generator 绝对路径转义>/sessions-index.json`
+
+> 注：Claude Code 把项目 cwd 绝对路径转义为目录名（`/` 替换为 `-`），例如 `$HOME/Desktop/code/work/mutil-om/om-generator` → `-Users-<用户名>-Desktop-code-work-mutil-om-om-generator`。
 
 JSON 结构为 `{ version, entries: [{ sessionId, summary, firstPrompt, created, modified, gitBranch, messageCount }] }`。
 
@@ -93,7 +95,7 @@ search(query="om-generator", dateStart="<DATE_START>", dateEnd="<DATE_END>")
 
 ## 步骤 7：生成周报文档
 
-输出文件路径：`/Users/lifcc/Desktop/code/work/mutil-om/docs/weekly/YYYY-MM-DD_to_YYYY-MM-DD.md`
+输出文件路径：`$HOME/Desktop/code/work/mutil-om/docs/weekly/YYYY-MM-DD_to_YYYY-MM-DD.md`
 
 文档格式：
 

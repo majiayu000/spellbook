@@ -110,7 +110,7 @@ use_git_detection: true
 ### Phase 4：执行与验证
 1. 使用 auto-run-agent 启动：
 ```bash
-cd /Users/apple/Desktop/code/AI/tool/auto-run-agent
+cd <auto-run-agent 目录>
 ./orchestrator --dir <runner-dir> --max-iterations 50 --max-cost 0 --max-duration 6
 ```
 2. Worker 执行规则：
@@ -154,7 +154,7 @@ auto-optimize/
 - 用户可随时编辑 TASKS.md 插入新任务或调整优先级
 
 ## 注意事项
-- auto-run-agent 位于 `/Users/apple/Desktop/code/AI/tool/auto-run-agent`
+- auto-run-agent 位于 `<auto-run-agent 目录>`
 - 目标项目必须先 commit 干净再切分支，确保可回滚
 - workspace 用软链接，不复制代码
 - 多个项目可同时运行，互不影响（注意 API rate limit）

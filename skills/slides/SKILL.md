@@ -60,12 +60,14 @@ metadata:
 
 ## 设计系统
 
-CSS 文件：`/Users/lifcc/Desktop/code/work/life/xhh/design-system-voiceover.css`
+CSS 文件：`<设计系统目录>/design-system-voiceover.css`
+
+> `<设计系统目录>` 指你的设计系统 CSS 所在目录，生成 HTML 时替换为绝对路径（例如 `~/Desktop/code/work/life/xhh`）。
 
 每页 HTML 只引用这一个 CSS：
 
 ```html
-<link rel="stylesheet" href="file:///Users/lifcc/Desktop/code/work/life/xhh/design-system-voiceover.css">
+<link rel="stylesheet" href="file://<设计系统目录>/design-system-voiceover.css">
 ```
 
 ### 背景主题（13 种，自动选择）
@@ -157,7 +159,7 @@ CSS 文件：`/Users/lifcc/Desktop/code/work/life/xhh/design-system-voiceover.cs
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="file:///Users/lifcc/Desktop/code/work/life/xhh/design-system-voiceover.css">
+  <link rel="stylesheet" href="file://<设计系统目录>/design-system-voiceover.css">
 </head>
 <body class="vo-warm">
   <div class="vo-slide">
@@ -264,7 +266,7 @@ slide_02: 反直觉的答案
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="file:///Users/lifcc/Desktop/code/work/life/xhh/design-system-voiceover.css">
+  <link rel="stylesheet" href="file://<设计系统目录>/design-system-voiceover.css">
 </head>
 <body class="vo-warm vo-cover-bg-boost">
   <div class="vo-slide vo-cover">
