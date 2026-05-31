@@ -360,11 +360,12 @@
     "category": "Content & Research",
     "format": "directory",
     "path": "skills/github-trending/SKILL.md",
-    "description": "GitHub Trending 探索与分析。用于发现热门开源项目、技术趋势、开发者偏好，帮助理解技术社区的兴趣走向。",
+    "description": "GitHub Trending 探索与分析。用于发现热门开源项目、技术趋势、开发者偏好，帮助理解技术社区的兴趣走向。使用场景包括“看看今天 GitHub 什么火了”、“Rust 最近热门项目”、“AI 领域趋势日报”、“这个方向有没有值得关注的开源项目”、“帮我做个 GitHub trending 分析”。",
     "language": "zh",
     "tags": [
       "content",
-      "research"
+      "research",
+      "rust"
     ]
   },
   {
@@ -473,6 +474,15 @@
       "performance",
       "proxy"
     ]
+  },
+  {
+    "name": "personal-arsenal-lifecycle-doctor",
+    "category": "Uncategorized",
+    "format": "directory",
+    "path": "skills/personal-arsenal-lifecycle-doctor/SKILL.md",
+    "description": "扫描并诊断你个人 ~/.claude/skills 里的技能健康状态。当用户说以下任意内容时使用： - “我的技能失效了”“升级后老技能不认了” - “技能腐烂了”“外部依赖坏了”“我的个人 Arsenal 乱了” - “帮我检查技能健康”“技能生命周期”“长期维护技能” - “我 1-2 年前超好用的 Skill 现在 Claude 完全不认了” - “我的部署类技能现在执行不了了，外部项目下线了” 特别适合维护 1 年以上个人技能集合（Arsenal + 自定义 + 社区拷贝混合）的重度用户。 Always protect 用户现有的 CLAUDE.md / AGENTS.md / 自定义配置，只读优先，任何修改必须用户明确确认后才执行。 发现问题时优先给出最小变更 + 备份建议，绝不擅自大规模修改。",
+    "language": "zh",
+    "tags": []
   },
   {
     "name": "plan-flow",
@@ -861,6 +871,20 @@
     ]
   },
   {
+    "name": "vscode-doctor",
+    "category": "Uncategorized",
+    "format": "directory",
+    "path": "skills/vscode-doctor/SKILL.md",
+    "description": "Diagnose slow or freezing VS Code-compatible editors with evidence-first, zero-hardcoded-assumption workflow. Use when the user reports editor lag, typing delay, UI freezes, extension host stalls, file watcher noise, high editor CPU/RSS, or wants a safe editor performance audit.",
+    "language": "en",
+    "tags": [
+      "debugging",
+      "frontend",
+      "performance",
+      "system"
+    ]
+  },
+  {
     "name": "web-artifacts-builder",
     "category": "UI/UX & Frontend",
     "format": "directory",
@@ -901,6 +925,17 @@
     "format": "directory",
     "path": "skills/xiaohongshu/SKILL.md",
     "description": "生成小红书文案和配图。当用户需要写小红书、生成社交媒体文案、小红书运营内容时使用",
+    "language": "zh",
+    "tags": [
+      "content"
+    ]
+  },
+  {
+    "name": "xiaohongshu-netfeel-guardian",
+    "category": "Uncategorized",
+    "format": "directory",
+    "path": "skills/xiaohongshu-netfeel-guardian/SKILL.md",
+    "description": "当用户用 Claude 写小红书、公众号、视频脚本等内容时，输出出现翻译腔、英文思考、西式框架，导致“像外国人假装写中文”时使用。 典型触发语句： - “Claude写小红书翻译腔太重”“英文思考输出灾难” - “帮我把这个笔记改成纯中文网感”“去除Claude翻译腔” - “公众号文章中途变英文了”“50 Skills内容生成翻车” - “强制Claude用中文思考写笔记”“小红书情绪化表达润色” 始终保护用户原有的 CLAUDE.md / AGENTS.md 中的人设与语气要求，只做最小必要干预。优先与 xiaohongshu 技能组合使用。",
     "language": "zh",
     "tags": [
       "content"

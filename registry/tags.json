@@ -1,5 +1,5 @@
 {
-  "total_skills": 76,
+  "total_skills": 79,
   "total_tags": 36,
   "tag_counts": {
     "agent": 5,
@@ -8,21 +8,21 @@
     "backend": 9,
     "browser": 3,
     "code-review": 11,
-    "content": 6,
+    "content": 7,
     "database": 2,
-    "debugging": 5,
+    "debugging": 6,
     "deploy": 5,
     "design-system": 2,
     "devops": 2,
     "documentation": 7,
-    "frontend": 13,
+    "frontend": 14,
     "go": 4,
     "harmonyos": 1,
     "javascript": 5,
     "mcp": 1,
     "multi-ai": 5,
     "observability": 3,
-    "performance": 6,
+    "performance": 7,
     "product-management": 4,
     "prompt": 1,
     "proxy": 3,
@@ -30,9 +30,9 @@
     "react": 7,
     "refactoring": 3,
     "research": 1,
-    "rust": 3,
+    "rust": 4,
     "security": 3,
-    "system": 5,
+    "system": 6,
     "testing": 6,
     "typescript": 4,
     "ux": 3,
@@ -103,7 +103,8 @@
       "slides",
       "trip-planner",
       "weekly",
-      "xiaohongshu"
+      "xiaohongshu",
+      "xiaohongshu-netfeel-guardian"
     ],
     "database": [
       "cliproxy-newapi-stack",
@@ -114,7 +115,8 @@
       "fixflow",
       "optimize-network",
       "rustdesk-doctor",
-      "systematic-debugging"
+      "systematic-debugging",
+      "vscode-doctor"
     ],
     "deploy": [
       "cliproxy-deploy",
@@ -152,6 +154,7 @@
       "ui-design-system",
       "ui-designer",
       "ui-ux-pro-max",
+      "vscode-doctor",
       "web-artifacts-builder",
       "web-asset-generator"
     ],
@@ -192,6 +195,7 @@
       "react-best-practices",
       "rust-best-practices",
       "skill-creator",
+      "vscode-doctor",
       "zig-project"
     ],
     "product-management": [
@@ -231,6 +235,7 @@
       "github-trending"
     ],
     "rust": [
+      "github-trending",
       "rust-best-practices",
       "rust-project",
       "server-deploy"
@@ -245,7 +250,8 @@
       "disk-cleaner",
       "gpu-use",
       "rustdesk-doctor",
-      "system-doctor"
+      "system-doctor",
+      "vscode-doctor"
     ],
     "testing": [
       "comprehensive-testing",
