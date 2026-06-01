@@ -56,6 +56,25 @@ git clone https://github.com/majiayu000/spellbook.git
 
 ### Skills
 
+For repository-local installation, prefer `install.sh --skills <skill-name>` because it supports both source layouts and both runtime targets:
+
+- Directory skills: `skills/<skill-name>/SKILL.md`
+- File skills: `skills/<skill-name>.SKILL.md`
+
+Use the generated [Skill Registry](./skill-registry.md) to check a skill's `format` and source path.
+
+#### Directory skill
+
+```bash
+# Claude Code
+cp -R skills/<skill-name> ~/.claude/skills/<skill-name>
+
+# Codex
+cp -R skills/<skill-name> ~/.codex/skills/<skill-name>
+```
+
+#### File skill
+
 ```bash
 # Claude Code: create skill directory (each skill needs its own subdirectory)
 mkdir -p ~/.claude/skills/<skill-name>

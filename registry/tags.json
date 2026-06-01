@@ -6,7 +6,7 @@
     "architecture": 14,
     "auth": 3,
     "backend": 9,
-    "browser": 3,
+    "browser": 4,
     "code-review": 11,
     "content": 7,
     "database": 2,
@@ -82,7 +82,8 @@
     "browser": [
       "ask-opencli",
       "clash-routes",
-      "playwright-automation"
+      "playwright-automation",
+      "vscode-doctor"
     ],
     "code-review": [
       "codebase-audit",

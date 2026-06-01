@@ -14,6 +14,7 @@
   <p>
     <a href="#quick-start">Quick Start</a> •
     <a href="#runtime-targets">Runtime Targets</a> •
+    <a href="#pick-a-workflow">Pick a Workflow</a> •
     <a href="#skills">Skills</a> •
     <a href="#agents">Agents</a> •
     <a href="#contributing">Contributing</a> •
@@ -71,9 +72,37 @@ Claude Code remains a first-class target and search entry. The project was forme
 
 ---
 
+## Pick a Workflow
+
+Start with a small bundle that matches the job, then add more skills when the workflow sticks.
+
+| Workflow | Install | Good for |
+|---|---|---|
+| Frontend and UI | `./install.sh --target all --skills frontend-design,app-ui-design,ui-design-system,figma-to-react` | Product UI, landing pages, design systems, Figma handoff |
+| Code quality | `./install.sh --target all --skills codebase-audit,fixflow,optflow,systematic-debugging` | Audits, bug fixes, refactors, root-cause debugging |
+| Ops and deploy | `./install.sh --target all --skills server-deploy,server-security,clash-doctor,system-doctor` | Shipping apps, hardening servers, diagnosing local and network issues |
+| Product and docs | `./install.sh --target all --skills product-discovery,prd-master,technical-spec,product-analytics` | Discovery, PRDs, technical specs, metrics plans |
+| Agent workflows | `./install.sh --target all --skills codex-agent,multi-ai-research,strategic-compact,vibeguard` | Cross-review, multi-AI research, context handoff, anti-hallucination checks |
+
+High-signal individual skills to try first: `github-trending`, `harmonyos-app`, `app-ui-design`, `product-discovery`, `xiaohongshu`, `codebase-audit`, and `server-deploy`.
+
+See [Showcase](./docs/showcase.md) for copy-paste prompts and expected outputs.
+
+---
+
+## Why Spellbook
+
+- **Cross-runtime install**: one source tree can install into Claude Code and Codex.
+- **Validated registry**: every installable skill is checked by `python3 scripts/validate_skills.py --check`.
+- **Progressive disclosure**: larger skills use `references/`, `templates/`, `scripts/`, and eval files instead of one giant prompt.
+- **Practical coverage**: engineering, operations, product, UI, content, and agent workflows live in one catalog.
+
+---
+
 ## Skills
 
 > The generated full skill inventory lives in [Skill Registry](./docs/skill-registry.md).
+> Skill layout rules live in [Skill Format Policy](./docs/skill-format-policy.md).
 
 ### Search the Registry
 
@@ -238,6 +267,8 @@ Every skill in Spellbook follows these principles:
 |----------|-------------|
 | [Installation Guide](./docs/installation.md) | Detailed setup instructions |
 | [Runtime Targets](./docs/runtime-targets.md) | Claude Code and Codex installation targets |
+| [Showcase](./docs/showcase.md) | Copy-paste workflow demos |
+| [Skill Format Policy](./docs/skill-format-policy.md) | Directory vs file skill layout rules |
 | [Skill Testing Guide](./docs/skill-testing-guide.md) | How to validate skills work |
 | [Creating Plugins](./docs/creating-plugins.md) | Build your own skills |
 | [Product Lifecycle (EN)](./docs/product-lifecycle-skills-en.md) | Full lifecycle coverage |

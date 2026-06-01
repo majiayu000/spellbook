@@ -108,6 +108,7 @@ CATEGORY_BY_NAME = {
     "server-deploy": "Operations & Deploy",
     "server-security": "Operations & Deploy",
     "system-doctor": "Operations & Deploy",
+    "vscode-doctor": "Operations & Deploy",
     # Content and reporting
     "github-trending": "Content & Research",
     "humanizer": "Content & Research",

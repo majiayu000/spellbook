@@ -14,6 +14,7 @@
   <p>
     <a href="#快速开始">快速开始</a> •
     <a href="#runtime-目标">Runtime 目标</a> •
+    <a href="#选择工作流">选择工作流</a> •
     <a href="#技能列表">技能列表</a> •
     <a href="#智能体">智能体</a> •
     <a href="#贡献">贡献</a> •
@@ -71,9 +72,37 @@ Claude Code 仍是一等支持目标，也是用户搜索和认知入口。项�
 
 ---
 
+## 选择工作流
+
+先安装一个贴近当前任务的小组合，跑通后再扩展更多 skills。
+
+| 工作流 | 安装命令 | 适合场景 |
+|---|---|---|
+| 前端与 UI | `./install.sh --target all --skills frontend-design,app-ui-design,ui-design-system,figma-to-react` | 产品界面、落地页、设计系统、Figma 交付 |
+| 代码质量 | `./install.sh --target all --skills codebase-audit,fixflow,optflow,systematic-debugging` | 代码审计、Bug 修复、重构、根因定位 |
+| 运维与部署 | `./install.sh --target all --skills server-deploy,server-security,clash-doctor,system-doctor` | 应用上线、服务器加固、本地与网络诊断 |
+| 产品与文档 | `./install.sh --target all --skills product-discovery,prd-master,technical-spec,product-analytics` | 用户发现、PRD、技术方案、指标设计 |
+| Agent 工作流 | `./install.sh --target all --skills codex-agent,multi-ai-research,strategic-compact,vibeguard` | 交叉审查、多 AI 调研、上下文交接、防幻觉检查 |
+
+优先体验的高信号单项：`github-trending`、`harmonyos-app`、`app-ui-design`、`product-discovery`、`xiaohongshu`、`codebase-audit`、`server-deploy`。
+
+可复制的试用 prompt 见 [Showcase](./docs/showcase.md)。
+
+---
+
+## 为什么用 Spellbook
+
+- **跨 Runtime 安装**：一份源文件可以安装到 Claude Code 和 Codex。
+- **注册表已校验**：所有可安装 skill 都通过 `python3 scripts/validate_skills.py --check`。
+- **渐进式披露**：复杂 skill 使用 `references/`、`templates/`、`scripts/` 和 eval 文件，不把所有内容塞进一个超长 prompt。
+- **覆盖真实工作流**：工程、运维、产品、UI、内容和 agent 工作流在一个目录里统一管理。
+
+---
+
 ## 技能列表
 
 > 完整的自动生成清单位于 [Skill Registry](./docs/skill-registry.md)。
+> 技能目录/单文件格式规则见 [Skill Format Policy](./docs/skill-format-policy.md)。
 
 ### 检索技能
 
@@ -236,6 +265,8 @@ Spellbook 中的每个技能都遵循以下原则：
 |------|------|
 | [安装指南](./docs/installation.md) | 详细的安装说明 |
 | [Runtime 目标](./docs/runtime-targets.md) | Claude Code 与 Codex 安装目标 |
+| [Showcase](./docs/showcase.md) | 可直接复制的工作流演示 |
+| [技能格式策略](./docs/skill-format-policy.md) | 目录型与单文件 skill 的格式规则 |
 | [技能测试指南](./docs/skill-testing-guide.md) | 如何验证技能是否生效 |
 | [创建插件](./docs/creating-plugins.md) | 构建你自己的技能 |
 | [产品生命周期（英文）](./docs/product-lifecycle-skills-en.md) | 完整生命周期覆盖 |
