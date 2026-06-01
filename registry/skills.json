@@ -841,6 +841,20 @@
     ]
   },
   {
+    "name": "vscode-doctor",
+    "category": "Operations & Deploy",
+    "format": "directory",
+    "path": "skills/vscode-doctor/SKILL.md",
+    "description": "Diagnose slow or freezing VS Code-compatible editors with evidence-first, zero-hardcoded-assumption workflow. Use when the user reports editor lag, typing delay, UI freezes, extension host stalls, file watcher noise, high editor CPU/RSS, uses VS Code for browsing files in a large folder, or wants a safe editor performance audit.",
+    "language": "en",
+    "tags": [
+      "debugging",
+      "frontend",
+      "performance",
+      "system"
+    ]
+  },
+  {
     "name": "web-artifacts-builder",
     "category": "UI/UX & Frontend",
     "format": "directory",

@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Claude Arsenal</h1>
-  <p><strong>74 Production-Ready Skills | 7 Specialized Agents | One Command Install | Validated Registry</strong></p>
+  <p><strong>75 Production-Ready Skills | 7 Specialized Agents | One Command Install | Validated Registry</strong></p>
 
   <p>An opinionated Claude Code skill pack for real engineering work: debugging, code review, frontend design, DevOps, product specs, deployment, and AI-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/claude-arsenal/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/claude-arsenal?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/claude-arsenal/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/claude-arsenal?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-74-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-75-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
     <img src="https://img.shields.io/badge/registry-validated-brightgreen?style=flat-square" alt="Registry validated">
   </p>
