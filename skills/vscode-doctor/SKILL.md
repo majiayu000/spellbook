@@ -50,7 +50,7 @@ Use this routing table before analysis:
 | Mode | User intent signal | Allowed first actions | Do not do | Verify with |
 |---|---|---|---|---|
 | Preserve large workspace | "keep the parent folder", "optimize big workspace", "do not close workspace" | watcher/search/language-service exclusions scoped to the workspace; extension profiling; settings proposals | close the parent workspace, open only a child folder, claim file count should shrink | `--status` still shows the large workspace; no new watcher storm; quieter search/language-service processes |
-| File browser workspace | "use VS Code as a file browser", "I still want to see/edit files", "can it keep listening without lag" | explain workspace semantics; keep Explorer visibility by default; propose selective watcher/search exclusions for noisy paths; optionally propose a lightweight profile | hide folders with `files.exclude`, shrink the workspace, or disable extensions as the default fix | excluded paths remain openable/editable if visible; non-excluded paths still update; no new watcher storm for noisy paths |
+| File browser workspace | "use VS Code as a file browser", "I still want to see/edit files", "can it keep listening without lag" | explain workspace semantics; keep Explorer visibility by default; propose selective watcher/search exclusions for noisy paths; offer a tiered lightweight/file-browser profile when the user is willing to trade coding intelligence for browsing speed | hide folders with `files.exclude`, shrink the workspace, or silently disable coding features as the default fix | excluded paths remain openable/editable if visible; non-excluded paths still update; no new watcher storm for noisy paths |
 | Narrow workspace | "open only this project", "I do not need the parent folder" | open/reuse a smaller folder after confirmation; compare workspace surface | present narrowing as the default fix for large-workspace optimization | `--status` shows the intended smaller folder; file/project-root count drops |
 | Extension profiling | "extensions are slow", Running Extensions evidence, extension-host CPU/RSS | profile, bisect, or workspace-disable named extensions seen in evidence | use a fixed extension blocklist or global disablement without confirmation | extension-host CPU/RSS, Running Extensions output, before/after profile |
 | Cache/log maintenance | large data dir, corrupt cache/log evidence, user asks cleanup | inspect sizes; propose cache/log cleanup with rollback or regeneration notes | delete caches/logs as a generic first fix | data sizes, startup behavior, error recurrence |
@@ -122,6 +122,16 @@ Workspace setting semantics to explain when relevant:
 - `search.exclude` removes matched paths from default workspace search. Files can still be opened and edited; users can temporarily include them by overriding exclude settings in the search UI.
 - `files.exclude` hides matched paths from Explorer. Do not recommend it for file-browser workflows unless the user explicitly wants those paths hidden.
 - Fully live-watching every high-churn directory in a very large workspace while guaranteeing no lag is not a realistic promise. Recommend selective watching: keep normal source paths watched and exclude only evidence-backed noisy/generated/high-churn paths.
+
+## File Browser Option Ladder
+
+Use this when the user treats VS Code primarily as a file browser over a large folder. Present options explicitly so the user can choose the tradeoff before any write:
+
+1. **Conservative browsing**: keep coding features on; add only evidence-backed `files.watcherExclude` and `search.exclude` for high-churn/generated paths. This is the default when the user still edits code and wants IntelliSense, linting, Git refresh, or AI assistance.
+2. **Large-folder quiet mode**: keep files visible and editable, but reduce background analysis with workspace-scoped language-tool excludes such as Python analysis excludes, Rust analyzer exclude dirs, and Git auto-detection/auto-refresh reductions when those tools are installed or already active. Validate exact setting names from installed extension schemas or current settings before proposing JSON.
+3. **File-browser profile**: for users who explicitly say they only browse/edit files and do not need coding intelligence, offer a separate VS Code profile or workspace-scoped proposal that disables or quiets language servers, linting, AI code search, dependency scanners, test discovery, minimap, and motion-heavy UI. Name the lost features plainly: IntelliSense/diagnostics, lint/fix/imports, Copilot/code search context, dependency alerts, Git auto-refresh, and test discovery.
+
+Do not require live evidence of high CPU from Ruff, Copilot, Dependi, Python, Rust, or Git before offering option 3 when the user's intent is explicitly a lightweight file-browser experience. Still do not apply it automatically. Show the proposed diff, say what capability is removed, and include rollback. If the user's goal is performance diagnosis rather than a browsing profile, keep extension and language-service disablement evidence-driven.
 
 ## Large Workspace Playbook
 

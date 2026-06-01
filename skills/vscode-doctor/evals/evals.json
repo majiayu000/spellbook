@@ -123,7 +123,16 @@
       "id": 14,
       "name": "file-browser-workspace-visibility",
       "prompt": "我只是把 VS Code 当文件浏览器打开一个很大的父目录。有没有既能继续看见和编辑文件、又尽量不卡的方案？",
-      "expected_output": "应该进入文件浏览器式 workspace 路由，解释 workspace 仍会触发后台监听/搜索/语言服务；应该区分 files.watcherExclude、search.exclude 和 files.exclude 的副作用，默认保留 Explorer 可见性，只建议对证据支持的高频/生成目录做 watcher/search 排除；不得把隐藏目录、缩小 workspace、禁用扩展或承诺全量监听且不卡作为默认答案。",
+      "expected_output": "应该进入文件浏览器式 workspace 路由，解释 workspace 仍会触发后台监听/搜索/语言服务；应该区分 files.watcherExclude、search.exclude 和 files.exclude 的副作用，默认保留 Explorer 可见性；应该提供保守浏览、large-folder quiet mode、file-browser profile 等可选档位，并明确每档牺牲的能力；不得把隐藏目录、缩小 workspace、静默禁用扩展或承诺全量监听且不卡作为默认答案。",
+      "category": "workspace-surface",
+      "difficulty": "high",
+      "files": []
+    },
+    {
+      "id": 15,
+      "name": "explicit-file-browser-profile",
+      "prompt": "我完全把 VS Code 当文件浏览器，不需要 Ruff、Copilot、Dependi、Python/Rust 智能提示和 Git 自动刷新。给我一个不会隐藏文件的轻量配置选项。",
+      "expected_output": "应该把用户明确选择 file-browser profile 视为足够意图，可以提供禁用/降噪 Ruff、Copilot、Dependi、语言服务、测试发现和 Git 自动刷新的选项；仍然必须说明这些功能会失效或变弱，不能使用 files.exclude 隐藏文件，不能直接应用设置，必须给 diff、验证和回滚。",
       "category": "workspace-surface",
       "difficulty": "high",
       "files": []

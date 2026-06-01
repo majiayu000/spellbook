@@ -10,6 +10,7 @@ Verify that the skill diagnoses editor performance without hardcoded local paths
 - Runs the collector from the script file, not through stdin, so editor CLI status probes cannot consume the rest of the script.
 - Preserves a large workspace when the user asks to optimize that experience.
 - Preserves file-browser visibility/editability by default, and distinguishes watcher, search, and Explorer excludes.
+- Offers tiered file-browser profile options when the user explicitly wants browsing speed over coding intelligence.
 - Ranks findings only from evidence present in the current prompt/output.
 - Treats operating-system, renderer, watcher, extension, and cache issues as candidate classes, not as guaranteed causes.
 - Uses placeholders for paths and commands in examples.
