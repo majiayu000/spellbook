@@ -589,8 +589,8 @@ export default function ProductPageUITest() {
 
 ## See Also
 
-- [reference/arkts.md](reference/arkts.md) — ArkTS language guide and restrictions
-- [reference/arkui.md](reference/arkui.md) — ArkUI components and styling
-- [reference/stage-model.md](reference/stage-model.md) — Stage model architecture
-- [reference/distributed.md](reference/distributed.md) — Distributed capabilities guide
-- [templates/project-structure.md](templates/project-structure.md) — Project template
+- [arkts.md](arkts.md) — ArkTS language guide and restrictions
+- [arkui.md](arkui.md) — ArkUI components and styling
+- [stage-model.md](stage-model.md) — Stage model architecture
+- [distributed.md](distributed.md) — Distributed capabilities guide
+- [project-template.md](../templates/project-template.md) — Project template
