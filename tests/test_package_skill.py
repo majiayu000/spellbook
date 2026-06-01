@@ -1,5 +1,5 @@
 import io
-import sys
+import importlib.util
 import unittest
 import zipfile
 from contextlib import redirect_stdout
@@ -8,10 +8,22 @@ from tempfile import TemporaryDirectory
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SKILL_CREATOR_ROOT = REPO_ROOT / "skills" / "skill-creator"
-sys.path.insert(0, str(SKILL_CREATOR_ROOT))
+PACKAGE_SKILL_SCRIPT = (
+    REPO_ROOT / "skills" / "skill-creator" / "scripts" / "package_skill.py"
+)
 
-from scripts.package_skill import package_skill  # noqa: E402
+
+def load_package_skill():
+    spec = importlib.util.spec_from_file_location(
+        "skill_creator_package_skill",
+        PACKAGE_SKILL_SCRIPT,
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.package_skill
+
+
+package_skill = load_package_skill()
 
 
 class PackageSkillTests(unittest.TestCase):
