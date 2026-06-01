@@ -15,6 +15,9 @@ Verify that the skill diagnoses editor performance without hardcoded local paths
 - Separates file-browser mode from normal coding mode when a broad parent directory is open.
 - Explains `files.watcherExclude`, `search.exclude`, and `files.exclude` with their editing/search/visibility tradeoffs.
 - Treats Python, Ruff, Git, and Copilot setting changes as optional experiments with explicit feature costs, not default fixes.
+- Defaults to a plain-language report for non-technical users and moves jargon-heavy evidence into a technical details section.
+- Offers a small set of reversible choices instead of a long technical options table.
+- When commands or file edits were performed, reports a user-visible action log: what was checked, what changed, why it changed, what the user might notice, side effects, verification, and rollback.
 
 ## Manual Eval Prompts
 
