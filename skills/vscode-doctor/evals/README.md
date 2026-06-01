@@ -12,6 +12,9 @@ Verify that the skill diagnoses editor performance without hardcoded local paths
 - Uses placeholders for paths and commands in examples.
 - Avoids applying changes until the user confirms.
 - States when impact cannot be quantified because baseline data is missing.
+- Separates file-browser mode from normal coding mode when a broad parent directory is open.
+- Explains `files.watcherExclude`, `search.exclude`, and `files.exclude` with their editing/search/visibility tradeoffs.
+- Treats Python, Ruff, Git, and Copilot setting changes as optional experiments with explicit feature costs, not default fixes.
 
 ## Manual Eval Prompts
 

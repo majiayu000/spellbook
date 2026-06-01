@@ -29,6 +29,7 @@ EDITOR_COMMANDS="<space-separated editor cli commands, if known>" \
 EDITOR_PROCESS_QUERY="<process regex, if known>" \
 EDITOR_DATA_DIRS="<colon-separated data dirs, if known>" \
 EDITOR_SETTINGS_FILES="<colon-separated settings files, if known>" \
+SETTINGS_QUERY="<settings regex, if known>" \
 EDITOR_LOG_DIRS="<colon-separated log dirs, if known>" \
 LOG_FILE_GLOB="<log file glob, if known>" \
 LOG_SIGNAL_QUERY="<log regex, if known>" \
@@ -41,6 +42,7 @@ Discovery rules:
 - If the user does not give the workspace, infer it from editor status output, visible state, or ask a concise question.
 - If an editor CLI/path/log directory cannot be discovered, skip that probe and state that the evidence is missing.
 - If a signal comes from logs, include the log path and timestamp.
+- If the user is using a broad parent directory as a file browser, label that intent explicitly before recommending changes.
 
 ## Analysis
 
@@ -59,6 +61,12 @@ Common evidence types to look for, without assuming any one must exist:
 - UI process pressure that correlates with editor renderer activity
 - cache or storage size only when it is large enough to plausibly matter
 
+When the user wants a file-browser-like workspace:
+- Treat the goal as "keep files visible and editable while reducing background work."
+- Prefer narrowing the active workspace to the current repo when editing deeply.
+- If the broad workspace must stay open, recommend targeted workspace-level exclusions for noisy generated or dependency paths.
+- Do not assume that hiding files is acceptable; ask or present it as a separate option.
+
 When recommending extension changes:
 - Use only extension names seen in live output, user screenshots, or logs.
 - Prefer workspace-scoped disablement or profiling over global disablement.
@@ -68,6 +76,18 @@ When recommending workspace exclusions:
 - Prefer exclusions derived from the project's own ignored/generated paths.
 - If you propose a generic pattern, label it as a template for user review, not as evidence.
 - Prefer workspace settings over global settings when the issue is tied to one workspace.
+- Distinguish the VS Code settings clearly:
+  - `files.watcherExclude`: stops continuous file-change watching for matching paths; files can still be opened, edited, and saved, but external changes may need manual refresh or reopen.
+  - `search.exclude`: removes matching paths from default global search; files remain visible and editable, and users can temporarily search them by disabling exclude/ignore settings in the search UI.
+  - `files.exclude`: hides matching paths from Explorer; avoid this for file-browser mode unless the user explicitly wants the directory hidden.
+- For "visible but less noisy" workflows, prefer `files.watcherExclude` plus `search.exclude`, not `files.exclude`.
+- Verify watcher changes with fresh watcher logs, editor process CPU/RSS, and user-visible responsiveness; do not expect `code --status` file counts to prove the benefit by itself.
+
+When recommending language, lint, Git, or AI-assistant settings:
+- Treat settings such as `python.languageServer`, `ruff.*`, `git.autorefresh`, `git.autoRepositoryDetection`, and `github.copilot.*` as optional load-reduction experiments, not default fixes.
+- State the feature cost before recommending them. For example: disabling a language server reduces diagnostics/completion; disabling Git auto-detection reduces Source Control discovery; disabling Copilot removes AI assistance in that workspace.
+- Prefer profile-scoped or workspace-scoped experiments over global user settings.
+- If the user says they only care about watcher/search pressure, do not propose these settings.
 
 ## Report Template
 
