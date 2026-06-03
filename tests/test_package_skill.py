@@ -1,5 +1,7 @@
 import io
 import importlib.util
+import sys
+import types
 import unittest
 import zipfile
 from contextlib import redirect_stdout
@@ -79,6 +81,33 @@ class PackageSkillTests(unittest.TestCase):
             self.assertIsNone(archive_path)
             self.assertIn("Symlinks are not allowed", stdout.getvalue())
             self.assertFalse((output_dir / "safe-skill.skill").exists())
+
+    def test_loads_sibling_validator_when_top_level_name_is_taken(self):
+        fake_validator = types.ModuleType("quick_validate")
+
+        def fail_if_used(_skill_path):
+            raise AssertionError("loaded unrelated quick_validate module")
+
+        fake_validator.validate_skill = fail_if_used
+        previous = sys.modules.get("quick_validate")
+        sys.modules["quick_validate"] = fake_validator
+        try:
+            isolated_package_skill = load_package_skill()
+            with TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                skill_path = self.make_skill(root)
+                output_dir = root / "dist"
+
+                with redirect_stdout(io.StringIO()):
+                    archive_path = isolated_package_skill(skill_path, output_dir)
+
+                self.assertEqual(archive_path, (output_dir / "safe-skill.skill").resolve())
+                self.assertTrue(archive_path.exists())
+        finally:
+            if previous is None:
+                sys.modules.pop("quick_validate", None)
+            else:
+                sys.modules["quick_validate"] = previous
 
 
 if __name__ == "__main__":
