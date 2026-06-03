@@ -15,6 +15,11 @@ curated for user-facing impact instead of being a raw commit dump.
 
 Use this section for notable changes after the latest dated snapshot.
 
+### Changed
+
+- Upgraded the `Validate` workflow to Node 24-compatible GitHub Action majors:
+  `actions/checkout@v6` and `actions/setup-python@v6`.
+
 ## [2026-06-03]
 
 ### Added
