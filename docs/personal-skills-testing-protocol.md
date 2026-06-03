@@ -18,8 +18,8 @@
 2. 把要测试的 Skill 复制进去（或用符号链接，推荐符号链接便于迭代）：
    ```bash
    mkdir -p .claude/skills
-   ln -s /path/to/claude-arsenal/skills/personal-arsenal-lifecycle-doctor .claude/skills/
-   ln -s /path/to/claude-arsenal/skills/xiaohongshu-netfeel-guardian .claude/skills/
+   ln -s /path/to/spellbook/skills/personal-arsenal-lifecycle-doctor .claude/skills/
+   ln -s /path/to/spellbook/skills/xiaohongshu-netfeel-guardian .claude/skills/
    ```
 
 3. 准备 baseline（不加载新 Skill 的对比环境）：
@@ -48,12 +48,12 @@ cd ~/claude-skill-sandbox/netfeel-test-1
 
 # 2. 只链接要测试的这个 Skill（隔离）
 mkdir -p .claude/skills
-ln -s /absolute/path/to/your/claude-arsenal/skills/xiaohongshu-netfeel-guardian .claude/skills/
+ln -s /absolute/path/to/your/spellbook/skills/xiaohongshu-netfeel-guardian .claude/skills/
 
 # 3. 运行 evals（会同时生成 with-skill 和 baseline 对比）
-python /absolute/path/to/your/claude-arsenal/skills/skill-creator/scripts/run_eval.py \
+python /absolute/path/to/your/spellbook/skills/skill-creator/scripts/run_eval.py \
   --skill-name xiaohongshu-netfeel-guardian \
-  --eval-file /absolute/path/to/your/claude-arsenal/skills/xiaohongshu-netfeel-guardian/evals/evals.json \
+  --eval-file /absolute/path/to/your/spellbook/skills/xiaohongshu-netfeel-guardian/evals/evals.json \
   --workspace ./evals-iteration-1
 ```
 
@@ -66,7 +66,7 @@ lifecycle-doctor 同理更换路径和名称。
 使用官方推荐的 viewer：
 
 ```bash
-python /path/to/claude-arsenal/skills/skill-creator/eval-viewer/generate_review.py \
+python /path/to/spellbook/skills/skill-creator/eval-viewer/generate_review.py \
   ~/claude-skill-test-workspace/iteration-1 \
   --skill-name personal-arsenal-lifecycle-doctor \
   --benchmark ~/claude-skill-test-workspace/iteration-1/benchmark.json

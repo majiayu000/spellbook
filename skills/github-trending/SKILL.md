@@ -33,7 +33,7 @@ description: GitHub Trending 探索与分析。用于发现热门开源项目、
 1. **拿干净数据（优先用脚本）**
    ```bash
    # 在 skill 目录执行；如果 skill 已安装到 ~/.claude/skills，也可以换成对应安装路径
-   cd /path/to/claude-arsenal/skills/github-trending
+   cd /path/to/spellbook/skills/github-trending
 
    # 今日总榜 TOP 8
    python3 scripts/fetch_trending.py --since daily --limit 8
