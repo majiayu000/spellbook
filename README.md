@@ -17,6 +17,7 @@
     <a href="#pick-a-workflow">Pick a Workflow</a> •
     <a href="#skills">Skills</a> •
     <a href="#agents">Agents</a> •
+    <a href="./CHANGELOG.md">Changelog</a> •
     <a href="#contributing">Contributing</a> •
     <a href="./README_CN.md">中文</a>
   </p>
@@ -87,6 +88,7 @@ Start with a small bundle that matches the job, then add more skills when the wo
 High-signal individual skills to try first: `github-trending`, `harmonyos-app`, `app-ui-design`, `product-discovery`, `xiaohongshu`, `codebase-audit`, and `server-deploy`.
 
 See [Showcase](./docs/showcase.md) for copy-paste prompts and expected outputs.
+Release history lives in [Changelog](./CHANGELOG.md).
 
 ---
 

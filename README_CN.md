@@ -17,6 +17,7 @@
     <a href="#选择工作流">选择工作流</a> •
     <a href="#技能列表">技能列表</a> •
     <a href="#智能体">智能体</a> •
+    <a href="./CHANGELOG.md">更新日志</a> •
     <a href="#贡献">贡献</a> •
     <a href="./README.md">English</a>
   </p>
@@ -87,6 +88,7 @@ Claude Code 仍是一等支持目标，也是用户搜索和认知入口。项�
 优先体验的高信号单项：`github-trending`、`harmonyos-app`、`app-ui-design`、`product-discovery`、`xiaohongshu`、`codebase-audit`、`server-deploy`。
 
 可复制的试用 prompt 见 [Showcase](./docs/showcase.md)。
+版本历史见 [Changelog](./CHANGELOG.md)。
 
 ---
 
