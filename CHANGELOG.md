@@ -15,6 +15,16 @@ curated for user-facing impact instead of being a raw commit dump.
 
 Use this section for notable changes after the latest dated snapshot.
 
+### Added
+
+- Added the `gemma4-local-deploy` skill for local Gemma 4 12B deployment with
+  `llama.cpp`, GGUF quantization, Apple Metal, tmux background service
+  management, OpenAI-compatible API verification, and resource reporting.
+
+### Changed
+
+- Updated the installable skill count from 80 to 81.
+
 ## [2026-06-03]
 
 ### Added

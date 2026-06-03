@@ -344,6 +344,19 @@
     ]
   },
   {
+    "name": "gemma4-local-deploy",
+    "category": "Operations & Deploy",
+    "format": "directory",
+    "path": "skills/gemma4-local-deploy/SKILL.md",
+    "description": "在本机 Mac 或 Apple Silicon 上部署 Gemma 4 12B。本地安装/升级 llama.cpp，下载 GGUF 量化模型，用 llama-server 暴露 OpenAI-compatible API，配置 tmux 后台运行，验证健康检查、问答接口、资源占用和常见故障。当用户说部署 Gemma 4、Gemma 4 12B、本地大模型、llama-server、GGUF、Mac 本地模型服务时使用。",
+    "language": "zh",
+    "tags": [
+      "backend",
+      "deploy",
+      "multi-ai"
+    ]
+  },
+  {
     "name": "git-commit-smart",
     "category": "Delivery Workflow",
     "format": "file",
