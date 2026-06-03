@@ -1,13 +1,13 @@
 {
-  "total_skills": 79,
+  "total_skills": 80,
   "total_tags": 36,
   "tag_counts": {
-    "agent": 5,
+    "agent": 6,
     "architecture": 14,
     "auth": 3,
     "backend": 9,
     "browser": 4,
-    "code-review": 11,
+    "code-review": 12,
     "content": 7,
     "database": 2,
     "debugging": 6,
@@ -45,7 +45,8 @@
       "claude-mem",
       "codex-agent",
       "fixflow",
-      "strategic-compact"
+      "strategic-compact",
+      "threads"
     ],
     "architecture": [
       "brainstorming",
@@ -95,6 +96,7 @@
       "plan-flow",
       "project-health-auditor",
       "push-all",
+      "threads",
       "ui-ux-pro-max",
       "vibeguard"
     ],

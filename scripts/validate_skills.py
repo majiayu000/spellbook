@@ -95,6 +95,7 @@ CATEGORY_BY_NAME = {
     "multi-ai-research": "AI & Agent Workflow",
     "skill-creator": "AI & Agent Workflow",
     "strategic-compact": "AI & Agent Workflow",
+    "threads": "AI & Agent Workflow",
     # Operations
     "clash-doctor": "Operations & Deploy",
     "clash-routes": "Operations & Deploy",
