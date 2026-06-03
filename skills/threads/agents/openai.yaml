@@ -1,0 +1,4 @@
+interface:
+  display_name: "Threads"
+  short_description: "Coordinate native Codex thread workflows"
+  default_prompt: "Use $threads to plan and run a multi-thread Codex workflow with worktrees, reviews, and merge gates."
