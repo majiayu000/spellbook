@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>80 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>81 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-80-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-81-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -17,6 +17,7 @@
     <a href="#pick-a-workflow">Pick a Workflow</a> •
     <a href="#skills">Skills</a> •
     <a href="#agents">Agents</a> •
+    <a href="./CHANGELOG.md">Changelog</a> •
     <a href="#release-status">Release Status</a> •
     <a href="#contributing">Contributing</a> •
     <a href="./README_CN.md">中文</a>
@@ -88,6 +89,7 @@ Start with a small bundle that matches the job, then add more skills when the wo
 High-signal individual skills to try first: `github-trending`, `harmonyos-app`, `app-ui-design`, `product-discovery`, `xiaohongshu`, `codebase-audit`, and `server-deploy`.
 
 See [Showcase](./docs/showcase.md) for copy-paste prompts and expected outputs.
+Release history lives in [Changelog](./CHANGELOG.md).
 
 ---
 

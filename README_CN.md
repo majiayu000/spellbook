@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>80 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>81 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-80-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-81-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -17,6 +17,7 @@
     <a href="#选择工作流">选择工作流</a> •
     <a href="#技能列表">技能列表</a> •
     <a href="#智能体">智能体</a> •
+    <a href="./CHANGELOG.md">更新日志</a> •
     <a href="#发布状态">发布状态</a> •
     <a href="#贡献">贡献</a> •
     <a href="./README.md">English</a>
@@ -88,6 +89,7 @@ Claude Code 仍是一等支持目标，也是用户搜索和认知入口。项�
 优先体验的高信号单项：`github-trending`、`harmonyos-app`、`app-ui-design`、`product-discovery`、`xiaohongshu`、`codebase-audit`、`server-deploy`。
 
 可复制的试用 prompt 见 [Showcase](./docs/showcase.md)。
+版本历史见 [Changelog](./CHANGELOG.md)。
 
 ---
 
