@@ -1,17 +1,17 @@
 {
-  "total_skills": 80,
+  "total_skills": 81,
   "total_tags": 36,
   "tag_counts": {
     "agent": 6,
     "architecture": 14,
     "auth": 3,
-    "backend": 9,
+    "backend": 10,
     "browser": 4,
     "code-review": 12,
     "content": 7,
     "database": 2,
     "debugging": 6,
-    "deploy": 5,
+    "deploy": 6,
     "design-system": 2,
     "devops": 2,
     "documentation": 7,
@@ -20,7 +20,7 @@
     "harmonyos": 1,
     "javascript": 5,
     "mcp": 1,
-    "multi-ai": 5,
+    "multi-ai": 6,
     "observability": 3,
     "performance": 7,
     "product-management": 4,
@@ -77,6 +77,7 @@
       "cliproxy-deploy",
       "cliproxy-newapi-stack",
       "codebase-audit",
+      "gemma4-local-deploy",
       "harmonyos-app",
       "rust-best-practices"
     ],
@@ -124,6 +125,7 @@
     "deploy": [
       "cliproxy-deploy",
       "cliproxy-newapi-stack",
+      "gemma4-local-deploy",
       "gpu-use",
       "openclaw-deploy",
       "server-deploy"
@@ -185,6 +187,7 @@
       "cliproxy-deploy",
       "cliproxy-newapi-stack",
       "codex",
+      "gemma4-local-deploy",
       "multi-ai-research"
     ],
     "observability": [

@@ -102,6 +102,7 @@ CATEGORY_BY_NAME = {
     "cliproxy-deploy": "Operations & Deploy",
     "cliproxy-newapi-stack": "Operations & Deploy",
     "disk-cleaner": "Operations & Deploy",
+    "gemma4-local-deploy": "Operations & Deploy",
     "gpu-use": "Operations & Deploy",
     "openclaw-deploy": "Operations & Deploy",
     "optimize-network": "Operations & Deploy",

@@ -15,8 +15,21 @@ curated for user-facing impact instead of being a raw commit dump.
 
 Use this section for notable changes after the latest dated snapshot.
 
+### Added
+
+- Added the `gemma4-local-deploy` skill for local Gemma 4 12B deployment with
+  `llama.cpp`, GGUF quantization, Apple Metal, tmux background service
+  management, OpenAI-compatible API verification, and resource reporting.
+
 ### Changed
 
+- Updated the installable skill count from 80 to 81.
+- Expanded `gemma4-local-deploy` with an Ollama-specific route covering
+  official `gemma4:12b` pull checks, manual GGUF import, Homebrew sidecar binary
+  workarounds, and verification commands.
+- Documented 12B long-context operation in `gemma4-local-deploy`, including
+  64K/128K context selection, restart commands, `n_ctx` verification, and
+  memory/speed caveats.
 - Upgraded the `Validate` workflow to Node 24-compatible GitHub Action majors:
   `actions/checkout@v6` and `actions/setup-python@v6`.
 
