@@ -30,6 +30,8 @@ Use this section for notable changes after the latest dated snapshot.
 - Documented 12B long-context operation in `gemma4-local-deploy`, including
   64K/128K context selection, restart commands, `n_ctx` verification, and
   memory/speed caveats.
+- Upgraded the `Validate` workflow to Node 24-compatible GitHub Action majors:
+  `actions/checkout@v6` and `actions/setup-python@v6`.
 
 ## [2026-06-03]
 
