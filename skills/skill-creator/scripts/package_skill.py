@@ -11,10 +11,28 @@ Example:
 """
 
 import fnmatch
+import importlib.util
 import sys
 import zipfile
 from pathlib import Path
-from scripts.quick_validate import validate_skill
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+QUICK_VALIDATE_PATH = SCRIPT_DIR / "quick_validate.py"
+
+
+def load_validate_skill():
+    spec = importlib.util.spec_from_file_location(
+        "skill_creator_quick_validate",
+        QUICK_VALIDATE_PATH,
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not load validator from {QUICK_VALIDATE_PATH}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.validate_skill
+
+
+validate_skill = load_validate_skill()
 
 # Patterns to exclude when packaging skills.
 EXCLUDE_DIRS = {"__pycache__", "node_modules"}
