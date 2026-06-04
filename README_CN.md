@@ -18,6 +18,7 @@
     <a href="#技能列表">技能列表</a> •
     <a href="#智能体">智能体</a> •
     <a href="./CHANGELOG.md">更新日志</a> •
+    <a href="#发布状态">发布状态</a> •
     <a href="#贡献">贡献</a> •
     <a href="./README.md">English</a>
   </p>
@@ -265,6 +266,7 @@ Spellbook 中的每个技能都遵循以下原则：
 
 | 文档 | 描述 |
 |------|------|
+| [更新日志](./CHANGELOG.md) | 发布历史与当前发布状态 |
 | [安装指南](./docs/installation.md) | 详细的安装说明 |
 | [Runtime 目标](./docs/runtime-targets.md) | Claude Code 与 Codex 安装目标 |
 | [Showcase](./docs/showcase.md) | 可直接复制的工作流演示 |
@@ -273,6 +275,25 @@ Spellbook 中的每个技能都遵循以下原则：
 | [创建插件](./docs/creating-plugins.md) | 构建你自己的技能 |
 | [产品生命周期（英文）](./docs/product-lifecycle-skills-en.md) | 完整生命周期覆盖 |
 | [产品生命周期（中文）](./docs/product-lifecycle-skills-zh.md) | 产品生命周期覆盖 |
+
+---
+
+## 发布状态
+
+Spellbook 目前处于 pre-1.0 发布准备阶段。尚未切出编号 GitHub release
+tag；当前安装路径使用仓库 `main` 分支。发布历史见 [更新日志](./CHANGELOG.md)。
+
+当前限制：
+
+- Codex 目标只安装 skills；Claude Code agents 会在 Codex 目标下跳过。
+- 部分 skills 依赖外部 CLI、账号、凭据或平台权限，这些不会由安装器打包提供。
+- 注册表校验覆盖可安装 skill 结构，不等于每个外部工作流都已端到端验证。
+
+支持入口：
+
+- Bug：[提交 Issue](https://github.com/majiayu000/spellbook/issues/new/choose)
+- Skill 想法：[提交功能请求](https://github.com/majiayu000/spellbook/issues/new/choose)
+- 安全漏洞：遵循 [安全策略](./SECURITY.md)
 
 ---
 
@@ -292,7 +313,7 @@ Spellbook 中的每个技能都遵循以下原则：
 欢迎贡献！请先阅读我们的[贡献指南](./CONTRIBUTING.md)。
 
 - 发现 Bug？[提交 Issue](https://github.com/majiayu000/spellbook/issues)
-- 有技能想法？[发起讨论](https://github.com/majiayu000/spellbook/discussions)
+- 有技能想法？[提交功能请求](https://github.com/majiayu000/spellbook/issues/new/choose)
 - 想要贡献？[提交 PR](https://github.com/majiayu000/spellbook/pulls)
 
 ---

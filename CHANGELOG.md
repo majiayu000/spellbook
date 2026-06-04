@@ -20,6 +20,8 @@ Use this section for notable changes after the latest dated snapshot.
 - Added the `gemma4-local-deploy` skill for local Gemma 4 12B deployment with
   `llama.cpp`, GGUF quantization, Apple Metal, tmux background service
   management, OpenAI-compatible API verification, and resource reporting.
+- Added English and Chinese release status sections covering pre-1.0 status,
+  current limitations, and support paths.
 
 ### Changed
 
@@ -32,6 +34,7 @@ Use this section for notable changes after the latest dated snapshot.
   memory/speed caveats.
 - Upgraded the `Validate` workflow to Node 24-compatible GitHub Action majors:
   `actions/checkout@v6` and `actions/setup-python@v6`.
+- Replaced disabled Discussions links with issue-template support paths.
 
 ## [2026-06-03]
 

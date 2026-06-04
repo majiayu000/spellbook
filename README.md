@@ -18,6 +18,7 @@
     <a href="#skills">Skills</a> •
     <a href="#agents">Agents</a> •
     <a href="./CHANGELOG.md">Changelog</a> •
+    <a href="#release-status">Release Status</a> •
     <a href="#contributing">Contributing</a> •
     <a href="./README_CN.md">中文</a>
   </p>
@@ -267,6 +268,7 @@ Every skill in Spellbook follows these principles:
 
 | Document | Description |
 |----------|-------------|
+| [Changelog](./CHANGELOG.md) | Release history and current release status |
 | [Installation Guide](./docs/installation.md) | Detailed setup instructions |
 | [Runtime Targets](./docs/runtime-targets.md) | Claude Code and Codex installation targets |
 | [Showcase](./docs/showcase.md) | Copy-paste workflow demos |
@@ -275,6 +277,28 @@ Every skill in Spellbook follows these principles:
 | [Creating Plugins](./docs/creating-plugins.md) | Build your own skills |
 | [Product Lifecycle (EN)](./docs/product-lifecycle-skills-en.md) | Full lifecycle coverage |
 | [Product Lifecycle (中文)](./docs/product-lifecycle-skills-zh.md) | 产品生命周期覆盖 |
+
+---
+
+## Release Status
+
+Spellbook is in pre-1.0 release-readiness mode. No numbered GitHub release tag
+has been cut yet; the current install path uses the repository `main` branch.
+See [Changelog](./CHANGELOG.md) for release history.
+
+Current limitations:
+
+- Codex installs skills only; Claude Code agents are skipped for Codex targets.
+- Some skills depend on external CLIs, accounts, credentials, or platform access
+  that are not bundled by the installer.
+- The registry validator checks installable skill structure, not every external
+  workflow end to end.
+
+Support paths:
+
+- Bugs: [open an issue](https://github.com/majiayu000/spellbook/issues/new/choose)
+- Feature ideas: [open a feature request](https://github.com/majiayu000/spellbook/issues/new/choose)
+- Security vulnerabilities: follow [Security Policy](./SECURITY.md)
 
 ---
 
@@ -294,7 +318,7 @@ Built on the shoulders of giants:
 Contributions welcome! Please read our [Contributing Guide](./CONTRIBUTING.md) first.
 
 - Found a bug? [Open an issue](https://github.com/majiayu000/spellbook/issues)
-- Have a skill idea? [Start a discussion](https://github.com/majiayu000/spellbook/discussions)
+- Have a skill idea? [Open a feature request](https://github.com/majiayu000/spellbook/issues/new/choose)
 - Want to contribute? [Submit a PR](https://github.com/majiayu000/spellbook/pulls)
 
 ---
