@@ -1,6 +1,6 @@
 ---
 name: gemma4-local-deploy
-description: 在本机 Mac 或 Apple Silicon 上部署 Gemma 4 12B。本地安装/升级 llama.cpp，下载 GGUF 量化模型，用 llama-server 暴露 OpenAI-compatible API，或用 Ollama 暴露本地模型服务，配置 tmux 后台运行，验证健康检查、问答接口、资源占用和常见故障。当用户说部署 Gemma 4、Gemma 4 12B、本地大模型、llama-server、Ollama、GGUF、Mac 本地模型服务时使用。
+description: 在本机 Mac 或 Apple Silicon 上部署 Gemma 4 12B。本地安装/升级 llama.cpp，下载 GGUF 量化模型，用 llama-server 暴露 OpenAI-compatible API，或用 Ollama 暴露本地模型服务，按用户需求把 12B 上下文从默认 32K 提升到 64K/128K，配置 tmux 后台运行，验证健康检查、问答接口、资源占用和常见故障。当用户说部署 Gemma 4、Gemma 4 12B、本地大模型、长上下文、llama-server、Ollama、GGUF、Mac 本地模型服务时使用。
 allowed-tools: Bash, Read, WebSearch, WebFetch
 metadata:
   argument-hint: "[模型量化/端口/是否后台运行]"
@@ -17,6 +17,7 @@ metadata:
 - 默认模型名：`gemma-4-12b-it`
 - 默认端口：`127.0.0.1:8080`
 - 默认上下文：`32768`
+- 12B 长上下文：用户明确要求更大上下文时，可改为 `65536` 或原生最高 `131072`
 - 默认后台方式：`tmux` 会话 `gemma4-12b`
 - 默认关闭 thinking：`--reasoning off`，避免 OpenAI API 的 `message.content` 为空
 - Ollama 路径：只在用户明确要 Ollama、需要接 Ollama 生态，或询问 `ollama pull gemma4:12b` 时使用
@@ -104,7 +105,50 @@ tmux attach -t gemma4-12b
 tmux kill-session -t gemma4-12b
 ```
 
-### 5. Verify before claiming success
+### 5. Increase 12B context when requested
+
+Do not tell the user 12B is limited to 32K. `32768` is the conservative default startup value. The 12B GGUF metadata can support a native training context of `131072`.
+
+Use this selection table:
+
+| User need | `--ctx-size` | Notes |
+|---|---:|---|
+| Fast daily chat / low memory | `32768` | Default. |
+| Long coding sessions or medium documents | `65536` | Good balance on 16GB+ Macs if memory pressure is acceptable. |
+| Max native 12B context | `131072` | Use when the user explicitly asks for larger or maximum context. Expect higher RSS and lower speed. |
+| Beyond native context | Avoid by default | Requires RoPE/YaRN scaling and quality can degrade; explain risk before trying. |
+
+Restart with a larger context, keeping `--parallel 1` and using Flash Attention plus quantized KV cache to reduce long-context pressure:
+
+```bash
+tmux kill-session -t gemma4-12b 2>/dev/null || true
+tmux new-session -d -s gemma4-12b 'llama-server -m "$HOME/Library/Caches/llama.cpp/ggml-org_gemma-4-12B-it-GGUF_gemma-4-12B-it-Q4_K_M.gguf" --ctx-size 131072 --gpu-layers 99 --parallel 1 --flash-attn on --cache-type-k q8_0 --cache-type-v q8_0 --reasoning off --host 127.0.0.1 --port 8080 --alias gemma-4-12b-it'
+```
+
+If the model path is different, find it first:
+
+```bash
+find "$HOME/Library/Caches/llama.cpp" "$HOME/Models" -name '*gemma-4-12B-it*Q4_K_M*.gguf' 2>/dev/null
+```
+
+After restart, prove the actual context value instead of relying on the command line:
+
+```bash
+curl -fsS http://127.0.0.1:8080/v1/models | jq '.data[0].meta | {n_ctx, n_ctx_train, n_params, size}'
+```
+
+Expected long-context 12B result:
+
+```json
+{
+  "n_ctx": 131072,
+  "n_ctx_train": 131072
+}
+```
+
+If startup fails or memory pressure is high, retry `--ctx-size 65536`.
+
+### 6. Verify before claiming success
 
 Run all three checks from the current session:
 
@@ -120,9 +164,10 @@ Success requires:
 
 - `/health` returns `{"status":"ok"}`
 - `/v1/models` lists `gemma-4-12b-it`
+- `/v1/models` shows the requested `n_ctx` when the user asked for larger context
 - chat response has non-empty `choices[0].message.content`
 
-### 6. Report resource usage
+### 7. Report resource usage
 
 Use both process and macOS footprint views:
 
@@ -139,8 +184,9 @@ Explain the difference clearly:
 - `ps` RSS includes mapped model pages and often shows around 9-11GB for Q4 12B.
 - `footprint` may show lower physical pressure because clean mmap pages can be discarded and reread.
 - Apple Silicon uses unified memory; GPU work does not appear as a separate NVIDIA-style VRAM number.
+- Larger `--ctx-size` increases KV/cache memory and may reduce tokens/sec even when the prompt is short.
 
-### 7. Optional: Ollama route
+### 8. Optional: Ollama route
 
 Use this path only when the user asks for Ollama. Treat official Ollama registry state as live-changing: re-test before claiming support.
 

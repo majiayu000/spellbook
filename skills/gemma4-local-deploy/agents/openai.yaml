@@ -1,4 +1,4 @@
 interface:
   display_name: "Gemma 4 Local Deploy"
-  short_description: "Deploy Gemma 4 12B locally with llama.cpp or Ollama"
-  default_prompt: "Use $gemma4-local-deploy to install or verify a local Gemma 4 12B service on my Mac, using llama-server by default or Ollama when requested."
+  short_description: "Deploy Gemma 4 12B locally with adjustable context"
+  default_prompt: "Use $gemma4-local-deploy to install or verify a local Gemma 4 12B service on my Mac, using llama-server by default, larger 64K/128K context when requested, or Ollama when requested."

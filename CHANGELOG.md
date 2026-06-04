@@ -27,6 +27,9 @@ Use this section for notable changes after the latest dated snapshot.
 - Expanded `gemma4-local-deploy` with an Ollama-specific route covering
   official `gemma4:12b` pull checks, manual GGUF import, Homebrew sidecar binary
   workarounds, and verification commands.
+- Documented 12B long-context operation in `gemma4-local-deploy`, including
+  64K/128K context selection, restart commands, `n_ctx` verification, and
+  memory/speed caveats.
 
 ## [2026-06-03]
 
