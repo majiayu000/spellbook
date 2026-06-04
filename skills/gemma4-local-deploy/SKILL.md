@@ -1,6 +1,6 @@
 ---
 name: gemma4-local-deploy
-description: 在本机 Mac 或 Apple Silicon 上部署 Gemma 4 12B。本地安装/升级 llama.cpp，下载 GGUF 量化模型，用 llama-server 暴露 OpenAI-compatible API，配置 tmux 后台运行，验证健康检查、问答接口、资源占用和常见故障。当用户说部署 Gemma 4、Gemma 4 12B、本地大模型、llama-server、GGUF、Mac 本地模型服务时使用。
+description: 在本机 Mac 或 Apple Silicon 上部署 Gemma 4 12B。本地安装/升级 llama.cpp，下载 GGUF 量化模型，用 llama-server 暴露 OpenAI-compatible API，或用 Ollama 暴露本地模型服务，配置 tmux 后台运行，验证健康检查、问答接口、资源占用和常见故障。当用户说部署 Gemma 4、Gemma 4 12B、本地大模型、llama-server、Ollama、GGUF、Mac 本地模型服务时使用。
 allowed-tools: Bash, Read, WebSearch, WebFetch
 metadata:
   argument-hint: "[模型量化/端口/是否后台运行]"
@@ -8,7 +8,7 @@ metadata:
 
 # Gemma 4 12B 本地部署
 
-目标：把 `google/gemma-4-12B-it` 的 GGUF 版本部署成本机 OpenAI-compatible API，默认用 `llama.cpp` / `llama-server` + Apple Metal + `Q4_K_M` + `tmux`。
+目标：把 `google/gemma-4-12B-it` 的 GGUF 版本部署成本机模型服务。默认用 `llama.cpp` / `llama-server` + Apple Metal + `Q4_K_M` + `tmux` 暴露 OpenAI-compatible API；用户明确要 Ollama 时，再走 Ollama 导入路径。
 
 ## 默认选择
 
@@ -19,6 +19,7 @@ metadata:
 - 默认上下文：`32768`
 - 默认后台方式：`tmux` 会话 `gemma4-12b`
 - 默认关闭 thinking：`--reasoning off`，避免 OpenAI API 的 `message.content` 为空
+- Ollama 路径：只在用户明确要 Ollama、需要接 Ollama 生态，或询问 `ollama pull gemma4:12b` 时使用
 
 如果用户明确要更高质量，优先建议 `Q6_K` 或 `Q8_0`；不要默认上 `bf16`，除非用户接受更大内存和更慢加载。
 
@@ -139,6 +140,73 @@ Explain the difference clearly:
 - `footprint` may show lower physical pressure because clean mmap pages can be discarded and reread.
 - Apple Silicon uses unified memory; GPU work does not appear as a separate NVIDIA-style VRAM number.
 
+### 7. Optional: Ollama route
+
+Use this path only when the user asks for Ollama. Treat official Ollama registry state as live-changing: re-test before claiming support.
+
+Install and start Ollama:
+
+```bash
+brew install ollama
+ollama --version
+lsof -nP -iTCP:11434 -sTCP:LISTEN || true
+tmux new-session -d -s ollama-gemma4 'OLLAMA_FLASH_ATTENTION=1 OLLAMA_KV_CACHE_TYPE=q8_0 ollama serve'
+curl -fsS http://127.0.0.1:11434/api/version
+```
+
+First try the official path:
+
+```bash
+ollama pull gemma4:12b
+```
+
+If it succeeds, run:
+
+```bash
+ollama run gemma4:12b "用一句中文回答：现在可以问你问题吗？"
+```
+
+If it fails with `pull model manifest: file does not exist`, fall back to GGUF import. Download or reuse a local GGUF:
+
+```bash
+mkdir -p "$HOME/Models/gemma4-12b"
+huggingface-cli download ggml-org/gemma-4-12B-it-GGUF \
+  gemma-4-12B-it-Q4_K_M.gguf \
+  --local-dir "$HOME/Models/gemma4-12b"
+```
+
+Create a Modelfile:
+
+```bash
+cat > "$HOME/Models/gemma4-12b/Modelfile" <<EOF
+FROM $HOME/Models/gemma4-12b/gemma-4-12B-it-Q4_K_M.gguf
+EOF
+```
+
+Homebrew `ollama` builds may lack sidecar `llama-server` / `llama-quantize` binaries. If `ollama create` or `ollama run` reports either binary missing, create a stable working directory with symlinks to `llama.cpp`:
+
+```bash
+mkdir -p "$HOME/ollama-gemma4/build/lib/ollama"
+ln -sf /opt/homebrew/bin/llama-server "$HOME/ollama-gemma4/build/lib/ollama/llama-server"
+ln -sf /opt/homebrew/bin/llama-quantize "$HOME/ollama-gemma4/build/lib/ollama/llama-quantize"
+tmux kill-session -t ollama-gemma4 2>/dev/null || true
+tmux new-session -d -s ollama-gemma4 "cd '$HOME/ollama-gemma4' && OLLAMA_FLASH_ATTENTION=1 OLLAMA_KV_CACHE_TYPE=q8_0 ollama serve"
+```
+
+Import and run:
+
+```bash
+ollama create gemma4-12b-gguf-local -f "$HOME/Models/gemma4-12b/Modelfile"
+ollama list
+ollama run gemma4-12b-gguf-local "用一句中文回答：Ollama 能跑 Gemma 4 12B 吗？"
+```
+
+For Ollama success, report whether it was:
+
+- official registry pull: `ollama pull gemma4:12b`
+- manual GGUF import: `ollama create gemma4-12b-gguf-local`
+- workaround needed: sidecar symlinks to `llama.cpp`
+
 ## Troubleshooting
 
 | Symptom | Fix |
@@ -147,6 +215,8 @@ Explain the difference clearly:
 | Port 8080 busy | Show the listener with `lsof`; either stop it or choose another port. |
 | Chat `content` is empty and only reasoning appears | Restart with `--reasoning off`. |
 | First-run `-hf` hangs or repeats metadata resolution | Use the cached local GGUF path with `-m`. |
+| `ollama pull gemma4:12b` returns `pull model manifest: file does not exist` | Official registry tag is not ready or is temporarily inconsistent; use manual GGUF import. |
+| Ollama reports `llama-server binary not found` or `llama-quantize binary not found` | Symlink those binaries from `llama.cpp` into the Ollama working directory and start `ollama serve` from there. |
 | User wants image/multimodal | Remove `--no-mmproj` only after testing `mmproj`; text-only deployment is the stable default. |
 | Memory too high | Lower context, use `Q4_K_M`, or reduce `--parallel` to `1`. |
 

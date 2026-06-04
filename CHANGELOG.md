@@ -24,6 +24,9 @@ Use this section for notable changes after the latest dated snapshot.
 ### Changed
 
 - Updated the installable skill count from 80 to 81.
+- Expanded `gemma4-local-deploy` with an Ollama-specific route covering
+  official `gemma4:12b` pull checks, manual GGUF import, Homebrew sidecar binary
+  workarounds, and verification commands.
 
 ## [2026-06-03]
 
