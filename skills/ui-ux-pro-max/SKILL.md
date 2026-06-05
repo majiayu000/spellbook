@@ -5,7 +5,7 @@ description: "UI/UX design intelligence. 50 styles, 21 palettes, 50 font pairing
 
 # UI/UX Pro Max - Design Intelligence
 
-Comprehensive design guide for web and mobile applications. Contains 50+ styles, 97 color palettes, 57 font pairings, 99 UX guidelines, and 25 chart types across 9 technology stacks. Searchable database with priority-based recommendations.
+Comprehensive design guide for web and mobile applications. Contains compact reference tables for product patterns, visual styles, color palettes, typography, UX rules, chart choices, and technology stacks.
 
 ## When to Apply
 
@@ -87,34 +87,7 @@ Reference these guidelines when:
 
 ## How to Use
 
-Search specific domains using the CLI tool below.
-
----
-
-## Prerequisites
-
-Check if Python is installed:
-
-```bash
-python3 --version || python --version
-```
-
-If Python is not installed, install it based on user's OS:
-
-**macOS:**
-```bash
-brew install python3
-```
-
-**Ubuntu/Debian:**
-```bash
-sudo apt update && sudo apt install python3
-```
-
-**Windows:**
-```powershell
-winget install Python.Python.3.12
-```
+Use the rules and reference tables below directly.
 
 ---
 
@@ -168,18 +141,18 @@ If not, use the Master rules exclusively.
 Now, generate the code...
 ```
 
-### Step 3: Supplement with Detailed Searches (as needed)
+### Step 3: Supplement with Relevant Sections (as needed)
 
 After getting the design system, consult the relevant sections below for extra
 detail:
 
-| Need | Domain | Example |
-|------|--------|---------|
-| More style options | `style` | `--domain style "glassmorphism dark"` |
-| Chart recommendations | `chart` | `--domain chart "real-time dashboard"` |
-| UX best practices | `ux` | `--domain ux "animation accessibility"` |
-| Alternative fonts | `typography` | `--domain typography "elegant luxury"` |
-| Landing structure | `landing` | `--domain landing "hero social-proof"` |
+| Need | Domain | Use These Keywords |
+|------|--------|--------------------|
+| More style options | `style` | glassmorphism, minimalism, dark, brutalism, bento |
+| Chart recommendations | `chart` | trend, comparison, real-time, funnel, distribution |
+| UX best practices | `ux` | animation, accessibility, z-index, loading, keyboard |
+| Alternative fonts | `typography` | elegant, luxury, playful, professional, data-dense |
+| Landing structure | `landing` | hero, social proof, pricing, FAQ, conversion |
 
 ### Step 4: Stack Guidelines (Default: html-tailwind)
 
@@ -190,7 +163,7 @@ Available stacks: `html-tailwind`, `react`, `nextjs`, `vue`, `svelte`, `swiftui`
 
 ---
 
-## Search Reference
+## Reference Index
 
 ### Available Domains
 
@@ -224,6 +197,44 @@ Available stacks: `html-tailwind`, `react`, `nextjs`, `vue`, `svelte`, `swiftui`
 
 ---
 
+## Decision Reference
+
+### Product Patterns
+
+| Product Type | Layout Pattern | Visual Direction | Avoid |
+|--------------|----------------|------------------|-------|
+| SaaS / B2B | Sidebar or top nav, dense tables, filters, status summaries | Quiet surfaces, strong hierarchy, restrained accent color | Oversized marketing hero inside work screens |
+| Dashboard / Admin | KPI row, searchable tables, charts, audit trail, empty states | Compact spacing, stable grid, readable numeric typography | Decorative cards that hide operational data |
+| E-commerce | Product grid, filters, cart summary, trust markers, reviews | Product imagery first, clear price/CTA hierarchy | Low-contrast price or checkout controls |
+| Beauty / Wellness | Service sections, booking CTA, testimonials, before/after imagery | Soft neutral base, botanical/rose/gold accent, elegant type | Thin low-contrast text and generic spa stock feel |
+| Healthcare | Appointment flow, provider info, insurance/payment clarity | Calm blue/green palette, high contrast, plain labels | Playful styling that reduces trust |
+| Portfolio / Agency | Case-study grid, project detail pages, proof and process | Strong type scale, real work imagery, focused accent | Abstract decoration without project evidence |
+| Landing Page | Brand/product signal, primary CTA, proof, pricing or FAQ | First viewport shows offer and next section hint | Hero-only page with no visible proof path |
+
+### Style, Color, And Typography
+
+| Direction | Use | Color Guidance | Typography |
+|-----------|-----|----------------|------------|
+| Professional / Minimal | SaaS, finance, productivity | Neutral base plus blue, teal, or green accent | Inter, IBM Plex Sans, system UI |
+| Elegant / Editorial | Luxury, wellness, portfolio | Warm neutral, charcoal, muted rose, gold, or botanical green | Playfair Display + Inter, Source Serif + Inter |
+| Playful | Consumer apps, education, creator tools | Bright accent with generous white space; keep contrast AA | Nunito, Satoshi, system rounded |
+| Dark Mode | Developer tools, media, dashboards | Near-black background, elevated surfaces, saturated accent | Inter or IBM Plex Sans; avoid thin weights |
+| Glass / Bento | AI tools, premium marketing, dashboards | Translucent surfaces over stable solid backgrounds | Modern sans with tight hierarchy |
+| Brutalist | Creative portfolios, launches | High-contrast monochrome plus one sharp accent | Archivo, Space Grotesk, Inter |
+
+### Stack Guidance
+
+| Stack | Apply |
+|-------|-------|
+| `html-tailwind` | Use semantic HTML, mobile-first Tailwind breakpoints, constrained containers, fixed dimensions for toolbars/cards/grids, visible focus states, 44px touch targets, and static-friendly markup. Keep scripts small and avoid framework-only patterns. |
+| `react` | Split stateful components by workflow, keep controlled forms explicit, memoize only proven hot paths, and preserve accessible labels for icon buttons. |
+| `nextjs` | Use framework image/link primitives where available, keep server/client boundaries explicit, and avoid putting interactive-only code in server components. |
+| `vue` / `svelte` | Keep reactive state local until shared state is truly needed; preserve semantic HTML and predictable transitions. |
+| `shadcn` | Use tokens and component variants consistently; do not stack cards inside cards or override primitives ad hoc. |
+| Mobile stacks | Prioritize platform navigation, safe areas, touch target size, loading states, and native form behavior. |
+
+---
+
 ## Example Workflow
 
 **User request:** "Làm landing page cho dịch vụ chăm sóc da chuyên nghiệp"
@@ -239,28 +250,28 @@ Available stacks: `html-tailwind`, `react`, `nextjs`, `vue`, `svelte`, `swiftui`
 Create a compact design system for "Serenity Spa" with pattern, style, colors,
 typography, effects, and anti-patterns.
 
-### Step 3: Supplement with Detailed Searches (as needed)
+### Step 3: Supplement with Relevant Sections (as needed)
 
-Read the UX and Typography sections when animation, accessibility, or font
-direction needs more detail.
+Use the UX, product, style, color, and typography tables when animation,
+accessibility, font direction, or page structure needs more detail.
 
 ### Step 4: Stack Guidelines
 
 Apply the `html-tailwind` stack guidelines for layout, responsive behavior, and
 forms.
 
-**Then:** Synthesize design system + detailed searches and implement the design.
+**Then:** Synthesize the design system, relevant sections, and stack guidance before implementing the design.
 
 ---
 
 ## Tips for Better Results
 
 1. **Be specific with keywords** - "healthcare SaaS dashboard" > "app"
-2. **Search multiple times** - Different keywords reveal different insights
+2. **Check multiple reference rows** - Product, industry, and style rows often combine
 3. **Combine domains** - Style + Typography + Color = Complete design system
-4. **Always check UX** - Search "animation", "z-index", "accessibility" for common issues
-5. **Use stack flag** - Get implementation-specific best practices
-6. **Iterate** - If first search doesn't match, try different keywords
+4. **Always check UX** - Use "animation", "z-index", and "accessibility" as cues for common issues
+5. **Use the stack section** - Apply implementation-specific best practices
+6. **Iterate** - If the first reference row doesn't match, try adjacent keywords
 
 ---
 
