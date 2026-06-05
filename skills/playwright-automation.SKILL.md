@@ -272,6 +272,8 @@ try {
 
 ```bash
 # Start multiple servers in the background, run the test, then clean up.
+set -euo pipefail
+
 npm run dev > /tmp/playwright-dev.log 2>&1 &
 DEV_PID=$!
 npm run api > /tmp/playwright-api.log 2>&1 &
@@ -281,6 +283,46 @@ cleanup() {
   kill "$DEV_PID" "$API_PID" 2>/dev/null || true
 }
 trap cleanup EXIT
+
+wait_for_port() {
+  local port="$1"
+  node - "$port" <<'NODE'
+const net = require("node:net");
+
+const port = Number(process.argv[2]);
+const deadline = Date.now() + 30000;
+
+function attempt() {
+  const socket = net.createConnection({ host: "127.0.0.1", port });
+  let settled = false;
+
+  const retry = () => {
+    if (settled) return;
+    settled = true;
+    socket.destroy();
+    if (Date.now() > deadline) {
+      console.error(`Timed out waiting for port ${port}`);
+      process.exit(1);
+    }
+    setTimeout(attempt, 250);
+  };
+
+  socket.setTimeout(1000);
+  socket.on("connect", () => {
+    settled = true;
+    socket.end();
+    process.exit(0);
+  });
+  socket.on("error", retry);
+  socket.on("timeout", retry);
+}
+
+attempt();
+NODE
+}
+
+wait_for_port 3000
+wait_for_port 5000
 
 node /tmp/playwright-test.js
 ```
