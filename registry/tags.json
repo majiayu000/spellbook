@@ -1,6 +1,6 @@
 {
   "total_skills": 82,
-  "total_tags": 36,
+  "total_tags": 35,
   "tag_counts": {
     "agent": 7,
     "architecture": 14,
@@ -19,7 +19,6 @@
     "go": 4,
     "harmonyos": 1,
     "javascript": 5,
-    "mcp": 1,
     "multi-ai": 6,
     "observability": 3,
     "performance": 7,
@@ -179,9 +178,6 @@
       "figma-to-react",
       "react-best-practices",
       "server-deploy",
-      "ui-ux-pro-max"
-    ],
-    "mcp": [
       "ui-ux-pro-max"
     ],
     "multi-ai": [

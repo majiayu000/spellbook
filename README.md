@@ -200,7 +200,7 @@ Skills for using multiple coding agents and CLI tools together.
 | [`react-best-practices`](./skills/react-best-practices/) | React and Next.js performance patterns distilled from Vercel guidance |
 | [`react-hooks-best-practices`](./skills/react-hooks-best-practices/) | React hooks, effects, refs, and component design patterns |
 | [`slides`](./skills/slides/) | Speech-friendly slide deck and background slide generation |
-| [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | 50+ styles, 97 palettes, 57 font pairings, 9 stacks |
+| [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | Compact UI/UX tables for product patterns, landing pages, charts, and 9 stacks |
 
 ### Tooling & Automation
 
