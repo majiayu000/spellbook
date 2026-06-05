@@ -47,6 +47,7 @@ def to_hex(rgb: tuple[float, float, float]) -> str:
 def color_scale(brand_rgb: tuple[int, int, int]) -> dict[str, str]:
     hue, _, saturation = colorsys.rgb_to_hls(*(channel / 255 for channel in brand_rgb))
     scale_saturation = 0.0 if saturation < 0.02 else min(0.95, saturation)
+    brand_hex = "#" + "".join(f"{channel:02x}" for channel in brand_rgb)
     stops = {
         "50": 0.97,
         "100": 0.92,
@@ -59,10 +60,12 @@ def color_scale(brand_rgb: tuple[int, int, int]) -> dict[str, str]:
         "800": 0.24,
         "900": 0.16,
     }
-    return {
+    scale = {
         key: to_hex(colorsys.hls_to_rgb(hue, lightness, scale_saturation))
         for key, lightness in stops.items()
     }
+    scale["500"] = brand_hex
+    return scale
 
 
 def build_tokens(brand_color: str, style: str) -> dict[str, object]:
