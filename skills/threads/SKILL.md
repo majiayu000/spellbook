@@ -1,6 +1,6 @@
 ---
 name: threads
-description: Coordinate Codex-native parallel thread workflows for repo issue and PR queues, multi-agent research, implementation worktrees, independent code review, merge gates, and final cleanup. Use when the user says Codex threads, open threads, 开几个 thread, 子agent, 并行, worktree, thread review, review then merge, or asks to plan and execute several issues or PRs in parallel.
+description: Coordinate Codex-native parallel thread workflows for repo issue and PR queues, multi-agent research, implementation worktrees, independent code review, merge gates, review-thread/comment closure, and final cleanup. Use when the user says Codex threads, open threads, 开几个 thread, 子agent, 并行, worktree, thread review, review then merge, or asks to plan and execute several issues or PRs in parallel.
 ---
 
 # Threads
@@ -51,6 +51,7 @@ Rules:
 - Put high-context files such as `AGENTS.md`, `CLAUDE.md`, settings, hooks, and setup scripts in `forbidden_files` unless the user explicitly asks to modify them.
 - Prefer existing worktrees when they are already tied to the target branch. Otherwise create clean worktrees from `origin/main` or the requested base.
 - Require fresh verification from the worker or the verification owner before claiming success.
+- For GitHub queues, treat comments and review threads as first-class remote state; open PR/issue lists alone are not enough.
 
 ## Dispatch
 
@@ -63,6 +64,7 @@ Use these lane types:
 - **Reviewer**: inspect one PR/diff/worktree read-only; return findings first.
 - **Fix Worker**: address concrete reviewer findings in the original worker worktree.
 - **Merge Reviewer**: independently verify the final head and CI before merge.
+- **Closure Auditor**: read remote truth after merge or close; verify issue/PR state, review threads, comments, branch cleanup, and local stale state.
 - **Researcher**: inspect one external/source angle and return evidence with uncertainty.
 
 Load [prompt-patterns.md](references/prompt-patterns.md) when you need ready-to-use prompts for planners, workers, reviewers, or research lanes.
@@ -74,6 +76,9 @@ Do not merge from worker output alone. Merge only after:
 - The PR/diff has at least one independent review lane.
 - Blocking findings are fixed or explicitly ruled out with evidence.
 - Required checks are fresh and tied to the current head.
+- GitHub review-thread state is checked with a thread-aware source such as GraphQL `reviewThreads { isResolved isOutdated }`; flat PR comments are not sufficient.
+- The PR has no unresolved actionable review threads, and any fixed review feedback has an explicit reply or resolved thread unless the user forbids GitHub writes.
+- If auto-review can arrive after marking a draft ready or after CI finishes, wait briefly and re-check comments/review threads before merging.
 - The final answer can state exact PR numbers, commits, changed files, and verification commands.
 
 If the user asked for “review then merge,” the merge reviewer should be a separate lane from the implementation worker.
@@ -104,6 +109,19 @@ local_state:
 ```
 
 Separate remote truth from local machine state. State when a branch is merged remotely but local main is stale, dirty, or diverged.
+
+For GitHub queue work, include remote closure fields:
+
+```text
+remote_closure:
+- open_prs:
+- open_issues:
+- touched_pr_unresolved_review_threads:
+- touched_pr_unanswered_review_comments:
+- historical_unresolved_review_threads:
+- deleted_remote_branches:
+- local_cleanup_left:
+```
 
 ## Failure Rules
 

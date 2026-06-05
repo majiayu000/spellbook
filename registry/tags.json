@@ -1,8 +1,8 @@
 {
-  "total_skills": 81,
+  "total_skills": 82,
   "total_tags": 35,
   "tag_counts": {
-    "agent": 6,
+    "agent": 7,
     "architecture": 14,
     "auth": 3,
     "backend": 10,
@@ -14,7 +14,7 @@
     "deploy": 6,
     "design-system": 2,
     "devops": 2,
-    "documentation": 7,
+    "documentation": 8,
     "frontend": 14,
     "go": 4,
     "harmonyos": 1,
@@ -23,7 +23,7 @@
     "observability": 3,
     "performance": 7,
     "product-management": 4,
-    "prompt": 1,
+    "prompt": 2,
     "proxy": 3,
     "python": 3,
     "react": 7,
@@ -44,6 +44,7 @@
       "claude-mem",
       "codex-agent",
       "fixflow",
+      "skill-audit",
       "strategic-compact",
       "threads"
     ],
@@ -143,6 +144,7 @@
       "prd-master",
       "product-analytics",
       "product-manager-toolkit",
+      "skill-audit",
       "technical-spec",
       "weekly"
     ],
@@ -207,6 +209,7 @@
       "product-manager-toolkit"
     ],
     "prompt": [
+      "skill-audit",
       "strategic-compact"
     ],
     "proxy": [
