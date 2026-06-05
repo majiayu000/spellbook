@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate favicons and PWA app icons from an image or emoji."""
+"""Generate favicons and PWA app icons from an image, emoji, or text."""
 
 from __future__ import annotations
 
@@ -66,7 +66,30 @@ def emoji_image(emoji: str, size: int, background: tuple[int, int, int, int]) ->
     bbox = draw.textbbox((0, 0), emoji, font=font)
     x = (size - (bbox[2] - bbox[0])) / 2 - bbox[0]
     y = (size - (bbox[3] - bbox[1])) / 2 - bbox[1]
-    draw.text((x, y), emoji, font=font, fill=(17, 24, 39, 255))
+    try:
+        from pilmoji import Pilmoji
+    except ImportError:
+        draw.text((x, y), emoji, font=font, fill=(17, 24, 39, 255))
+    else:
+        with Pilmoji(canvas) as pilmoji:
+            pilmoji.text((x, y), emoji, font=font, fill=(17, 24, 39, 255))
+    return canvas
+
+
+def text_image(
+    text: str,
+    size: int,
+    background: tuple[int, int, int, int],
+    text_color: tuple[int, int, int, int],
+) -> Image.Image:
+    canvas = square_canvas(size, background)
+    draw = ImageDraw.Draw(canvas)
+    font = load_text_font(round(size * (0.54 if len(text.strip()) <= 2 else 0.44)))
+    label = text.strip()[:4].upper()
+    bbox = draw.textbbox((0, 0), label, font=font)
+    x = (size - (bbox[2] - bbox[0])) / 2 - bbox[0]
+    y = (size - (bbox[3] - bbox[1])) / 2 - bbox[1]
+    draw.text((x, y), label, font=font, fill=text_color)
     return canvas
 
 
@@ -74,6 +97,23 @@ def load_font(size: int) -> ImageFont.ImageFont:
     candidates = [
         "/System/Library/Fonts/Apple Color Emoji.ttc",
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]
+    for candidate in candidates:
+        path = Path(candidate)
+        if path.exists():
+            try:
+                return ImageFont.truetype(str(path), size)
+            except OSError:
+                continue
+    return ImageFont.load_default()
+
+
+def load_text_font(size: int) -> ImageFont.ImageFont:
+    candidates = [
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     ]
     for candidate in candidates:
@@ -104,12 +144,22 @@ def default_emoji_background(filename: str, requested: tuple[int, int, int, int]
     return (0, 0, 0, 0)
 
 
+def default_text_background(filename: str, requested: tuple[int, int, int, int] | None) -> tuple[int, int, int, int]:
+    if requested is not None:
+        return requested
+    if filename in APP_SIZES:
+        return (255, 255, 255, 255)
+    return (0, 0, 0, 0)
+
+
 def generate_icons(
     output_dir: Path,
     icon_type: str,
     source: Image.Image | None,
     emoji: str | None,
+    text: str | None,
     background: tuple[int, int, int, int] | None,
+    text_color: tuple[int, int, int, int],
 ) -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     written = []
@@ -117,10 +167,12 @@ def generate_icons(
     for filename, size in icon_sizes(icon_type).items():
         if emoji:
             image = emoji_image(emoji, size, default_emoji_background(filename, background))
+        elif text:
+            image = text_image(text, size, default_text_background(filename, background), text_color)
         elif source:
             image = fit_image(source, size, background or (0, 0, 0, 0))
         else:
-            raise ValueError("provide source image or --emoji")
+            raise ValueError("provide source image, --emoji, or --text")
         path = output_dir / filename
         image.save(path)
         written.append(path)
@@ -203,6 +255,9 @@ def main() -> int:
     parser.add_argument("--suggest", help="Print emoji suggestions for a project description")
     parser.add_argument("--emoji", help="Generate icons from this emoji")
     parser.add_argument("--emoji-bg", default=None, help="Background color for emoji icons")
+    parser.add_argument("--text", help="Generate icons from text or initials")
+    parser.add_argument("--text-bg", default=None, help="Background color for text icons")
+    parser.add_argument("--text-color", default="#111827", help="Text color for text icons")
     parser.add_argument("--validate", action="store_true", help="Validate generated files and dimensions")
     args = parser.parse_args()
 
@@ -211,20 +266,32 @@ def main() -> int:
         return 0
 
     try:
+        if args.emoji and args.text:
+            raise ValueError("use either --emoji or --text, not both")
         if args.emoji:
             if not args.paths:
                 raise ValueError("output_dir is required when using --emoji")
             output_dir = Path(args.paths[0])
             icon_type = args.paths[1] if len(args.paths) > 1 else "all"
             background = parse_color(args.emoji_bg)
-            written = generate_icons(output_dir, icon_type, None, args.emoji, background)
+            written = generate_icons(output_dir, icon_type, None, args.emoji, None, background, (17, 24, 39, 255))
+        elif args.text:
+            if not args.paths:
+                raise ValueError("output_dir is required when using --text")
+            output_dir = Path(args.paths[0])
+            icon_type = args.paths[1] if len(args.paths) > 1 else "all"
+            background = parse_color(args.text_bg)
+            text_color = parse_color(args.text_color)
+            if text_color is None:
+                raise ValueError("text color is required")
+            written = generate_icons(output_dir, icon_type, None, None, args.text, background, text_color)
         else:
             if len(args.paths) < 2:
                 raise ValueError("usage: generate_favicons.py <source_image> <output_dir> [icon_type]")
             source_image = Image.open(args.paths[0])
             output_dir = Path(args.paths[1])
             icon_type = args.paths[2] if len(args.paths) > 2 else "all"
-            written = generate_icons(output_dir, icon_type, source_image, None, (0, 0, 0, 0))
+            written = generate_icons(output_dir, icon_type, source_image, None, None, (0, 0, 0, 0), (17, 24, 39, 255))
         if args.validate:
             validate_icons(output_dir, icon_type)
     except (OSError, ValueError) as exc:

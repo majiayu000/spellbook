@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-import textwrap
 import sys
 
 from PIL import Image, ImageColor, ImageDraw, ImageFont
@@ -53,19 +52,77 @@ def paste_center(canvas: Image.Image, image: Image.Image, y_offset: int = 0) -> 
     canvas.alpha_composite(image, (x, y))
 
 
+def text_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont) -> int:
+    bbox = draw.textbbox((0, 0), text, font=font)
+    return bbox[2] - bbox[0]
+
+
+def split_long_word(draw: ImageDraw.ImageDraw, word: str, font: ImageFont.ImageFont, max_width: int) -> list[str]:
+    parts = []
+    current = ""
+    for char in word:
+        candidate = current + char
+        if current and text_width(draw, candidate, font) > max_width:
+            parts.append(current)
+            current = char
+        else:
+            current = candidate
+    if current:
+        parts.append(current)
+    return parts
+
+
+def wrap_to_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, max_width: int) -> list[str]:
+    lines = []
+    for paragraph in text.splitlines() or [text]:
+        words = paragraph.split()
+        if not words:
+            continue
+        current = ""
+        for word in words:
+            candidate = word if not current else f"{current} {word}"
+            if text_width(draw, candidate, font) <= max_width:
+                current = candidate
+                continue
+            if current:
+                lines.append(current)
+            if text_width(draw, word, font) <= max_width:
+                current = word
+            else:
+                parts = split_long_word(draw, word, font, max_width)
+                lines.extend(parts[:-1])
+                current = parts[-1]
+        if current:
+            lines.append(current)
+    return lines
+
+
 def draw_wrapped_text(canvas: Image.Image, text: str, color: tuple[int, int, int]) -> None:
     draw = ImageDraw.Draw(canvas)
-    font = load_og_font(76 if canvas.width > canvas.height else 88, bold=True)
-    max_chars = 24 if canvas.width > canvas.height else 18
-    lines = textwrap.wrap(text, width=max_chars)[:4]
-    line_heights = [draw.textbbox((0, 0), line, font=font)[3] for line in lines]
-    total_height = sum(line_heights) + (len(lines) - 1) * 22
+    max_width = round(canvas.width * 0.82)
+    max_height = round(canvas.height * 0.66)
+    max_lines = 5
+    start_size = 76 if canvas.width > canvas.height else 88
+    min_size = 36 if canvas.width > canvas.height else 44
+    chosen = None
+    for size in range(start_size, min_size - 1, -4):
+        font = load_og_font(size, bold=True)
+        lines = wrap_to_width(draw, text, font, max_width)
+        gap = max(12, round(size * 0.28))
+        heights = [draw.textbbox((0, 0), line, font=font)[3] for line in lines]
+        total_height = sum(heights) + (len(lines) - 1) * gap
+        if lines and len(lines) <= max_lines and total_height <= max_height:
+            chosen = (font, lines, heights, gap, total_height)
+            break
+    if chosen is None:
+        raise ValueError("text is too long to fit social images without truncation")
+    font, lines, line_heights, gap, total_height = chosen
     y = (canvas.height - total_height) // 2
     for line, line_height in zip(lines, line_heights):
         bbox = draw.textbbox((0, 0), line, font=font)
         x = (canvas.width - (bbox[2] - bbox[0])) // 2
         draw.text((x, y), line, font=font, fill=color)
-        y += line_height + 22
+        y += line_height + gap
 
 
 def make_image(
@@ -115,6 +172,27 @@ def validate_og_images(output_dir: Path) -> None:
         raise ValueError("validation failed: " + "; ".join(errors))
 
 
+def relative_luminance(color: tuple[int, int, int]) -> float:
+    channels = []
+    for channel in color:
+        value = channel / 255
+        channels.append(value / 12.92 if value <= 0.03928 else ((value + 0.055) / 1.055) ** 2.4)
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+
+
+def contrast_ratio(first: tuple[int, int, int], second: tuple[int, int, int]) -> float:
+    l1 = relative_luminance(first)
+    l2 = relative_luminance(second)
+    lighter, darker = max(l1, l2), min(l1, l2)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+def validate_text_contrast(bg_color: tuple[int, int, int], text_color: tuple[int, int, int]) -> None:
+    ratio = contrast_ratio(bg_color, text_color)
+    if ratio < 4.5:
+        raise ValueError(f"text contrast ratio {ratio:.2f}:1 is below WCAG AA minimum 4.5:1")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output_dir")
@@ -133,6 +211,8 @@ def main() -> int:
     try:
         bg_color = parse_og_color(args.bg_color)
         text_color = parse_og_color(args.text_color)
+        if args.validate and args.text:
+            validate_text_contrast(bg_color, text_color)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

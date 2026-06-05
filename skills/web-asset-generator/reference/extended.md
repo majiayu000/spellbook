@@ -363,6 +363,11 @@ For detailed platform specifications, size requirements, and implementation guid
 
 **Generate**: Use `generate_favicons.py` with appropriate parameters
 
+Text-based example:
+```bash
+python scripts/generate_favicons.py --text "AI" output/ all --text-bg white --validate
+```
+
 ### "Make social sharing images"
 
 **Use AskUserQuestion**:
