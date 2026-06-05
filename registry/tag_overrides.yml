@@ -60,6 +60,11 @@ rustdesk-doctor:
 slides:
   - content
 
+skill-design-advisor:
+  - agent
+  - documentation
+  - prompt
+
 strategic-compact:
   - agent
   - prompt
