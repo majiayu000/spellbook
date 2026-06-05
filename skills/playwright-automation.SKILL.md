@@ -271,11 +271,18 @@ try {
 ## Multi-Server Setup
 
 ```bash
-# Start multiple servers, then run test
-python scripts/with_server.py \
-  --server "npm run dev" --port 3000 \
-  --server "npm run api" --port 5000 \
-  -- node /tmp/playwright-test.js
+# Start multiple servers in the background, run the test, then clean up.
+npm run dev > /tmp/playwright-dev.log 2>&1 &
+DEV_PID=$!
+npm run api > /tmp/playwright-api.log 2>&1 &
+API_PID=$!
+
+cleanup() {
+  kill "$DEV_PID" "$API_PID" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+node /tmp/playwright-test.js
 ```
 
 ## Quick Reference
