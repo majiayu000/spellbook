@@ -1,11 +1,11 @@
 ---
 name: ui-ux-pro-max
-description: "UI/UX design intelligence. 50 styles, 21 palettes, 50 font pairings, 20 charts, 9 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui). Actions: plan, build, create, design, implement, review, fix, improve, optimize, enhance, refactor, check UI/UX code. Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, mobile app, .html, .tsx, .vue, .svelte. Elements: button, modal, navbar, sidebar, card, table, form, chart. Styles: glassmorphism, claymorphism, minimalism, brutalism, neumorphism, bento grid, dark mode, responsive, skeuomorphism, flat design. Topics: color palette, accessibility, animation, layout, typography, font pairing, spacing, hover, shadow, gradient. Integrations: shadcn/ui MCP for component search and examples."
+description: "UI/UX design intelligence. Compact in-file reference tables for product patterns, landing pages, chart choices, visual styles, palettes, typography, UX rules, and 9 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui). Actions: plan, build, create, design, implement, review, fix, improve, optimize, enhance, refactor, check UI/UX code. Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, mobile app, .html, .tsx, .vue, .svelte. Elements: button, modal, navbar, sidebar, card, table, form, chart. Topics: color palette, accessibility, animation, layout, typography, font pairing, spacing, hover, shadow, gradient."
 ---
 
 # UI/UX Pro Max - Design Intelligence
 
-Comprehensive design guide for web and mobile applications. Contains 50+ styles, 97 color palettes, 57 font pairings, 99 UX guidelines, and 25 chart types across 9 technology stacks. Searchable database with priority-based recommendations.
+Comprehensive design guide for web and mobile applications. Contains compact reference tables for product patterns, visual styles, color palettes, typography, UX rules, chart choices, and technology stacks.
 
 ## When to Apply
 
@@ -87,34 +87,7 @@ Reference these guidelines when:
 
 ## How to Use
 
-Search specific domains using the CLI tool below.
-
----
-
-## Prerequisites
-
-Check if Python is installed:
-
-```bash
-python3 --version || python --version
-```
-
-If Python is not installed, install it based on user's OS:
-
-**macOS:**
-```bash
-brew install python3
-```
-
-**Ubuntu/Debian:**
-```bash
-sudo apt update && sudo apt install python3
-```
-
-**Windows:**
-```powershell
-winget install Python.Python.3.12
-```
+Use the rules and reference tables below directly.
 
 ---
 
@@ -132,42 +105,27 @@ Extract key information from user request:
 
 ### Step 2: Generate Design System (REQUIRED)
 
-**Always start with `--design-system`** to get comprehensive recommendations with reasoning:
+Always start by synthesizing a compact design system from the rules in this
+`SKILL.md`. Use the user's product type, industry, stack, and style keywords to
+choose:
 
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "<product_type> <industry> <keywords>" --design-system [-p "Project Name"]
-```
-
-This command:
-1. Searches 5 domains in parallel (product, style, color, landing, typography)
-2. Applies reasoning rules from `ui-reasoning.csv` to select best matches
-3. Returns complete design system: pattern, style, colors, typography, effects
-4. Includes anti-patterns to avoid
-
-**Example:**
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "beauty spa wellness service" --design-system -p "Serenity Spa"
-```
+1. Product pattern and layout structure
+2. Visual style and anti-patterns to avoid
+3. Color palette direction and contrast rules
+4. Typography direction
+5. Motion, accessibility, and interaction checks
 
 ### Step 2b: Persist Design System (Master + Overrides Pattern)
 
-To save the design system for **hierarchical retrieval across sessions**, add `--persist`:
-
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system --persist -p "Project Name"
-```
+When the work spans multiple pages or sessions, create a persistent design
+system:
 
 This creates:
 - `design-system/MASTER.md` — Global Source of Truth with all design rules
 - `design-system/pages/` — Folder for page-specific overrides
 
-**With page-specific override:**
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system --persist -p "Project Name" --page "dashboard"
-```
-
-This also creates:
-- `design-system/pages/dashboard.md` — Page-specific deviations from Master
+For a page-specific override, create `design-system/pages/<page-name>.md` with
+only the page-specific deviations from `MASTER.md`.
 
 **How hierarchical retrieval works:**
 1. When building a specific page (e.g., "Checkout"), first check `design-system/pages/checkout.md`
@@ -183,37 +141,29 @@ If not, use the Master rules exclusively.
 Now, generate the code...
 ```
 
-### Step 3: Supplement with Detailed Searches (as needed)
+### Step 3: Supplement with Relevant Sections (as needed)
 
-After getting the design system, use domain searches to get additional details:
+After getting the design system, consult the relevant sections below for extra
+detail:
 
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "<keyword>" --domain <domain> [-n <max_results>]
-```
-
-**When to use detailed searches:**
-
-| Need | Domain | Example |
-|------|--------|---------|
-| More style options | `style` | `--domain style "glassmorphism dark"` |
-| Chart recommendations | `chart` | `--domain chart "real-time dashboard"` |
-| UX best practices | `ux` | `--domain ux "animation accessibility"` |
-| Alternative fonts | `typography` | `--domain typography "elegant luxury"` |
-| Landing structure | `landing` | `--domain landing "hero social-proof"` |
+| Need | Domain | Use These Keywords |
+|------|--------|--------------------|
+| More style options | `style` | glassmorphism, minimalism, dark, brutalism, bento |
+| Chart recommendations | `chart` | trend, comparison, real-time, funnel, distribution |
+| UX best practices | `ux` | animation, accessibility, z-index, loading, keyboard |
+| Alternative fonts | `typography` | elegant, luxury, playful, professional, data-dense |
+| Landing structure | `landing` | hero, social proof, pricing, FAQ, conversion |
 
 ### Step 4: Stack Guidelines (Default: html-tailwind)
 
-Get implementation-specific best practices. If user doesn't specify a stack, **default to `html-tailwind`**.
-
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "<keyword>" --stack html-tailwind
-```
+Use implementation-specific best practices. If user doesn't specify a stack,
+**default to `html-tailwind`**.
 
 Available stacks: `html-tailwind`, `react`, `nextjs`, `vue`, `svelte`, `swiftui`, `react-native`, `flutter`, `shadcn`, `jetpack-compose`
 
 ---
 
-## Search Reference
+## Reference Index
 
 ### Available Domains
 
@@ -226,9 +176,6 @@ Available stacks: `html-tailwind`, `react`, `nextjs`, `vue`, `svelte`, `swiftui`
 | `landing` | Page structure, CTA strategies | hero, hero-centric, testimonial, pricing, social-proof |
 | `chart` | Chart types, library recommendations | trend, comparison, timeline, funnel, pie |
 | `ux` | Best practices, anti-patterns | animation, accessibility, z-index, loading |
-| `react` | React/Next.js performance | waterfall, bundle, suspense, memo, rerender, cache |
-| `web` | Web interface guidelines | aria, focus, keyboard, semantic, virtualize |
-| `prompt` | AI prompts, CSS keywords | (style name) |
 
 ### Available Stacks
 
@@ -247,6 +194,90 @@ Available stacks: `html-tailwind`, `react`, `nextjs`, `vue`, `svelte`, `swiftui`
 
 ---
 
+## Decision Reference
+
+### Product Patterns
+
+| Product Type | Layout Pattern | Visual Direction | Avoid |
+|--------------|----------------|------------------|-------|
+| SaaS / B2B | Sidebar or top nav, dense tables, filters, status summaries | Quiet surfaces, strong hierarchy, restrained accent color | Oversized marketing hero inside work screens |
+| Dashboard / Admin | KPI row, searchable tables, charts, audit trail, empty states | Compact spacing, stable grid, readable numeric typography | Decorative cards that hide operational data |
+| E-commerce | Product grid, filters, cart summary, trust markers, reviews | Product imagery first, clear price/CTA hierarchy | Low-contrast price or checkout controls |
+| Beauty / Wellness | Service sections, booking CTA, testimonials, before/after imagery | Soft neutral base, botanical/rose/gold accent, elegant type | Thin low-contrast text and generic spa stock feel |
+| Healthcare | Appointment flow, provider info, insurance/payment clarity | Calm blue/green palette, high contrast, plain labels | Playful styling that reduces trust |
+| Portfolio / Agency | Case-study grid, project detail pages, proof and process | Strong type scale, real work imagery, focused accent | Abstract decoration without project evidence |
+| Landing Page | Brand/product signal, primary CTA, proof, pricing or FAQ | First viewport shows offer and next section hint | Hero-only page with no visible proof path |
+
+### Style, Color, And Typography
+
+| Direction | Use | Color Guidance | Typography |
+|-----------|-----|----------------|------------|
+| Professional / Minimal | SaaS, finance, productivity | Neutral base plus blue, teal, or green accent | Inter, IBM Plex Sans, system UI |
+| Elegant / Editorial | Luxury, wellness, portfolio | Warm neutral, charcoal, muted rose, gold, or botanical green | Playfair Display + Inter, Source Serif + Inter |
+| Playful | Consumer apps, education, creator tools | Bright accent with generous white space; keep contrast AA | Nunito, Satoshi, system rounded |
+| Dark Mode | Developer tools, media, dashboards | Near-black background, elevated surfaces, saturated accent | Inter or IBM Plex Sans; avoid thin weights |
+| Glass / Bento | AI tools, premium marketing, dashboards | Translucent surfaces over stable solid backgrounds | Modern sans with tight hierarchy |
+| Brutalist | Creative portfolios, launches | High-contrast monochrome plus one sharp accent | Archivo, Space Grotesk, Inter |
+
+### Design System Source Rows
+
+| Product / Industry | Structure | Palette | Type / Density | Interaction Notes |
+|--------------------|-----------|---------|----------------|-------------------|
+| Healthcare | Appointment, provider, insurance, results, and support flows | Blue/green, white, high-contrast neutrals | Clear sans, generous line-height, plain labels | Prioritize trust, readable errors, and visible privacy cues |
+| Fintech | Account summary, transaction list, alerts, controls, audit trail | Deep neutral, blue/teal/green accent, semantic risk colors | Tabular numbers, compact labels, strong hierarchy | Avoid ambiguous money actions; confirm destructive transfers |
+| Beauty / Wellness | Services, booking, proof, before/after, testimonials | Soft neutral with rose, gold, botanical green, or charcoal | Elegant display font plus readable sans | Keep CTAs obvious; do not let decorative type reduce contrast |
+| Developer / AI Tool | Workspace, prompt/input, result panel, history, settings | Near-black or neutral light base with cyan/blue/green accent | Dense sans, monospace for code/data | Preserve keyboard flow, loading states, and copy/download actions |
+| E-commerce | Product grid, filters, PDP, cart, checkout, trust markers | Product-led neutral with one CTA accent | Readable price, variant, and stock labels | Make cart and checkout states stable across breakpoints |
+| Education / Creator | Lesson/content, progress, practice, feedback, community | Friendly accent, calm background, success/progress colors | Rounded sans, moderate density | Use clear progress and avoid hiding next actions |
+
+### Landing Structure
+
+| Cue | Section Order | CTA Strategy | Proof |
+|-----|---------------|--------------|-------|
+| Hero / offer | Brand or offer, value copy, primary CTA, next-section hint | One primary CTA; secondary only if it clarifies | Customer/logo row or concrete outcome near first viewport |
+| Social proof | Hero, proof band, feature evidence, testimonial, CTA | Repeat CTA after proof | Logos, review snippets, usage metrics, case-study links |
+| Pricing | Hero, value proof, plan comparison, FAQ, CTA | Keep plan CTA labels specific | Feature comparison, guarantee, support details |
+| FAQ / conversion | Hero, objections, FAQ, final CTA | Match CTA to funnel stage | Risk reversal, security/compliance, support promise |
+| Product launch | Product visual, benefits, demo, waitlist, proof | One signup/join action | Demo stills, roadmap, early-user quotes |
+
+### Chart Choices
+
+| Data Need | Use | Avoid | Notes |
+|-----------|-----|-------|-------|
+| Trend over time | Line or area chart | Pie chart | Show range, units, and empty/no-data state |
+| Comparison | Bar chart | 3D chart | Sort by value unless chronology matters |
+| Real-time metric | KPI + sparkline | Dense multi-series line | Include stale/loading indicators |
+| Funnel | Funnel or stepped bar | Pie chart | Label conversion at each stage |
+| Distribution | Histogram or box plot | Single KPI | Show sample size and outliers |
+| Timeline | Timeline or Gantt | Table-only view | Pair with filters for long histories |
+| Part-to-whole | Stacked bar or donut | Many-slice pie | Use only when categories are few and stable |
+
+### HTML + Tailwind Guidance
+
+| Area | Guidance |
+|------|----------|
+| Layout | Start mobile-first, use semantic landmarks, constrain content with `max-w-*`, and reserve dimensions for repeated cards, grids, and media. |
+| Responsive | Prefer `grid-cols-1 md:grid-cols-*` and stable `min-h`/`aspect-*`; check 360px, 768px, and desktop widths. |
+| Forms | Pair every input with a label, keep error text adjacent, use `aria-describedby`, and make submit/loading states explicit. |
+| Components | Use Lucide/Heroicons for buttons, avoid card-in-card layouts, and keep hover/focus states from moving layout. |
+| Assets | Use real product/place/person imagery when the user needs inspection; avoid purely atmospheric placeholders. |
+
+### Stack Guidance
+
+| Stack | Apply |
+|-------|-------|
+| `html-tailwind` | Use semantic HTML, mobile-first Tailwind breakpoints, constrained containers, fixed dimensions for toolbars/cards/grids, visible focus states, 44px touch targets, and static-friendly markup. Keep scripts small and avoid framework-only patterns. |
+| `react` | Split stateful components by workflow, keep controlled forms explicit, memoize only proven hot paths, and preserve accessible labels for icon buttons. |
+| `nextjs` | Use framework image/link primitives where available, keep server/client boundaries explicit, and avoid putting interactive-only code in server components. |
+| `vue` / `svelte` | Keep reactive state local until shared state is truly needed; preserve semantic HTML and predictable transitions. |
+| `shadcn` | Use tokens and component variants consistently; do not stack cards inside cards or override primitives ad hoc. |
+| `swiftui` | Compose small `View`s, keep `@State` local, use `NavigationStack`, respect safe areas, and prefer system controls before custom gestures. |
+| `react-native` | Use platform components, `FlatList` for long lists, navigation-safe screens, explicit loading/error states, and 44px minimum touch targets. |
+| `flutter` | Use Material/Cupertino widgets deliberately, keep state ownership clear, rely on constraints for layout, and centralize theme tokens. |
+| `jetpack-compose` | Hoist state, keep composables pure, use stable keys in lazy lists, avoid unnecessary recomposition, and respect Material touch targets. |
+
+---
+
 ## Example Workflow
 
 **User request:** "Làm landing page cho dịch vụ chăm sóc da chuyên nghiệp"
@@ -259,54 +290,31 @@ Available stacks: `html-tailwind`, `react`, `nextjs`, `vue`, `svelte`, `swiftui`
 
 ### Step 2: Generate Design System (REQUIRED)
 
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "beauty spa wellness service elegant" --design-system -p "Serenity Spa"
-```
+Create a compact design system for "Serenity Spa" with pattern, style, colors,
+typography, effects, and anti-patterns.
 
-**Output:** Complete design system with pattern, style, colors, typography, effects, and anti-patterns.
+### Step 3: Supplement with Relevant Sections (as needed)
 
-### Step 3: Supplement with Detailed Searches (as needed)
-
-```bash
-# Get UX guidelines for animation and accessibility
-python3 skills/ui-ux-pro-max/scripts/search.py "animation accessibility" --domain ux
-
-# Get alternative typography options if needed
-python3 skills/ui-ux-pro-max/scripts/search.py "elegant luxury serif" --domain typography
-```
+Use the UX, product, style, color, and typography tables when animation,
+accessibility, font direction, or page structure needs more detail.
 
 ### Step 4: Stack Guidelines
 
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "layout responsive form" --stack html-tailwind
-```
+Apply the `html-tailwind` stack guidelines for layout, responsive behavior, and
+forms.
 
-**Then:** Synthesize design system + detailed searches and implement the design.
-
----
-
-## Output Formats
-
-The `--design-system` flag supports two output formats:
-
-```bash
-# ASCII box (default) - best for terminal display
-python3 skills/ui-ux-pro-max/scripts/search.py "fintech crypto" --design-system
-
-# Markdown - best for documentation
-python3 skills/ui-ux-pro-max/scripts/search.py "fintech crypto" --design-system -f markdown
-```
+**Then:** Synthesize the design system, relevant sections, and stack guidance before implementing the design.
 
 ---
 
 ## Tips for Better Results
 
 1. **Be specific with keywords** - "healthcare SaaS dashboard" > "app"
-2. **Search multiple times** - Different keywords reveal different insights
+2. **Check multiple reference rows** - Product, industry, and style rows often combine
 3. **Combine domains** - Style + Typography + Color = Complete design system
-4. **Always check UX** - Search "animation", "z-index", "accessibility" for common issues
-5. **Use stack flag** - Get implementation-specific best practices
-6. **Iterate** - If first search doesn't match, try different keywords
+4. **Always check UX** - Use "animation", "z-index", and "accessibility" as cues for common issues
+5. **Use the stack section** - Apply implementation-specific best practices
+6. **Iterate** - If the first reference row doesn't match, try adjacent keywords
 
 ---
 

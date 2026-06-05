@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>81 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>82 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-81-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-82-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -106,6 +106,7 @@ Claude Code 仍是一等支持目标，也是用户搜索和认知入口。项�
 
 > 完整的自动生成清单位于 [Skill Registry](./docs/skill-registry.md)。
 > 技能目录/单文件格式规则见 [Skill Format Policy](./docs/skill-format-policy.md)。
+> Skill 编写质量规则见 [Skill Quality Playbook](./docs/skill-quality-playbook.md)。
 
 ### 检索技能
 
@@ -124,6 +125,13 @@ python3 scripts/validate_skills.py search --tag react --json
 ```
 
 标签索引位于 [`registry/tags.json`](./registry/tags.json)，可供面板/工具直接消费。无法被关键词启发式识别的标签可在 [`registry/tag_overrides.yml`](./registry/tag_overrides.yml) 中手动维护。
+
+审计非阻断的 skill 质量信号：
+
+```bash
+python3 scripts/audit_skill_quality.py
+python3 scripts/audit_skill_quality.py skill-creator
+```
 
 ### 开发架构
 
@@ -192,7 +200,7 @@ python3 scripts/validate_skills.py search --tag react --json
 | [`react-best-practices`](./skills/react-best-practices/) | 基于 Vercel 指南整理的 React / Next.js 性能实践 |
 | [`react-hooks-best-practices`](./skills/react-hooks-best-practices/) | React hooks、effects、refs 与组件设计模式 |
 | [`slides`](./skills/slides/) | 口播视频背景和演示用幻灯片生成 |
-| [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | 50+ 风格、97 配色、57 字体配对、9 技术栈 |
+| [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | 产品模式、落地页、图表与 9 个技术栈的紧凑 UI/UX 表 |
 
 ### 工具与自动化
 
@@ -271,6 +279,7 @@ Spellbook 中的每个技能都遵循以下原则：
 | [Runtime 目标](./docs/runtime-targets.md) | Claude Code 与 Codex 安装目标 |
 | [Showcase](./docs/showcase.md) | 可直接复制的工作流演示 |
 | [技能格式策略](./docs/skill-format-policy.md) | 目录型与单文件 skill 的格式规则 |
+| [Skill Quality Playbook](./docs/skill-quality-playbook.md) | 触发描述、gotchas、渐进式披露与验证标准 |
 | [技能测试指南](./docs/skill-testing-guide.md) | 如何验证技能是否生效 |
 | [创建插件](./docs/creating-plugins.md) | 构建你自己的技能 |
 | [产品生命周期（英文）](./docs/product-lifecycle-skills-en.md) | 完整生命周期覆盖 |
