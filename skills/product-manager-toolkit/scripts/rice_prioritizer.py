@@ -115,10 +115,14 @@ def read_features(path: Path) -> list[dict[str, object]]:
                 "confidence": confidence,
                 "effort": effort,
                 "rice_score": round(score, 2),
+                "_rice_score_sort": score,
                 "bucket": classify(score, effort),
             }
         )
-    return sorted(features, key=lambda item: float(item["rice_score"]), reverse=True)
+    ranked = sorted(features, key=lambda item: float(item["_rice_score_sort"]), reverse=True)
+    for feature in ranked:
+        del feature["_rice_score_sort"]
+    return ranked
 
 
 def classify(score: float, effort: float) -> str:

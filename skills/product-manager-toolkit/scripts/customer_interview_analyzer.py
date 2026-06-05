@@ -25,6 +25,16 @@ REQUEST_TERM_PATTERNS = (
     r"\b(easier|faster|less manual|fewer steps)\b",
 )
 
+NEGATED_REQUEST_PATTERNS = (
+    r"\b(don't|do not|dont|never|no longer)\s+(want|need|wish|request)\b",
+    r"\b(not|isn't|is not|wasn't|was not)\s+(needed|required|a priority)\b",
+)
+
+INTERVIEWER_PROMPT_PATTERNS = (
+    r"^\s*(could you|can you|would you)\s+(tell|describe|explain|share|walk)\b",
+    r"^\s*(what|how|why|when|where|do you|are you|have you)\b",
+)
+
 JOB_PATTERNS = (
     r"\bwhen i\b.*\bi want to\b",
     r"\bso i can\b",
@@ -68,9 +78,13 @@ def matching_sentences(items: list[str], patterns: tuple[str, ...]) -> list[str]
 def request_sentences(items: list[str]) -> list[str]:
     matches = []
     for item in items:
+        is_negated = any(re.search(pattern, item, flags=re.IGNORECASE) for pattern in NEGATED_REQUEST_PATTERNS)
+        is_interviewer_prompt = any(
+            re.search(pattern, item, flags=re.IGNORECASE) for pattern in INTERVIEWER_PROMPT_PATTERNS
+        )
         has_intent = any(re.search(pattern, item, flags=re.IGNORECASE) for pattern in REQUEST_INTENT_PATTERNS)
         has_request_term = any(re.search(pattern, item, flags=re.IGNORECASE) for pattern in REQUEST_TERM_PATTERNS)
-        if has_intent and has_request_term:
+        if has_intent and has_request_term and not is_negated and not is_interviewer_prompt:
             matches.append(item)
     return matches
 
