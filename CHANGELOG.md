@@ -17,6 +17,9 @@ Use this section for notable changes after the latest dated snapshot.
 
 ### Added
 
+- Added the `skill-audit` skill based on Anthropic's Claude Code skills
+  lessons, covering skill taxonomy, trigger descriptions, progressive
+  disclosure, setup, memory, scripts, hooks, distribution, and measurement.
 - Added the `gemma4-local-deploy` skill for local Gemma 4 12B deployment with
   `llama.cpp`, GGUF quantization, Apple Metal, tmux background service
   management, OpenAI-compatible API verification, and resource reporting.
@@ -25,6 +28,7 @@ Use this section for notable changes after the latest dated snapshot.
 
 ### Changed
 
+- Updated the installable skill count from 81 to 82.
 - Updated the installable skill count from 80 to 81.
 - Tightened the `threads` skill merge gate so GitHub queue work must check
   thread-aware review state, comment closure, delayed auto-review feedback, and
