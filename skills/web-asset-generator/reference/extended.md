@@ -414,7 +414,7 @@ For detailed platform specifications, size requirements, and implementation guid
 ## Dependencies
 
 The scripts require:
-- Python 3.6+
+- Python 3.10+
 - Pillow (PIL): `pip install Pillow --break-system-packages`
 - **Pilmoji** (for emoji support): `pip install pilmoji` (optional, only needed for emoji-based generation)
 - **emoji** (for emoji suggestions): `pip install emoji` (optional, only needed for emoji suggestions)

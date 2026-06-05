@@ -31,9 +31,11 @@ SUGGESTIONS = {
 }
 
 
-def parse_color(value: str | None, default: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
-    if not value or value == "transparent":
-        return default
+def parse_color(value: str | None) -> tuple[int, int, int, int] | None:
+    if not value:
+        return None
+    if value == "transparent":
+        return (0, 0, 0, 0)
     try:
         rgb = ImageColor.getrgb(value)
     except ValueError as exc:
@@ -89,7 +91,17 @@ def icon_sizes(icon_type: str) -> dict[str, int]:
         return FAVICON_SIZES
     if icon_type == "app":
         return APP_SIZES
-    return {**FAVICON_SIZES, **APP_SIZES}
+    if icon_type == "all":
+        return {**FAVICON_SIZES, **APP_SIZES}
+    raise ValueError("icon_type must be one of: favicon, app, all")
+
+
+def default_emoji_background(filename: str, requested: tuple[int, int, int, int] | None) -> tuple[int, int, int, int]:
+    if requested is not None:
+        return requested
+    if filename in APP_SIZES:
+        return (255, 255, 255, 255)
+    return (0, 0, 0, 0)
 
 
 def generate_icons(
@@ -97,13 +109,18 @@ def generate_icons(
     icon_type: str,
     source: Image.Image | None,
     emoji: str | None,
-    background: tuple[int, int, int, int],
+    background: tuple[int, int, int, int] | None,
 ) -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     written = []
     images_for_ico = []
     for filename, size in icon_sizes(icon_type).items():
-        image = emoji_image(emoji, size, background) if emoji else fit_image(source, size, background)
+        if emoji:
+            image = emoji_image(emoji, size, default_emoji_background(filename, background))
+        elif source:
+            image = fit_image(source, size, background or (0, 0, 0, 0))
+        else:
+            raise ValueError("provide source image or --emoji")
         path = output_dir / filename
         image.save(path)
         written.append(path)
@@ -113,16 +130,28 @@ def generate_icons(
         ico_path = output_dir / "favicon.ico"
         images_for_ico[-1].save(ico_path, sizes=[(image.width, image.height) for image in images_for_ico])
         written.append(ico_path)
-    write_tags(output_dir)
+    write_tags(output_dir, icon_type)
     return written
 
 
-def write_tags(output_dir: Path) -> None:
-    tags = """<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link rel="manifest" href="/site.webmanifest">
-"""
+def write_tags(output_dir: Path, icon_type: str) -> None:
+    tags = []
+    if icon_type in {"favicon", "all"}:
+        tags.extend(
+            [
+                '<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">',
+                '<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">',
+                '<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">',
+                '<link rel="shortcut icon" href="/favicon.ico">',
+            ]
+        )
+    if icon_type in {"app", "all"}:
+        tags.extend(
+            [
+                '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">',
+                '<link rel="manifest" href="/site.webmanifest">',
+            ]
+        )
     manifest = """{
   "icons": [
     { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
@@ -130,8 +159,29 @@ def write_tags(output_dir: Path) -> None:
   ]
 }
 """
-    (output_dir / "html-tags.txt").write_text(tags, encoding="utf-8")
-    (output_dir / "site.webmanifest").write_text(manifest, encoding="utf-8")
+    (output_dir / "html-tags.txt").write_text("\n".join(tags) + "\n", encoding="utf-8")
+    if icon_type in {"app", "all"}:
+        (output_dir / "site.webmanifest").write_text(manifest, encoding="utf-8")
+
+
+def validate_icons(output_dir: Path, icon_type: str) -> None:
+    errors = []
+    for filename, size in icon_sizes(icon_type).items():
+        path = output_dir / filename
+        if not path.exists():
+            errors.append(f"missing {filename}")
+            continue
+        with Image.open(path) as image:
+            if image.size != (size, size):
+                errors.append(f"{filename} has size {image.size}, expected {(size, size)}")
+    if icon_type in {"favicon", "all"} and not (output_dir / "favicon.ico").exists():
+        errors.append("missing favicon.ico")
+    if not (output_dir / "html-tags.txt").exists():
+        errors.append("missing html-tags.txt")
+    if icon_type in {"app", "all"} and not (output_dir / "site.webmanifest").exists():
+        errors.append("missing site.webmanifest")
+    if errors:
+        raise ValueError("validation failed: " + "; ".join(errors))
 
 
 def suggest_emojis(description: str) -> None:
@@ -153,6 +203,7 @@ def main() -> int:
     parser.add_argument("--suggest", help="Print emoji suggestions for a project description")
     parser.add_argument("--emoji", help="Generate icons from this emoji")
     parser.add_argument("--emoji-bg", default=None, help="Background color for emoji icons")
+    parser.add_argument("--validate", action="store_true", help="Validate generated files and dimensions")
     args = parser.parse_args()
 
     if args.suggest:
@@ -165,7 +216,7 @@ def main() -> int:
                 raise ValueError("output_dir is required when using --emoji")
             output_dir = Path(args.paths[0])
             icon_type = args.paths[1] if len(args.paths) > 1 else "all"
-            background = parse_color(args.emoji_bg, (0, 0, 0, 0))
+            background = parse_color(args.emoji_bg)
             written = generate_icons(output_dir, icon_type, None, args.emoji, background)
         else:
             if len(args.paths) < 2:
@@ -174,6 +225,8 @@ def main() -> int:
             output_dir = Path(args.paths[1])
             icon_type = args.paths[2] if len(args.paths) > 2 else "all"
             written = generate_icons(output_dir, icon_type, source_image, None, (0, 0, 0, 0))
+        if args.validate:
+            validate_icons(output_dir, icon_type)
     except (OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

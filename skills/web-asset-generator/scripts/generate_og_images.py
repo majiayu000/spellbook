@@ -99,6 +99,22 @@ def write_meta_tags(output_dir: Path) -> None:
     (output_dir / "meta-tags.txt").write_text(tags, encoding="utf-8")
 
 
+def validate_og_images(output_dir: Path) -> None:
+    errors = []
+    for filename, size in OUTPUTS.items():
+        path = output_dir / filename
+        if not path.exists():
+            errors.append(f"missing {filename}")
+            continue
+        with Image.open(path) as image:
+            if image.size != size:
+                errors.append(f"{filename} has size {image.size}, expected {size}")
+    if not (output_dir / "meta-tags.txt").exists():
+        errors.append("missing meta-tags.txt")
+    if errors:
+        raise ValueError("validation failed: " + "; ".join(errors))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output_dir")
@@ -107,6 +123,7 @@ def main() -> int:
     parser.add_argument("--logo", help="Optional logo to include above text")
     parser.add_argument("--bg-color", default="#4F46E5")
     parser.add_argument("--text-color", default="white")
+    parser.add_argument("--validate", action="store_true", help="Validate generated files and dimensions")
     args = parser.parse_args()
 
     if not args.image and not args.text:
@@ -139,7 +156,9 @@ def main() -> int:
             image.convert("RGB").save(path, quality=92)
             print(path)
         write_meta_tags(output_dir)
-    except OSError as exc:
+        if args.validate:
+            validate_og_images(output_dir)
+    except (OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     return 0
