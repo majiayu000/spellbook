@@ -23,6 +23,20 @@
     ]
   },
   {
+    "name": "architecture-foundation",
+    "category": "Development Architecture",
+    "format": "directory",
+    "path": "skills/architecture-foundation/SKILL.md",
+    "description": "Design architecture foundations before implementation. Use when asked to design or refactor architecture, choose Rust/Go crate, package, module, runtime, workflow, or service boundaries, compare mature project architecture, prevent stacked one-off PRs, audit migration debt in existing repos, or produce a spec before coding.",
+    "language": "en",
+    "tags": [
+      "architecture",
+      "go",
+      "refactoring",
+      "rust"
+    ]
+  },
+  {
     "name": "ask-opencli",
     "category": "AI & Agent Workflow",
     "format": "directory",
