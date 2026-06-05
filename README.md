@@ -194,7 +194,7 @@ Skills for using multiple coding agents and CLI tools together.
 | [`app-ui-design`](./skills/app-ui-design/) | iOS/Android UI design, Material Design 3, HIG |
 | [`product-ux-expert`](./skills/product-ux-expert/) | UX evaluation, heuristics, accessibility |
 | [`frontend-design`](./skills/frontend-design/) | Web frontend design patterns |
-| [`ui-designer`](./skills/ui-designer.SKILL.md) | Extract design systems from UI screenshots and references |
+| [`ui-designer`](./skills/ui-designer/) | Extract design systems from UI screenshots and references |
 | [`ui-design-system`](./skills/ui-design-system/) | Design system toolkit and design-dev handoff support |
 | [`web-artifacts-builder`](./skills/web-artifacts-builder/) | Claude.ai HTML artifacts |
 | [`react-best-practices`](./skills/react-best-practices/) | React and Next.js performance patterns distilled from Vercel guidance |

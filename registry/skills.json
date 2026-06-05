@@ -870,8 +870,8 @@
   {
     "name": "ui-designer",
     "category": "UI/UX & Frontend",
-    "format": "file",
-    "path": "skills/ui-designer.SKILL.md",
+    "format": "directory",
+    "path": "skills/ui-designer/SKILL.md",
     "description": "Extract design systems from reference UI images and generate implementation-ready UI design prompts. Use when users provide UI screenshots/mockups and want to create consistent designs, generate design systems, or build MVP UIs matching reference aesthetics.",
     "language": "en",
     "tags": [

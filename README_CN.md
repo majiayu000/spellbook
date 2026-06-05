@@ -194,7 +194,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`app-ui-design`](./skills/app-ui-design/) | iOS/Android UI 设计，Material Design 3，HIG |
 | [`product-ux-expert`](./skills/product-ux-expert/) | UX 评估、启发式、可访问性 |
 | [`frontend-design`](./skills/frontend-design/) | Web 前端设计模式 |
-| [`ui-designer`](./skills/ui-designer.SKILL.md) | 从 UI 截图和参考图提取设计系统 |
+| [`ui-designer`](./skills/ui-designer/) | 从 UI 截图和参考图提取设计系统 |
 | [`ui-design-system`](./skills/ui-design-system/) | 设计系统工具包与设计交付支持 |
 | [`web-artifacts-builder`](./skills/web-artifacts-builder/) | Claude.ai HTML 组件 |
 | [`react-best-practices`](./skills/react-best-practices/) | 基于 Vercel 指南整理的 React / Next.js 性能实践 |
