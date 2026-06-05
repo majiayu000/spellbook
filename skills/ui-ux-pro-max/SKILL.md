@@ -1,6 +1,6 @@
 ---
 name: ui-ux-pro-max
-description: "UI/UX design intelligence. 50 styles, 21 palettes, 50 font pairings, 20 charts, 9 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui). Actions: plan, build, create, design, implement, review, fix, improve, optimize, enhance, refactor, check UI/UX code. Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, mobile app, .html, .tsx, .vue, .svelte. Elements: button, modal, navbar, sidebar, card, table, form, chart. Styles: glassmorphism, claymorphism, minimalism, brutalism, neumorphism, bento grid, dark mode, responsive, skeuomorphism, flat design. Topics: color palette, accessibility, animation, layout, typography, font pairing, spacing, hover, shadow, gradient. Integrations: shadcn/ui MCP for component search and examples."
+description: "UI/UX design intelligence. Compact in-file reference tables for product patterns, landing pages, chart choices, visual styles, palettes, typography, UX rules, and 9 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui). Actions: plan, build, create, design, implement, review, fix, improve, optimize, enhance, refactor, check UI/UX code. Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, mobile app, .html, .tsx, .vue, .svelte. Elements: button, modal, navbar, sidebar, card, table, form, chart. Topics: color palette, accessibility, animation, layout, typography, font pairing, spacing, hover, shadow, gradient."
 ---
 
 # UI/UX Pro Max - Design Intelligence
@@ -176,9 +176,6 @@ Available stacks: `html-tailwind`, `react`, `nextjs`, `vue`, `svelte`, `swiftui`
 | `landing` | Page structure, CTA strategies | hero, hero-centric, testimonial, pricing, social-proof |
 | `chart` | Chart types, library recommendations | trend, comparison, timeline, funnel, pie |
 | `ux` | Best practices, anti-patterns | animation, accessibility, z-index, loading |
-| `react` | React/Next.js performance | waterfall, bundle, suspense, memo, rerender, cache |
-| `web` | Web interface guidelines | aria, focus, keyboard, semantic, virtualize |
-| `prompt` | AI prompts, CSS keywords | (style name) |
 
 ### Available Stacks
 

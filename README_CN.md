@@ -192,7 +192,7 @@ python3 scripts/validate_skills.py search --tag react --json
 | [`react-best-practices`](./skills/react-best-practices/) | 基于 Vercel 指南整理的 React / Next.js 性能实践 |
 | [`react-hooks-best-practices`](./skills/react-hooks-best-practices/) | React hooks、effects、refs 与组件设计模式 |
 | [`slides`](./skills/slides/) | 口播视频背景和演示用幻灯片生成 |
-| [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | 50+ 风格、97 配色、57 字体配对、9 技术栈 |
+| [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | 产品模式、落地页、图表与 9 个技术栈的紧凑 UI/UX 表 |
 
 ### 工具与自动化
 
