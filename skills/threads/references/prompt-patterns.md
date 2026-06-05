@@ -17,6 +17,7 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 - review lane 只读。
 - 高上下文文件 AGENTS.md/CLAUDE.md/settings/hooks 默认禁止修改。
 - 每个 PR merge 前必须有独立 thread review。
+- merge 前必须用 thread-aware GitHub 数据检查 reviewThreads.isResolved；open PR/issue 为空不等于评论闭环完成。
 - 输出 lane_map、依赖图、执行顺序、验证命令、stop_conditions。
 ```
 
@@ -129,7 +130,9 @@ Target: {{issue_or_pr_or_queue}}
 2. CI/checks 是否对当前 head 通过
 3. diff 是否只包含声明范围
 4. review findings 是否已解决
-5. 是否存在 high-context file、test weakening、silent fallback、ownership 冲突
+5. GraphQL reviewThreads 是否无 unresolved actionable thread；不要只看普通 PR comments
+6. 已修复的 review feedback 是否有对应回复或已 resolve thread
+7. 是否存在 high-context file、test weakening、silent fallback、ownership 冲突
 
 如果无 blocking issue，返回：
 No findings; safe to merge.
@@ -171,6 +174,8 @@ No findings; safe to merge.
 请只读检查本地和远端是否还有残留：
 - gh pr list
 - gh issue list
+- GraphQL reviewThreads.isResolved for touched PRs
+- PR conversation comments, review comments, and whether fixed feedback has replies/resolution
 - git fetch --prune
 - git status --short --branch
 - git log origin/main..HEAD
@@ -184,4 +189,5 @@ No findings; safe to merge.
 - dirty but already superseded work
 - high-context untracked files
 - actual missing PR work
+- historical unresolved review threads that are outside the current queue
 ```
