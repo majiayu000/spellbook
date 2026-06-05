@@ -6,6 +6,7 @@ if [[ -z "$project_name" ]]; then
   echo "usage: bash scripts/init-artifact.sh <project-name>" >&2
   exit 2
 fi
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ -e "$project_name" ]]; then
   echo "error: target already exists: $project_name" >&2
@@ -21,7 +22,7 @@ cat > package.json <<'JSON'
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "bundle": "bash ../scripts/bundle-artifact.sh"
+    "bundle": "bash scripts/bundle-artifact.sh"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.0",
@@ -181,6 +182,10 @@ cat > .parcelrc <<'JSON'
   "extends": "@parcel/config-default"
 }
 JSON
+
+mkdir -p scripts
+cp "$script_dir/bundle-artifact.sh" scripts/bundle-artifact.sh
+chmod +x scripts/bundle-artifact.sh
 
 echo "Created artifact project: $project_name"
 echo "Next: cd $project_name && npm install && npm run dev"
