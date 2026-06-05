@@ -268,6 +268,8 @@ Use these prompts when evaluating the skill manually:
 - "我的 Wi-Fi 信号很好但 ping 路由器偶尔 100ms，帮我诊断，不要直接改配置。"
 - "把 Codex 网络优化流程跑一遍，输出 before/after 报告和可回滚建议。"
 
+Structured eval cases live in `evals/evals.json`; use them when checking that proxy-safe routing, rollback language, and before/after evidence stay intact.
+
 ## Version
 
 v1.0 - 2026-05-24 - Initial proxy-safe Codex network optimization workflow based on the viral Codex network optimization pattern and local macOS/Clash diagnostic lessons.

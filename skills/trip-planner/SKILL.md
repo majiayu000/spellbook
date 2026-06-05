@@ -1,6 +1,6 @@
 ---
 name: trip-planner
-description: Create detailed travel itineraries with activities, logistics, and day-by-day schedules. Use for vacation planning, trip organization, and travel documentation.
+description: Use when the user wants detailed travel itineraries with activities, logistics, day-by-day schedules, vacation planning, trip organization, or travel documentation.
 ---
 
 # Trip Planner Skill

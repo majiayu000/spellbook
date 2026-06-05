@@ -1,6 +1,6 @@
 ---
 name: rust-best-practices
-description: Rust coding best practices based on Microsoft Pragmatic Rust Guidelines. ALWAYS invoke before writing or modifying Rust code. Covers error handling, API design, performance, and idiomatic patterns.
+description: Use when writing, modifying, or reviewing Rust code. ALWAYS invoke before Rust edits; covers Microsoft Pragmatic Rust guidance for error handling, API design, performance, and idiomatic patterns.
 ---
 # Rust Best Practices
 

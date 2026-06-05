@@ -392,3 +392,6 @@ Retry-After: 60
 - [reference/graphql.md](reference/graphql.md) — GraphQL patterns
 - [reference/grpc.md](reference/grpc.md) — gRPC patterns
 - [reference/comparison.md](reference/comparison.md) — Selection guide
+- [templates/openapi/openapi.yaml](templates/openapi/openapi.yaml) — OpenAPI starter contract
+- [templates/graphql/schema.graphql](templates/graphql/schema.graphql) — GraphQL schema starter
+- [templates/grpc/service.proto](templates/grpc/service.proto) — gRPC service starter

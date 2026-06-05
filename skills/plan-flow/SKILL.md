@@ -1,6 +1,6 @@
 ---
 name: plan-flow
-description: "Analyze repository-level duplicate/redundant design first, then build and execute a strict step-test-update plan in docs/plan. Use for deep architecture review, convergence planning, and traceable one-step-at-a-time delivery."
+description: "Use when deep architecture review or convergence planning requires analyzing repository-level duplicate/redundant design first, then building and executing a strict step-test-update plan in docs/plan."
 ---
 
 # Plan Flow

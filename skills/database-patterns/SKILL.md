@@ -1,6 +1,6 @@
 ---
 name: database-patterns
-description: PostgreSQL + Redis database design patterns. Use for data modeling, indexing, caching strategies. Covers JSONB, tiered storage, cache consistency.
+description: Use when designing PostgreSQL + Redis data models, indexes, caching strategies, JSONB usage, tiered storage, or cache consistency contracts.
 ---
 # Database Patterns
 

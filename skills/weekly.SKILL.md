@@ -1,6 +1,6 @@
 ---
 name: weekly
-description: 生成 om-generator 前后端周报
+description: 当用户要求生成 om-generator 前后端周报、按日期范围汇总提交/任务/进展时使用。
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Task, mcp__plugin_claude-mem_mcp-search__search, mcp__plugin_claude-mem_mcp-search__timeline, mcp__plugin_claude-mem_mcp-search__get_observations
 metadata:
   argument-hint: "<日期范围，如 2-1到2-7>"

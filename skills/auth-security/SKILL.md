@@ -429,3 +429,4 @@ async function isTokenRevoked(userId: string, iat: number): Promise<boolean> {
 - [reference/oauth2.1.md](reference/oauth2.1.md) — OAuth 2.1 deep dive
 - [reference/jwt.md](reference/jwt.md) — JWT patterns
 - [reference/attacks.md](reference/attacks.md) — Attack prevention
+- [templates/typescript/auth.service.ts](templates/typescript/auth.service.ts) — TypeScript auth service starter

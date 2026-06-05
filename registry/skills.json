@@ -224,9 +224,9 @@
   {
     "name": "contribution-architect",
     "category": "Delivery Workflow",
-    "format": "file",
-    "path": "skills/contribution-architect.SKILL.md",
-    "description": "An advanced analysis tool that helps contributors move beyond simple bug fixes to architectural improvements. It focuses on finding technical debt, proposing RFCs, and identifying module ownership opportunities.",
+    "format": "directory",
+    "path": "skills/contribution-architect/SKILL.md",
+    "description": "Use when a contributor wants to move beyond simple bug fixes into architectural improvements, technical debt discovery, design proposals, or module ownership opportunities.",
     "language": "en",
     "tags": [
       "architecture",
@@ -263,7 +263,7 @@
     "category": "API & Backend",
     "format": "directory",
     "path": "skills/database-patterns/SKILL.md",
-    "description": "PostgreSQL + Redis database design patterns. Use for data modeling, indexing, caching strategies. Covers JSONB, tiered storage, cache consistency.",
+    "description": "Use when designing PostgreSQL + Redis data models, indexes, caching strategies, JSONB usage, tiered storage, or cache consistency contracts.",
     "language": "en",
     "tags": [
       "database"
@@ -285,7 +285,7 @@
     "category": "Operations & Deploy",
     "format": "directory",
     "path": "skills/disk-cleaner/SKILL.md",
-    "description": "扫描磁盘空间占用，找出可安全删除的缓存、编译产物、安装包等，交互式清理释放空间",
+    "description": "当用户要扫描磁盘空间、找出可安全删除的缓存/编译产物/安装包、或交互式释放空间时使用。",
     "language": "zh",
     "tags": [
       "system"
@@ -294,8 +294,8 @@
   {
     "name": "elegant-architecture",
     "category": "Development Architecture",
-    "format": "file",
-    "path": "skills/elegant-architecture.SKILL.md",
+    "format": "directory",
+    "path": "skills/elegant-architecture/SKILL.md",
     "description": "Guides clean architecture design with strict 200-line file limits. Use when starting new features, refactoring large files, or planning module structure. Enforces modular design and real testing.",
     "language": "en",
     "tags": [
@@ -323,7 +323,7 @@
     "category": "UI/UX & Frontend",
     "format": "directory",
     "path": "skills/figma-to-react/SKILL.md",
-    "description": "Extract Figma designs and generate production-ready React/Next.js components with TypeScript, Tailwind CSS, and pixel-perfect accuracy.",
+    "description": "Use when the user wants to extract Figma designs into production-ready React or Next.js components with TypeScript, Tailwind CSS, and pixel-perfect accuracy.",
     "language": "en",
     "tags": [
       "design-system",
@@ -338,7 +338,7 @@
     "category": "Delivery Workflow",
     "format": "directory",
     "path": "skills/fixflow/SKILL.md",
-    "description": "Execute coding tasks with a strict delivery workflow: build a full plan, implement one step at a time, run tests continuously, and commit by default after each step (`per_step`). Support explicit commit policy overrides (`final_only`, `milestone`) and optional BDD (Given/When/Then) when users ask for behavior-driven delivery or requirements are unclear.",
+    "description": "Use when executing coding tasks with a strict delivery workflow: build a full plan, implement one step at a time, run tests continuously, and commit by default after each step (`per_step`). Support explicit commit policy overrides (`final_only`, `milestone`) and optional BDD (Given/When/Then) when users ask for behavior-driven delivery or requirements are unclear.",
     "language": "en",
     "tags": [
       "agent",
@@ -373,8 +373,8 @@
   {
     "name": "git-commit-smart",
     "category": "Delivery Workflow",
-    "format": "file",
-    "path": "skills/git-commit-smart.SKILL.md",
+    "format": "directory",
+    "path": "skills/git-commit-smart/SKILL.md",
     "description": "Generates meaningful, conventional commit messages automatically. Use when committing code changes. Analyzes diff to create descriptive commits following best practices.",
     "language": "en",
     "tags": [
@@ -481,7 +481,7 @@
     "category": "Delivery Workflow",
     "format": "directory",
     "path": "skills/optflow/SKILL.md",
-    "description": "Discover and deliver repository optimization work end to end: identify performance/reliability/maintainability/security/dx/cost optimization points, prioritize by impact-effort-risk, then execute fixes step by step with continuous testing and explicit commit policy (`final_only`, `per_step`, `milestone`). Default to `per_step` for implementation work so each feature is tested then committed before the next feature. Supports optional BDD (Given/When/Then).",
+    "description": "Use when the user asks to discover and deliver repository optimization work end to end: identify performance/reliability/maintainability/security/dx/cost optimization points, prioritize by impact-effort-risk, then execute fixes step by step with continuous testing and explicit commit policy (`final_only`, `per_step`, `milestone`). Default to `per_step` for implementation work so each feature is tested then committed before the next feature. Supports optional BDD (Given/When/Then).",
     "language": "en",
     "tags": [
       "performance",
@@ -516,7 +516,7 @@
     "category": "Delivery Workflow",
     "format": "directory",
     "path": "skills/plan-flow/SKILL.md",
-    "description": "Analyze repository-level duplicate/redundant design first, then build and execute a strict step-test-update plan in docs/plan. Use for deep architecture review, convergence planning, and traceable one-step-at-a-time delivery.",
+    "description": "Use when deep architecture review or convergence planning requires analyzing repository-level duplicate/redundant design first, then building and executing a strict step-test-update plan in docs/plan.",
     "language": "en",
     "tags": [
       "architecture",
@@ -526,8 +526,8 @@
   {
     "name": "playwright-automation",
     "category": "UI/UX & Frontend",
-    "format": "file",
-    "path": "skills/playwright-automation.SKILL.md",
+    "format": "directory",
+    "path": "skills/playwright-automation/SKILL.md",
     "description": "Browser automation and testing with Playwright. Use when testing web applications, automating browser tasks, taking screenshots, or validating UI behavior.",
     "language": "en",
     "tags": [
@@ -576,7 +576,7 @@
     "category": "Product Lifecycle",
     "format": "directory",
     "path": "skills/product-manager-toolkit/SKILL.md",
-    "description": "Comprehensive toolkit for product managers including RICE prioritization, customer interview analysis, PRD templates, discovery frameworks, and go-to-market strategies. Use for feature prioritization, user research synthesis, requirement documentation, and product strategy development.",
+    "description": "Use when the user needs product management workflows such as RICE prioritization, customer interview analysis, PRD templates, discovery frameworks, go-to-market strategy, feature prioritization, research synthesis, or requirements documentation.",
     "language": "en",
     "tags": [
       "documentation",
@@ -599,8 +599,8 @@
   {
     "name": "project-health-auditor",
     "category": "Delivery Workflow",
-    "format": "file",
-    "path": "skills/project-health-auditor.SKILL.md",
+    "format": "directory",
+    "path": "skills/project-health-auditor/SKILL.md",
     "description": "Comprehensive codebase health analysis. Use when reviewing code quality, identifying technical debt, checking dependencies, or assessing project structure.",
     "language": "en",
     "tags": [
@@ -613,7 +613,7 @@
     "category": "Delivery Workflow",
     "format": "file",
     "path": "skills/push-all.SKILL.md",
-    "description": "Stage all changes, create commit, and push to remote (use with caution)",
+    "description": "Use when the user explicitly asks to stage all current changes, create a commit, and push to the remote after safety checks.",
     "language": "en",
     "tags": [
       "code-review"
@@ -660,7 +660,7 @@
     "category": "Development Architecture",
     "format": "directory",
     "path": "skills/rust-best-practices/SKILL.md",
-    "description": "Rust coding best practices based on Microsoft Pragmatic Rust Guidelines. ALWAYS invoke before writing or modifying Rust code. Covers error handling, API design, performance, and idiomatic patterns.",
+    "description": "Use when writing, modifying, or reviewing Rust code. ALWAYS invoke before Rust edits; covers Microsoft Pragmatic Rust guidance for error handling, API design, performance, and idiomatic patterns.",
     "language": "en",
     "tags": [
       "backend",
@@ -758,7 +758,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/strategic-compact/SKILL.md",
-    "description": "策略性压缩 — 在逻辑边界手动压缩上下文，而非任意自动压缩。保留关键决策和约束，丢弃中间探索过程。",
+    "description": "当用户需要在长会话的逻辑边界手动压缩上下文、保留关键决策和约束、丢弃中间探索过程时使用。",
     "language": "zh",
     "tags": [
       "agent",
@@ -780,8 +780,8 @@
   {
     "name": "structured-logging-lite",
     "category": "API & Backend",
-    "format": "file",
-    "path": "skills/structured-logging-lite.SKILL.md",
+    "format": "directory",
+    "path": "skills/structured-logging-lite/SKILL.md",
     "description": "Logging system design guide covering centralized architecture, field standards, and distributed tracing. Use when designing log systems, establishing standards, or debugging production issues.",
     "language": "en",
     "tags": [
@@ -803,8 +803,8 @@
   {
     "name": "systematic-debugging",
     "category": "Delivery Workflow",
-    "format": "file",
-    "path": "skills/systematic-debugging.SKILL.md",
+    "format": "directory",
+    "path": "skills/systematic-debugging/SKILL.md",
     "description": "Four-phase debugging framework for any technical issue. Use when encountering bugs, errors, or unexpected behavior. Prevents random fix attempts.",
     "language": "en",
     "tags": [
@@ -852,7 +852,7 @@
     "category": "Content & Research",
     "format": "directory",
     "path": "skills/trip-planner/SKILL.md",
-    "description": "Create detailed travel itineraries with activities, logistics, and day-by-day schedules. Use for vacation planning, trip organization, and travel documentation.",
+    "description": "Use when the user wants detailed travel itineraries with activities, logistics, day-by-day schedules, vacation planning, trip organization, or travel documentation.",
     "language": "en",
     "tags": [
       "content"
@@ -875,7 +875,7 @@
     "category": "UI/UX & Frontend",
     "format": "directory",
     "path": "skills/ui-design-system/SKILL.md",
-    "description": "UI design system toolkit for Senior UI Designer including design token generation, component documentation, responsive design calculations, and developer handoff tools. Use for creating design systems, maintaining visual consistency, and facilitating design-dev collaboration.",
+    "description": "Use when creating or maintaining UI design systems, design tokens, component documentation, responsive calculations, quality checks, or design-dev handoff materials.",
     "language": "en",
     "tags": [
       "frontend"
@@ -897,7 +897,7 @@
     "category": "UI/UX & Frontend",
     "format": "directory",
     "path": "skills/ui-ux-pro-max/SKILL.md",
-    "description": "UI/UX design intelligence. Compact in-file reference tables for product patterns, landing pages, chart choices, visual styles, palettes, typography, UX rules, and 9 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui). Actions: plan, build, create, design, implement, review, fix, improve, optimize, enhance, refactor, check UI/UX code. Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, mobile app, .html, .tsx, .vue, .svelte. Elements: button, modal, navbar, sidebar, card, table, form, chart. Topics: color palette, accessibility, animation, layout, typography, font pairing, spacing, hover, shadow, gradient.",
+    "description": "Use when planning, building, designing, code review, refactor, fixing, improving, optimizing, enhancing, or checking UI/UX work. Covers product patterns, landing pages, chart choices, visual styles, palettes, typography, UX rules, and 9 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui). Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, mobile app, .html, .tsx, .vue, .svelte. Elements: button, modal, navbar, sidebar, card, table, form, chart. Topics: color palette, accessibility, animation, layout, typography, font pairing, spacing, hover, shadow, gradient.",
     "language": "en",
     "tags": [
       "code-review",
@@ -941,7 +941,7 @@
     "category": "UI/UX & Frontend",
     "format": "directory",
     "path": "skills/web-artifacts-builder/SKILL.md",
-    "description": "Suite of tools for creating elaborate, multi-component claude.ai HTML artifacts using modern frontend web technologies (React, Tailwind CSS, shadcn/ui). Use for complex artifacts requiring state management, routing, or shadcn/ui components - not for simple single-file HTML/JSX artifacts.",
+    "description": "Use when creating elaborate, multi-component claude.ai HTML artifacts with React, Tailwind CSS, shadcn/ui, state management, routing, or complex frontend structure; not for simple single-file HTML/JSX artifacts.",
     "language": "en",
     "tags": [
       "frontend",
@@ -964,7 +964,7 @@
     "category": "Content & Research",
     "format": "file",
     "path": "skills/weekly.SKILL.md",
-    "description": "生成 om-generator 前后端周报",
+    "description": "当用户要求生成 om-generator 前后端周报、按日期范围汇总提交/任务/进展时使用。",
     "language": "zh",
     "tags": [
       "content",
