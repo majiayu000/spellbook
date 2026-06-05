@@ -1,0 +1,4 @@
+interface:
+  display_name: "Architecture Foundation"
+  short_description: "Design architecture boundaries before coding"
+  default_prompt: "Use $architecture-foundation to design the core runtime and adapter boundaries before implementation."

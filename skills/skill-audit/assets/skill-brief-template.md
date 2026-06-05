@@ -20,11 +20,11 @@ that should trigger the skill.
 
 ## High-Signal Knowledge
 
-- 
+- TBD
 
 ## Gotchas
 
-- 
+- TBD
 
 ## Progressive Disclosure Map
 

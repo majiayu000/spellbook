@@ -23,11 +23,15 @@ Use this section for notable changes after the latest dated snapshot.
 - Added the `gemma4-local-deploy` skill for local Gemma 4 12B deployment with
   `llama.cpp`, GGUF quantization, Apple Metal, tmux background service
   management, OpenAI-compatible API verification, and resource reporting.
+- Added the `architecture-foundation` skill for designing runtime boundaries,
+  state ownership, adapter contracts, source-of-truth maps, and convergence
+  specs before implementation.
 - Added English and Chinese release status sections covering pre-1.0 status,
   current limitations, and support paths.
 
 ### Changed
 
+- Updated the installable skill count from 82 to 83.
 - Updated the installable skill count from 81 to 82.
 - Updated the installable skill count from 80 to 81.
 - Tightened the `threads` skill merge gate so GitHub queue work must check

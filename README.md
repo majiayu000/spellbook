@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>82 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>83 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-82-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-83-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -144,6 +144,7 @@ Build production-ready projects with language-specific best practices.
 | [`rust-project`](./skills/rust-project/) | Rust | Cargo workspace, error handling, async |
 | [`golang-web`](./skills/golang-web/) | Go | Chi/Echo, sqlc, structured logging |
 | [`zig-project`](./skills/zig-project/) | Zig | Build system, memory management |
+| [`architecture-foundation`](./skills/architecture-foundation/) | Cross-language | Runtime, state ownership, adapters, and convergence specs |
 
 ### Product Lifecycle
 

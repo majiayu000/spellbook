@@ -40,6 +40,7 @@ CATEGORY_BY_NAME = {
     "golang-web": "Development Architecture",
     "zig-project": "Development Architecture",
     "harmonyos-app": "Development Architecture",
+    "architecture-foundation": "Development Architecture",
     "elegant-architecture": "Development Architecture",
     "rust-best-practices": "Development Architecture",
     "react-best-practices": "Development Architecture",
