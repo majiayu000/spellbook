@@ -27,11 +27,23 @@ JOB_PATTERNS = (
 )
 
 POSITIVE = {"love", "great", "easy", "fast", "helpful", "clear", "useful"}
-NEGATIVE = {"hate", "slow", "hard", "confusing", "broken", "manual", "frustrating"}
+NEGATIVE = {
+    "annoyed",
+    "annoying",
+    "blocked",
+    "broken",
+    "confusing",
+    "frustrated",
+    "frustrating",
+    "hard",
+    "hate",
+    "manual",
+    "slow",
+}
 
 
 def sentences(text: str) -> list[str]:
-    parts = re.split(r"(?<=[.!?。！？])\s+", text.strip())
+    parts = re.split(r"(?<=[.!?。！？])\s+|\n+", text.strip())
     return [part.strip() for part in parts if part.strip()]
 
 

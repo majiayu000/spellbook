@@ -70,6 +70,24 @@ def parse_number(value: str, mapping: dict[str, float], field: str) -> float:
         raise ValueError(f"{field} must be numeric or one of: {allowed}") from exc
 
 
+def parse_confidence(value: str) -> float:
+    normalized = str(value).strip().lower()
+    if normalized in CONFIDENCE:
+        return CONFIDENCE[normalized]
+    try:
+        if normalized.endswith("%"):
+            confidence = float(normalized[:-1]) / 100
+        else:
+            confidence = float(normalized)
+            if confidence > 1:
+                confidence /= 100
+    except ValueError as exc:
+        raise ValueError("confidence must be numeric, a percentage, or one of: high, medium, low") from exc
+    if not 0 <= confidence <= 1:
+        raise ValueError("confidence must be between 0 and 1, or between 0% and 100%")
+    return confidence
+
+
 def read_features(path: Path) -> list[dict[str, object]]:
     with path.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
@@ -84,7 +102,7 @@ def read_features(path: Path) -> list[dict[str, object]]:
     for row in rows:
         reach = parse_number(row["reach"], {}, "reach")
         impact = parse_number(row["impact"], IMPACT, "impact")
-        confidence = parse_number(row["confidence"], CONFIDENCE, "confidence")
+        confidence = parse_confidence(row["confidence"])
         effort = parse_number(row["effort"], EFFORT, "effort")
         if effort <= 0:
             raise ValueError(f"effort must be positive for {row['name']}")
