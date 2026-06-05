@@ -26,6 +26,9 @@ Use this section for notable changes after the latest dated snapshot.
 ### Changed
 
 - Updated the installable skill count from 80 to 81.
+- Tightened the `threads` skill merge gate so GitHub queue work must check
+  thread-aware review state, comment closure, delayed auto-review feedback, and
+  touched/historical unresolved review threads before reporting completion.
 - Expanded `gemma4-local-deploy` with an Ollama-specific route covering
   official `gemma4:12b` pull checks, manual GGUF import, Homebrew sidecar binary
   workarounds, and verification commands.

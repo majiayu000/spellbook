@@ -813,7 +813,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/threads/SKILL.md",
-    "description": "Coordinate Codex-native parallel thread workflows for repo issue and PR queues, multi-agent research, implementation worktrees, independent code review, merge gates, and final cleanup. Use when the user says Codex threads, open threads, 开几个 thread, 子agent, 并行, worktree, thread review, review then merge, or asks to plan and execute several issues or PRs in parallel.",
+    "description": "Coordinate Codex-native parallel thread workflows for repo issue and PR queues, multi-agent research, implementation worktrees, independent code review, merge gates, review-thread/comment closure, and final cleanup. Use when the user says Codex threads, open threads, 开几个 thread, 子agent, 并行, worktree, thread review, review then merge, or asks to plan and execute several issues or PRs in parallel.",
     "language": "mixed",
     "tags": [
       "agent",
