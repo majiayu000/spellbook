@@ -275,3 +275,7 @@ Answer in Chinese unless the user asks otherwise. Include:
 - tmux/session management commands
 - verification results from this session
 - resource summary and any caveats
+
+## Cross-Check Agent
+
+Use `agents/openai.yaml` only when the deployment plan or troubleshooting result needs an independent model review before execution.

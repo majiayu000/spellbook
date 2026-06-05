@@ -1,6 +1,6 @@
 ---
 name: figma-to-react
-description: Extract Figma designs and generate production-ready React/Next.js components with TypeScript, Tailwind CSS, and pixel-perfect accuracy.
+description: Use when the user wants to extract Figma designs into production-ready React or Next.js components with TypeScript, Tailwind CSS, and pixel-perfect accuracy.
 ---
 
 # Figma to React - Production-Ready Component Generator

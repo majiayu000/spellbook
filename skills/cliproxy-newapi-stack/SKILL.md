@@ -191,6 +191,7 @@ HOST=<HOST> SSH_TARGET=root@<HOST> SSH_KEY=~/.ssh/id_ed25519 \
 | `scripts/topup.sh` | 直接 SQLite 改 `users.quota` |
 | `scripts/verify_stack.sh` | 双路径 + 计费日志验证 |
 | `scripts/add_codex_account.sh` | OAuth 登录 + 同步凭据 + watcher 校验 |
+| `agents/openai.yaml` | 需要第二模型复核计费/部署方案时的 agent 配置 |
 | `references/newapi-pricing.md` | ModelRatio / CacheRatio / CompletionRatio / QuotaPerUnit 完整语义 + 计算示例 |
 | `references/troubleshooting.md` | 容器网络、cooldown、PUT 不生效、UFW 等踩坑表 |
 | `references/multi-account.md` | 多账号轮询语义 + 加号 / 删号 / 订阅条件 |
