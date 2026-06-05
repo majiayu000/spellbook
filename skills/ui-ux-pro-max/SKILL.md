@@ -132,42 +132,27 @@ Extract key information from user request:
 
 ### Step 2: Generate Design System (REQUIRED)
 
-**Always start with `--design-system`** to get comprehensive recommendations with reasoning:
+Always start by synthesizing a compact design system from the rules in this
+`SKILL.md`. Use the user's product type, industry, stack, and style keywords to
+choose:
 
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "<product_type> <industry> <keywords>" --design-system [-p "Project Name"]
-```
-
-This command:
-1. Searches 5 domains in parallel (product, style, color, landing, typography)
-2. Applies reasoning rules from `ui-reasoning.csv` to select best matches
-3. Returns complete design system: pattern, style, colors, typography, effects
-4. Includes anti-patterns to avoid
-
-**Example:**
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "beauty spa wellness service" --design-system -p "Serenity Spa"
-```
+1. Product pattern and layout structure
+2. Visual style and anti-patterns to avoid
+3. Color palette direction and contrast rules
+4. Typography direction
+5. Motion, accessibility, and interaction checks
 
 ### Step 2b: Persist Design System (Master + Overrides Pattern)
 
-To save the design system for **hierarchical retrieval across sessions**, add `--persist`:
-
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system --persist -p "Project Name"
-```
+When the work spans multiple pages or sessions, create a persistent design
+system:
 
 This creates:
 - `design-system/MASTER.md` — Global Source of Truth with all design rules
 - `design-system/pages/` — Folder for page-specific overrides
 
-**With page-specific override:**
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "<query>" --design-system --persist -p "Project Name" --page "dashboard"
-```
-
-This also creates:
-- `design-system/pages/dashboard.md` — Page-specific deviations from Master
+For a page-specific override, create `design-system/pages/<page-name>.md` with
+only the page-specific deviations from `MASTER.md`.
 
 **How hierarchical retrieval works:**
 1. When building a specific page (e.g., "Checkout"), first check `design-system/pages/checkout.md`
@@ -185,13 +170,8 @@ Now, generate the code...
 
 ### Step 3: Supplement with Detailed Searches (as needed)
 
-After getting the design system, use domain searches to get additional details:
-
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "<keyword>" --domain <domain> [-n <max_results>]
-```
-
-**When to use detailed searches:**
+After getting the design system, consult the relevant sections below for extra
+detail:
 
 | Need | Domain | Example |
 |------|--------|---------|
@@ -203,11 +183,8 @@ python3 skills/ui-ux-pro-max/scripts/search.py "<keyword>" --domain <domain> [-n
 
 ### Step 4: Stack Guidelines (Default: html-tailwind)
 
-Get implementation-specific best practices. If user doesn't specify a stack, **default to `html-tailwind`**.
-
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "<keyword>" --stack html-tailwind
-```
+Use implementation-specific best practices. If user doesn't specify a stack,
+**default to `html-tailwind`**.
 
 Available stacks: `html-tailwind`, `react`, `nextjs`, `vue`, `svelte`, `swiftui`, `react-native`, `flutter`, `shadcn`, `jetpack-compose`
 
@@ -259,43 +236,20 @@ Available stacks: `html-tailwind`, `react`, `nextjs`, `vue`, `svelte`, `swiftui`
 
 ### Step 2: Generate Design System (REQUIRED)
 
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "beauty spa wellness service elegant" --design-system -p "Serenity Spa"
-```
-
-**Output:** Complete design system with pattern, style, colors, typography, effects, and anti-patterns.
+Create a compact design system for "Serenity Spa" with pattern, style, colors,
+typography, effects, and anti-patterns.
 
 ### Step 3: Supplement with Detailed Searches (as needed)
 
-```bash
-# Get UX guidelines for animation and accessibility
-python3 skills/ui-ux-pro-max/scripts/search.py "animation accessibility" --domain ux
-
-# Get alternative typography options if needed
-python3 skills/ui-ux-pro-max/scripts/search.py "elegant luxury serif" --domain typography
-```
+Read the UX and Typography sections when animation, accessibility, or font
+direction needs more detail.
 
 ### Step 4: Stack Guidelines
 
-```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "layout responsive form" --stack html-tailwind
-```
+Apply the `html-tailwind` stack guidelines for layout, responsive behavior, and
+forms.
 
 **Then:** Synthesize design system + detailed searches and implement the design.
-
----
-
-## Output Formats
-
-The `--design-system` flag supports two output formats:
-
-```bash
-# ASCII box (default) - best for terminal display
-python3 skills/ui-ux-pro-max/scripts/search.py "fintech crypto" --design-system
-
-# Markdown - best for documentation
-python3 skills/ui-ux-pro-max/scripts/search.py "fintech crypto" --design-system -f markdown
-```
 
 ---
 
