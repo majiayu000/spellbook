@@ -8,6 +8,7 @@ from collections import Counter
 from dataclasses import asdict, dataclass
 import json
 from pathlib import Path
+import re
 import sys
 
 from validate_skills import CATEGORY_BY_NAME, ROOT, SkillEntry, discover_skills, parse_frontmatter
@@ -82,6 +83,17 @@ VERIFICATION_CATEGORIES = {
     "UI/UX & Frontend",
 }
 
+LOCAL_SUPPORT_REF_RE = re.compile(
+    r"(?<![/\w.-])"
+    r"((?:skills/[A-Za-z0-9_.-]+/)?"
+    r"(?:agents|assets|evals|reference|references|scripts|templates)"
+    r"/[A-Za-z0-9_./-]+\.[A-Za-z0-9]+)"
+)
+
+IGNORED_MISSING_REFS = {
+    ("skill-creator", "evals/evals.json"),
+}
+
 
 @dataclass(frozen=True)
 class QualityFinding:
@@ -116,6 +128,23 @@ def support_dirs_for(entry: SkillEntry) -> list[str]:
         for child in skill_dir.iterdir()
         if child.is_dir() and child.name in SUPPORT_DIR_NAMES
     )
+
+
+def referenced_local_support_files(entry: SkillEntry, body: str) -> list[tuple[str, Path]]:
+    refs: list[tuple[str, Path]] = []
+    seen: set[str] = set()
+    for match in LOCAL_SUPPORT_REF_RE.finditer(body):
+        ref = match.group(1).rstrip(".,:;)")
+        if (entry.install_name, ref) in IGNORED_MISSING_REFS or ref in seen:
+            continue
+        seen.add(ref)
+        if ref.startswith("skills/"):
+            refs.append((ref, ROOT / ref))
+        elif entry.format == "directory":
+            refs.append((ref, (ROOT / entry.path).parent / ref))
+        else:
+            refs.append((ref, ROOT / "skills" / ref))
+    return refs
 
 
 def audit_entry(entry: SkillEntry) -> list[QualityFinding]:
@@ -206,6 +235,18 @@ def audit_entry(entry: SkillEntry) -> list[QualityFinding]:
                     entry.path,
                     "support-reference",
                     f"support directory '{support_dir}/' exists but is not referenced from SKILL.md",
+                )
+            )
+
+    for ref, target in referenced_local_support_files(entry, body):
+        if not target.exists():
+            findings.append(
+                QualityFinding(
+                    "WARN",
+                    entry.install_name,
+                    entry.path,
+                    "missing-support-file",
+                    f"referenced support file '{ref}' does not exist at {target.relative_to(ROOT)}",
                 )
             )
 
