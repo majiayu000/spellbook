@@ -1,0 +1,320 @@
+#!/usr/bin/env python3
+"""Report non-blocking quality signals for Claude Arsenal skills."""
+
+from __future__ import annotations
+
+import argparse
+from collections import Counter
+from dataclasses import asdict, dataclass
+import json
+from pathlib import Path
+import re
+import sys
+
+from validate_skills import CATEGORY_BY_NAME, ROOT, SkillEntry, discover_skills, parse_frontmatter
+
+
+SUPPORT_DIR_NAMES = {
+    "agents",
+    "assets",
+    "evals",
+    "reference",
+    "references",
+    "scripts",
+    "templates",
+}
+
+TRIGGER_CUES = (
+    "use when",
+    "use this skill",
+    "whenever",
+    "when the user",
+    "trigger",
+    "当用户",
+    "用于",
+    "适用",
+)
+
+GOTCHA_CUES = (
+    "gotcha",
+    "gotchas",
+    "pitfall",
+    "pitfalls",
+    "footgun",
+    "failure mode",
+    "common failure",
+    "troubleshoot",
+    "troubleshooting",
+    "edge case",
+    "caveat",
+    "注意",
+    "踩坑",
+    "常见问题",
+    "风险",
+    "失败",
+    "排查",
+    "故障",
+)
+
+VERIFICATION_CUES = (
+    "assert",
+    "check",
+    "health check",
+    "playwright",
+    "smoke",
+    "test",
+    "tests",
+    "validate",
+    "validation",
+    "verification",
+    "verify",
+    "断言",
+    "检查",
+    "验证",
+    "测试",
+    "自检",
+)
+
+VERIFICATION_CATEGORIES = {
+    "API & Backend",
+    "Delivery Workflow",
+    "Development Architecture",
+    "Operations & Deploy",
+    "UI/UX & Frontend",
+}
+
+LOCAL_SUPPORT_REF_RE = re.compile(
+    r"(?<![/\w.-])"
+    r"((?:skills/[A-Za-z0-9_.-]+/)?"
+    r"(?:agents|assets|evals|reference|references|scripts|templates)"
+    r"/[A-Za-z0-9_./-]+\.[A-Za-z0-9]+)"
+)
+
+IGNORED_MISSING_REFS = {
+    ("skill-creator", "evals/evals.json"),
+}
+
+
+@dataclass(frozen=True)
+class QualityFinding:
+    severity: str
+    skill: str
+    path: str
+    check: str
+    message: str
+
+
+def skill_markdown_body(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        return text
+    end = text.find("\n---", 4)
+    if end == -1:
+        return text
+    return text[end + len("\n---") :]
+
+
+def contains_any(text: str, cues: tuple[str, ...]) -> bool:
+    lowered = text.lower()
+    return any(cue.lower() in lowered for cue in cues)
+
+
+def support_dirs_for(entry: SkillEntry) -> list[str]:
+    if entry.format != "directory":
+        return []
+    skill_dir = (ROOT / entry.path).parent
+    return sorted(
+        child.name
+        for child in skill_dir.iterdir()
+        if child.is_dir() and child.name in SUPPORT_DIR_NAMES
+    )
+
+
+def referenced_local_support_files(entry: SkillEntry, body: str) -> list[tuple[str, Path]]:
+    refs: list[tuple[str, Path]] = []
+    seen: set[str] = set()
+    for match in LOCAL_SUPPORT_REF_RE.finditer(body):
+        ref = match.group(1).rstrip(".,:;)")
+        if (entry.install_name, ref) in IGNORED_MISSING_REFS or ref in seen:
+            continue
+        seen.add(ref)
+        if ref.startswith("skills/"):
+            refs.append((ref, ROOT / ref))
+        elif entry.format == "directory":
+            refs.append((ref, (ROOT / entry.path).parent / ref))
+        else:
+            refs.append((ref, ROOT / "skills" / ref))
+    return refs
+
+
+def audit_entry(entry: SkillEntry) -> list[QualityFinding]:
+    path = ROOT / entry.path
+    frontmatter, _ = parse_frontmatter(path)
+    description = frontmatter.get("description", "")
+    description_text = description if isinstance(description, str) else ""
+    body = skill_markdown_body(path)
+    searchable_text = f"{description_text}\n{body}"
+    line_count = len(path.read_text(encoding="utf-8").splitlines())
+    category = CATEGORY_BY_NAME.get(entry.install_name, "Uncategorized")
+    findings: list[QualityFinding] = []
+
+    if description_text and not contains_any(description_text, TRIGGER_CUES):
+        findings.append(
+            QualityFinding(
+                "WARN",
+                entry.install_name,
+                entry.path,
+                "trigger-description",
+                "description reads like a summary; add model-facing trigger cues such as 'Use when' or user phrasing",
+            )
+        )
+
+    if 0 < len(description_text.strip()) < 80:
+        findings.append(
+            QualityFinding(
+                "INFO",
+                entry.install_name,
+                entry.path,
+                "short-description",
+                "description is short; verify it includes enough intent, symptoms, and near-boundary context",
+            )
+        )
+
+    if not contains_any(body, GOTCHA_CUES):
+        findings.append(
+            QualityFinding(
+                "INFO",
+                entry.install_name,
+                entry.path,
+                "gotchas",
+                "SKILL.md has no obvious gotchas/failure-mode section; add one when real failure patterns are known",
+            )
+        )
+
+    if category in VERIFICATION_CATEGORIES and not contains_any(searchable_text, VERIFICATION_CUES):
+        findings.append(
+            QualityFinding(
+                "WARN",
+                entry.install_name,
+                entry.path,
+                "verification",
+                "workflow category has no obvious verification signal; add checks, scripts, assertions, or explicit done-when proof",
+            )
+        )
+
+    if entry.format == "file" and line_count > 160:
+        findings.append(
+            QualityFinding(
+                "WARN",
+                entry.install_name,
+                entry.path,
+                "file-size",
+                "large file skill should migrate to directory layout before adding references, scripts, assets, or evals",
+            )
+        )
+
+    support_dirs = support_dirs_for(entry)
+    if entry.format == "directory" and line_count > 300 and not support_dirs:
+        findings.append(
+            QualityFinding(
+                "WARN",
+                entry.install_name,
+                entry.path,
+                "progressive-disclosure",
+                "long SKILL.md has no support directory; split detailed material into references, scripts, templates, assets, or evals",
+            )
+        )
+
+    body_lower = body.lower()
+    for support_dir in support_dirs:
+        if support_dir.lower() not in body_lower:
+            findings.append(
+                QualityFinding(
+                    "WARN",
+                    entry.install_name,
+                    entry.path,
+                    "support-reference",
+                    f"support directory '{support_dir}/' exists but is not referenced from SKILL.md",
+                )
+            )
+
+    for ref, target in referenced_local_support_files(entry, body):
+        if not target.exists():
+            findings.append(
+                QualityFinding(
+                    "WARN",
+                    entry.install_name,
+                    entry.path,
+                    "missing-support-file",
+                    f"referenced support file '{ref}' does not exist at {target.relative_to(ROOT)}",
+                )
+            )
+
+    return findings
+
+
+def audit_skills(entries: list[SkillEntry], skill_names: set[str] | None = None) -> list[QualityFinding]:
+    findings: list[QualityFinding] = []
+    for entry in entries:
+        if skill_names and entry.install_name not in skill_names:
+            continue
+        findings.extend(audit_entry(entry))
+    return findings
+
+
+def render_text(findings: list[QualityFinding], total_skills: int) -> str:
+    counts = Counter(finding.severity for finding in findings)
+    lines = [
+        f"Audited {total_skills} skill(s): {counts.get('WARN', 0)} warnings, {counts.get('INFO', 0)} info",
+    ]
+    if not findings:
+        return "\n".join(lines) + "\n"
+
+    lines.append("")
+    check_counts = Counter(finding.check for finding in findings)
+    lines.append("Finding counts:")
+    for check, count in sorted(check_counts.items()):
+        lines.append(f"- {check}: {count}")
+
+    lines.append("")
+    for finding in findings:
+        lines.append(
+            f"{finding.severity}: {finding.skill} [{finding.check}] {finding.message} ({finding.path})"
+        )
+    return "\n".join(lines) + "\n"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("skills", nargs="*", help="Optional install names to audit")
+    parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+    parser.add_argument("--fail-on-warn", action="store_true", help="Exit non-zero when WARN findings exist")
+    args = parser.parse_args()
+
+    entries = discover_skills()
+    known_names = {entry.install_name for entry in entries}
+    requested_names = set(args.skills)
+    unknown_names = requested_names - known_names
+    if unknown_names:
+        print(f"Unknown skill(s): {', '.join(sorted(unknown_names))}", file=sys.stderr)
+        return 2
+
+    findings = audit_skills(entries, requested_names or None)
+    audited_count = len(requested_names) if requested_names else len(entries)
+
+    if args.json:
+        payload = {
+            "audited_skills": audited_count,
+            "summary": dict(Counter(finding.severity for finding in findings)),
+            "findings": [asdict(finding) for finding in findings],
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        print(render_text(findings, audited_count), end="")
+
+    has_warnings = any(finding.severity == "WARN" for finding in findings)
+    return 1 if args.fail_on_warn and has_warnings else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
