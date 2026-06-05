@@ -59,6 +59,8 @@ Proactively ask questions about edge cases, input/output formats, example files,
 
 Check available MCPs - if useful for research (searching docs, finding similar skills, looking up best practices), research in parallel via subagents if available, otherwise inline. Come prepared with context to reduce burden on the user.
 
+For new or materially changed skills, read `references/quality-playbook.md` before drafting. Use it to choose one primary skill type, decide whether the skill needs gotchas, scripts, setup state, hooks, or verification, and avoid bloating `SKILL.md` with details that belong in support files.
+
 ### Write the SKILL.md
 
 Based on the user interview, fill in these components:
@@ -460,6 +462,7 @@ The agents/ directory contains instructions for specialized subagents. Read them
 
 The references/ directory has additional documentation:
 - `references/schemas.md` — JSON structures for evals.json, grading.json, etc.
+- `references/quality-playbook.md` — skill type selection, trigger description rules, gotchas, progressive disclosure, and verification checks
 
 ---
 
