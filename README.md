@@ -89,6 +89,7 @@ See [Showcase](./docs/showcase.md) for copy-paste prompts and expected outputs.
 
 > The generated full skill inventory lives in [Skill Registry](./docs/skill-registry.md).
 > Skill layout rules live in [Skill Format Policy](./docs/skill-format-policy.md).
+> Skill authoring quality rules live in [Skill Quality Playbook](./docs/skill-quality-playbook.md).
 
 ### Search the Registry
 
@@ -107,6 +108,13 @@ python3 scripts/validate_skills.py search --tag react --json
 ```
 
 The tag index lives in [`registry/tags.json`](./registry/tags.json) for tooling and dashboards. Curated overrides for skills the keyword heuristic cannot infer live in [`registry/tag_overrides.yml`](./registry/tag_overrides.yml).
+
+Audit non-blocking skill quality signals:
+
+```bash
+python3 scripts/audit_skill_quality.py
+python3 scripts/audit_skill_quality.py skill-creator
+```
 
 ### Development Architecture
 
@@ -244,6 +252,7 @@ Every skill in Claude Arsenal follows these principles:
 | [Installation Guide](./docs/installation.md) | Detailed setup instructions |
 | [Showcase](./docs/showcase.md) | Copy-paste workflow demos |
 | [Skill Format Policy](./docs/skill-format-policy.md) | Directory vs file skill layout rules |
+| [Skill Quality Playbook](./docs/skill-quality-playbook.md) | Trigger descriptions, gotchas, progressive disclosure, and verification |
 | [Skill Testing Guide](./docs/skill-testing-guide.md) | How to validate skills work |
 | [Creating Plugins](./docs/creating-plugins.md) | Build your own skills |
 | [Product Lifecycle (EN)](./docs/product-lifecycle-skills-en.md) | Full lifecycle coverage |

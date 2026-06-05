@@ -89,6 +89,7 @@ cd claude-arsenal
 
 > 完整的自动生成清单位于 [Skill Registry](./docs/skill-registry.md)。
 > 技能目录/单文件格式规则见 [Skill Format Policy](./docs/skill-format-policy.md)。
+> Skill 编写质量规则见 [Skill Quality Playbook](./docs/skill-quality-playbook.md)。
 
 ### 检索技能
 
@@ -107,6 +108,13 @@ python3 scripts/validate_skills.py search --tag react --json
 ```
 
 标签索引位于 [`registry/tags.json`](./registry/tags.json)，可供面板/工具直接消费。无法被关键词启发式识别的标签可在 [`registry/tag_overrides.yml`](./registry/tag_overrides.yml) 中手动维护。
+
+审计非阻断的 skill 质量信号：
+
+```bash
+python3 scripts/audit_skill_quality.py
+python3 scripts/audit_skill_quality.py skill-creator
+```
 
 ### 开发架构
 
@@ -242,6 +250,7 @@ Claude Arsenal 中的每个技能都遵循以下原则：
 | [安装指南](./docs/installation.md) | 详细的安装说明 |
 | [Showcase](./docs/showcase.md) | 可直接复制的工作流演示 |
 | [技能格式策略](./docs/skill-format-policy.md) | 目录型与单文件 skill 的格式规则 |
+| [Skill Quality Playbook](./docs/skill-quality-playbook.md) | 触发描述、gotchas、渐进式披露与验证标准 |
 | [技能测试指南](./docs/skill-testing-guide.md) | 如何验证技能是否生效 |
 | [创建插件](./docs/creating-plugins.md) | 构建你自己的技能 |
 | [产品生命周期（英文）](./docs/product-lifecycle-skills-en.md) | 完整生命周期覆盖 |
