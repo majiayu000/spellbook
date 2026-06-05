@@ -1,15 +1,15 @@
 ---
-name: skill-design-advisor
-description: "Design, audit, categorize, distribute, and measure agent skills using lessons from Anthropic's Lessons from building Claude Code: How we use skills. Use when deciding whether a workflow deserves a skill, planning a skill library, turning team knowledge into skills, reviewing skill structure, choosing skill categories, writing trigger descriptions, designing progressive disclosure, or planning skill marketplace and usage measurement."
+name: skill-audit
+description: "Audit, design, categorize, distribute, and measure agent skills using lessons from Anthropic's Lessons from building Claude Code: How we use skills. Use when reviewing an existing skill, deciding whether a workflow deserves a skill, planning a skill library, turning team knowledge into skills, choosing skill categories, writing trigger descriptions, designing progressive disclosure, or planning skill marketplace and usage measurement."
 ---
 
-# Skill Design Advisor
+# Skill Audit
 
-Use this skill to turn workflow knowledge into useful agent skills and to review
-existing skill libraries at the strategy level. It complements `skill-creator`:
-use this skill to decide what a skill should be and how it should fit a library;
-use `skill-creator` when the user wants the concrete SKILL.md implementation and
-eval loop.
+Use this skill to audit existing skills, turn workflow knowledge into useful
+agent skills, and review skill libraries at the strategy level. It complements
+`skill-creator`: use this skill to decide what a skill should be, how it should
+fit a library, and what needs improvement; use `skill-creator` when the user
+wants the concrete SKILL.md implementation and eval loop.
 
 This workflow is based on Anthropic's June 3, 2026 blog post, "Lessons from
 building Claude Code: How we use skills":

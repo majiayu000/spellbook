@@ -45,7 +45,7 @@
       "claude-mem",
       "codex-agent",
       "fixflow",
-      "skill-design-advisor",
+      "skill-audit",
       "strategic-compact",
       "threads"
     ],
@@ -145,7 +145,7 @@
       "prd-master",
       "product-analytics",
       "product-manager-toolkit",
-      "skill-design-advisor",
+      "skill-audit",
       "technical-spec",
       "weekly"
     ],
@@ -213,7 +213,7 @@
       "product-manager-toolkit"
     ],
     "prompt": [
-      "skill-design-advisor",
+      "skill-audit",
       "strategic-compact"
     ],
     "proxy": [

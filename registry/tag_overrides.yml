@@ -60,7 +60,7 @@ rustdesk-doctor:
 slides:
   - content
 
-skill-design-advisor:
+skill-audit:
   - agent
   - documentation
   - prompt

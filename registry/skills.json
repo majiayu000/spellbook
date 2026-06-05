@@ -705,6 +705,19 @@
     ]
   },
   {
+    "name": "skill-audit",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/skill-audit/SKILL.md",
+    "description": "Audit, design, categorize, distribute, and measure agent skills using lessons from Anthropic's Lessons from building Claude Code: How we use skills. Use when reviewing an existing skill, deciding whether a workflow deserves a skill, planning a skill library, turning team knowledge into skills, choosing skill categories, writing trigger descriptions, designing progressive disclosure, or planning skill marketplace and usage measurement.",
+    "language": "en",
+    "tags": [
+      "agent",
+      "documentation",
+      "prompt"
+    ]
+  },
+  {
     "name": "skill-creator",
     "category": "AI & Agent Workflow",
     "format": "directory",
@@ -713,19 +726,6 @@
     "language": "en",
     "tags": [
       "performance"
-    ]
-  },
-  {
-    "name": "skill-design-advisor",
-    "category": "AI & Agent Workflow",
-    "format": "directory",
-    "path": "skills/skill-design-advisor/SKILL.md",
-    "description": "Design, audit, categorize, distribute, and measure agent skills using lessons from Anthropic's Lessons from building Claude Code: How we use skills. Use when deciding whether a workflow deserves a skill, planning a skill library, turning team knowledge into skills, reviewing skill structure, choosing skill categories, writing trigger descriptions, designing progressive disclosure, or planning skill marketplace and usage measurement.",
-    "language": "en",
-    "tags": [
-      "agent",
-      "documentation",
-      "prompt"
     ]
   },
   {

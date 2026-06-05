@@ -17,7 +17,7 @@ Use this section for notable changes after the latest dated snapshot.
 
 ### Added
 
-- Added the `skill-design-advisor` skill based on Anthropic's Claude Code skills
+- Added the `skill-audit` skill based on Anthropic's Claude Code skills
   lessons, covering skill taxonomy, trigger descriptions, progressive
   disclosure, setup, memory, scripts, hooks, distribution, and measurement.
 - Added the `gemma4-local-deploy` skill for local Gemma 4 12B deployment with
