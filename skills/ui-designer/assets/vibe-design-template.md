@@ -4,11 +4,15 @@ Use this final template after the design system and PRD are ready.
 
 ## Design System
 
-`{项目设计指南}`
+<!-- PROJECT_DESIGN_GUIDE_START -->
+{项目设计指南}
+<!-- PROJECT_DESIGN_GUIDE_END -->
 
 ## MVP PRD
 
-`{项目MVP PRD}`
+<!-- PROJECT_MVP_PRD_START -->
+{项目MVP PRD}
+<!-- PROJECT_MVP_PRD_END -->
 
 ## Task
 
@@ -30,10 +34,12 @@ description.
 
 ## Output Structure
 
+- Create 3 mobile variations and 2 web variations unless the user explicitly
+  changes the variation scope.
+- Aggregate all variations in a showcase/index page for comparison.
 - Implement screens as separate components when the project supports it.
 - Keep reusable UI primitives small and local unless the repository already has
   a design system.
-- Add a showcase/index page only when the user asks for variations or comparison.
 
 ## Verification
 

@@ -32,6 +32,23 @@ over generic adjectives.
 | Border |  |  |
 | Success/warning/error |  |  |
 
+## Dark Mode Variants
+
+If reference images show dark mode, capture concrete values. If dark mode is not
+present, write "not observed" and only provide inferred values when the user asks
+for a dark mode implementation.
+
+| Role | Light Token | Dark Token | Evidence / Notes |
+|---|---|---|---|
+| Background |  |  |  |
+| Surface |  |  |  |
+| Elevated surface |  |  |  |
+| Text primary |  |  |  |
+| Text muted |  |  |  |
+| Border |  |  |  |
+| Primary action |  |  |  |
+| Focus ring |  |  |  |
+
 ## Typography
 
 | Token | Font | Size | Weight | Line height | Usage |
