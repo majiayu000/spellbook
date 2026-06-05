@@ -5,7 +5,9 @@ final UI implementation prompt.
 
 ## Input
 
-`{项目背景}`
+<!-- PROJECT_BACKGROUND_START -->
+{项目背景}
+<!-- PROJECT_BACKGROUND_END -->
 
 ## Product Overview
 
@@ -29,16 +31,16 @@ final UI implementation prompt.
 ## MVP Scope
 
 ### In Scope
-- 
+- TBD
 
 ### Out Of Scope
-- 
+- TBD
 
 ## Core User Flow
 
-1. 
-2. 
-3. 
+1. TBD
+2. TBD
+3. TBD
 
 ## Screen List
 
@@ -68,4 +70,4 @@ final UI implementation prompt.
 
 ## Open Questions
 
-- 
+- TBD
