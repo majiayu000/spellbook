@@ -142,6 +142,16 @@ def roadmap(features: list[dict[str, object]], capacity: float) -> list[dict[str
     return selected
 
 
+def features_with_selection(features: list[dict[str, object]], capacity: float) -> list[dict[str, object]]:
+    selected_ids = {id(feature) for feature in roadmap(features, capacity)}
+    rows = []
+    for feature in features:
+        row = dict(feature)
+        row["selected"] = id(feature) in selected_ids
+        rows.append(row)
+    return rows
+
+
 def write_sample(path: Path) -> None:
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=["name", "reach", "impact", "confidence", "effort"])
@@ -151,15 +161,15 @@ def write_sample(path: Path) -> None:
 
 
 def render_text(features: list[dict[str, object]], capacity: float) -> str:
-    selected_ids = {id(feature) for feature in roadmap(features, capacity)}
+    ranked = features_with_selection(features, capacity)
     lines = [
         "Feature Prioritization",
         "",
         "| Rank | Feature | RICE | Bucket | Effort | Selected |",
         "|---:|---|---:|---|---:|---|",
     ]
-    for index, feature in enumerate(features, 1):
-        selected = "yes" if id(feature) in selected_ids else "no"
+    for index, feature in enumerate(ranked, 1):
+        selected = "yes" if feature["selected"] else "no"
         lines.append(
             f"| {index} | {feature['name']} | {feature['rice_score']} | "
             f"{feature['bucket']} | {feature['effort']} | {selected} |"
@@ -186,11 +196,12 @@ def main() -> int:
         return 1
 
     if args.output == "json":
-        print(json.dumps({"features": features, "roadmap": roadmap(features, args.capacity)}, indent=2))
+        print(json.dumps({"features": features_with_selection(features, args.capacity), "roadmap": roadmap(features, args.capacity)}, indent=2))
     elif args.output == "csv":
-        writer = csv.DictWriter(sys.stdout, fieldnames=list(features[0]))
+        ranked = features_with_selection(features, args.capacity)
+        writer = csv.DictWriter(sys.stdout, fieldnames=list(ranked[0]))
         writer.writeheader()
-        writer.writerows(features)
+        writer.writerows(ranked)
     else:
         print(render_text(features, args.capacity))
     return 0

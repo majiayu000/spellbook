@@ -15,9 +15,14 @@ PAIN_PATTERNS = (
     r"\b(can't|cannot|unable|struggle|waste|manual|too many steps)\b",
 )
 
-REQUEST_PATTERNS = (
-    r"\b(i want|i need|would like|wish|could you|feature request|it should)\b",
-    r"\b(automate|export|import|integrate|notify|filter|search|dashboard)\b",
+REQUEST_INTENT_PATTERNS = (
+    r"\b(i want|i need|we need|would like|wish|could you|please|feature request)\b",
+    r"\b(it should|should be able to|need to|want to)\b",
+)
+
+REQUEST_TERM_PATTERNS = (
+    r"\b(add|allow|automate|dashboard|enable|export|filter|fix|import|improve|integrate|notify|search|support)\b",
+    r"\b(easier|faster|less manual|fewer steps)\b",
 )
 
 JOB_PATTERNS = (
@@ -60,6 +65,16 @@ def matching_sentences(items: list[str], patterns: tuple[str, ...]) -> list[str]
     return matches
 
 
+def request_sentences(items: list[str]) -> list[str]:
+    matches = []
+    for item in items:
+        has_intent = any(re.search(pattern, item, flags=re.IGNORECASE) for pattern in REQUEST_INTENT_PATTERNS)
+        has_request_term = any(re.search(pattern, item, flags=re.IGNORECASE) for pattern in REQUEST_TERM_PATTERNS)
+        if has_intent and has_request_term:
+            matches.append(item)
+    return matches
+
+
 def sentiment(text: str) -> dict[str, object]:
     words = re.findall(r"[A-Za-z']+", text.lower())
     positive = sum(word in POSITIVE for word in words)
@@ -71,6 +86,30 @@ def sentiment(text: str) -> dict[str, object]:
     else:
         label = "mixed"
     return {"label": label, "positive_terms": positive, "negative_terms": negative}
+
+
+def pain_severity(text: str) -> str:
+    if re.search(r"\b(blocked|broken|cannot|can't|unable|hate|waste|too many steps)\b", text, re.IGNORECASE):
+        return "high"
+    if re.search(r"\b(frustrat(?:ed|ing)|annoy(?:ed|ing)|confusing|difficult|hard|manual|slow)\b", text, re.IGNORECASE):
+        return "medium"
+    return "low"
+
+
+def request_priority(text: str) -> str:
+    if re.search(r"\b(urgent|critical|must|blocked|cannot|can't|need to|we need)\b", text, re.IGNORECASE):
+        return "high"
+    if re.search(r"\b(i need|i want|should be able to|please|fix|support|enable)\b", text, re.IGNORECASE):
+        return "medium"
+    return "low"
+
+
+def pain_findings(items: list[str]) -> list[dict[str, str]]:
+    return [{"text": item, "severity": pain_severity(item)} for item in items]
+
+
+def request_findings(items: list[str]) -> list[dict[str, str]]:
+    return [{"text": item, "priority": request_priority(item)} for item in items]
 
 
 def themes(items: list[str]) -> list[dict[str, object]]:
@@ -89,7 +128,7 @@ def themes(items: list[str]) -> list[dict[str, object]]:
 def analyze_interview(text: str) -> dict[str, object]:
     items = sentences(text)
     pain_points = matching_sentences(items, PAIN_PATTERNS)
-    requests = matching_sentences(items, REQUEST_PATTERNS)
+    requests = request_sentences(items)
     jobs = matching_sentences(items, JOB_PATTERNS)
     competitors = matching_sentences(items, COMPETITOR_PATTERNS)
     quotes = sorted(dict.fromkeys(pain_points + requests), key=len, reverse=True)[:5]
@@ -103,7 +142,9 @@ def analyze_interview(text: str) -> dict[str, object]:
             "sentiment": sentiment(text),
         },
         "pain_points": pain_points,
+        "pain_point_findings": pain_findings(pain_points),
         "feature_requests": requests,
+        "feature_request_findings": request_findings(requests),
         "jobs_to_be_done": jobs,
         "competitor_mentions": competitors,
         "themes": themes(items),
@@ -119,7 +160,20 @@ def render_markdown(report: dict[str, object]) -> str:
     lines.append(f"- Feature requests: {summary['feature_request_count']}")
     lines.append(f"- Competitor mentions: {summary['competitor_mention_count']}")
     lines.append(f"- Sentiment: {summary['sentiment']['label']}")
-    for section in ["pain_points", "feature_requests", "jobs_to_be_done", "competitor_mentions", "key_quotes"]:
+
+    lines.extend(["", "### Pain Point Findings"])
+    if report["pain_point_findings"]:
+        lines.extend(f"- [{item['severity']}] {item['text']}" for item in report["pain_point_findings"])
+    else:
+        lines.append("- None detected")
+
+    lines.extend(["", "### Feature Request Findings"])
+    if report["feature_request_findings"]:
+        lines.extend(f"- [{item['priority']}] {item['text']}" for item in report["feature_request_findings"])
+    else:
+        lines.append("- None detected")
+
+    for section in ["jobs_to_be_done", "competitor_mentions", "key_quotes"]:
         lines.extend(["", f"### {section.replace('_', ' ').title()}"])
         values = report[section]
         if values:
