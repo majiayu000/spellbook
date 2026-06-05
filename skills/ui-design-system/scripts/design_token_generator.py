@@ -45,7 +45,8 @@ def to_hex(rgb: tuple[float, float, float]) -> str:
 
 
 def color_scale(brand_rgb: tuple[int, int, int]) -> dict[str, str]:
-    hue, saturation, _ = colorsys.rgb_to_hls(*(channel / 255 for channel in brand_rgb))
+    hue, _, saturation = colorsys.rgb_to_hls(*(channel / 255 for channel in brand_rgb))
+    scale_saturation = 0.0 if saturation < 0.02 else min(0.95, saturation)
     stops = {
         "50": 0.97,
         "100": 0.92,
@@ -59,7 +60,7 @@ def color_scale(brand_rgb: tuple[int, int, int]) -> dict[str, str]:
         "900": 0.16,
     }
     return {
-        key: to_hex(colorsys.hls_to_rgb(hue, lightness, min(0.95, max(0.2, saturation))))
+        key: to_hex(colorsys.hls_to_rgb(hue, lightness, scale_saturation))
         for key, lightness in stops.items()
     }
 
@@ -95,7 +96,7 @@ def build_tokens(brand_color: str, style: str) -> dict[str, object]:
                 "3xl": "1.875rem",
             },
         },
-        "space": {str(step): f"{step * 0.25}rem" for step in range(0, 13)},
+        "space": {str(step): f"{step * 0.5}rem" for step in range(0, 13)},
         "radius": {
             "sm": "4px",
             "md": preset["radius"],
@@ -104,6 +105,19 @@ def build_tokens(brand_color: str, style: str) -> dict[str, object]:
         "shadow": {
             "sm": "0 1px 2px rgba(15, 23, 42, 0.08)",
             "md": preset["shadow"],
+        },
+        "animation": {
+            "duration": {
+                "instant": "0ms",
+                "fast": "150ms",
+                "normal": "250ms",
+                "slow": "400ms",
+            },
+            "easing": {
+                "standard": "cubic-bezier(0.2, 0, 0, 1)",
+                "enter": "cubic-bezier(0, 0, 0.2, 1)",
+                "exit": "cubic-bezier(0.4, 0, 1, 1)",
+            },
         },
         "breakpoint": {
             "sm": "640px",
