@@ -53,7 +53,7 @@ keep the problem, success metrics, scope, and acceptance criteria explicit.
 |  |  |  |
 
 ### Acceptance Criteria
-- [ ] 
+- [ ]
 
 ## One-Page PRD
 

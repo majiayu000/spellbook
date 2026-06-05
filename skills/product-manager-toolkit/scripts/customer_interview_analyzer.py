@@ -26,6 +26,11 @@ JOB_PATTERNS = (
     r"\bmy goal is\b",
 )
 
+COMPETITOR_PATTERNS = (
+    r"\b(competitor|alternative|instead of|compared to|switch(?:ed|ing)? from)\b",
+    r"\b(vs\.?|versus)\b",
+)
+
 POSITIVE = {"love", "great", "easy", "fast", "helpful", "clear", "useful"}
 NEGATIVE = {
     "annoyed",
@@ -86,6 +91,7 @@ def analyze_interview(text: str) -> dict[str, object]:
     pain_points = matching_sentences(items, PAIN_PATTERNS)
     requests = matching_sentences(items, REQUEST_PATTERNS)
     jobs = matching_sentences(items, JOB_PATTERNS)
+    competitors = matching_sentences(items, COMPETITOR_PATTERNS)
     quotes = sorted(dict.fromkeys(pain_points + requests), key=len, reverse=True)[:5]
     return {
         "summary": {
@@ -93,11 +99,13 @@ def analyze_interview(text: str) -> dict[str, object]:
             "pain_point_count": len(pain_points),
             "feature_request_count": len(requests),
             "job_statement_count": len(jobs),
+            "competitor_mention_count": len(competitors),
             "sentiment": sentiment(text),
         },
         "pain_points": pain_points,
         "feature_requests": requests,
         "jobs_to_be_done": jobs,
+        "competitor_mentions": competitors,
         "themes": themes(items),
         "key_quotes": quotes,
     }
@@ -109,8 +117,9 @@ def render_markdown(report: dict[str, object]) -> str:
     lines.append(f"- Sentences: {summary['sentence_count']}")
     lines.append(f"- Pain points: {summary['pain_point_count']}")
     lines.append(f"- Feature requests: {summary['feature_request_count']}")
+    lines.append(f"- Competitor mentions: {summary['competitor_mention_count']}")
     lines.append(f"- Sentiment: {summary['sentiment']['label']}")
-    for section in ["pain_points", "feature_requests", "jobs_to_be_done", "key_quotes"]:
+    for section in ["pain_points", "feature_requests", "jobs_to_be_done", "competitor_mentions", "key_quotes"]:
         lines.extend(["", f"### {section.replace('_', ' ').title()}"])
         values = report[section]
         if values:

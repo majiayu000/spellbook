@@ -151,7 +151,7 @@ def write_sample(path: Path) -> None:
 
 
 def render_text(features: list[dict[str, object]], capacity: float) -> str:
-    selected_names = {feature["name"] for feature in roadmap(features, capacity)}
+    selected_ids = {id(feature) for feature in roadmap(features, capacity)}
     lines = [
         "Feature Prioritization",
         "",
@@ -159,7 +159,7 @@ def render_text(features: list[dict[str, object]], capacity: float) -> str:
         "|---:|---|---:|---|---:|---|",
     ]
     for index, feature in enumerate(features, 1):
-        selected = "yes" if feature["name"] in selected_names else "no"
+        selected = "yes" if id(feature) in selected_ids else "no"
         lines.append(
             f"| {index} | {feature['name']} | {feature['rice_score']} | "
             f"{feature['bucket']} | {feature['effort']} | {selected} |"
