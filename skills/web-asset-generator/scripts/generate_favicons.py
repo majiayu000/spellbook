@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+"""Generate favicons and PWA app icons from an image or emoji."""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import sys
+
+from PIL import Image, ImageColor, ImageDraw, ImageFont
+
+
+FAVICON_SIZES = {
+    "favicon-16x16.png": 16,
+    "favicon-32x32.png": 32,
+    "favicon-96x96.png": 96,
+}
+
+APP_SIZES = {
+    "apple-touch-icon.png": 180,
+    "android-chrome-192x192.png": 192,
+    "android-chrome-512x512.png": 512,
+}
+
+SUGGESTIONS = {
+    "coffee": [("☕", "Coffee"), ("🌐", "Globe"), ("🏪", "Store"), ("🛒", "Cart")],
+    "shop": [("🛒", "Cart"), ("🏪", "Store"), ("💳", "Payment"), ("✨", "Sparkle")],
+    "ai": [("✨", "Sparkle"), ("🤖", "Robot"), ("⚡", "Lightning"), ("🧠", "Brain")],
+    "code": [("💻", "Laptop"), ("⚙️", "Gear"), ("🚀", "Rocket"), ("🧩", "Puzzle")],
+    "health": [("💚", "Heart"), ("➕", "Plus"), ("🌿", "Leaf"), ("🩺", "Stethoscope")],
+}
+
+
+def parse_color(value: str | None, default: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
+    if not value or value == "transparent":
+        return default
+    try:
+        rgb = ImageColor.getrgb(value)
+    except ValueError as exc:
+        raise ValueError(f"invalid color: {value}") from exc
+    if len(rgb) == 4:
+        return rgb
+    return (*rgb, 255)
+
+
+def square_canvas(size: int, background: tuple[int, int, int, int]) -> Image.Image:
+    return Image.new("RGBA", (size, size), background)
+
+
+def fit_image(source: Image.Image, size: int, background: tuple[int, int, int, int]) -> Image.Image:
+    canvas = square_canvas(size, background)
+    image = source.convert("RGBA")
+    image.thumbnail((round(size * 0.82), round(size * 0.82)), Image.Resampling.LANCZOS)
+    x = (size - image.width) // 2
+    y = (size - image.height) // 2
+    canvas.alpha_composite(image, (x, y))
+    return canvas
+
+
+def emoji_image(emoji: str, size: int, background: tuple[int, int, int, int]) -> Image.Image:
+    canvas = square_canvas(size, background)
+    draw = ImageDraw.Draw(canvas)
+    font = load_font(round(size * 0.62))
+    bbox = draw.textbbox((0, 0), emoji, font=font)
+    x = (size - (bbox[2] - bbox[0])) / 2 - bbox[0]
+    y = (size - (bbox[3] - bbox[1])) / 2 - bbox[1]
+    draw.text((x, y), emoji, font=font, fill=(17, 24, 39, 255))
+    return canvas
+
+
+def load_font(size: int) -> ImageFont.ImageFont:
+    candidates = [
+        "/System/Library/Fonts/Apple Color Emoji.ttc",
+        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]
+    for candidate in candidates:
+        path = Path(candidate)
+        if path.exists():
+            try:
+                return ImageFont.truetype(str(path), size)
+            except OSError:
+                continue
+    return ImageFont.load_default()
+
+
+def icon_sizes(icon_type: str) -> dict[str, int]:
+    if icon_type == "favicon":
+        return FAVICON_SIZES
+    if icon_type == "app":
+        return APP_SIZES
+    return {**FAVICON_SIZES, **APP_SIZES}
+
+
+def generate_icons(
+    output_dir: Path,
+    icon_type: str,
+    source: Image.Image | None,
+    emoji: str | None,
+    background: tuple[int, int, int, int],
+) -> list[Path]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    written = []
+    images_for_ico = []
+    for filename, size in icon_sizes(icon_type).items():
+        image = emoji_image(emoji, size, background) if emoji else fit_image(source, size, background)
+        path = output_dir / filename
+        image.save(path)
+        written.append(path)
+        if filename.startswith("favicon-"):
+            images_for_ico.append(image)
+    if icon_type in {"favicon", "all"} and images_for_ico:
+        ico_path = output_dir / "favicon.ico"
+        images_for_ico[-1].save(ico_path, sizes=[(image.width, image.height) for image in images_for_ico])
+        written.append(ico_path)
+    write_tags(output_dir)
+    return written
+
+
+def write_tags(output_dir: Path) -> None:
+    tags = """<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+"""
+    manifest = """{
+  "icons": [
+    { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
+"""
+    (output_dir / "html-tags.txt").write_text(tags, encoding="utf-8")
+    (output_dir / "site.webmanifest").write_text(manifest, encoding="utf-8")
+
+
+def suggest_emojis(description: str) -> None:
+    haystack = description.lower()
+    choices = []
+    for keyword, suggestions in SUGGESTIONS.items():
+        if keyword in haystack:
+            choices.extend(suggestions)
+    if not choices:
+        choices = [("🌐", "Globe"), ("✨", "Sparkle"), ("🚀", "Rocket"), ("💡", "Idea")]
+    seen = set()
+    for index, (emoji, label) in enumerate([item for item in choices if not (item in seen or seen.add(item))][:4], 1):
+        print(f"{index}. {emoji}  {label}")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("paths", nargs="*")
+    parser.add_argument("--suggest", help="Print emoji suggestions for a project description")
+    parser.add_argument("--emoji", help="Generate icons from this emoji")
+    parser.add_argument("--emoji-bg", default=None, help="Background color for emoji icons")
+    args = parser.parse_args()
+
+    if args.suggest:
+        suggest_emojis(args.suggest)
+        return 0
+
+    try:
+        if args.emoji:
+            if not args.paths:
+                raise ValueError("output_dir is required when using --emoji")
+            output_dir = Path(args.paths[0])
+            icon_type = args.paths[1] if len(args.paths) > 1 else "all"
+            background = parse_color(args.emoji_bg, (0, 0, 0, 0))
+            written = generate_icons(output_dir, icon_type, None, args.emoji, background)
+        else:
+            if len(args.paths) < 2:
+                raise ValueError("usage: generate_favicons.py <source_image> <output_dir> [icon_type]")
+            source_image = Image.open(args.paths[0])
+            output_dir = Path(args.paths[1])
+            icon_type = args.paths[2] if len(args.paths) > 2 else "all"
+            written = generate_icons(output_dir, icon_type, source_image, None, (0, 0, 0, 0))
+    except (OSError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    for path in written:
+        print(path)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
