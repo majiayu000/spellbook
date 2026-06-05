@@ -222,6 +222,49 @@ Available stacks: `html-tailwind`, `react`, `nextjs`, `vue`, `svelte`, `swiftui`
 | Glass / Bento | AI tools, premium marketing, dashboards | Translucent surfaces over stable solid backgrounds | Modern sans with tight hierarchy |
 | Brutalist | Creative portfolios, launches | High-contrast monochrome plus one sharp accent | Archivo, Space Grotesk, Inter |
 
+### Design System Source Rows
+
+| Product / Industry | Structure | Palette | Type / Density | Interaction Notes |
+|--------------------|-----------|---------|----------------|-------------------|
+| Healthcare | Appointment, provider, insurance, results, and support flows | Blue/green, white, high-contrast neutrals | Clear sans, generous line-height, plain labels | Prioritize trust, readable errors, and visible privacy cues |
+| Fintech | Account summary, transaction list, alerts, controls, audit trail | Deep neutral, blue/teal/green accent, semantic risk colors | Tabular numbers, compact labels, strong hierarchy | Avoid ambiguous money actions; confirm destructive transfers |
+| Beauty / Wellness | Services, booking, proof, before/after, testimonials | Soft neutral with rose, gold, botanical green, or charcoal | Elegant display font plus readable sans | Keep CTAs obvious; do not let decorative type reduce contrast |
+| Developer / AI Tool | Workspace, prompt/input, result panel, history, settings | Near-black or neutral light base with cyan/blue/green accent | Dense sans, monospace for code/data | Preserve keyboard flow, loading states, and copy/download actions |
+| E-commerce | Product grid, filters, PDP, cart, checkout, trust markers | Product-led neutral with one CTA accent | Readable price, variant, and stock labels | Make cart and checkout states stable across breakpoints |
+| Education / Creator | Lesson/content, progress, practice, feedback, community | Friendly accent, calm background, success/progress colors | Rounded sans, moderate density | Use clear progress and avoid hiding next actions |
+
+### Landing Structure
+
+| Cue | Section Order | CTA Strategy | Proof |
+|-----|---------------|--------------|-------|
+| Hero / offer | Brand or offer, value copy, primary CTA, next-section hint | One primary CTA; secondary only if it clarifies | Customer/logo row or concrete outcome near first viewport |
+| Social proof | Hero, proof band, feature evidence, testimonial, CTA | Repeat CTA after proof | Logos, review snippets, usage metrics, case-study links |
+| Pricing | Hero, value proof, plan comparison, FAQ, CTA | Keep plan CTA labels specific | Feature comparison, guarantee, support details |
+| FAQ / conversion | Hero, objections, FAQ, final CTA | Match CTA to funnel stage | Risk reversal, security/compliance, support promise |
+| Product launch | Product visual, benefits, demo, waitlist, proof | One signup/join action | Demo stills, roadmap, early-user quotes |
+
+### Chart Choices
+
+| Data Need | Use | Avoid | Notes |
+|-----------|-----|-------|-------|
+| Trend over time | Line or area chart | Pie chart | Show range, units, and empty/no-data state |
+| Comparison | Bar chart | 3D chart | Sort by value unless chronology matters |
+| Real-time metric | KPI + sparkline | Dense multi-series line | Include stale/loading indicators |
+| Funnel | Funnel or stepped bar | Pie chart | Label conversion at each stage |
+| Distribution | Histogram or box plot | Single KPI | Show sample size and outliers |
+| Timeline | Timeline or Gantt | Table-only view | Pair with filters for long histories |
+| Part-to-whole | Stacked bar or donut | Many-slice pie | Use only when categories are few and stable |
+
+### HTML + Tailwind Guidance
+
+| Area | Guidance |
+|------|----------|
+| Layout | Start mobile-first, use semantic landmarks, constrain content with `max-w-*`, and reserve dimensions for repeated cards, grids, and media. |
+| Responsive | Prefer `grid-cols-1 md:grid-cols-*` and stable `min-h`/`aspect-*`; check 360px, 768px, and desktop widths. |
+| Forms | Pair every input with a label, keep error text adjacent, use `aria-describedby`, and make submit/loading states explicit. |
+| Components | Use Lucide/Heroicons for buttons, avoid card-in-card layouts, and keep hover/focus states from moving layout. |
+| Assets | Use real product/place/person imagery when the user needs inspection; avoid purely atmospheric placeholders. |
+
 ### Stack Guidance
 
 | Stack | Apply |
@@ -231,7 +274,10 @@ Available stacks: `html-tailwind`, `react`, `nextjs`, `vue`, `svelte`, `swiftui`
 | `nextjs` | Use framework image/link primitives where available, keep server/client boundaries explicit, and avoid putting interactive-only code in server components. |
 | `vue` / `svelte` | Keep reactive state local until shared state is truly needed; preserve semantic HTML and predictable transitions. |
 | `shadcn` | Use tokens and component variants consistently; do not stack cards inside cards or override primitives ad hoc. |
-| Mobile stacks | Prioritize platform navigation, safe areas, touch target size, loading states, and native form behavior. |
+| `swiftui` | Compose small `View`s, keep `@State` local, use `NavigationStack`, respect safe areas, and prefer system controls before custom gestures. |
+| `react-native` | Use platform components, `FlatList` for long lists, navigation-safe screens, explicit loading/error states, and 44px minimum touch targets. |
+| `flutter` | Use Material/Cupertino widgets deliberately, keep state ownership clear, rely on constraints for layout, and centralize theme tokens. |
+| `jetpack-compose` | Hoist state, keep composables pure, use stable keys in lazy lists, avoid unnecessary recomposition, and respect Material touch targets. |
 
 ---
 
