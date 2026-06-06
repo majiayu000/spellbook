@@ -46,6 +46,8 @@ Use this section for notable changes after the latest dated snapshot.
 - Upgraded the `Validate` workflow to Node 24-compatible GitHub Action majors:
   `actions/checkout@v6` and `actions/setup-python@v6`.
 - Replaced disabled Discussions links with issue-template support paths.
+- Added Gemma 4 QAT profile selection to `gemma4-local-deploy`, covering
+  `QAT Q4_0 @ 256K` and side-by-side `32K` versus `256K` comparison runs.
 
 ## [2026-06-03]
 
