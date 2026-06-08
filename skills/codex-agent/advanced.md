@@ -15,7 +15,7 @@ Codex CLI reads configuration from `~/.codex/config.toml`.
 model = "gpt-5-codex"
 
 # Default sandbox mode
-sandbox = "workspace-write"
+sandbox = "read-only"
 
 # Default approval mode
 approval = "on-request"
@@ -37,11 +37,11 @@ sandbox = "read-only"
 model = "gpt-5-codex"
 sandbox = "workspace-write"
 approval = "on-request"
-
-[profiles.dangerous]
-sandbox = "danger-full-access"
-approval = "never"
 ```
+
+Do not persist a `danger-full-access` + no-approval profile. If broad access is
+unavoidable, use it as a one-off command after explicit user approval and record
+what directory or system boundary required it.
 
 Use with `-p` flag:
 
@@ -91,7 +91,7 @@ This allows other MCP clients to use Codex as a tool provider.
 ### CI/CD Usage
 
 ```bash
-export CODEX_API_KEY="sk-..."
+export CODEX_API_KEY="<load from your secret manager or environment>"
 codex exec --json "Generate changelog from git log"
 ```
 

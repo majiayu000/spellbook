@@ -8,34 +8,51 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 ## Running a Task
 1. Ask the user (via `AskUserQuestion`) which model to run (`gpt-5.2-codex` or `gpt-5.2`) AND which reasoning effort to use (`xhigh`, `high`, `medium`, or `low`) in a **single prompt with two questions**.
 2. Select the sandbox mode required for the task; default to `--sandbox read-only` unless edits or network access are necessary.
-3. Assemble the command with the appropriate options:
+3. Run `codex --version` first. Stop and report the failure if Codex is unavailable.
+4. Assemble the command with the appropriate options:
    - `-m, --model <MODEL>`
    - `--config model_reasoning_effort="<xhigh|high|medium|low>"`
    - `--sandbox <read-only|workspace-write|danger-full-access>`
    - `--full-auto`
    - `-C, --cd <DIR>`
    - `--skip-git-repo-check`
-3. Always use --skip-git-repo-check.
-4. When continuing a previous session, use `codex exec --skip-git-repo-check resume --last` via stdin. When resuming don't use any configuration flags unless explicitly requested by the user e.g. if he species the model or the reasoning effort when requesting to resume a session. Resume syntax: `echo "your prompt here" | codex exec --skip-git-repo-check resume --last 2>/dev/null`. All flags have to be inserted between exec and resume.
-5. **IMPORTANT**: By default, append `2>/dev/null` to all `codex exec` commands to suppress thinking tokens (stderr). Only show stderr if the user explicitly requests to see thinking tokens or if debugging is needed.
-6. Run the command, capture stdout/stderr (filtered as appropriate), and summarize the outcome for the user.
-7. **After Codex completes**, inform the user: "You can resume this Codex session at any time by saying 'codex resume' or asking me to continue with additional analysis or changes."
+5. Do not use `--skip-git-repo-check` by default. Use it only when the user explicitly asks to run outside a Git repository or has approved that boundary bypass for this command.
+6. When continuing a previous session, use `codex exec resume --last` via stdin. Do not add model, reasoning, or sandbox flags on resume unless the user explicitly requests an override.
+7. **IMPORTANT**: By default, append `2>/dev/null` to `codex exec` commands to suppress thinking tokens (stderr). Only show stderr if the user explicitly requests it or if debugging is needed.
+8. Run the command, capture stdout/stderr (filtered as appropriate), and summarize the outcome for the user.
+9. **After Codex completes**, inform the user: "You can resume this Codex session at any time by saying 'codex resume' or asking me to continue with additional analysis or changes."
+
+### Safe Prompt Passing
+
+Do not build Codex commands with `echo "user prompt" | ...`; user text can contain quotes, substitutions, or newlines. Prefer a quoted heredoc so the shell never reinterprets prompt contents:
+
+```bash
+codex exec resume --last 2>/dev/null <<'EOF'
+Your follow-up prompt goes here.
+EOF
+```
 
 ### Quick Reference
 | Use case | Sandbox mode | Key flags |
 | --- | --- | --- |
 | Read-only review or analysis | `read-only` | `--sandbox read-only 2>/dev/null` |
-| Apply local edits | `workspace-write` | `--sandbox workspace-write --full-auto 2>/dev/null` |
-| Permit network or broad access | `danger-full-access` | `--sandbox danger-full-access --full-auto 2>/dev/null` |
-| Resume recent session | Inherited from original | `echo "prompt" \| codex exec --skip-git-repo-check resume --last 2>/dev/null` (no flags allowed) |
+| Apply local edits | `workspace-write` | `--sandbox workspace-write 2>/dev/null` |
+| Permit network or broad access | Prefer `--add-dir`; otherwise `danger-full-access` only after approval | Ask before adding `--sandbox danger-full-access` or `--full-auto` |
+| Resume recent session | Inherited from original | `codex exec resume --last 2>/dev/null <<'EOF'` + prompt + `EOF` |
 | Run from another directory | Match task needs | `-C <DIR>` plus other flags `2>/dev/null` |
 
 ## Following Up
 - After every `codex` command, immediately use `AskUserQuestion` to confirm next steps, collect clarifications, or decide whether to resume with `codex exec resume --last`.
-- When resuming, pipe the new prompt via stdin: `echo "new prompt" | codex exec resume --last 2>/dev/null`. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
+- When resuming, pass the new prompt through stdin using a quoted heredoc. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
 - Restate the chosen model, reasoning effort, and sandbox mode when proposing follow-up actions.
 
 ## Error Handling
 - Stop and report failures whenever `codex --version` or a `codex exec` command exits non-zero; request direction before retrying.
 - Before you use high-impact flags (`--full-auto`, `--sandbox danger-full-access`, `--skip-git-repo-check`) ask the user for permission using AskUserQuestion unless it was already given.
 - When output includes warnings or partial results, summarize them and ask how to adjust using `AskUserQuestion`.
+
+## Gotchas
+
+- `--skip-git-repo-check` bypasses an important cwd/worktree guard. Treat it like a boundary exception, not a default.
+- `--full-auto` and `danger-full-access` are high-impact modes. Prefer `read-only`, then `workspace-write`, then specific `--add-dir` grants before considering full access.
+- If a prompt came from the user or another model, pass it as stdin or as a single already-quoted CLI argument. Never interpolate it into a shell string.

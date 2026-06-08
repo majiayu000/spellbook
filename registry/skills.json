@@ -110,18 +110,6 @@
     ]
   },
   {
-    "name": "claude-mem",
-    "category": "AI & Agent Workflow",
-    "format": "directory",
-    "path": "skills/claude-mem/SKILL.md",
-    "description": "Orchestrator-driven planning and execution workflow. Use when coordinating Claude memory-backed planning, make-plan/do flows, or preserving execution context across multi-step work.",
-    "language": "en",
-    "tags": [
-      "agent",
-      "system"
-    ]
-  },
-  {
     "name": "cliproxy-deploy",
     "category": "Operations & Deploy",
     "format": "directory",

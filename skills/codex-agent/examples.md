@@ -40,13 +40,14 @@ codex exec -C /project -s read-only \
 ### Compare Approaches
 
 ```bash
-codex exec -C /project -s read-only -o /tmp/codex-approach.md \
+REPORT="$(mktemp -t codex-approach.XXXXXX.md)"
+codex exec -C /project -s read-only -o "$REPORT" \
   "Propose an alternative implementation for the caching logic in src/cache/manager.ts"
 ```
 
 Then Claude can read and compare:
 ```bash
-cat /tmp/codex-approach.md
+cat "$REPORT"
 ```
 
 ## Implementation Tasks
@@ -54,7 +55,7 @@ cat /tmp/codex-approach.md
 ### Implement Feature (with review)
 
 ```bash
-codex exec -C /project --full-auto \
+codex exec -C /project -s workspace-write \
   "Add rate limiting middleware to src/api/middleware/. Use sliding window algorithm, 100 req/min per IP."
 ```
 
@@ -68,7 +69,7 @@ codex exec -C /project -s workspace-write \
 ### Refactor Code
 
 ```bash
-codex exec -C /project --full-auto \
+codex exec -C /project -s workspace-write \
   "Refactor src/utils/helpers.ts: split into separate modules, add TypeScript types, improve naming."
 ```
 
@@ -80,7 +81,7 @@ codex exec -C /project --full-auto \
 # First interaction - note the session ID in response
 codex exec -C /project --json \
   "Analyze the test coverage in tests/. What areas need more testing?" \
-  | tee /tmp/session.json | jq -r '.session // empty'
+  | tee "$(mktemp -t codex-session.XXXXXX.json)" | jq -r '.session // empty'
 ```
 
 ### Continue Session
@@ -102,10 +103,11 @@ codex exec resume --last "What was the priority order again?"
 ### Save to File
 
 ```bash
-codex exec -C /project -o /tmp/analysis.md \
+REPORT="$(mktemp -t codex-analysis.XXXXXX.md)"
+codex exec -C /project -o "$REPORT" \
   "Document the API endpoints in src/api/routes/"
 
-cat /tmp/analysis.md
+cat "$REPORT"
 ```
 
 ### JSON Processing
@@ -133,7 +135,8 @@ codex exec -C /project --json "Implement logging" \
 1. Claude writes code
 2. Run Codex review:
 ```bash
-codex exec -C /project -s read-only -o /tmp/review.md \
+REPORT="$(mktemp -t codex-review.XXXXXX.md)"
+codex exec -C /project -s read-only -o "$REPORT" \
   "Review the uncommitted changes. Check for bugs, security issues, and code style."
 ```
 3. Primary agent reads review and addresses issues
@@ -143,14 +146,17 @@ codex exec -C /project -s read-only -o /tmp/review.md \
 Run multiple Codex analyses in background:
 
 ```bash
-codex exec -C /project -s read-only -o /tmp/security.md \
+SECURITY_REPORT="$(mktemp -t codex-security.XXXXXX.md)"
+PERF_REPORT="$(mktemp -t codex-perf.XXXXXX.md)"
+
+codex exec -C /project -s read-only -o "$SECURITY_REPORT" \
   "Security audit of src/" &
 
-codex exec -C /project -s read-only -o /tmp/perf.md \
+codex exec -C /project -s read-only -o "$PERF_REPORT" \
   "Performance analysis of src/" &
 
 wait
-cat /tmp/security.md /tmp/perf.md
+cat "$SECURITY_REPORT" "$PERF_REPORT"
 ```
 
 ### Structured Output

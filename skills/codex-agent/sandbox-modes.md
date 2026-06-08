@@ -8,7 +8,7 @@ Codex CLI provides three sandbox security levels to control file system access.
 |------|------|-------------|----------|
 | **Read-Only** | `-s read-only` | None | Code analysis, review, Q&A |
 | **Workspace Write** | `-s workspace-write` | Workspace + /tmp | Safe file modifications |
-| **Full Access** | `-s danger-full-access` | Unrestricted | System-wide changes (risky) |
+| **Full Access** | `-s danger-full-access` | Unrestricted | Last resort after explicit approval |
 
 ## Read-Only Mode (Default)
 
@@ -42,21 +42,18 @@ codex exec -s danger-full-access -C /project "Update system config"
 - Unrestricted file system access
 - Can modify any file on the system
 - Only use in isolated/sandboxed environments (VMs, containers)
+- Requires explicit user approval for the exact command and target boundary
 
 ## Full Auto Mode
 
 ```bash
-codex exec --full-auto -C /project "Implement feature X"
+codex exec -s workspace-write --full-auto -C /project "Implement feature X"
 ```
 
 Combines:
 - `workspace-write` sandbox
 - Automatic approval for actions (no prompts)
-
-Equivalent to:
-```bash
-codex exec -s workspace-write -a on-request -C /project "task"
-```
+- Requires explicit user approval before use
 
 ## Approval Modes
 

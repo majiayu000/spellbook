@@ -23,15 +23,15 @@ VERSION=$(codex --version 2>/dev/null || echo "unknown")
 echo "Codex CLI found: $VERSION"
 echo "Path: $(which codex)"
 
-# Check authentication by trying a simple command
+# Check authentication by trying a simple read-only command.
 echo ""
 echo "Checking authentication..."
 
 # Try to run a minimal command
-if codex exec --skip-git-repo-check -s read-only "echo test" &>/dev/null; then
+if codex exec -s read-only "echo test" &>/dev/null; then
     echo "Authentication: OK"
 else
-    echo "WARNING: Authentication may not be configured"
+    echo "WARNING: Authentication may not be configured, or this directory is not accepted by Codex"
     echo ""
     echo "Run 'codex login' to authenticate"
 fi

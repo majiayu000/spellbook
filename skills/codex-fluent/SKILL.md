@@ -102,6 +102,18 @@ Generate a safe, report-only weekly reminder prompt that never applies changes a
 - Archive pinned or explicitly marked "do not touch" sessions without confirmation.
 - Promise universal speedups (results depend on your usage patterns).
 
+## Gotchas
+
+- A large session is not automatically safe to archive. If the work is active,
+  blocked, or likely to resume, create the handoff first and verify that the
+  reactivation prompt points to a real file.
+- Reported size reductions do not prove product speedups by themselves. Compare
+  before/after active-state size and a fresh startup or session-switch test.
+- Never treat "Codex is closed" as an assumption. If apply mode would touch
+  active state, verify process state or get explicit user acceptance first.
+- Do not normalize paths, prune config, or move global skills in the same pass
+  as session archiving unless the diagnosis explicitly named those candidates.
+
 ## References
 
 - `references/handoff-template.md` — High-quality handoff document template + reactivation prompt

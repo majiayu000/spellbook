@@ -2,9 +2,11 @@
 name: codex-agent
 description: Use when you want a second-opinion review via Codex CLI, cross-verification after another agent implements changes, debugging help, or alternative implementation proposals. Requires Codex CLI to be installed and authenticated.
 allowed-tools:
-  - Bash
+  - Bash(codex:*)
+  - Bash(mktemp:*)
+  - Bash(cat:*)
+  - Bash(git diff:*)
   - Read
-  - Write
   - Edit
   - Grep
   - Glob
@@ -12,7 +14,9 @@ allowed-tools:
 
 # Codex Agent Collaboration Skill
 
-This skill enables Claude Code to collaborate with OpenAI's Codex CLI agent.
+This skill enables Claude Code to collaborate with OpenAI's Codex CLI agent for second-opinion review, cross-verification, debugging analysis, and alternative implementation proposals.
+
+Default posture: Codex reviews in `read-only`; the primary agent applies changes only when the user asked for fixes or approved them after reading the review.
 
 ## Optional Codex Review Workflow
 
@@ -21,7 +25,8 @@ Use this workflow when the user asks for Codex review, wants a second opinion, o
 ### Step 1: Call Codex for Review
 
 ```bash
-codex exec -C <project_path> -s read-only -o /tmp/codex-review.md \
+REPORT="$(mktemp -t codex-review.XXXXXX.md)"
+codex exec -C <project_path> -s read-only -o "$REPORT" \
   "Review the code in <file_or_directory>. Check for:
    - Security vulnerabilities
    - Performance issues
@@ -34,15 +39,17 @@ codex exec -C <project_path> -s read-only -o /tmp/codex-review.md \
 ### Step 2: Read Codex Feedback
 
 ```bash
-cat /tmp/codex-review.md
+cat "$REPORT"
 ```
 
 ### Step 3: Apply Fixes Based on Codex Feedback
 
-For each issue identified by Codex:
+When the user asked to apply fixes, handle each issue identified by Codex:
 1. Read the relevant file
 2. Apply the fix using Edit tool
 3. Verify the fix addresses Codex's concern
+
+If the user only asked for a review or second opinion, report findings without editing files.
 
 ### Step 4: Re-verify with Codex (Optional)
 
@@ -57,11 +64,12 @@ codex exec -C <project_path> -s read-only \
 
 ```bash
 # Step 1: Get Codex review
-codex exec -C /project -s read-only -o /tmp/codex-review.md \
+REPORT="$(mktemp -t codex-review.XXXXXX.md)"
+codex exec -C /project -s read-only -o "$REPORT" \
   "Review src/auth/login.ts for security vulnerabilities and code quality issues. Provide specific line numbers and fixes."
 
 # Step 2: Read the feedback
-cat /tmp/codex-review.md
+cat "$REPORT"
 ```
 
 Then the primary agent reads the feedback, applies fixes with Edit tool, and optionally re-verifies.
@@ -70,21 +78,24 @@ Then the primary agent reads the feedback, applies fixes with Edit tool, and opt
 
 ```bash
 # Get diff of recent changes
-git diff HEAD~1 > /tmp/recent-changes.diff
+DIFF_REPORT="$(mktemp -t recent-changes.XXXXXX.diff)"
+git diff HEAD~1 > "$DIFF_REPORT"
 
 # Step 1: Have Codex review the diff
-codex exec -C /project -s read-only -o /tmp/codex-review.md \
-  "Review the changes in the last commit. Check for bugs, security issues, and improvements needed."
+REPORT="$(mktemp -t codex-review.XXXXXX.md)"
+codex exec -C /project -s read-only -o "$REPORT" \
+  "Review the changes saved at $DIFF_REPORT. Check for bugs, security issues, and improvements needed."
 
 # Step 2: Read and apply fixes
-cat /tmp/codex-review.md
+cat "$REPORT"
 ```
 
 ### Example 3: Full Project Review
 
 ```bash
 # Step 1: Comprehensive review
-codex exec -C /project -s read-only -o /tmp/codex-review.md \
+REPORT="$(mktemp -t codex-review.XXXXXX.md)"
+codex exec -C /project -s read-only -o "$REPORT" \
   "Perform a comprehensive code review of src/. Focus on:
    1. Security vulnerabilities (OWASP Top 10)
    2. Error handling patterns
@@ -93,7 +104,7 @@ codex exec -C /project -s read-only -o /tmp/codex-review.md \
    Prioritize issues by severity (critical/high/medium/low)."
 
 # Step 2: Read prioritized feedback
-cat /tmp/codex-review.md
+cat "$REPORT"
 ```
 
 ## Review Request Format
@@ -187,7 +198,8 @@ codex exec -C /project -s read-only \
 ### Get Alternative Implementation
 
 ```bash
-codex exec -C /project -s read-only -o /tmp/alternative.md \
+REPORT="$(mktemp -t codex-alternative.XXXXXX.md)"
+codex exec -C /project -s read-only -o "$REPORT" \
   "Propose an alternative implementation for the caching in src/cache/manager.ts"
 ```
 
@@ -210,6 +222,18 @@ codex exec -C /project -s read-only "Review src/api/ for security issues"
 # Follow-up after fixes
 codex exec resume <session_id> "I've applied the fixes. Please re-verify."
 ```
+
+## Helper Scripts
+
+- `scripts/check-codex.sh` checks whether the Codex CLI is installed and authenticated.
+- `scripts/codex-wrapper.sh` is optional. Use it only when you need a small CLI wrapper; it executes Codex through shell arrays and must not use `eval`.
+
+## Gotchas
+
+- Do not write reviews to fixed paths such as `/tmp/codex-review.md`; use `mktemp` or a project-specific private report path so concurrent projects cannot overwrite or read stale feedback.
+- Keep Codex review commands in `read-only` unless the user explicitly asked Codex itself to edit.
+- Treat `--full-auto`, `danger-full-access`, and `--skip-git-repo-check` as high-impact flags. Ask before using them.
+- Do not blindly apply every Codex suggestion. Re-read the target file, confirm the root cause, and verify the final behavior.
 
 ## Troubleshooting
 

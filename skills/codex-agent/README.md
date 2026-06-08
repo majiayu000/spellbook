@@ -74,7 +74,7 @@ When you ask for a Codex second opinion, the primary agent will:
 
 1. **Call Codex** to perform the review
 2. **Parse feedback** from Codex (file, line, severity, issue, fix)
-3. **Apply fixes** using Edit tool
+3. **Apply fixes** using Edit tool only when the user asked for fixes
 4. **Optionally re-verify** with Codex
 
 ### Example Prompts
@@ -97,7 +97,8 @@ Review the recent changes and fix problems Codex finds
 
 The primary agent executes:
 ```bash
-codex exec -C /project -s read-only -o /tmp/codex-review.md \
+REPORT="$(mktemp -t codex-review.XXXXXX.md)"
+codex exec -C /project -s read-only -o "$REPORT" \
   "Review src/auth/. Check for security, performance, code quality.
    Provide file paths, line numbers, and specific fixes."
 ```
@@ -152,7 +153,8 @@ Add to `.claude/settings.local.json`:
 {
   "permissions": {
     "allow": [
-      "Bash(codex:*)"
+      "Bash(codex:*)",
+      "Bash(mktemp:*)"
     ]
   }
 }
@@ -165,6 +167,10 @@ Add to `.claude/settings.local.json`:
 | `read-only` | No file writes (used for reviews) |
 | `workspace-write` | Write to project directory |
 | `danger-full-access` | Unrestricted (use with caution) |
+
+Use `read-only` for review and re-verification by default. Treat `--full-auto`,
+`danger-full-access`, and `--skip-git-repo-check` as high-impact options that
+need explicit user approval.
 
 ## Troubleshooting
 
