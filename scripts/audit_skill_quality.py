@@ -90,33 +90,13 @@ OPERATING_CONTRACT_CATEGORIES = {
     "Operations & Deploy",
 }
 
-OPERATING_CONTRACT_CUES = (
-    "ask before",
-    "approval",
-    "approve",
-    "autonomy",
-    "autonomy boundary",
-    "challenge",
-    "correction",
-    "destructive",
-    "done-when",
-    "end-state",
-    "escalate",
-    "escalation",
-    "evidence-backed",
-    "feedback loop",
-    "permission",
-    "push back",
-    "pushback",
-    "rollback",
-    "tradeoff",
-    "批准",
-    "边界",
-    "反驳",
-    "反馈",
-    "复盘",
-    "升级",
-    "确认",
+OPERATING_CONTRACT_SECTION_RE = re.compile(r"(?im)^##+\s+Operating Contract\s*$")
+
+OPERATING_CONTRACT_FIELDS = (
+    "Direct actions:",
+    "Escalate before:",
+    "Evidence-backed pushback:",
+    "Feedback loop:",
 )
 
 LOCAL_SUPPORT_REF_RE = re.compile(
@@ -153,6 +133,26 @@ def skill_markdown_body(path: Path) -> str:
 def contains_any(text: str, cues: tuple[str, ...]) -> bool:
     lowered = text.lower()
     return any(cue.lower() in lowered for cue in cues)
+
+
+def operating_contract_section(body: str) -> str | None:
+    match = OPERATING_CONTRACT_SECTION_RE.search(body)
+    if not match:
+        return None
+
+    start = match.end()
+    next_heading = re.search(r"(?m)^##+\s+", body[start:])
+    end = start + next_heading.start() if next_heading else len(body)
+    return body[start:end]
+
+
+def missing_operating_contract_fields(body: str) -> list[str]:
+    section = operating_contract_section(body)
+    if section is None:
+        return list(OPERATING_CONTRACT_FIELDS)
+
+    section_lower = section.lower()
+    return [field for field in OPERATING_CONTRACT_FIELDS if field.lower() not in section_lower]
 
 
 def support_dirs_for(entry: SkillEntry) -> list[str]:
@@ -238,18 +238,29 @@ def audit_entry(entry: SkillEntry) -> list[QualityFinding]:
             )
         )
 
-    if category in OPERATING_CONTRACT_CATEGORIES and not contains_any(
-        searchable_text, OPERATING_CONTRACT_CUES
-    ):
-        findings.append(
-            QualityFinding(
-                "INFO",
-                entry.install_name,
-                entry.path,
-                "operating-contract",
-                "high-impact workflow has no obvious autonomy, escalation, pushback, or feedback-loop guidance",
+    if category in OPERATING_CONTRACT_CATEGORIES:
+        missing_contract_fields = missing_operating_contract_fields(body)
+        if missing_contract_fields == list(OPERATING_CONTRACT_FIELDS):
+            findings.append(
+                QualityFinding(
+                    "INFO",
+                    entry.install_name,
+                    entry.path,
+                    "operating-contract",
+                    "high-impact workflow has no explicit '## Operating Contract' section",
+                )
             )
-        )
+        elif missing_contract_fields:
+            findings.append(
+                QualityFinding(
+                    "INFO",
+                    entry.install_name,
+                    entry.path,
+                    "operating-contract",
+                    "Operating Contract section is missing field(s): "
+                    + ", ".join(missing_contract_fields),
+                )
+            )
 
     if entry.format == "file" and line_count > 160:
         findings.append(
