@@ -253,6 +253,8 @@ which codex
 
 ## See Also
 
+- [scripts/check-codex.sh](scripts/check-codex.sh) - Local Codex CLI availability check
+- [scripts/codex-wrapper.sh](scripts/codex-wrapper.sh) - Wrapper for repeatable Codex CLI invocation
 - [sandbox-modes.md](sandbox-modes.md) - Sandbox security levels
 - [examples.md](examples.md) - More usage examples
 - [advanced.md](advanced.md) - Advanced configuration
