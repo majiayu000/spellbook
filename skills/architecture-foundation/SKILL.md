@@ -185,3 +185,5 @@ open questions
 - Read `references/go-architecture-patterns.md` when designing Go modules,
   packages, services, ports/adapters, context-aware APIs, or concurrency flows.
 - Read `references/spec-template.md` when producing a repo-facing spec.
+- Use `agents/openai.yaml` only when a separate architecture review agent is
+  needed for cross-checking the chosen boundaries or migration plan.

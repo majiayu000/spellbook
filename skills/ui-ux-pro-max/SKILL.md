@@ -1,6 +1,6 @@
 ---
 name: ui-ux-pro-max
-description: "UI/UX design intelligence. Compact in-file reference tables for product patterns, landing pages, chart choices, visual styles, palettes, typography, UX rules, and 9 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui). Actions: plan, build, create, design, implement, review, fix, improve, optimize, enhance, refactor, check UI/UX code. Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, mobile app, .html, .tsx, .vue, .svelte. Elements: button, modal, navbar, sidebar, card, table, form, chart. Topics: color palette, accessibility, animation, layout, typography, font pairing, spacing, hover, shadow, gradient."
+description: "Use when planning, building, designing, code review, refactor, fixing, improving, optimizing, enhancing, or checking UI/UX work. Covers product patterns, landing pages, chart choices, visual styles, palettes, typography, UX rules, and 9 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui). Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, mobile app, .html, .tsx, .vue, .svelte. Elements: button, modal, navbar, sidebar, card, table, form, chart. Topics: color palette, accessibility, animation, layout, typography, font pairing, spacing, hover, shadow, gradient."
 ---
 
 # UI/UX Pro Max - Design Intelligence

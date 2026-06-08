@@ -1,6 +1,6 @@
 ---
 name: gemma4-local-deploy
-description: 在本机 Mac 或 Apple Silicon 上部署 Gemma 4 12B。本地安装/升级 llama.cpp，下载 GGUF 量化模型，用 llama-server 暴露 OpenAI-compatible API，或用 Ollama 暴露本地模型服务，按用户需求把 12B 上下文从默认 32K 提升到 64K/128K，配置 tmux 后台运行，验证健康检查、问答接口、资源占用和常见故障。当用户说部署 Gemma 4、Gemma 4 12B、本地大模型、长上下文、llama-server、Ollama、GGUF、Mac 本地模型服务时使用。
+description: 在本机 Mac 或 Apple Silicon 上部署 Gemma 4 12B。本地安装/升级 llama.cpp，下载 GGUF 量化模型，用 llama-server 暴露 OpenAI-compatible API，或用 Ollama 暴露本地模型服务；按用户需求在默认 Q4_K_M、64K/128K 长上下文、QAT Q4_0 @ 256K、左右对比演示之间选择，配置 tmux 后台运行，验证健康检查、问答接口、资源占用和常见故障。当用户说部署 Gemma 4、Gemma 4 12B、本地大模型、长上下文、QAT、量化、llama-server、Ollama、GGUF、Mac 本地模型服务时使用。
 allowed-tools: Bash, Read, WebSearch, WebFetch
 metadata:
   argument-hint: "[模型量化/端口/是否后台运行]"
@@ -8,21 +8,37 @@ metadata:
 
 # Gemma 4 12B 本地部署
 
-目标：把 `google/gemma-4-12B-it` 的 GGUF 版本部署成本机模型服务。默认用 `llama.cpp` / `llama-server` + Apple Metal + `Q4_K_M` + `tmux` 暴露 OpenAI-compatible API；用户明确要 Ollama 时，再走 Ollama 导入路径。
+目标：把 Gemma 4 12B 的 GGUF 版本部署成本机模型服务。默认用 `llama.cpp` / `llama-server` + Apple Metal + `Q4_K_M` + `tmux` 暴露 OpenAI-compatible API；用户明确要 QAT、256K 或对比演示时，切到 `QAT Q4_0` profile；用户明确要 Ollama 时，再走 Ollama 导入路径。
 
 ## 默认选择
 
-- 模型仓库：`ggml-org/gemma-4-12B-it-GGUF`
+- 默认模型仓库：`ggml-org/gemma-4-12B-it-GGUF`
 - 默认量化：`Q4_K_M`
 - 默认模型名：`gemma-4-12b-it`
 - 默认端口：`127.0.0.1:8080`
 - 默认上下文：`32768`
 - 12B 长上下文：用户明确要求更大上下文时，可改为 `65536` 或原生最高 `131072`
+- QAT 仓库：`google/gemma-4-12B-it-qat-q4_0-gguf`
+- QAT 量化：`Q4_0`，文件名通常是 `gemma-4-12b-it-qat-q4_0.gguf`
+- QAT 上下文：用户要求 QAT、最大上下文或 256K 时，用 `262144`
 - 默认后台方式：`tmux` 会话 `gemma4-12b`
 - 默认关闭 thinking：`--reasoning off`，避免 OpenAI API 的 `message.content` 为空
 - Ollama 路径：只在用户明确要 Ollama、需要接 Ollama 生态，或询问 `ollama pull gemma4:12b` 时使用
 
-如果用户明确要更高质量，优先建议 `Q6_K` 或 `Q8_0`；不要默认上 `bf16`，除非用户接受更大内存和更慢加载。
+如果用户明确要更高质量，优先建议 `Q6_K` 或 `Q8_0`；不要默认上 `bf16`，除非用户接受更大内存和更慢加载。QAT 是训练时模拟量化以降低压缩后的质量损失，不等于无损；关键任务仍要做当前会话验证。
+
+## Profile 选择
+
+先根据用户目标选择 profile。不要把 256K 当作默认值，也不要在用户只要日常本地服务时自动切 QAT。
+
+| Profile | When to choose | Model / quant | Context | Port / alias |
+|---|---|---|---:|---|
+| `daily-q4km-32k` | 默认日常聊天、编码、低风险本地 API | `ggml-org/...:Q4_K_M` | `32768` | `8080` / `gemma-4-12b-it` |
+| `long-q4km-128k` | 用户明确要更长上下文，但仍想保留默认 GGUF 路线 | `ggml-org/...:Q4_K_M` | `65536` or `131072` | `8080` / `gemma-4-12b-it` |
+| `qat-q4_0-256k` | 用户说 QAT、Q4_0、256K、Google QAT blog、低内存长上下文 | `google/...qat-q4_0-gguf:Q4_0` | `262144` | `8080` / `gemma-4-12b-it-qat-q4_0` |
+| `compare-32k-vs-256k` | 用户要录屏、演示、A/B 对比资源和速度 | left `Q4_K_M`, right `QAT Q4_0` | `32768` + `262144` | `8080` + `8081` |
+
+选择后在最终回复里说清楚 profile、端口、上下文和为什么这么选。
 
 ## 执行流程
 
@@ -36,6 +52,7 @@ llama-server --version || true
 tmux has-session -t gemma4-12b 2>/dev/null && tmux display-message -p -t gemma4-12b '#S #{pane_pid}' || true
 lsof -nP -iTCP:8080 -sTCP:LISTEN || true
 ls -lh "$HOME/Library/Caches/llama.cpp/"*gemma-4-12B-it*Q4_K_M*.gguf 2>/dev/null || true
+find "$HOME/Library/Caches/llama.cpp" "$HOME/Models" \( -name '*gemma-4-12b-it-qat-q4_0*.gguf' -o -name '*gemma-4-12B-it-qat-q4_0*.gguf' \) 2>/dev/null || true
 ```
 
 On Mac, also record hardware:
@@ -67,7 +84,7 @@ then upgrade `llama.cpp` and retry. A verified good local build was `9430`; newe
 
 ### 3. Download/load the model
 
-First-run download can be done by `llama-server -hf`:
+For the default `daily-q4km-32k` profile, first-run download can be done by `llama-server -hf`:
 
 ```bash
 llama-server \
@@ -88,6 +105,32 @@ After the model is cached, prefer starting with the local file path. Typical cac
 $HOME/Library/Caches/llama.cpp/ggml-org_gemma-4-12B-it-GGUF_gemma-4-12B-it-Q4_K_M.gguf
 ```
 
+For the `qat-q4_0-256k` profile, use the Google QAT GGUF repo:
+
+```bash
+llama-server \
+  -hf google/gemma-4-12B-it-qat-q4_0-gguf:Q4_0 \
+  --ctx-size 262144 \
+  --gpu-layers 99 \
+  --parallel 1 \
+  --flash-attn on \
+  --cache-type-k q8_0 \
+  --cache-type-v q8_0 \
+  --reasoning off \
+  --host 127.0.0.1 \
+  --port 8080 \
+  --alias gemma-4-12b-it-qat-q4_0
+```
+
+If the download should be explicit or reusable outside the llama.cpp cache:
+
+```bash
+mkdir -p "$HOME/Models/gemma4-qat"
+huggingface-cli download google/gemma-4-12B-it-qat-q4_0-gguf \
+  gemma-4-12b-it-qat-q4_0.gguf \
+  --local-dir "$HOME/Models/gemma4-qat"
+```
+
 ### 4. Run persistently with tmux
 
 If port `8080` is free and no `gemma4-12b` session exists:
@@ -98,11 +141,27 @@ tmux new-session -d -s gemma4-12b 'llama-server -m "$HOME/Library/Caches/llama.c
 
 If `$HOME` is not expanded inside single quotes in the target shell, use the absolute path instead.
 
+For `qat-q4_0-256k` with an explicit local file:
+
+```bash
+tmux new-session -d -s gemma4-qat-256k 'llama-server -m "$HOME/Models/gemma4-qat/gemma-4-12b-it-qat-q4_0.gguf" --ctx-size 262144 --gpu-layers 99 --parallel 1 --flash-attn on --cache-type-k q8_0 --cache-type-v q8_0 --reasoning off --host 127.0.0.1 --port 8080 --alias gemma-4-12b-it-qat-q4_0'
+```
+
+For `compare-32k-vs-256k`, keep separate session names and ports:
+
+```bash
+tmux new-session -d -s gemma4-left-32k 'llama-server -m "$HOME/Library/Caches/llama.cpp/ggml-org_gemma-4-12B-it-GGUF_gemma-4-12B-it-Q4_K_M.gguf" --ctx-size 32768 --gpu-layers 99 --parallel 1 --flash-attn on --cache-type-k q8_0 --cache-type-v q8_0 --reasoning off --host 127.0.0.1 --port 8080 --alias gemma-4-12b-it'
+tmux new-session -d -s gemma4-right-256k 'llama-server -m "$HOME/Models/gemma4-qat/gemma-4-12b-it-qat-q4_0.gguf" --ctx-size 262144 --gpu-layers 99 --parallel 1 --flash-attn on --cache-type-k q8_0 --cache-type-v q8_0 --reasoning off --host 127.0.0.1 --port 8081 --alias gemma-4-12b-it-qat-q4_0'
+```
+
 Management commands:
 
 ```bash
 tmux attach -t gemma4-12b
 tmux kill-session -t gemma4-12b
+tmux kill-session -t gemma4-qat-256k
+tmux kill-session -t gemma4-left-32k
+tmux kill-session -t gemma4-right-256k
 ```
 
 ### 5. Increase 12B context when requested
@@ -163,7 +222,7 @@ curl -fsS http://127.0.0.1:8080/v1/chat/completions \
 Success requires:
 
 - `/health` returns `{"status":"ok"}`
-- `/v1/models` lists `gemma-4-12b-it`
+- `/v1/models` lists the chosen alias, for example `gemma-4-12b-it` or `gemma-4-12b-it-qat-q4_0`
 - `/v1/models` shows the requested `n_ctx` when the user asked for larger context
 - chat response has non-empty `choices[0].message.content`
 
@@ -275,3 +334,7 @@ Answer in Chinese unless the user asks otherwise. Include:
 - tmux/session management commands
 - verification results from this session
 - resource summary and any caveats
+
+## Cross-Check Agent
+
+Use `agents/openai.yaml` only when the deployment plan or troubleshooting result needs an independent model review before execution.

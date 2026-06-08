@@ -151,6 +151,63 @@ is_managed_path() {
     [[ "$path" == *"claude-arsenal"* ]] || [[ "$path" == *"spellbook"* ]]
 }
 
+read_managed_target() {
+    local path="$1"
+    readlink -f "$path" 2>/dev/null || readlink "$path" 2>/dev/null || true
+}
+
+is_current_installable_skill() {
+    local skill_name="$1"
+    local current_skill
+
+    while IFS= read -r current_skill; do
+        if [ "$current_skill" = "$skill_name" ]; then
+            return 0
+        fi
+    done < <(list_installable_skill_names)
+
+    return 1
+}
+
+prune_stale_managed_skills_from_dir() {
+    local skills_dir="$1"
+    local runtime_name="$2"
+
+    [ -d "$skills_dir" ] || return
+
+    local pruned=0
+    local skill_path
+    for skill_path in "$skills_dir"/*; do
+        [ -e "$skill_path" ] || [ -L "$skill_path" ] || continue
+
+        local skill_name
+        skill_name=$(basename "$skill_path")
+
+        if is_current_installable_skill "$skill_name"; then
+            continue
+        fi
+
+        local target
+        if [ -L "$skill_path" ]; then
+            target=$(read_managed_target "$skill_path")
+            if is_managed_path "$target"; then
+                rm -f "$skill_path"
+                pruned=$((pruned + 1))
+            fi
+        elif [ -d "$skill_path" ] && [ -L "$skill_path/SKILL.md" ]; then
+            target=$(read_managed_target "$skill_path/SKILL.md")
+            if is_managed_path "$target"; then
+                rm -rf "$skill_path"
+                pruned=$((pruned + 1))
+            fi
+        fi
+    done
+
+    if [ "$pruned" -gt 0 ]; then
+        info "Pruned $pruned stale managed skill(s) for $runtime_name"
+    fi
+}
+
 prepare_directory_skill_target() {
     local skills_dir="$1"
     local skill_name="$2"
@@ -160,7 +217,7 @@ prepare_directory_skill_target() {
         rm -f "$target"
     elif [ -d "$target" ] && [ -L "$target/SKILL.md" ]; then
         local linked_skill
-        linked_skill=$(readlink "$target/SKILL.md" 2>/dev/null || true)
+        linked_skill=$(read_managed_target "$target/SKILL.md")
         if is_managed_path "$linked_skill"; then
             rm -rf "$target"
         fi
@@ -185,6 +242,7 @@ install_all_skills_to_dir() {
     local runtime_name="$2"
 
     info "Installing all skills for $runtime_name..."
+    prune_stale_managed_skills_from_dir "$skills_dir" "$runtime_name"
 
     local count=0
 
@@ -310,15 +368,15 @@ uninstall_from_skills_dir() {
     local skills_dir="$1"
 
     for skill_path in "$skills_dir"/*; do
-        [ -e "$skill_path" ] || continue
+        [ -e "$skill_path" ] || [ -L "$skill_path" ] || continue
 
         if [ -L "$skill_path" ]; then
-            target=$(readlink -f "$skill_path" 2>/dev/null || readlink "$skill_path" 2>/dev/null)
+            target=$(read_managed_target "$skill_path")
             if is_managed_path "$target"; then
                 rm -f "$skill_path"
             fi
         elif [ -d "$skill_path" ] && [ -L "$skill_path/SKILL.md" ]; then
-            target=$(readlink -f "$skill_path/SKILL.md" 2>/dev/null || readlink "$skill_path/SKILL.md" 2>/dev/null)
+            target=$(read_managed_target "$skill_path/SKILL.md")
             if is_managed_path "$target"; then
                 rm -rf "$skill_path"
             fi
@@ -498,4 +556,6 @@ main() {
     echo ""
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

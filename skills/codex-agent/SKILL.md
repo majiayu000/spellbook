@@ -22,7 +22,7 @@ Default posture: Codex reviews in `read-only`; the primary agent applies changes
 
 Use this workflow when the user asks for Codex review, wants a second opinion, or needs cross-verification from a separate coding agent.
 
-### Step 1: Call Codex for Review
+### Step 1: Call Codex and Read Feedback
 
 ```bash
 REPORT="$(mktemp -t codex-review.XXXXXX.md)"
@@ -34,15 +34,14 @@ codex exec -C <project_path> -s read-only -o "$REPORT" \
    - Potential bugs and edge cases
    - Naming and readability
    Provide specific, actionable feedback with file paths and line numbers."
-```
 
-### Step 2: Read Codex Feedback
-
-```bash
 cat "$REPORT"
 ```
 
-### Step 3: Apply Fixes Based on Codex Feedback
+Keep the write and read in the same Bash call, or pass a concrete report path
+between calls; shell variables do not persist across tool calls.
+
+### Step 2: Apply Fixes Based on Codex Feedback
 
 When the user asked to apply fixes, handle each issue identified by Codex:
 1. Read the relevant file
@@ -51,7 +50,7 @@ When the user asked to apply fixes, handle each issue identified by Codex:
 
 If the user only asked for a review or second opinion, report findings without editing files.
 
-### Step 4: Re-verify with Codex (Optional)
+### Step 3: Re-verify with Codex (Optional)
 
 ```bash
 codex exec -C <project_path> -s read-only \
@@ -201,6 +200,7 @@ codex exec -C /project -s read-only \
 REPORT="$(mktemp -t codex-alternative.XXXXXX.md)"
 codex exec -C /project -s read-only -o "$REPORT" \
   "Propose an alternative implementation for the caching in src/cache/manager.ts"
+cat "$REPORT"
 ```
 
 ### Debugging Assistance

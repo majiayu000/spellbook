@@ -1,6 +1,6 @@
 ---
 name: strategic-compact
-description: "策略性压缩 — 在逻辑边界手动压缩上下文，而非任意自动压缩。保留关键决策和约束，丢弃中间探索过程。"
+description: "当用户需要在长会话的逻辑边界手动压缩上下文、保留关键决策和约束、丢弃中间探索过程时使用。"
 ---
 
 # Strategic Compact

@@ -1,6 +1,6 @@
 ---
 name: ui-design-system
-description: UI design system toolkit for Senior UI Designer including design token generation, component documentation, responsive design calculations, and developer handoff tools. Use for creating design systems, maintaining visual consistency, and facilitating design-dev collaboration.
+description: Use when creating or maintaining UI design systems, design tokens, component documentation, responsive calculations, quality checks, or design-dev handoff materials.
 ---
 
 # UI Design System Toolkit
@@ -30,3 +30,7 @@ Generates complete design system tokens from brand colors.
 - Shadow and animation tokens
 - Responsive breakpoints
 - Multiple export formats
+
+## Verification
+
+Before reporting completion, validate generated tokens or handoff artifacts against the requested brand color, output format, accessibility constraints, and the target implementation surface. For script usage, run the command with representative input and inspect the emitted JSON/CSS/SCSS for valid syntax and preserved brand values.

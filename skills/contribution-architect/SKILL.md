@@ -1,6 +1,6 @@
 ---
 name: contribution-architect
-description: An advanced analysis tool that helps contributors move beyond simple bug fixes to architectural improvements. It focuses on finding technical debt, proposing RFCs, and identifying module ownership opportunities.
+description: Use when a contributor wants to move beyond simple bug fixes into architectural improvements, technical debt discovery, design proposals, or module ownership opportunities.
 allowed-tools: Read, Grep, Glob, Bash
 ---
 

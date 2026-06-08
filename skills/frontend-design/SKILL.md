@@ -40,3 +40,7 @@ Interpret creatively and make unexpected choices that feel genuinely designed fo
 **IMPORTANT**: Match implementation complexity to the aesthetic vision. Maximalist designs need elaborate code with extensive animations and effects. Minimalist or refined designs need restraint, precision, and careful attention to spacing, typography, and subtle details. Elegance comes from executing the vision well.
 
 Remember: Claude is capable of extraordinary creative work. Don't hold back, show what can truly be created when thinking outside the box and committing fully to a distinctive vision.
+
+## Verification
+
+Before completion, check the implemented interface in the target runtime whenever possible. Verify layout, responsive behavior, text fit, contrast, interaction states, and that the result is a working UI rather than a static mockup. For local apps, use the available browser or screenshot workflow to inspect desktop and mobile viewports before claiming the frontend is done.

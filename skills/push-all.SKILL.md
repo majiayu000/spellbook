@@ -1,6 +1,6 @@
 ---
 name: push-all
-description: Stage all changes, create commit, and push to remote (use with caution)
+description: Use when the user explicitly asks to stage all current changes, create a commit, and push to the remote after safety checks.
 allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*), Bash(git push:*), Bash(git diff:*), Bash(git log:*), Bash(git pull:*)
 ---
 

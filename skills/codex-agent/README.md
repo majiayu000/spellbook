@@ -101,6 +101,7 @@ REPORT="$(mktemp -t codex-review.XXXXXX.md)"
 codex exec -C /project -s read-only -o "$REPORT" \
   "Review src/auth/. Check for security, performance, code quality.
    Provide file paths, line numbers, and specific fixes."
+cat "$REPORT"
 ```
 
 ### Step 2: Parse Feedback
@@ -154,7 +155,8 @@ Add to `.claude/settings.local.json`:
   "permissions": {
     "allow": [
       "Bash(codex:*)",
-      "Bash(mktemp:*)"
+      "Bash(mktemp:*)",
+      "Bash(cat:*)"
     ]
   }
 }

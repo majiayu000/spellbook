@@ -327,3 +327,5 @@ Conclusion:
 ```
 
 If the before snapshot is missing, write: `缺少调整前 baseline，无法可靠量化收益`.
+
+Regression prompts and expected behaviors are documented in `evals/README.md` and `evals/evals.json`; use them when changing the collector or diagnosis workflow.

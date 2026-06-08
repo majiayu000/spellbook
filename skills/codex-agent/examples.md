@@ -43,10 +43,6 @@ codex exec -C /project -s read-only \
 REPORT="$(mktemp -t codex-approach.XXXXXX.md)"
 codex exec -C /project -s read-only -o "$REPORT" \
   "Propose an alternative implementation for the caching logic in src/cache/manager.ts"
-```
-
-Then Claude can read and compare:
-```bash
 cat "$REPORT"
 ```
 
@@ -138,6 +134,7 @@ codex exec -C /project --json "Implement logging" \
 REPORT="$(mktemp -t codex-review.XXXXXX.md)"
 codex exec -C /project -s read-only -o "$REPORT" \
   "Review the uncommitted changes. Check for bugs, security issues, and code style."
+cat "$REPORT"
 ```
 3. Primary agent reads review and addresses issues
 
