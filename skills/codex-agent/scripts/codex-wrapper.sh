@@ -18,7 +18,7 @@ Usage: codex-wrapper.sh [options] "<task>"
 
 Options:
   -d, --dir <path>       Working directory (default: current)
-  -s, --sandbox <mode>   Sandbox mode: read-only, workspace-write, danger-full-access
+  -s, --sandbox <mode>   Sandbox mode: read-only, workspace-write, workspace-read-network-write, danger-full-access
   -j, --json             Output as JSON
   -o, --output <file>    Save output to file
   -S, --session <id>     Use session ID for follow-up
@@ -87,7 +87,7 @@ TASK="$*"
 
 # Validate high-impact options before building the command.
 case "$SANDBOX" in
-    read-only|workspace-write|danger-full-access) ;;
+    read-only|workspace-write|workspace-read-network-write|danger-full-access) ;;
     *)
         echo "Error: unsupported sandbox mode: $SANDBOX" >&2
         exit 2
@@ -108,7 +108,7 @@ fi
 CMD=(codex exec)
 
 if [[ -n "$SESSION" ]]; then
-    CMD+=(resume "$SESSION")
+    CMD+=(-C "$WORKDIR" resume "$SESSION")
 else
     CMD+=(-C "$WORKDIR" -s "$SANDBOX")
 fi

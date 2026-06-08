@@ -154,6 +154,8 @@ Add to `.claude/settings.local.json`:
 {
   "permissions": {
     "allow": [
+      "Bash(REPORT=*)",
+      "Bash(DIFF_REPORT=*)",
       "Bash(codex:*)",
       "Bash(mktemp:*)",
       "Bash(cat:*)"
@@ -168,6 +170,7 @@ Add to `.claude/settings.local.json`:
 |------|-------------|
 | `read-only` | No file writes (used for reviews) |
 | `workspace-write` | Write to project directory |
+| `workspace-read-network-write` | Write to project and use network when supported by the installed Codex CLI |
 | `danger-full-access` | Unrestricted (use with caution) |
 
 Use `read-only` for review and re-verification by default. Treat `--full-auto`,

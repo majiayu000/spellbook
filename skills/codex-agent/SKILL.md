@@ -2,6 +2,8 @@
 name: codex-agent
 description: Use when you want a second-opinion review via Codex CLI, cross-verification after another agent implements changes, debugging help, or alternative implementation proposals. Requires Codex CLI to be installed and authenticated.
 allowed-tools:
+  - Bash(REPORT=*)
+  - Bash(DIFF_REPORT=*)
   - Bash(codex:*)
   - Bash(mktemp:*)
   - Bash(cat:*)
