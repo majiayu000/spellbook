@@ -279,6 +279,7 @@ Spellbook 中的每个技能都遵循以下原则：
 | [安装指南](./docs/installation.md) | 详细的安装说明 |
 | [Runtime 目标](./docs/runtime-targets.md) | Claude Code 与 Codex 安装目标 |
 | [Showcase](./docs/showcase.md) | 可直接复制的工作流演示 |
+| [Spellbook Operating Contract](./docs/spellbook-operating-contract.md) | 直接执行、升级确认、证据化反驳、反馈闭环与完成检查的 agent 行为规则 |
 | [技能格式策略](./docs/skill-format-policy.md) | 目录型与单文件 skill 的格式规则 |
 | [Skill Quality Playbook](./docs/skill-quality-playbook.md) | 触发描述、gotchas、渐进式披露与验证标准 |
 | [技能测试指南](./docs/skill-testing-guide.md) | 如何验证技能是否生效 |

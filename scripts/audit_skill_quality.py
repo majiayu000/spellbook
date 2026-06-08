@@ -83,6 +83,42 @@ VERIFICATION_CATEGORIES = {
     "UI/UX & Frontend",
 }
 
+OPERATING_CONTRACT_CATEGORIES = {
+    "AI & Agent Workflow",
+    "Delivery Workflow",
+    "Development Architecture",
+    "Operations & Deploy",
+}
+
+OPERATING_CONTRACT_CUES = (
+    "ask before",
+    "approval",
+    "approve",
+    "autonomy",
+    "autonomy boundary",
+    "challenge",
+    "correction",
+    "destructive",
+    "done-when",
+    "end-state",
+    "escalate",
+    "escalation",
+    "evidence-backed",
+    "feedback loop",
+    "permission",
+    "push back",
+    "pushback",
+    "rollback",
+    "tradeoff",
+    "批准",
+    "边界",
+    "反驳",
+    "反馈",
+    "复盘",
+    "升级",
+    "确认",
+)
+
 LOCAL_SUPPORT_REF_RE = re.compile(
     r"(?<![/\w.-])"
     r"((?:skills/[A-Za-z0-9_.-]+/)?"
@@ -199,6 +235,19 @@ def audit_entry(entry: SkillEntry) -> list[QualityFinding]:
                 entry.path,
                 "verification",
                 "workflow category has no obvious verification signal; add checks, scripts, assertions, or explicit done-when proof",
+            )
+        )
+
+    if category in OPERATING_CONTRACT_CATEGORIES and not contains_any(
+        searchable_text, OPERATING_CONTRACT_CUES
+    ):
+        findings.append(
+            QualityFinding(
+                "INFO",
+                entry.install_name,
+                entry.path,
+                "operating-contract",
+                "high-impact workflow has no obvious autonomy, escalation, pushback, or feedback-loop guidance",
             )
         )
 

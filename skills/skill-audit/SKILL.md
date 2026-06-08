@@ -57,6 +57,12 @@ Use `assets/skill-brief-template.md` for the output. Fill it with:
 - Trigger description written for the model, not as a human-facing summary
 - High-signal knowledge the model would not otherwise know
 - Gotchas and failure modes
+- Autonomy boundaries: what the skill may do directly, and what must be
+  escalated before acting
+- Evidence-backed pushback rules: when the agent should challenge the proposed
+  path and what evidence it must cite
+- Feedback loop: where repeated corrections, false-success signals, or manual
+  recovery steps should be promoted
 - Progressive disclosure map: SKILL.md vs references vs scripts vs assets
 - Setup requirements or config questions
 - Verification strategy
@@ -120,3 +126,5 @@ skill validation command.
   decision criteria, and escape hatches.
 - Do not ship a skill without at least a lightweight way to tell if it worked:
   validation commands, example prompts, expected artifacts, or usage metrics.
+- Do not encode vague autonomy such as "be proactive." Name the direct actions,
+  escalation boundaries, and end-state checks that should change behavior.

@@ -45,12 +45,24 @@ Every new or materially changed skill should satisfy these checks:
 - **Verification**: Workflow skills should include checks that prove completion:
   scripts, assertions, smoke tests, browser checks, health checks, or explicit
   done-when signals.
+- **Autonomy boundary**: Skills that can touch user files, remote services,
+  credentials, billing, publishing, or production state should say which actions
+  can be performed directly and which require escalation.
+- **Evidence-backed pushback**: Skills should tell the agent when to challenge a
+  proposed path, but only with concrete evidence, a named risk, or a smaller
+  alternative.
+- **Feedback loop**: Repeated corrections, false-success signals, or manual
+  recovery steps should be promoted into gotchas, scripts, evals, references, or
+  done-when checks instead of staying as session-only memory.
 - **Setup state**: Skills that need user or environment context should define a
   config file or setup flow instead of asking repeatedly.
 - **Memory**: Repeated business workflows may store append-only logs, JSON, or a
   small database in the plugin data directory when history changes the next run.
 - **Hooks**: Use on-demand hooks only for cases where temporary guardrails are
   valuable, such as production operations or frozen edit scopes.
+
+For library-level behavior rules, see
+[Spellbook Operating Contract](./spellbook-operating-contract.md).
 
 ## Review Workflow
 
