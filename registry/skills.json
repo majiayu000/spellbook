@@ -952,7 +952,7 @@
     "category": "Content & Research",
     "format": "file",
     "path": "skills/weekly.SKILL.md",
-    "description": "当用户要求生成 om-generator 前后端周报、按日期范围汇总提交/任务/进展时使用。",
+    "description": "当用户要求生成 om-generator 指定日期范围周报时使用；整合 Git 提交、Claude Code 会话、Codex 会话和可选本机记忆记录。",
     "language": "zh",
     "tags": [
       "content",

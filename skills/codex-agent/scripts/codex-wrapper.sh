@@ -10,7 +10,6 @@ OUTPUT_FORMAT=""
 OUTPUT_FILE=""
 SESSION=""
 WORKDIR="${PWD}"
-FULL_AUTO=""
 
 usage() {
     cat << EOF
@@ -22,7 +21,6 @@ Options:
   -j, --json             Output as JSON
   -o, --output <file>    Save output to file
   -S, --session <id>     Use session ID for follow-up
-  -f, --full-auto        Enable full-auto mode (requires CODEX_ALLOW_FULL_AUTO=1)
   -h, --help             Show this help
 
 Examples:
@@ -61,13 +59,12 @@ while [[ $# -gt 0 ]]; do
             SESSION="$2"
             shift 2
             ;;
-        -f|--full-auto)
-            SANDBOX="workspace-write"
-            FULL_AUTO="--full-auto"
-            shift
-            ;;
         -h|--help)
             usage
+            ;;
+        -*)
+            echo "Error: unsupported option: $1" >&2
+            exit 2
             ;;
         *)
             POSITIONAL_ARGS+=("$1")
@@ -99,18 +96,19 @@ if [[ "$SANDBOX" == "danger-full-access" && "${CODEX_ALLOW_DANGER_FULL_ACCESS:-}
     exit 2
 fi
 
-if [[ -n "$FULL_AUTO" && "${CODEX_ALLOW_FULL_AUTO:-}" != "1" ]]; then
-    echo "Error: --full-auto requires CODEX_ALLOW_FULL_AUTO=1" >&2
-    exit 2
+if [[ "$SANDBOX" == "workspace-read-network-write" ]]; then
+    if ! codex exec --help 2>/dev/null | grep -q "workspace-read-network-write"; then
+        echo "Error: workspace-read-network-write is not supported by this Codex CLI" >&2
+        exit 2
+    fi
 fi
 
-# Build command as an argv array. Do not use eval with user-controlled text.
-CMD=(codex exec)
-
 if [[ -n "$SESSION" ]]; then
-    CMD+=(-C "$WORKDIR" resume "$SESSION")
+    # Build command as an argv array. Do not use eval with user-controlled text.
+    CMD=(codex exec -C "$WORKDIR" resume)
 else
-    CMD+=(-C "$WORKDIR" -s "$SANDBOX")
+    # Build command as an argv array. Do not use eval with user-controlled text.
+    CMD=(codex exec -C "$WORKDIR" -s "$SANDBOX")
 fi
 
 if [[ -n "$OUTPUT_FORMAT" ]]; then
@@ -121,8 +119,8 @@ if [[ -n "$OUTPUT_FILE" ]]; then
     CMD+=(-o "$OUTPUT_FILE")
 fi
 
-if [[ -n "$FULL_AUTO" ]]; then
-    CMD+=("$FULL_AUTO")
+if [[ -n "$SESSION" ]]; then
+    CMD+=("$SESSION")
 fi
 
 CMD+=("$TASK")

@@ -55,27 +55,12 @@ codex exec -s danger-full-access -C /project "Update system config"
 - Only use in isolated/sandboxed environments (VMs, containers)
 - Requires explicit user approval for the exact command and target boundary
 
-## Full Auto Mode
+## Dangerous Bypass Flags
 
-```bash
-codex exec -s workspace-write --full-auto -C /project "Implement feature X"
-```
-
-Combines:
-- `workspace-write` sandbox
-- Automatic approval for actions (no prompts)
-- Requires explicit user approval before use
-
-## Approval Modes
-
-Control when human approval is required:
-
-| Flag | Behavior |
-|------|----------|
-| `-a untrusted` | Approve everything (most restrictive) |
-| `-a on-failure` | Approve after failures |
-| `-a on-request` | Approve when requested |
-| `-a never` | Never require approval |
+`codex exec` exposes flags such as `--dangerously-bypass-approvals-and-sandbox`
+and `--dangerously-bypass-hook-trust`. Do not use them from this skill unless
+the user explicitly approves the exact command and the environment is already
+externally sandboxed.
 
 ## Best Practices
 

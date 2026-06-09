@@ -20,6 +20,10 @@ class CodexWrapperTests(unittest.TestCase):
             fake_codex = bin_dir / "codex"
             fake_codex.write_text(
                 "#!/bin/bash\n"
+                'if [[ "$1" == "exec" && "$2" == "--help" ]]; then\n'
+                '  printf "%s\\n" "${CODEX_FAKE_EXEC_HELP:-}"\n'
+                "  exit 0\n"
+                "fi\n"
                 'printf "%s\\n" "$@" > "$CODEX_WRAPPER_CAPTURE"\n',
                 encoding="utf-8",
             )
@@ -45,7 +49,8 @@ class CodexWrapperTests(unittest.TestCase):
 
     def test_allows_workspace_read_network_write_sandbox(self):
         result, captured_args = self.run_wrapper(
-            ["--dir", "/project", "--sandbox", "workspace-read-network-write", "task needing network"]
+            ["--dir", "/project", "--sandbox", "workspace-read-network-write", "task needing network"],
+            env_extra={"CODEX_FAKE_EXEC_HELP": "possible values: workspace-read-network-write"},
         )
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -60,6 +65,22 @@ class CodexWrapperTests(unittest.TestCase):
                 "task needing network",
             ],
         )
+
+    def test_rejects_workspace_read_network_write_when_cli_does_not_support_it(self):
+        result, captured_args = self.run_wrapper(
+            ["--dir", "/project", "--sandbox", "workspace-read-network-write", "task needing network"]
+        )
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("workspace-read-network-write is not supported", result.stderr)
+        self.assertEqual(captured_args, [])
+
+    def test_rejects_unknown_full_auto_option(self):
+        result, captured_args = self.run_wrapper(["--full-auto", "fix bug"])
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("unsupported option: --full-auto", result.stderr)
+        self.assertEqual(captured_args, [])
 
     def test_resume_preserves_requested_workdir(self):
         result, captured_args = self.run_wrapper(

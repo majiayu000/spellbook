@@ -173,9 +173,10 @@ Add to `.claude/settings.local.json`:
 | `workspace-read-network-write` | Write to project and use network when supported by the installed Codex CLI |
 | `danger-full-access` | Unrestricted (use with caution) |
 
-Use `read-only` for review and re-verification by default. Treat `--full-auto`,
-`danger-full-access`, and `--skip-git-repo-check` as high-impact options that
-need explicit user approval.
+Use `read-only` for review and re-verification by default. Treat
+`danger-full-access`, `--dangerously-bypass-approvals-and-sandbox`,
+`--dangerously-bypass-hook-trust`, and `--skip-git-repo-check` as high-impact
+options that need explicit user approval.
 
 ## Troubleshooting
 

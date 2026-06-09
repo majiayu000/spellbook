@@ -12,10 +12,11 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 4. Assemble the command with the appropriate options:
    - `-m, --model <MODEL>`
    - `--config model_reasoning_effort="<xhigh|high|medium|low>"`
-   - `--sandbox <read-only|workspace-write|workspace-read-network-write|danger-full-access>`
-   - `--full-auto`
+   - `--sandbox <read-only|workspace-write|danger-full-access>`; some Codex CLI versions also support `workspace-read-network-write`
    - `-C, --cd <DIR>`
+   - `--add-dir <DIR>`
    - `--skip-git-repo-check`
+   - `--dangerously-bypass-approvals-and-sandbox`
 5. Do not use `--skip-git-repo-check` by default. Use it only when the user explicitly asks to run outside a Git repository or has approved that boundary bypass for this command.
 6. When continuing a previous session, use `codex exec resume --last` via stdin. Do not add model, reasoning, or sandbox flags on resume unless the user explicitly requests an override.
 7. **IMPORTANT**: By default, append `2>/dev/null` to `codex exec` commands to suppress thinking tokens (stderr). Only show stderr if the user explicitly requests it or if debugging is needed.
@@ -37,8 +38,9 @@ EOF
 | --- | --- | --- |
 | Read-only review or analysis | `read-only` | `--sandbox read-only 2>/dev/null` |
 | Apply local edits | `workspace-write` | `--sandbox workspace-write 2>/dev/null` |
-| Apply edits that need network access | `workspace-read-network-write` when supported by the installed CLI | Prefer this before considering full access |
-| Permit broad access | Prefer `--add-dir`; otherwise `danger-full-access` only after approval | Ask before adding `--sandbox danger-full-access` or `--full-auto` |
+| Apply edits that need network access | `workspace-read-network-write` only when `codex exec --help` lists it | Prefer this before considering full access |
+| Permit extra write scope | Prefer `--add-dir` | Ask before adding extra writable directories |
+| Permit broad file access | `danger-full-access` only after approval | Ask before adding `--sandbox danger-full-access` |
 | Resume recent session | Inherited from original | `codex exec resume --last 2>/dev/null <<'EOF'` + prompt + `EOF` |
 | Run from another directory | Match task needs | `-C <DIR>` plus other flags `2>/dev/null` |
 
@@ -49,11 +51,11 @@ EOF
 
 ## Error Handling
 - Stop and report failures whenever `codex --version` or a `codex exec` command exits non-zero; request direction before retrying.
-- Before you use high-impact flags (`--full-auto`, `--sandbox danger-full-access`, `--skip-git-repo-check`) ask the user for permission using AskUserQuestion unless it was already given.
+- Before you use high-impact flags (`--sandbox danger-full-access`, `--dangerously-bypass-approvals-and-sandbox`, `--dangerously-bypass-hook-trust`, `--skip-git-repo-check`) ask the user for permission using AskUserQuestion unless it was already given.
 - When output includes warnings or partial results, summarize them and ask how to adjust using `AskUserQuestion`.
 
 ## Gotchas
 
 - `--skip-git-repo-check` bypasses an important cwd/worktree guard. Treat it like a boundary exception, not a default.
-- `--full-auto` and `danger-full-access` are high-impact modes. Prefer `read-only`, then `workspace-write`, then `workspace-read-network-write` when network is required and supported, then specific `--add-dir` grants before considering full access.
+- `danger-full-access` and the `--dangerously-*` bypass flags are high-impact modes. Prefer `read-only`, then `workspace-write`, then `workspace-read-network-write` only when network is required and supported, then specific `--add-dir` grants before considering full access.
 - If a prompt came from the user or another model, pass it as stdin or as a single already-quoted CLI argument. Never interpolate it into a shell string.

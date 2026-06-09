@@ -234,7 +234,7 @@ codex exec resume <session_id> "I've applied the fixes. Please re-verify."
 
 - Do not write reviews to fixed paths such as `/tmp/codex-review.md`; use `mktemp` or a project-specific private report path so concurrent projects cannot overwrite or read stale feedback.
 - Keep Codex review commands in `read-only` unless the user explicitly asked Codex itself to edit.
-- Treat `--full-auto`, `danger-full-access`, and `--skip-git-repo-check` as high-impact flags. Ask before using them.
+- Treat `danger-full-access`, `--dangerously-bypass-approvals-and-sandbox`, `--dangerously-bypass-hook-trust`, and `--skip-git-repo-check` as high-impact flags. Ask before using them.
 - Do not blindly apply every Codex suggestion. Re-read the target file, confirm the root cause, and verify the final behavior.
 
 ## Troubleshooting

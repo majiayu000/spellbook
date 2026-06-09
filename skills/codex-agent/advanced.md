@@ -17,9 +17,6 @@ model = "gpt-5-codex"
 # Default sandbox mode
 sandbox = "read-only"
 
-# Default approval mode
-approval = "on-request"
-
 # Enable web search
 search = true
 ```
@@ -36,7 +33,6 @@ sandbox = "read-only"
 [profiles.implement]
 model = "gpt-5-codex"
 sandbox = "workspace-write"
-approval = "on-request"
 ```
 
 Do not persist a `danger-full-access` + no-approval profile. If broad access is
@@ -187,9 +183,9 @@ codex exec --oss "Explain this code"
 Test sandbox policies:
 
 ```bash
-# Run command in sandbox
-codex sandbox -s read-only -- cat /etc/passwd
+# Run a command through Codex's sandbox helper.
+codex sandbox -C /project -- cat /etc/passwd
 
-# Test policy rules
-codex execpolicy "rm -rf /" --sandbox read-only
+# Inspect available sandbox flags for the installed CLI.
+codex sandbox --help
 ```
