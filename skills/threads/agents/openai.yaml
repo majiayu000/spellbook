@@ -1,4 +1,4 @@
 interface:
   display_name: "Threads"
-  short_description: "Coordinate native Codex threads with merge and review closure"
-  default_prompt: "Use $threads to plan and run a multi-thread Codex workflow with worktrees, reviews, merge gates, and review-thread/comment closure."
+  short_description: "Coordinate native Codex threads with evidence gates and run logs"
+  default_prompt: "Use $threads to plan and run a Codex thread workflow with intent contracts, worktrees, reviews, merge gates, review-thread closure, and run-log data collection."

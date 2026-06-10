@@ -1,6 +1,6 @@
 ---
 name: threads
-description: Coordinate Codex-native parallel thread workflows for repo issue and PR queues, multi-agent research, implementation worktrees, independent code review, merge gates, review-thread/comment closure, and final cleanup. Use when the user says Codex threads, open threads, 开几个 thread, 子agent, 并行, worktree, thread review, review then merge, or asks to plan and execute several issues or PRs in parallel.
+description: Coordinate Codex-native thread workflows when the user explicitly asks for $threads, Codex threads, open threads, 开几个 thread/子agent, or a repo issue/PR queue flow needing parallel lanes, worktrees, independent review, merge gates, review-thread/comment closure, final cleanup, or threads run-log data collection.
 ---
 
 # Threads
@@ -13,13 +13,39 @@ Native Codex threads are short-lived parallel work lines inside the Codex workfl
 
 Choose one mode:
 
+- **single_agent**: handle a small, well-scoped task locally with the same evidence gates.
 - **plan_only**: map issues, PRs, risks, and parallelization without edits.
 - **execute_direct**: run one or more bounded implementation lanes after planning.
 - **review_only**: launch independent reviewers for PRs, diffs, or risky code.
 - **research_spec**: split exploration by angle, then synthesize docs/spec/issues.
 - **clarify_first**: ask only when repo, target queue, permission, or done-when is missing.
 
+Prefer `single_agent` for one-file fixes, simple questions, or tasks where the next step depends on one immediate result. Use parallel lanes only when the work can be split by independent targets or disjoint writable files.
+
 For any implementation mode, start with a lane map before spawning workers.
+
+## Operating Contract
+
+Before dispatch, record the operating contract:
+
+```text
+goal:
+non_goals:
+done_when:
+merge_policy: no_merge | merge_after_gate | user_confirm_before_merge
+remote_truth_required: yes | no
+data_collection: final_report | local_jsonl | none
+```
+
+Direct actions: inspect repo instructions, fetch remote state, map lanes, spawn bounded native subagents when useful, integrate results, verify, and report closure.
+
+Escalate before: modifying high-context files, merging without fresh CI/review-thread truth, sharing writable files across workers, or switching to shell/tmux/OMX orchestration.
+
+Evidence-backed pushback: choose `single_agent` when parallelism adds coordination risk without independent work; challenge vague worker output, stale remote state, or unverified completion claims.
+
+Feedback loop: record notable failures in `threads_run_log`, classify the failure mode, tighten the lane prompt or split, then retry only after the hypothesis changes.
+
+If the user asks for issue/PR queue handling, `remote_truth_required` is `yes`: run `git fetch --prune`, inspect open PRs/issues, and search for duplicate or superseding work before planning lanes.
 
 ## Lane Map
 
@@ -57,6 +83,8 @@ Rules:
 
 Use native subagents when available. If the multi-agent tool is not loaded, search for it using tool discovery. Do not use shell/tmux/OMX orchestration unless explicitly requested.
 
+When `multi_agent_v1` tools are available, use `spawn_agent` for bounded sidecar lanes, `wait_agent` only when the next critical-path step needs that result, and `close_agent` after collecting completed output. Keep immediate blockers in the main thread.
+
 Use these lane types:
 
 - **Planner**: read issues/PRs/code and output dependency graph, worktree plan, file ownership, and risk.
@@ -68,6 +96,19 @@ Use these lane types:
 - **Researcher**: inspect one external/source angle and return evidence with uncertainty.
 
 Load [prompt-patterns.md](references/prompt-patterns.md) when you need ready-to-use prompts for planners, workers, reviewers, or research lanes.
+
+Every lane output must be evidence-bearing:
+
+```text
+lane:
+root_cause_or_claim:
+files_read:
+files_changed:
+unauthorized_or_unassigned_changes:
+commands_run:
+head_sha_or_artifact:
+blockers:
+```
 
 ## Merge Gate
 
@@ -82,6 +123,12 @@ Do not merge from worker output alone. Merge only after:
 - The final answer can state exact PR numbers, commits, changed files, and verification commands.
 
 If the user asked for “review then merge,” the merge reviewer should be a separate lane from the implementation worker.
+
+## Run Log
+
+For non-trivial runs, include a compact `threads_run_log` block in the final report. If the user asks to collect this skill's problems, append the same JSON object locally with `scripts/append_run_log.py`. Read [run-log.md](references/run-log.md) before writing durable logs.
+
+Run logs are observational. Do not record secrets, credentials, full prompts, or private user data. Prefer short summaries, file paths, PR/issue numbers, command names, failure codes, and verification outcomes.
 
 ## Final Report
 
@@ -106,6 +153,14 @@ local_state:
 - dirty_worktree:
 - stale_worktree:
 - high_context_file:
+
+threads_run_log:
+- mode:
+- lanes_total:
+- failure_codes:
+- verification_fresh:
+- closure_complete:
+- log_path:
 ```
 
 Separate remote truth from local machine state. State when a branch is merged remotely but local main is stale, dirty, or diverged.
@@ -123,10 +178,11 @@ remote_closure:
 - local_cleanup_left:
 ```
 
-## Failure Rules
+## Gotchas and Failure Rules
 
 - If a subthread returns vague output, ask for evidence or redo that lane with a stricter prompt.
 - If a worker touches unassigned files, stop that lane and audit before proceeding.
 - If three attempts fail on the same problem, stop and challenge the hypothesis or split the issue differently.
 - If a hook/UI status looks stuck, verify process/log evidence before calling the task stuck.
+- Classify failures as specification/system design, inter-agent misalignment, or verification/termination before retrying.
 - If no native subagent capability is available, return the lane map and exact prompts so the user can launch them manually.

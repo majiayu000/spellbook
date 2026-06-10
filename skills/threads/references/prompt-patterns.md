@@ -12,13 +12,14 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 
 硬约束：
 - 先查 repo 指令、git 状态、open issues、open PRs、CI、dirty worktree。
+- 先写 intent_contract：goal / non_goals / done_when / merge_policy / remote_truth_required / data_collection。
 - 不要把 Codex threads 路由到 OMX/tmux。
 - 每个实现 lane 必须有 disjoint writable_files。
 - review lane 只读。
 - 高上下文文件 AGENTS.md/CLAUDE.md/settings/hooks 默认禁止修改。
 - 每个 PR merge 前必须有独立 thread review。
 - merge 前必须用 thread-aware GitHub 数据检查 reviewThreads.isResolved；open PR/issue 为空不等于评论闭环完成。
-- 输出 lane_map、依赖图、执行顺序、验证命令、stop_conditions。
+- 输出 lane_map、依赖图、执行顺序、验证命令、stop_conditions、threads_run_log。
 ```
 
 ## Read-Only Planning Thread
@@ -41,6 +42,7 @@ Target: {{issue_or_pr_or_queue}}
 6. 每个 lane 的 writable_files 和 forbidden_files
 7. 必须运行的验证命令
 8. 不应在本轮强做的范围
+9. 建议的 failure_codes（如 stale_remote_state、duplicate_work_missed、missing_intent_contract）
 ```
 
 ## Implementation Worker
@@ -70,7 +72,9 @@ Target: {{issue_or_pr_or_queue}}
 {{verification_commands}}
 
 完成后汇报：
+- root cause or core claim
 - changed files
+- unauthorized_or_unassigned_changes: yes/no
 - commits/PR if created
 - verification commands and key output
 - remaining risks
@@ -113,6 +117,7 @@ Target: {{issue_or_pr_or_queue}}
 {{verification_commands}}
 
 输出：
+- evidence source: files/commands/PR threads inspected
 - root cause
 - changed files
 - verification output
@@ -133,6 +138,7 @@ Target: {{issue_or_pr_or_queue}}
 5. GraphQL reviewThreads 是否无 unresolved actionable thread；不要只看普通 PR comments
 6. 已修复的 review feedback 是否有对应回复或已 resolve thread
 7. 是否存在 high-context file、test weakening、silent fallback、ownership 冲突
+8. threads_run_log 是否记录了失败码、验证状态和 closure 状态
 
 如果无 blocking issue，返回：
 No findings; safe to merge.
@@ -190,4 +196,13 @@ No findings; safe to merge.
 - high-context untracked files
 - actual missing PR work
 - historical unresolved review threads that are outside the current queue
+
+最后输出 threads_run_log JSON 草稿：
+- mode
+- repo
+- lanes_total
+- failure_codes
+- verification.fresh
+- remote_closure.checked
+- outcome
 ```
