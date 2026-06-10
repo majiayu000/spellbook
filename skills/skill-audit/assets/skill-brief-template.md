@@ -26,6 +26,13 @@ that should trigger the skill.
 
 - TBD
 
+## Operating Contract
+
+- Direct actions:
+- Escalate before:
+- Evidence-backed pushback:
+- Feedback loop:
+
 ## Progressive Disclosure Map
 
 | File / Folder | Purpose | Load When |

@@ -280,6 +280,7 @@ Every skill in Spellbook follows these principles:
 | [Installation Guide](./docs/installation.md) | Detailed setup instructions |
 | [Runtime Targets](./docs/runtime-targets.md) | Claude Code and Codex installation targets |
 | [Showcase](./docs/showcase.md) | Copy-paste workflow demos |
+| [Spellbook Operating Contract](./docs/spellbook-operating-contract.md) | Agent behavior rules for autonomy, escalation, pushback, feedback loops, and done-when checks |
 | [Skill Format Policy](./docs/skill-format-policy.md) | Directory vs file skill layout rules |
 | [Skill Quality Playbook](./docs/skill-quality-playbook.md) | Trigger descriptions, gotchas, progressive disclosure, and verification |
 | [Skill Testing Guide](./docs/skill-testing-guide.md) | How to validate skills work |
