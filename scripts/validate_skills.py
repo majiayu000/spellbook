@@ -90,7 +90,6 @@ CATEGORY_BY_NAME = {
     # AI and agent workflows
     "ask-opencli": "AI & Agent Workflow",
     "brainstorming": "AI & Agent Workflow",
-    "claude-mem": "AI & Agent Workflow",
     "codex": "AI & Agent Workflow",
     "codex-agent": "AI & Agent Workflow",
     "multi-ai-research": "AI & Agent Workflow",

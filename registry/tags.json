@@ -1,8 +1,8 @@
 {
-  "total_skills": 83,
+  "total_skills": 82,
   "total_tags": 35,
   "tag_counts": {
-    "agent": 7,
+    "agent": 6,
     "architecture": 15,
     "auth": 3,
     "backend": 10,
@@ -31,7 +31,7 @@
     "research": 1,
     "rust": 5,
     "security": 3,
-    "system": 6,
+    "system": 5,
     "testing": 6,
     "typescript": 4,
     "ux": 3,
@@ -41,7 +41,6 @@
   "index": {
     "agent": [
       "auto-optimize",
-      "claude-mem",
       "codex-agent",
       "fixflow",
       "skill-audit",
@@ -255,7 +254,6 @@
       "server-security"
     ],
     "system": [
-      "claude-mem",
       "disk-cleaner",
       "gpu-use",
       "rustdesk-doctor",

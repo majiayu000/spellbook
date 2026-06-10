@@ -17,11 +17,10 @@ Usage: codex-wrapper.sh [options] "<task>"
 
 Options:
   -d, --dir <path>       Working directory (default: current)
-  -s, --sandbox <mode>   Sandbox mode: read-only, workspace-write, danger-full-access
+  -s, --sandbox <mode>   Sandbox mode: read-only, workspace-write, workspace-read-network-write, danger-full-access
   -j, --json             Output as JSON
   -o, --output <file>    Save output to file
   -S, --session <id>     Use session ID for follow-up
-  -f, --full-auto        Enable full-auto mode (workspace-write + auto-approve)
   -h, --help             Show this help
 
 Examples:
@@ -37,10 +36,12 @@ POSITIONAL_ARGS=()
 while [[ $# -gt 0 ]]; do
     case $1 in
         -d|--dir)
+            [[ $# -ge 2 ]] || { echo "Error: --dir requires a path" >&2; exit 2; }
             WORKDIR="$2"
             shift 2
             ;;
         -s|--sandbox)
+            [[ $# -ge 2 ]] || { echo "Error: --sandbox requires a mode" >&2; exit 2; }
             SANDBOX="$2"
             shift 2
             ;;
@@ -49,20 +50,21 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -o|--output)
+            [[ $# -ge 2 ]] || { echo "Error: --output requires a file" >&2; exit 2; }
             OUTPUT_FILE="$2"
             shift 2
             ;;
         -S|--session)
+            [[ $# -ge 2 ]] || { echo "Error: --session requires an id" >&2; exit 2; }
             SESSION="$2"
             shift 2
             ;;
-        -f|--full-auto)
-            SANDBOX="workspace-write"
-            FULL_AUTO="--full-auto"
-            shift
-            ;;
         -h|--help)
             usage
+            ;;
+        -*)
+            echo "Error: unsupported option: $1" >&2
+            exit 2
             ;;
         *)
             POSITIONAL_ARGS+=("$1")
@@ -78,30 +80,50 @@ if [[ $# -eq 0 ]]; then
     usage
 fi
 
-TASK="$1"
+TASK="$*"
 
-# Build command
-CMD="codex exec"
+# Validate high-impact options before building the command.
+case "$SANDBOX" in
+    read-only|workspace-write|workspace-read-network-write|danger-full-access) ;;
+    *)
+        echo "Error: unsupported sandbox mode: $SANDBOX" >&2
+        exit 2
+        ;;
+esac
 
-if [[ -n "$SESSION" ]]; then
-    CMD="codex exec resume $SESSION"
+if [[ "$SANDBOX" == "danger-full-access" && "${CODEX_ALLOW_DANGER_FULL_ACCESS:-}" != "1" ]]; then
+    echo "Error: danger-full-access requires CODEX_ALLOW_DANGER_FULL_ACCESS=1" >&2
+    exit 2
 fi
 
-CMD="$CMD -C \"$WORKDIR\" -s $SANDBOX"
+if [[ "$SANDBOX" == "workspace-read-network-write" ]]; then
+    if ! codex exec --help 2>/dev/null | grep -q "workspace-read-network-write"; then
+        echo "Error: workspace-read-network-write is not supported by this Codex CLI" >&2
+        exit 2
+    fi
+fi
+
+if [[ -n "$SESSION" ]]; then
+    # Build command as an argv array. Do not use eval with user-controlled text.
+    CMD=(codex exec -C "$WORKDIR" resume)
+else
+    # Build command as an argv array. Do not use eval with user-controlled text.
+    CMD=(codex exec -C "$WORKDIR" -s "$SANDBOX")
+fi
 
 if [[ -n "$OUTPUT_FORMAT" ]]; then
-    CMD="$CMD $OUTPUT_FORMAT"
+    CMD+=("$OUTPUT_FORMAT")
 fi
 
 if [[ -n "$OUTPUT_FILE" ]]; then
-    CMD="$CMD -o \"$OUTPUT_FILE\""
+    CMD+=(-o "$OUTPUT_FILE")
 fi
 
-if [[ -n "$FULL_AUTO" ]]; then
-    CMD="$CMD $FULL_AUTO"
+if [[ -n "$SESSION" ]]; then
+    CMD+=("$SESSION")
 fi
 
-CMD="$CMD \"$TASK\""
+CMD+=("$TASK")
 
 # Execute
-eval $CMD
+"${CMD[@]}"

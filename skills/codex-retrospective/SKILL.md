@@ -82,6 +82,17 @@ A good monthly ritual for serious users:
 - Every proposal must reference concrete history ("In the payment retry thread on May 3rd and the similar incident on May 18th...").
 - If nothing high-confidence was found, say so clearly instead of manufacturing improvements.
 
+## Gotchas
+
+- Do not turn a single annoying session into a permanent rule unless it was
+  unusually high impact. Prefer "no change" over a weak constitution update.
+- Do not rely on memory vibes. Each proposed update needs a concrete session,
+  date range, file, PR, or repeated correction pattern that can be checked.
+- Keep generated AGENTS.md text short. If the proposed rule needs multiple
+  paragraphs, it probably belongs in a tiny skill or a project doc instead.
+- Application is gated by the user. The retrospective can propose exact diffs,
+  but it must not silently rewrite AGENTS.md or existing skills.
+
 ## References
 
 - `references/retrospective-prompt.md` — The core prompt template used to drive Codex's self-analysis
