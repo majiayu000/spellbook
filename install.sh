@@ -148,12 +148,21 @@ validate_registry() {
 
 is_managed_path() {
     local path="$1"
-    [[ "$path" == *"claude-arsenal"* ]] || [[ "$path" == *"spellbook"* ]]
+    [ -n "$path" ] || return 1
+
+    case "$path" in
+        "$INSTALL_DIR"|"$INSTALL_DIR"/*|"$LEGACY_INSTALL_DIR"|"$LEGACY_INSTALL_DIR"/*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 read_managed_target() {
     local path="$1"
-    readlink -f "$path" 2>/dev/null || readlink "$path" 2>/dev/null || true
+    readlink "$path" 2>/dev/null || readlink -f "$path" 2>/dev/null || true
 }
 
 is_current_installable_skill() {
