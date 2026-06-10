@@ -84,6 +84,7 @@ VERIFICATION_CATEGORIES = {
 }
 
 OPERATING_CONTRACT_CATEGORIES = {
+    "API & Backend",
     "AI & Agent Workflow",
     "Delivery Workflow",
     "Development Architecture",
