@@ -1,7 +1,7 @@
 ---
 name: weekly
-description: 当用户要求生成 om-generator 前后端周报、按日期范围汇总提交/任务/进展时使用。
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Task, mcp__plugin_claude-mem_mcp-search__search, mcp__plugin_claude-mem_mcp-search__timeline, mcp__plugin_claude-mem_mcp-search__get_observations
+description: 当用户要求生成 om-generator 指定日期范围周报时使用；整合 Git 提交、Claude Code 会话、Codex 会话和可选本机记忆记录。
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Task
 metadata:
   argument-hint: "<日期范围，如 2-1到2-7>"
 ---
@@ -69,14 +69,11 @@ JSON 结构为 `{ version, entries: [{ sessionId, summary, firstPrompt, created,
 
 然后读取文件中 `type` 为 `message` 且 `payload.role` 为 `user` 的第一条消息作为会话主题。
 
-## 步骤 5：查询 claude-mem 记忆系统
+## 步骤 5：补充本机会话/记忆记录
 
-使用 MCP search 工具搜索日期范围内的记忆记录：
-```
-search(query="om-generator", dateStart="<DATE_START>", dateEnd="<DATE_END>")
-```
+如果当前环境提供可用的记忆搜索工具或本机记忆索引，搜索日期范围内与 `om-generator` 相关的记录，并把有明确证据的 session 摘要和工作记录补充到周报中。
 
-提取相关的 session 摘要和工作记录，补充到周报中。
+如果没有可用的记忆工具，不要阻塞生成；在“数据来源”里写明未使用记忆补充数据。
 
 ## 步骤 6：分类整理
 
