@@ -63,6 +63,28 @@ class ThreadsRunLogTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue(log_path.exists())
 
+    def test_defaults_to_project_local_log_path(self):
+        with TemporaryDirectory() as temp_dir:
+            project_root = Path(temp_dir)
+            (project_root / ".git").mkdir()
+            expected_log = project_root.resolve() / ".codex" / "threads" / "run-log.jsonl"
+            env = os.environ.copy()
+            env.pop("CODEX_THREADS_RUN_LOG", None)
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT)],
+                input=json.dumps({"skill": "threads", "mode": "plan_only"}),
+                text=True,
+                capture_output=True,
+                check=False,
+                cwd=project_root,
+                env=env,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), str(expected_log))
+            self.assertTrue(expected_log.exists())
+
     def test_accepts_clarify_first_mode(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "clarify.jsonl"

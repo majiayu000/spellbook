@@ -17,10 +17,10 @@ Collect enough structured data to answer:
 
 ## Storage
 
-Default local path:
+Default local path is project-scoped:
 
 ```text
-~/.codex/threads-run-log.jsonl
+<project>/.codex/threads/run-log.jsonl
 ```
 
 Override with:
@@ -28,6 +28,12 @@ Override with:
 ```text
 CODEX_THREADS_RUN_LOG=/path/to/threads-run-log.jsonl
 ```
+
+The script discovers `<project>` by walking up from the current working
+directory until it finds `.git`. If no Git project is found, it writes under the
+current working directory. Do not use a global log file by default; different
+repositories should not share durable threads telemetry unless the user
+explicitly sets `CODEX_THREADS_RUN_LOG`.
 
 Append one JSON object per run:
 
@@ -201,9 +207,9 @@ Use stable codes so later analysis can aggregate them:
 Common local checks:
 
 ```bash
-jq -r '.failure_codes[]?' ~/.codex/threads-run-log.jsonl | sort | uniq -c | sort -nr
-jq -r 'select(.outcome!="success") | [.recorded_at_utc,.repo,.mode,.failure_codes|join(",")] | @tsv' ~/.codex/threads-run-log.jsonl
-jq -r 'select(.verification.fresh==false) | [.recorded_at_utc,.repo,.goal] | @tsv' ~/.codex/threads-run-log.jsonl
+jq -r '.failure_codes[]?' .codex/threads/run-log.jsonl | sort | uniq -c | sort -nr
+jq -r 'select(.outcome!="success") | [.recorded_at_utc,.repo,.mode,.failure_codes|join(",")] | @tsv' .codex/threads/run-log.jsonl
+jq -r 'select(.verification.fresh==false) | [.recorded_at_utc,.repo,.goal] | @tsv' .codex/threads/run-log.jsonl
 ```
 
 ## Privacy

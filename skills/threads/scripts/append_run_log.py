@@ -86,11 +86,19 @@ SENSITIVE_PATTERNS = (
 )
 
 
+def find_project_root(start: Path | None = None) -> Path:
+    current = (start or Path.cwd()).resolve()
+    for parent in [current, *current.parents]:
+        if (parent / ".git").exists():
+            return parent
+    return current
+
+
 def default_log_path() -> Path:
     override = os.environ.get("CODEX_THREADS_RUN_LOG")
     if override:
         return Path(override).expanduser()
-    return Path.home() / ".codex" / "threads-run-log.jsonl"
+    return find_project_root() / ".codex" / "threads" / "run-log.jsonl"
 
 
 def redact_string(value: str) -> str:
@@ -162,8 +170,11 @@ def main() -> int:
     parser.add_argument(
         "--path",
         type=Path,
-        default=default_log_path(),
-        help="JSONL path. Defaults to CODEX_THREADS_RUN_LOG or ~/.codex/threads-run-log.jsonl.",
+        default=None,
+        help=(
+            "JSONL path. Defaults to CODEX_THREADS_RUN_LOG or "
+            "<project>/.codex/threads/run-log.jsonl."
+        ),
     )
     parser.add_argument(
         "--allow-extra",
@@ -175,12 +186,13 @@ def main() -> int:
     try:
         raw = load_input()
         record = normalize_record(raw, allow_extra=args.allow_extra)
-        append_record(record, args.path.expanduser())
+        path = args.path.expanduser() if args.path is not None else default_log_path()
+        append_record(record, path)
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         print(f"append_run_log.py: {exc}", file=sys.stderr)
         return 1
 
-    print(str(args.path.expanduser()))
+    print(str(path))
     return 0
 
 
