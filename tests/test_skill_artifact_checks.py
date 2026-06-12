@@ -86,6 +86,32 @@ class SkillArtifactCheckTests(unittest.TestCase):
                 messages,
             )
 
+    def test_validate_entries_rejects_absolute_support_link(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            entry = write_skill(root, "fixture-skill", "Read [setup](/references/setup.md).")
+
+            with patched_roots(root):
+                messages = validate_skills.validate_entries([entry])
+
+            self.assertTrue(
+                any("references unsafe support path /references/setup.md: is absolute" in message for message in messages),
+                messages,
+            )
+
+    def test_validate_entries_detects_non_ascii_plain_support_reference(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            entry = write_skill(root, "fixture-skill", "Read references/真实高赞网感示例.md first.")
+
+            with patched_roots(root):
+                messages = validate_skills.validate_entries([entry])
+
+            self.assertTrue(
+                any("references missing support file: references/真实高赞网感示例.md" in message for message in messages),
+                messages,
+            )
+
     def test_audit_reports_missing_support_reference_with_actionable_path(self):
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

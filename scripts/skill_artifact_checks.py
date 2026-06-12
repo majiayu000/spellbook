@@ -24,9 +24,9 @@ IGNORED_MISSING_REFS = {
 
 LOCAL_SUPPORT_REF_RE = re.compile(
     r"(?<![/\w.-])"
-    r"((?:skills/[A-Za-z0-9_.-]+/)?"
+    r"((?:skills/[^\s`'\"<>\[\]()]+/)?"
     r"(?:agents|assets|evals|reference|references|scripts|templates)"
-    r"/[A-Za-z0-9_./-]+\.[A-Za-z0-9]+)"
+    r"/[^\s`'\"<>\[\]()]+\.[^\s`'\"<>\[\]()]+)"
 )
 
 MARKDOWN_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
@@ -66,6 +66,7 @@ def legacy_argument_tokens(text: str) -> list[str]:
 def _strip_link_target(raw_target: str) -> str:
     target = raw_target.strip().strip("<>")
     target = target.split("#", 1)[0].split("?", 1)[0]
+    target = target.rstrip(".,:;)")
     return target
 
 
@@ -77,9 +78,10 @@ def _support_ref_candidate(raw_ref: str) -> str | None:
     parts = PurePosixPath(ref).parts
     if not parts:
         return None
-    if parts[0] in SUPPORT_DIR_NAMES:
+    start = 1 if PurePosixPath(ref).is_absolute() else 0
+    if len(parts) > start and parts[start] in SUPPORT_DIR_NAMES:
         return ref
-    if len(parts) >= 4 and parts[0] == "skills" and parts[2] in SUPPORT_DIR_NAMES:
+    if len(parts) >= start + 4 and parts[start] == "skills" and parts[start + 2] in SUPPORT_DIR_NAMES:
         return ref
     return None
 
@@ -102,11 +104,12 @@ def _target_for_ref(
     entry_path: str,
     entry_format: str,
 ) -> Path:
-    if ref.startswith("skills/"):
-        return root / ref
+    relative_ref = ref.lstrip("/")
+    if relative_ref.startswith("skills/"):
+        return root / relative_ref
     if entry_format == "directory":
-        return (root / entry_path).parent / ref
-    return root / "skills" / ref
+        return (root / entry_path).parent / relative_ref
+    return root / "skills" / relative_ref
 
 
 def local_support_references(
