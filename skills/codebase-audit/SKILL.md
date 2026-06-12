@@ -40,12 +40,14 @@ Detection checklist:
   Data Integrity agent (see agent-prompts.md)
 ```
 
-After stack detection, run the matching dependency audit from the target project root, never from the assistant's incidental current working directory. If the user supplied an explicit target path, use it as `{TARGET_DIR}` before invoking the tool (deterministic, zero LLM cost):
+After stack detection, run the matching dependency audit from the target project root, never from the assistant's incidental current working directory. If the user supplied an explicit target path, use it as `{TARGET_DIR}` before invoking the tool. For Python projects, run each matching audit input that exists and feed all outputs to the security agent (deterministic, zero LLM cost):
 
 ```
 - Rust → cd "{TARGET_DIR}" && cargo audit
 - Node → cd "{TARGET_DIR}" && npm audit
-- Python → cd "{TARGET_DIR}" && if [ -f pyproject.toml ] || [ -f setup.py ]; then pip-audit .; [ -f requirements.txt ] && pip-audit -r requirements.txt; elif [ -f requirements.txt ]; then pip-audit -r requirements.txt; else pip-audit .; fi
+- Python project metadata (`pyproject.toml` / `setup.py`) → cd "{TARGET_DIR}" && pip-audit .
+- Python requirements (`requirements.txt`) → cd "{TARGET_DIR}" && pip-audit -r requirements.txt
+- Python environment fallback (no project files found) → cd "{TARGET_DIR}" && pip-audit .
 - Go → cd "{TARGET_DIR}" && govulncheck ./...
 ```
 
