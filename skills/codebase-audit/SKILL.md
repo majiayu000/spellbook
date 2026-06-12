@@ -43,10 +43,10 @@ Detection checklist:
 After stack detection, run the matching dependency audit from the target project root, never from the assistant's incidental current working directory. If the user supplied an explicit target path, use it as `{TARGET_DIR}` before invoking the tool (deterministic, zero LLM cost):
 
 ```
-- Rust → cd {TARGET_DIR} && cargo audit
-- Node → cd {TARGET_DIR} && npm audit
-- Python → cd {TARGET_DIR} && (pip-audit . or pip-audit -r requirements.txt)
-- Go → cd {TARGET_DIR} && govulncheck ./...
+- Rust → cd "{TARGET_DIR}" && cargo audit
+- Node → cd "{TARGET_DIR}" && npm audit
+- Python → cd "{TARGET_DIR}" && if [ -f requirements.txt ]; then pip-audit -r requirements.txt; else pip-audit .; fi
+- Go → cd "{TARGET_DIR}" && govulncheck ./...
 ```
 
 Feed the raw output to the Error Handling & Security agent (frontend-only: to Agent 2) for classification: Critical = RCE-grade CVE with PoC on a reachable path; High = known vuln on a reachable path. If the tool is unavailable, the report MUST state "依赖审计降级跳过" — never omit silently.
