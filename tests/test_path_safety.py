@@ -56,6 +56,8 @@ class PathSafetyTests(unittest.TestCase):
             ("subdir/../../escape",),
             ("..\\pwned",),
             ("safe\\..\\evil",),
+            ("\\evil.md",),
+            ("safe-skill", "\\evil.md"),
         ]:
             with self.subTest(payload=payload):
                 with self.assertRaises(path_safety.UnsafePathError):

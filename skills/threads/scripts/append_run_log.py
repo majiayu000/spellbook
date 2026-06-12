@@ -65,8 +65,10 @@ ALLOWED_TOP_LEVEL_FIELDS = {
     "lanes_total",
     "lanes",
     "failure_codes",
+    "remote_truth",
     "remote_closure",
     "closure_audit",
+    "local_state",
     "ci_wait",
     "review_loop",
     "exclusive_verification",
@@ -94,11 +96,36 @@ def find_project_root(start: Path | None = None) -> Path:
     return current
 
 
+def find_git_metadata_dir(project_root: Path) -> Path | None:
+    dot_git = project_root / ".git"
+    if dot_git.is_dir():
+        return dot_git
+    if not dot_git.is_file():
+        return None
+
+    try:
+        marker = dot_git.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    prefix = "gitdir:"
+    if not marker.lower().startswith(prefix):
+        return None
+
+    git_dir = Path(marker[len(prefix) :].strip()).expanduser()
+    if not git_dir.is_absolute():
+        git_dir = (project_root / git_dir).resolve()
+    return git_dir
+
+
 def default_log_path() -> Path:
     override = os.environ.get("CODEX_THREADS_RUN_LOG")
     if override:
         return Path(override).expanduser()
-    return find_project_root() / ".codex" / "threads" / "run-log.jsonl"
+    project_root = find_project_root()
+    git_metadata_dir = find_git_metadata_dir(project_root)
+    if git_metadata_dir is not None:
+        return git_metadata_dir / "codex" / "threads" / "run-log.jsonl"
+    return project_root / ".codex" / "threads" / "run-log.jsonl"
 
 
 def redact_string(value: str) -> str:
@@ -173,7 +200,7 @@ def main() -> int:
         default=None,
         help=(
             "JSONL path. Defaults to CODEX_THREADS_RUN_LOG or "
-            "<project>/.codex/threads/run-log.jsonl."
+            "<git-dir>/codex/threads/run-log.jsonl inside a Git project."
         ),
     )
     parser.add_argument(
