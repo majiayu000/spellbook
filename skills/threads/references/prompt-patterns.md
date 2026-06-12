@@ -12,17 +12,25 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 
 硬约束：
 - 先查 repo 指令、git 状态、open issues、open PRs、CI、dirty worktree。
+- 先写 capability_gate：native_subagents / tools_seen / fallback_mode / manual_orchestration_allowed；不能在 native subagents 不可用时声称开了 threads。
 - GitHub issue/PR queue 必须先输出 queue_gate 和 issue_to_pr_map，再输出 lane_map；不能只凭 MERGEABLE/CLEAN 或 open 列表开 worker。
 - queue_gate 必须包含每个 open PR 的分类：merge_ready / review_thread_blocked / ci_failed / conflict_blocked / stale_or_superseded / needs_human_decision。
+- queue_gate 必须包含 remote_refresh：origin/main 当前 SHA、lane base SHA、是否 stale_base、处理策略。
+- 输出 queue_ledger，并在每个 queue item 上记录 owner_lane、head_sha、ci_status、review_thread_state、acceptance_evidence、remote_checked_at。
 - issue_to_pr_map 必须先判断 open issue 是否已有覆盖 PR；优先收敛已有 PR，不要开竞争 PR。
-- 先写 intent_contract：goal / non_goals / done_when / merge_policy / remote_truth_required / data_collection。
+- 先写 intent_contract：goal / non_goals / done_when / merge_policy / remote_truth_required / queue_ledger / ci_truth_source / data_collection / queue_bounds / remote_refresh。
+- broad queue 默认只做一个 bounded tranche；没有明确预算时不要承诺处理所有 issue/PR。
+- 长队列执行期间只允许定期 `git fetch --prune origin` + stale-base 判断，不要自动 merge/rebase worker worktree。
 - 不要把 Codex threads 路由到 OMX/tmux。
 - 每个实现 lane 必须有 disjoint writable_files。
+- shared-state verification（如 .git/hooks、HOME、global cache、daemon）必须由 verification_owner 串行执行，除非显式隔离。
 - review lane 只读。
 - 高上下文文件 AGENTS.md/CLAUDE.md/settings/hooks 默认禁止修改。
 - 每个 PR merge 前必须有独立 thread review。
 - merge 前必须用 thread-aware GitHub 数据检查 reviewThreads.isResolved；open PR/issue 为空不等于评论闭环完成。
-- 输出 queue_gate、issue_to_pr_map、lane_map、依赖图、执行顺序、验证命令、stop_conditions、threads_run_log。
+- CI wait 必须有预算；无本地可行动失败时用 WAITING_CI 停止并给 resume 查询。
+- review-thread fix/recheck 同类循环超过 2 次，用 REVIEW_LOOP 停止并报告 blocker。
+- 输出 capability_gate、queue_gate、queue_ledger、issue_to_pr_map、lane_map、依赖图、执行顺序、验证命令、stop_conditions、threads_run_log。
 ```
 
 ## Queue Gate Thread
@@ -38,10 +46,11 @@ Target queue: {{queue_scope}}
 
 必须检查：
 1. git fetch --prune 后的当前 branch、dirty files、unpushed commits、worktrees。
-2. open PRs 和 open issues。
-3. 每个 open PR 的 head SHA、merge state、check rollup。
-4. GraphQL reviewThreads.isResolved / isOutdated；普通 PR comments 不足以证明闭环。
-5. open issues 是否已有覆盖 PR、重复 PR、或 superseding work。
+2. origin/main 当前 SHA、每个候选 lane 的 base_ref 是否 stale、是否需要 rebase/recreate/stop。
+3. open PRs 和 open issues。
+4. 每个 open PR 的 head SHA、merge state、check rollup。
+5. GraphQL reviewThreads.isResolved / isOutdated；普通 PR comments 不足以证明闭环。
+6. open issues 是否已有覆盖 PR、重复 PR、或 superseding work。
 
 输出：
 1. open_prs_count / open_issues_count
@@ -53,13 +62,15 @@ Target queue: {{queue_scope}}
    - stale_or_superseded
    - needs_human_decision
 3. issue_to_pr_map：covered issue -> PR；uncovered issue -> still actionable/backlog reason
-4. 推荐执行顺序，优先关闭已有 PR blocker
-5. top 1-3 items 的第一批 lane prompts
-6. stop_conditions
+4. queue_ledger：每个 issue/PR/review_thread 的 owner_lane、head_sha、ci_status、review_thread_state、acceptance_evidence、remote_checked_at
+5. 推荐执行顺序，优先关闭已有 PR blocker；没有明确预算时只推荐第一个 bounded tranche
+6. top 1-3 items 的第一批 lane prompts
+7. stop_conditions
 
 规则：
 - MERGEABLE/CLEAN 不足以判定 merge_ready；必须同时有当前 head SHA、check rollup、merge state、GraphQL review-thread state。
 - review-gated queue 默认一次收敛一个 blocker，除非 writable_files 明确不重叠且 PR 不 stacked。
+- remote_refresh 只能 fetch 和比较；不要在 queue gate 自动 rebase/merge。
 ```
 
 ## Read-Only Planning Thread
@@ -75,15 +86,18 @@ Target: {{issue_or_pr_or_queue}}
 
 输出：
 1. 目标摘要
-2. queue_gate 和 issue_to_pr_map（GitHub queue 必填；非 queue 说明 N/A）
-3. 已完成映射和证据
-4. 未完成/风险
-5. 推荐处理动作和理由
-6. 可并行 worktree 拆分
-7. 每个 lane 的 writable_files 和 forbidden_files
-8. 必须运行的验证命令
-9. 不应在本轮强做的范围
-10. 建议的 failure_codes（如 stale_remote_state、duplicate_work_missed、missing_intent_contract）
+2. capability_gate（native_subagents / tools_seen / fallback_mode）
+3. queue_gate、queue_ledger 和 issue_to_pr_map（GitHub queue 必填；非 queue 说明 N/A）
+4. queue_bounds：max_items / time_budget / queue_tranche
+5. remote_refresh：origin/main SHA、stale_base 判断、处理建议
+6. 已完成映射和证据
+7. 未完成/风险
+8. 推荐处理动作和理由
+9. 可并行 worktree 拆分
+10. 每个 lane 的 writable_files、forbidden_files、exclusive_verification
+11. 必须运行的验证命令
+12. 不应在本轮强做的范围
+13. 建议的 failure_codes（如 stale_remote_state、duplicate_work_missed、missing_intent_contract）
 ```
 
 ## Implementation Worker
@@ -111,6 +125,11 @@ Target: {{issue_or_pr_or_queue}}
 
 验证：
 {{verification_commands}}
+
+Remote refresh:
+- 在 push 前运行 git fetch --prune origin 并比较 origin/main 与 lane base_ref。
+- 如果 origin/main 已前进，不要自动 rebase；汇报 stale_base、重叠文件和建议动作。
+- shared-state verification 只有在你被指定为 verification_owner 时才运行。
 
 完成后汇报：
 - root cause or core claim
@@ -179,7 +198,10 @@ Target: {{issue_or_pr_or_queue}}
 5. GraphQL reviewThreads 是否无 unresolved actionable thread；不要只看普通 PR comments
 6. 已修复的 review feedback 是否有对应回复或已 resolve thread
 7. 是否存在 high-context file、test weakening、silent fallback、ownership 冲突
-8. threads_run_log 是否记录了失败码、验证状态和 closure 状态
+8. git fetch --prune 后 origin/main 是否前进；若 stale_base 且影响 PR 范围，不允许 merge
+9. CI wait 是否在预算内；若只剩远端等待，返回 WAITING_CI 和 resume 查询
+10. review-thread 同类修复循环是否超过 2 次；若超过，返回 REVIEW_LOOP
+11. threads_run_log 是否记录了失败码、验证状态、remote_refresh 和 closure 状态
 
 如果无 blocking issue，返回：
 No findings; safe to merge.
@@ -229,6 +251,7 @@ No findings; safe to merge.
 - git diff --stat origin/main...HEAD
 - git worktree list
 - dirty worktrees and stale branches
+- origin/main 当前 SHA 与 touched branch base_ref 的 stale-base 状态
 
 区分：
 - remote truth
@@ -250,5 +273,8 @@ No findings; safe to merge.
 - local_state.dirty_worktrees
 - local_state.stale_branches
 - remote_closure.checked
+- remote_refresh.origin_main_sha
+- remote_refresh.stale_base
+- queue_bounds.queue_tranche
 - outcome
 ```
