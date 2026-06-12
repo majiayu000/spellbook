@@ -22,6 +22,9 @@ jobs:
       - name: Validate skill registry
         run: python3 scripts/validate_skills.py --check
 
+      - name: Run unit tests
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -q
+
       - name: Smoke-test registry search
         run: |
           python3 scripts/validate_skills.py search rust >/tmp/claude-arsenal-search-rust.txt
