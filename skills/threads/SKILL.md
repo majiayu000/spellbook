@@ -1,6 +1,6 @@
 ---
 name: threads
-description: Coordinate Codex-native thread workflows when the user explicitly asks for $threads, Codex threads, open threads, 开几个 thread/子agent, or a repo issue/PR queue flow needing parallel lanes, worktrees, independent review, merge gates, review-thread/comment closure, final cleanup, or threads run-log data collection.
+description: Use when the user explicitly asks for $threads, Codex-native subagents, 开几个子 agent, or a GitHub issue/PR queue needing parallel lanes, worktrees, review/merge gates, and closure audit. Do not use for OS/language threads, chat/email/forum threads, or Assistants product threads unless Codex workflow orchestration is explicit.
 ---
 
 # Threads
@@ -8,6 +8,15 @@ description: Coordinate Codex-native thread workflows when the user explicitly a
 Use this skill to turn a broad request into controlled Codex-native subthreads with explicit lanes, file ownership, review gates, and verifiable closure.
 
 Native Codex threads are short-lived parallel work lines inside the Codex workflow. They are not the same as OMX/tmux workers. If native subagent tools are not visible, discover them with tool search. If no native subagent capability is available, produce the thread prompt pack and execution plan instead of pretending threads were launched.
+
+## Do Not Use For
+
+Do not use this skill for generic uses of "thread" unless the user explicitly means Codex workflow orchestration:
+
+- operating-system threads, language concurrency, or async programming models
+- chat, email, forum, Slack, GitHub discussion, or comment threads
+- OpenAI Assistants API threads or other product APIs
+- ordinary single-agent repo work where there are no independent lanes
 
 ## Decision
 
@@ -26,26 +35,34 @@ For any implementation mode, start with a lane map before spawning workers. For 
 
 ## Operating Contract
 
-Before dispatch, record the operating contract:
+Before dispatch, record this block as `intent_contract`:
 
 ```text
-goal:
-non_goals:
-done_when:
-merge_policy: no_merge | merge_after_gate | user_confirm_before_merge
-remote_truth_required: yes | no
-queue_ledger: required_for_queue | optional | none
-ci_truth_source: discovered_workflow | user_supplied | language_default | none
-data_collection: final_report | local_jsonl | none
-queue_bounds:
-  max_items:
-  time_budget:
-  queue_tranche:
-remote_refresh:
-  cadence:
-  last_fetch:
-  stale_base_policy:
+intent_contract:
+  goal:
+  non_goals:
+  done_when:
+  merge_policy: no_merge | merge_after_gate | user_confirm_before_merge
+  remote_truth_required: yes | no
+  truth_level: A | B | C | D
+  queue_ledger: required_for_queue | optional | none
+  ci_truth_source: discovered_workflow | user_supplied | language_default | none
+  data_collection: final_report | local_jsonl | none
+  queue_bounds:
+    max_items:
+    time_budget:
+    queue_tranche:
+  remote_refresh:
+    cadence:
+    last_fetch:
+    stale_base_policy:
 ```
+
+Defaults:
+
+- `merge_policy` is `no_merge` unless the user explicitly authorizes merging in the current conversation.
+- `data_collection` is `final_report` unless the user requests durable logging, debug data collection, or an issue/PR queue run explicitly sets `local_jsonl`.
+- If merge permission is ambiguous, stop after merge review and report the exact recommendation or merge command instead of merging.
 
 Direct actions: inspect repo instructions, fetch remote state, map lanes, spawn bounded native subagents when useful, integrate results, verify, and report closure.
 
@@ -55,7 +72,7 @@ Evidence-backed pushback: choose `single_agent` when parallelism adds coordinati
 
 Feedback loop: record notable failures in `threads_run_log`, classify the failure mode, tighten the lane prompt or split, then retry only after the hypothesis changes.
 
-If the user asks for issue/PR queue handling, `remote_truth_required` is `yes`, `queue_ledger` is `required_for_queue`, and non-trivial queue runs default to `data_collection: local_jsonl` unless the user opts out or the log path is unavailable.
+If the user asks for issue/PR queue handling, `remote_truth_required` is `yes` and `queue_ledger` is `required_for_queue`.
 
 Broad queue requests such as "all issues and PRs" are bounded by default. If the user did not give an explicit long-run budget, choose one smallest mergeable tranche, record `max_items` / `time_budget` / `queue_tranche`, and leave the remaining queue for the next run with exact next actions.
 
@@ -87,6 +104,7 @@ The gate must use live state from the current session:
 ```text
 queue_gate:
 - fetched_remote:
+- truth_level:
 - remote_refresh:
     base_ref:
     origin_main_sha:
@@ -132,6 +150,17 @@ Rules:
 - Map open issues to existing PRs before opening new implementation lanes. Prefer fixing, reviewing, or merging an existing covering PR over opening a competing PR.
 - For review-gated queues, work one blocker or bounded tranche to closure unless writable file ownership is clearly disjoint and the PRs are not stacked.
 - Keep remote truth separate from local stale or dirty worktree state.
+
+## Remote Truth Levels
+
+Use the highest truth level available from the current session and record it in `intent_contract`, `queue_gate`, and `threads_run_log`:
+
+- **A**: `git fetch` plus GitHub API or GraphQL can prove current PR head, check rollup, merge state, and review-thread state. Implementation, review, and merge gates may proceed if all other conditions pass.
+- **B**: `git fetch` plus REST PR/review/comment data is available, but GraphQL review-thread state is unavailable. Implementation and review may proceed; merge is forbidden.
+- **C**: only local git state is reliable. Local implementation and review may proceed; PR closure, merge readiness, and remote cleanup claims are forbidden.
+- **D**: no reliable repo or remote state is available. Use `plan_only` or `prompt_pack_only`; do not implement, push, merge, or claim closure.
+
+Never fabricate remote state to reach a higher level. If the tool or permission gap matters, report the lower level and the blocked operation.
 
 ## Queue Ledger
 
@@ -213,6 +242,7 @@ Rules:
 - Commands that mutate shared state such as `.git/hooks`, shared `$HOME` files, global caches, local daemons, or repo-level generated state belong to `verification_owner` and must not run in parallel lanes unless that mutable state is isolated.
 - Require fresh verification from the worker or the verification owner before claiming success.
 - For GitHub queues, treat comments and review threads as first-class remote state; open PR/issue lists alone are not enough.
+- Default WIP limit: at most 3 planning/research lanes, 2 concurrent writable implementation lanes, and 2 reviewers per PR unless the user explicitly grants a larger budget.
 
 ## Dispatch
 
@@ -249,6 +279,8 @@ blockers:
 
 Do not merge from worker output alone. Merge only after:
 
+- `merge_policy` is `merge_after_gate` or `user_confirm_before_merge` with explicit authorization from the current conversation.
+- `truth_level` is `A`; lower truth levels may produce recommendations but must not merge.
 - The PR/diff has at least one independent review lane.
 - Blocking findings are fixed or explicitly ruled out with evidence.
 - Required checks are fresh and tied to the current head SHA.
@@ -265,7 +297,7 @@ If the user asked for “review then merge,” the merge reviewer should be a se
 
 ## Run Log
 
-For non-trivial runs, include a compact `threads_run_log` block in the final report. For issue/PR queues, append the same JSON object locally with `scripts/append_run_log.py` by default unless the user opts out or the environment cannot write the log. Read [run-log.md](references/run-log.md) before writing durable logs.
+For non-trivial runs, include a compact `threads_run_log` block in the final report. Append the same JSON object locally with `scripts/append_run_log.py` only when `data_collection: local_jsonl`, the user requests durable logging, or debug collection is explicitly enabled. Read [run-log.md](references/run-log.md) before writing durable logs.
 
 Run logs are observational. Do not record secrets, credentials, full prompts, or private user data. Prefer short summaries, file paths, PR/issue numbers, command names, failure codes, and verification outcomes.
 
@@ -306,12 +338,16 @@ local_state:
 threads_run_log:
 - mode:
 - native_subagents:
+- truth_level:
 - lanes_total:
 - queue_items_total:
-- queue_tranche:
+- queue_bounds:
+    queue_tranche:
 - failure_codes:
-- verification_fresh:
-- closure_complete:
+- verification:
+    fresh:
+- remote_closure:
+    checked:
 - log_path:
 ```
 

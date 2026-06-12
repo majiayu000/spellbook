@@ -1,6 +1,6 @@
 # Threads Run Log
 
-Use this reference when the user asks to collect problems encountered by the `threads` skill, or when a non-trivial run should leave a compact diagnostic trail. For issue/PR queue runs, write this log by default unless the user opts out or the environment cannot write the file.
+Use this reference when the user asks to collect problems encountered by the `threads` skill, or when a non-trivial run should leave a compact diagnostic trail. Durable JSONL logging is opt-in through `data_collection: local_jsonl`, an explicit user request, or an explicitly enabled debug run.
 
 ## Purpose
 
@@ -10,6 +10,7 @@ Collect enough structured data to answer:
 - Did the task need multiple lanes, or should it have stayed single-agent?
 - Did any lane drift outside its role or writable files?
 - Were GitHub, worktree, CI, and review-thread states checked with fresh evidence?
+- What remote `truth_level` was available, and which actions were forbidden by that level?
 - Did the run refresh `origin/main` often enough to notice stale bases?
 - Was the queue bounded to an explicit tranche instead of expanding indefinitely?
 - Which failure modes repeat across runs?
@@ -38,6 +39,12 @@ python3 skills/threads/scripts/append_run_log.py <<'JSON'
   "repo": "/abs/repo/path",
   "trigger_summary": "user asked to process issue and PR queue with threads",
   "goal": "fix and merge actionable PR queue",
+  "intent_contract": {
+    "merge_policy": "no_merge",
+    "remote_truth_required": true,
+    "data_collection": "local_jsonl"
+  },
+  "truth_level": "A",
   "native_subagents": "available",
   "fallback_mode": "none",
   "queue_bounds": {
@@ -71,12 +78,18 @@ Recommended fields:
   "recorded_at_utc": "auto-filled by script",
   "skill": "threads",
   "skill_source": "local|spellbook|unknown",
-  "mode": "single_agent|plan_only|execute_direct|review_only|research_spec",
+  "mode": "single_agent|plan_only|execute_direct|review_only|research_spec|clarify_first",
   "repo": "/absolute/repo/path",
   "base_ref": "origin/main",
   "trigger_summary": "short summary, not the raw prompt",
   "goal": "short goal",
   "non_goals": ["out of scope item"],
+  "intent_contract": {
+    "merge_policy": "no_merge|merge_after_gate|user_confirm_before_merge",
+    "remote_truth_required": true,
+    "data_collection": "final_report|local_jsonl|none"
+  },
+  "truth_level": "A|B|C|D",
   "native_subagents": "available|unavailable",
   "fallback_mode": "none|single_agent|prompt_pack_only",
   "queue_bounds": {
@@ -141,12 +154,31 @@ Recommended fields:
 }
 ```
 
+Truth levels:
+
+- `A`: git fetch plus GitHub API or GraphQL can prove current PR head, checks, merge state, and review-thread state.
+- `B`: git fetch plus REST PR/review/comment data is available, but GraphQL review-thread state is unavailable; merge is forbidden.
+- `C`: only local git state is reliable; remote closure and merge claims are forbidden.
+- `D`: no reliable repo or remote state is available; only plan or prompt-pack output is allowed.
+
+The append script enforces an allowlist of top-level fields by default. Use `--allow-extra` only for local debugging when extra fields are needed; sensitive keys and common token patterns are still redacted.
+
+Safety limits:
+
+- maximum input size: 64 KiB
+- maximum string length: 4000 characters
+- maximum nesting depth: 8
+- maximum array items retained: 100
+- new log files are created with `0600` permissions
+- append uses a POSIX file lock when available
+
 ## Failure Codes
 
 Use stable codes so later analysis can aggregate them:
 
 - `trigger_too_broad`: skill activated for a task that did not need threads.
 - `missing_intent_contract`: goal, non-goals, done-when, or merge policy was unclear.
+- `truth_level_too_low`: requested action required a higher remote truth level.
 - `source_drift`: local installed skill and Spellbook/source version differed.
 - `stale_remote_state`: PR, issue, branch, or CI state was not freshly fetched.
 - `stale_base`: `origin/main` advanced under a lane and may invalidate its base.
@@ -176,4 +208,4 @@ jq -r 'select(.verification.fresh==false) | [.recorded_at_utc,.repo,.goal] | @ts
 
 ## Privacy
 
-Do not log secrets, tokens, cookies, private messages, raw prompts, or full command output. Log concise summaries and stable evidence identifiers instead: file paths, command names, PR/issue numbers, head SHAs, and failure codes.
+Do not log secrets, tokens, cookies, private messages, raw prompts, or full command output. Log concise summaries and stable evidence identifiers instead: file paths, command names, PR/issue numbers, head SHAs, and failure codes. Unknown top-level fields are rejected unless `--allow-extra` is supplied.
