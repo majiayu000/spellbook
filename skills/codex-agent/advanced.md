@@ -12,10 +12,12 @@ Codex CLI reads configuration from `~/.codex/config.toml`.
 # ~/.codex/config.toml
 
 # Default model
-model = "gpt-5-codex"
+# Omit this to use the installed Codex default, or set a model supported by
+# your current Codex CLI.
+# model = "<codex-model>"
 
 # Default sandbox mode
-sandbox = "read-only"
+sandbox_mode = "read-only"
 
 # Enable web search
 search = true
@@ -27,12 +29,10 @@ Create named profiles for different use cases:
 
 ```toml
 [profiles.review]
-model = "gpt-5-codex"
-sandbox = "read-only"
+sandbox_mode = "read-only"
 
 [profiles.implement]
-model = "gpt-5-codex"
-sandbox = "workspace-write"
+sandbox_mode = "workspace-write"
 ```
 
 Do not persist a `danger-full-access` + no-approval profile. If broad access is

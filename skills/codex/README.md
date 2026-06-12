@@ -15,14 +15,10 @@ Enable Claude Code to invoke the Codex CLI (`codex exec` and session resumes) fo
 
 ## Installation
 
-Download this repo and store the skill in ~/.claude/skills/codex
+Install through Spellbook from the repository root:
 
 ```bash
-SKILL_TMP="$(mktemp -d)" && \
-git clone --depth 1 git@github.com:skills-directory/skill-codex.git "$SKILL_TMP" && \
-mkdir -p ~/.claude/skills && \
-cp -r "$SKILL_TMP"/ ~/.claude/skills/codex && \
-rm -rf "$SKILL_TMP"
+./install.sh --target claude --skills codex
 ```
 
 ## Usage
@@ -39,14 +35,13 @@ Use codex to analyze this repository and suggest improvements for my claude code
 
 **Claude Code response:**
 Claude will activate the Codex skill and:
-1. Ask which model to use (`gpt-5` or `gpt-5-codex`) unless already specified in your prompt.
+1. Use the installed Codex default model, or ask once if you requested a specific model choice.
 2. Ask which reasoning effort level (`low`, `medium`, or `high`) unless already specified in your prompt.
 3. Select appropriate sandbox mode (defaults to `read-only` for analysis)
 4. Avoid high-impact flags such as `danger-full-access`, `--dangerously-bypass-approvals-and-sandbox`, or `--skip-git-repo-check` unless the user explicitly approves them.
 5. Run a command like:
 ```bash
-codex exec -m gpt-5-codex \
-  --config model_reasoning_effort="high" \
+codex exec --config model_reasoning_effort="high" \
   --sandbox read-only \
   "Analyze this Claude Code skill repository comprehensively..." 2>/dev/null
 ```

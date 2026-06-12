@@ -47,32 +47,13 @@ class CodexWrapperTests(unittest.TestCase):
             captured_args = capture.read_text(encoding="utf-8").splitlines() if capture.exists() else []
             return result, captured_args
 
-    def test_allows_workspace_read_network_write_sandbox(self):
-        result, captured_args = self.run_wrapper(
-            ["--dir", "/project", "--sandbox", "workspace-read-network-write", "task needing network"],
-            env_extra={"CODEX_FAKE_EXEC_HELP": "possible values: workspace-read-network-write"},
-        )
-
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(
-            captured_args,
-            [
-                "exec",
-                "-C",
-                "/project",
-                "-s",
-                "workspace-read-network-write",
-                "task needing network",
-            ],
-        )
-
-    def test_rejects_workspace_read_network_write_when_cli_does_not_support_it(self):
+    def test_rejects_workspace_read_network_write_sandbox(self):
         result, captured_args = self.run_wrapper(
             ["--dir", "/project", "--sandbox", "workspace-read-network-write", "task needing network"]
         )
 
         self.assertEqual(result.returncode, 2)
-        self.assertIn("workspace-read-network-write is not supported", result.stderr)
+        self.assertIn("unsupported sandbox mode: workspace-read-network-write", result.stderr)
         self.assertEqual(captured_args, [])
 
     def test_rejects_unknown_full_auto_option(self):

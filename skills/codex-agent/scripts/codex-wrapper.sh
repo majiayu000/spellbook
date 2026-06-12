@@ -17,7 +17,7 @@ Usage: codex-wrapper.sh [options] "<task>"
 
 Options:
   -d, --dir <path>       Working directory (default: current)
-  -s, --sandbox <mode>   Sandbox mode: read-only, workspace-write, workspace-read-network-write, danger-full-access
+  -s, --sandbox <mode>   Sandbox mode: read-only, workspace-write, danger-full-access
   -j, --json             Output as JSON
   -o, --output <file>    Save output to file
   -S, --session <id>     Use session ID for follow-up
@@ -84,7 +84,7 @@ TASK="$*"
 
 # Validate high-impact options before building the command.
 case "$SANDBOX" in
-    read-only|workspace-write|workspace-read-network-write|danger-full-access) ;;
+    read-only|workspace-write|danger-full-access) ;;
     *)
         echo "Error: unsupported sandbox mode: $SANDBOX" >&2
         exit 2
@@ -94,13 +94,6 @@ esac
 if [[ "$SANDBOX" == "danger-full-access" && "${CODEX_ALLOW_DANGER_FULL_ACCESS:-}" != "1" ]]; then
     echo "Error: danger-full-access requires CODEX_ALLOW_DANGER_FULL_ACCESS=1" >&2
     exit 2
-fi
-
-if [[ "$SANDBOX" == "workspace-read-network-write" ]]; then
-    if ! codex exec --help 2>/dev/null | grep -q "workspace-read-network-write"; then
-        echo "Error: workspace-read-network-write is not supported by this Codex CLI" >&2
-        exit 2
-    fi
 fi
 
 if [[ -n "$SESSION" ]]; then

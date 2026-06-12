@@ -9,6 +9,24 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class InstallPruneTests(unittest.TestCase):
+    def test_codex_default_skills_dir_uses_agents_home(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            env = os.environ.copy()
+            env["HOME"] = tmp
+            env.pop("CODEX_SKILLS_DIR", None)
+
+            result = subprocess.run(
+                ["bash", "-c", 'source ./install.sh; printf "%s" "$CODEX_SKILLS_DIR"'],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(result.stdout, str(Path(tmp) / ".agents" / "skills"))
+
     def test_prunes_stale_managed_skill_links_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)

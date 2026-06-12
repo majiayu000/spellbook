@@ -16,10 +16,9 @@ NC='\033[0m' # No Color
 REPO_URL="${SPELLBOOK_REPO_URL:-https://github.com/majiayu000/spellbook.git}"
 LEGACY_REPO_URL="https://github.com/majiayu000/claude-arsenal.git"
 CLAUDE_DIR="$HOME/.claude"
-CODEX_DIR="$HOME/.codex"
 CLAUDE_SKILLS_DIR="$CLAUDE_DIR/skills"
 CLAUDE_AGENTS_DIR="$CLAUDE_DIR/agents"
-CODEX_SKILLS_DIR="$CODEX_DIR/skills"
+CODEX_SKILLS_DIR="${CODEX_SKILLS_DIR:-$HOME/.agents/skills}"
 INSTALL_DIR="$HOME/.spellbook"
 LEGACY_INSTALL_DIR="$HOME/.claude-arsenal"
 TARGET="claude"
@@ -551,7 +550,7 @@ main() {
         echo "  - Claude Code: type '/' to see installed skills"
     fi
     if target_includes_codex; then
-        echo "  - Codex: restart Codex so it reloads ~/.codex/skills"
+        echo "  - Codex: restart Codex so it reloads $CODEX_SKILLS_DIR"
     fi
     echo "  - Start using skills like /typescript-project"
     echo ""

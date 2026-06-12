@@ -92,7 +92,10 @@ CATEGORY_BY_NAME = {
     "brainstorming": "AI & Agent Workflow",
     "codex": "AI & Agent Workflow",
     "codex-agent": "AI & Agent Workflow",
+    "codex-fluent": "AI & Agent Workflow",
+    "codex-retrospective": "AI & Agent Workflow",
     "multi-ai-research": "AI & Agent Workflow",
+    "personal-arsenal-lifecycle-doctor": "AI & Agent Workflow",
     "skill-creator": "AI & Agent Workflow",
     "skill-audit": "AI & Agent Workflow",
     "strategic-compact": "AI & Agent Workflow",
@@ -119,6 +122,7 @@ CATEGORY_BY_NAME = {
     "trip-planner": "Content & Research",
     "weekly": "Content & Research",
     "xiaohongshu": "Content & Research",
+    "xiaohongshu-netfeel-guardian": "Content & Research",
 }
 
 
