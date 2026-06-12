@@ -93,6 +93,7 @@ CATEGORY_BY_NAME = {
     "codex": "AI & Agent Workflow",
     "codex-agent": "AI & Agent Workflow",
     "multi-ai-research": "AI & Agent Workflow",
+    "multi-model-orchestrator": "AI & Agent Workflow",
     "skill-creator": "AI & Agent Workflow",
     "skill-audit": "AI & Agent Workflow",
     "strategic-compact": "AI & Agent Workflow",
