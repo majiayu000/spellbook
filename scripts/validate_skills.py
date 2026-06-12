@@ -17,6 +17,12 @@ try:
 except ImportError:  # pragma: no cover - exercised only on minimal user systems.
     yaml = None
 
+from skill_artifact_checks import (
+    local_support_references,
+    skill_markdown_body,
+    unresolved_placeholder_tokens,
+)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS_DIR = ROOT / "skills"
@@ -463,6 +469,22 @@ def validate_entries(entries: list[SkillEntry]) -> list[str]:
             messages.append(error(f"{entry.path} is missing non-empty description"))
         elif len(description.strip()) > 1024:
             messages.append(warning(f"{entry.path} description exceeds 1024 characters"))
+
+        body = skill_markdown_body(path)
+        for token in unresolved_placeholder_tokens(body):
+            messages.append(error(f"{entry.path} contains unresolved placeholder token: {token}"))
+
+        for ref in local_support_references(
+            install_name=entry.install_name,
+            entry_path=entry.path,
+            entry_format=entry.format,
+            body=body,
+            root=ROOT,
+        ):
+            if ref.unsafe_reason:
+                messages.append(error(f"{entry.path} references unsafe support path {ref.ref}: {ref.unsafe_reason}"))
+            elif not ref.target.exists():
+                messages.append(error(f"{entry.path} references missing support file: {ref.ref}"))
 
         line_count = len(path.read_text(encoding="utf-8").splitlines())
         if line_count > 500:

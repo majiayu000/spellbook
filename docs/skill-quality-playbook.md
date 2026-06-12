@@ -91,3 +91,16 @@ The existing registry validation remains the required correctness gate:
 ```bash
 python3 scripts/validate_skills.py --check
 ```
+
+## Artifact Checks
+
+Spellbook splits artifact checks into strict validation and advisory audit:
+
+| Tool | Level | Checks |
+|---|---|---|
+| `python3 scripts/validate_skills.py --check` | Strict | parseable frontmatter, matching non-empty `name` and `description`, duplicate names, generated registry drift, current README counts, missing local support files referenced from `SKILL.md`, unsafe support paths, and unresolved runtime placeholders such as `{SCRIPT}`, `{ARGS}`, `{ARGUMENTS}`, or `<TODO>`. |
+| `python3 scripts/audit_skill_quality.py` | Advisory | trigger wording, gotchas, verification cues, operating contract signals, progressive disclosure, unreferenced support directories, missing support files with actionable paths, legacy argument-token usage, and referenced scripts that are neither executable nor shebang-marked. |
+
+Strict failures should block release or installation changes. Advisory findings
+should be reviewed in PRs and may be accepted when the skill is intentionally
+small, still in manual validation, or documenting a literal template syntax.
