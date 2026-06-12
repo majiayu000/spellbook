@@ -3,13 +3,13 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "帮我全面审查一下 /Users/lifcc/Desktop/code/work/mutil-om 这个项目的设计问题",
-      "expected_output": "按检测到的技术栈启动对应数量的并行 agent（全栈 5 / 后端 4 / 前端 3），agent 类型全部来自真实注册表；Critical/High 发现经 Phase 1.5 复核后输出 Critical/High/Medium 分级统一报告（含 evidence_type/confidence/验证状态列）+ 修复路线图",
+      "prompt": "帮我全面审查一下当前仓库这个项目的设计问题",
+      "expected_output": "按检测到的技术栈启动对应数量的并行 agent（全栈 5 / 后端 4 / 前端 3），agent 类型全部来自真实注册表；Critical/High 发现经 Phase 1.5 复核后输出 Critical/High/Medium/Low 分级统一报告（含 evidence_type/confidence/验证状态列）+ 修复路线图",
       "files": []
     },
     {
       "id": 2,
-      "prompt": "/codebase-audit /Users/lifcc/Desktop/code/work/mutil-om",
+      "prompt": "/codebase-audit .",
       "expected_output": "同 eval 1，通过 slash command 触发；agent 数量与检测到的栈类型匹配",
       "files": []
     },

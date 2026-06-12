@@ -40,11 +40,13 @@ Detection checklist:
   Data Integrity agent (see agent-prompts.md)
 ```
 
-After stack detection, run the matching dependency audit (deterministic, zero LLM cost):
+After stack detection, run the matching dependency audit from the target project root, never from the assistant's incidental current working directory. If the user supplied an explicit target path, use it as `{TARGET_DIR}` before invoking the tool (deterministic, zero LLM cost):
 
 ```
-- Rust → cargo audit       - Node → npm audit
-- Python → pip-audit       - Go → govulncheck ./...
+- Rust → cd "{TARGET_DIR}" && cargo audit
+- Node → cd "{TARGET_DIR}" && npm audit
+- Python → cd "{TARGET_DIR}" && if [ -f pyproject.toml ] || [ -f setup.py ]; then pip-audit .; [ -f requirements.txt ] && pip-audit -r requirements.txt; elif [ -f requirements.txt ]; then pip-audit -r requirements.txt; else pip-audit .; fi
+- Go → cd "{TARGET_DIR}" && govulncheck ./...
 ```
 
 Feed the raw output to the Error Handling & Security agent (frontend-only: to Agent 2) for classification: Critical = RCE-grade CVE with PoC on a reachable path; High = known vuln on a reachable path. If the tool is unavailable, the report MUST state "依赖审计降级跳过" — never omit silently.
@@ -133,6 +135,7 @@ After verification completes, compile findings into a single report.
 | Critical | N | ... |
 | High | N | ... |
 | Medium | N | ... |
+| Low | N | ... |
 
 ## Critical (Fix Immediately)
 | # | Problem | Agent | Impact | evidence_type | confidence | 验证状态 |
@@ -146,6 +149,9 @@ For each: file:line, code snippet, risk description (推断需标注置信度), 
 ## Medium (Plan to Fix)
 [Same structure]
 
+## Low (Informational)
+[Same structure; include only if Low findings exist]
+
 ## 已排除项 (Refuted in Phase 1.5)
 | # | Original claim | Refutation reason |
 |---|----------------|-------------------|
@@ -156,7 +162,7 @@ For each: file:line, code snippet, risk description (推断需标注置信度), 
 | Phase 0 (urgent) | Critical fixes | ~N files |
 | Phase 1 (this week) | High priority | ~N files |
 | Phase 2 (next week) | Medium priority | ~N files |
-| Phase 3 (ongoing) | Architecture | ~N files |
+| Phase 3 (ongoing) | Low / Architecture | ~N files |
 
 Est. Files = 该级别所有发现 files 字段去重并集大小；若修复涉及发现位置之外的文件，可追加估算但必须标注「推断，置信度低」。
 ```
