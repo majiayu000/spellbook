@@ -17,10 +17,11 @@ Collect enough structured data to answer:
 
 ## Storage
 
-Default local path is project-scoped:
+Default local path is project-scoped and kept out of tracked worktree content
+when the current directory is inside a Git repository:
 
 ```text
-<project>/.codex/threads/run-log.jsonl
+<git-dir>/codex/threads/run-log.jsonl
 ```
 
 Override with:
@@ -29,11 +30,16 @@ Override with:
 CODEX_THREADS_RUN_LOG=/path/to/threads-run-log.jsonl
 ```
 
-The script discovers `<project>` by walking up from the current working
-directory until it finds `.git`. If no Git project is found, it writes under the
-current working directory. Do not use a global log file by default; different
-repositories should not share durable threads telemetry unless the user
-explicitly sets `CODEX_THREADS_RUN_LOG`.
+The script discovers the project by walking up from the current working
+directory until it finds `.git`. For a normal checkout, `<git-dir>` is
+`<project>/.git`; for a linked worktree, it is the metadata directory referenced
+by the `.git` file. This keeps durable logging per project without adding
+untracked `.codex/` files to the repository. If no Git project is found, the
+fallback path is `<current-directory>/.codex/threads/run-log.jsonl`.
+
+Do not use a global log file by default; different repositories should not
+share durable threads telemetry unless the user explicitly sets
+`CODEX_THREADS_RUN_LOG`.
 
 Append one JSON object per run:
 
@@ -64,6 +70,13 @@ python3 skills/threads/scripts/append_run_log.py <<'JSON'
     "origin_main_sha": "abc123",
     "stale_base": false,
     "refreshes": 3
+  },
+  "remote_truth": {
+    "open_prs": 0,
+    "open_issues": 0
+  },
+  "local_state": {
+    "dirty_worktree": false
   },
   "outcome": "partial",
   "verification": {
@@ -137,6 +150,20 @@ Recommended fields:
     "open_issues": 0,
     "unresolved_review_threads": 0
   },
+  "remote_truth": {
+    "open_prs": 0,
+    "open_issues": 0,
+    "checked_pr_heads": [],
+    "checked_review_threads": [],
+    "checked_ci": [],
+    "origin_main_sha": "abc123",
+    "stale_base": false
+  },
+  "local_state": {
+    "dirty_worktree": false,
+    "stale_worktree": false,
+    "high_context_file": false
+  },
   "ci_wait": {
     "duration_seconds": 0,
     "budget_exhausted": false,
@@ -207,9 +234,9 @@ Use stable codes so later analysis can aggregate them:
 Common local checks:
 
 ```bash
-jq -r '.failure_codes[]?' .codex/threads/run-log.jsonl | sort | uniq -c | sort -nr
-jq -r 'select(.outcome!="success") | [.recorded_at_utc,.repo,.mode,.failure_codes|join(",")] | @tsv' .codex/threads/run-log.jsonl
-jq -r 'select(.verification.fresh==false) | [.recorded_at_utc,.repo,.goal] | @tsv' .codex/threads/run-log.jsonl
+jq -r '.failure_codes[]?' "$(git rev-parse --git-dir)/codex/threads/run-log.jsonl" | sort | uniq -c | sort -nr
+jq -r 'select(.outcome!="success") | [.recorded_at_utc,.repo,.mode,.failure_codes|join(",")] | @tsv' "$(git rev-parse --git-dir)/codex/threads/run-log.jsonl"
+jq -r 'select(.verification.fresh==false) | [.recorded_at_utc,.repo,.goal] | @tsv' "$(git rev-parse --git-dir)/codex/threads/run-log.jsonl"
 ```
 
 ## Privacy

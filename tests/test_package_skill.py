@@ -182,6 +182,24 @@ class PackageSkillTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         safe_paths.safe_kebab_name(root_name, kind="skill directory name")
 
+    def test_rejects_rooted_archive_member_after_backslash_normalization(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            skill_path = self.make_skill(root)
+            try:
+                (skill_path / "\\evil.md").write_text("bad", encoding="utf-8")
+            except OSError as exc:
+                self.skipTest(f"backslash filename is not available: {exc}")
+            output_dir = root / "dist"
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                archive_path = package_skill(skill_path, output_dir)
+
+            self.assertIsNone(archive_path)
+            self.assertIn("archive name must be relative", stdout.getvalue())
+            self.assertFalse((output_dir / "safe-skill.skill").exists())
+
     def test_loads_sibling_validator_when_top_level_name_is_taken(self):
         fake_validator = types.ModuleType("quick_validate")
 

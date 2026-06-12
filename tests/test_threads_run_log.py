@@ -63,11 +63,17 @@ class ThreadsRunLogTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue(log_path.exists())
 
-    def test_defaults_to_project_local_log_path(self):
+    def test_defaults_to_git_metadata_log_path(self):
         with TemporaryDirectory() as temp_dir:
             project_root = Path(temp_dir)
             (project_root / ".git").mkdir()
-            expected_log = project_root.resolve() / ".codex" / "threads" / "run-log.jsonl"
+            expected_log = (
+                project_root.resolve()
+                / ".git"
+                / "codex"
+                / "threads"
+                / "run-log.jsonl"
+            )
             env = os.environ.copy()
             env.pop("CODEX_THREADS_RUN_LOG", None)
 
@@ -84,6 +90,58 @@ class ThreadsRunLogTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout.strip(), str(expected_log))
             self.assertTrue(expected_log.exists())
+
+    def test_defaults_to_worktree_git_metadata_log_path(self):
+        with TemporaryDirectory() as temp_dir:
+            project_root = Path(temp_dir) / "worktree"
+            project_root.mkdir()
+            git_metadata = Path(temp_dir) / "git" / "worktrees" / "worktree"
+            git_metadata.mkdir(parents=True)
+            (project_root / ".git").write_text(
+                f"gitdir: {git_metadata}\n",
+                encoding="utf-8",
+            )
+            expected_log = git_metadata / "codex" / "threads" / "run-log.jsonl"
+            env = os.environ.copy()
+            env.pop("CODEX_THREADS_RUN_LOG", None)
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT)],
+                input=json.dumps({"skill": "threads", "mode": "plan_only"}),
+                text=True,
+                capture_output=True,
+                check=False,
+                cwd=project_root,
+                env=env,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), str(expected_log))
+            self.assertTrue(expected_log.exists())
+
+    def test_allows_documented_cleanup_run_log_fields(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "closure.jsonl"
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--path", str(log_path)],
+                input=json.dumps(
+                    {
+                        "skill": "threads",
+                        "mode": "execute_direct",
+                        "remote_truth": {"origin_main_sha": "abc123"},
+                        "local_state": {"dirty_worktree": False},
+                    }
+                ),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(record["remote_truth"]["origin_main_sha"], "abc123")
+            self.assertFalse(record["local_state"]["dirty_worktree"])
 
     def test_accepts_clarify_first_mode(self):
         with TemporaryDirectory() as temp_dir:

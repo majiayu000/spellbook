@@ -67,11 +67,14 @@ def safe_archive_name(*parts: Path | str) -> str:
     raw_parts: list[str] = []
     for part in parts:
         _reject_absolute_or_drive(part, kind="archive name")
-        raw_parts.extend(PurePosixPath(str(part).replace("\\", "/")).parts)
+        normalized = PurePosixPath(str(part).replace("\\", "/"))
+        if normalized.is_absolute():
+            raise UnsafePathError(f"archive name must be relative: {part!r}")
+        raw_parts.extend(normalized.parts)
 
     if not raw_parts:
         raise UnsafePathError("archive name must not be empty")
-    if any(part in {"", ".", ".."} for part in raw_parts):
+    if any(part in {"", ".", "..", "/"} for part in raw_parts):
         raise UnsafePathError(f"archive name contains unsafe component: {'/'.join(raw_parts)!r}")
     if any("\\" in part for part in raw_parts):
         raise UnsafePathError(f"archive name contains unsafe separator: {'/'.join(raw_parts)!r}")
