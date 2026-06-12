@@ -12,6 +12,9 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 
 硬约束：
 - 先查 repo 指令、git 状态、open issues、open PRs、CI、dirty worktree。
+- GitHub issue/PR queue 必须先输出 queue_gate 和 issue_to_pr_map，再输出 lane_map；不能只凭 MERGEABLE/CLEAN 或 open 列表开 worker。
+- queue_gate 必须包含每个 open PR 的分类：merge_ready / review_thread_blocked / ci_failed / conflict_blocked / stale_or_superseded / needs_human_decision。
+- issue_to_pr_map 必须先判断 open issue 是否已有覆盖 PR；优先收敛已有 PR，不要开竞争 PR。
 - 先写 intent_contract：goal / non_goals / done_when / merge_policy / remote_truth_required / data_collection。
 - 不要把 Codex threads 路由到 OMX/tmux。
 - 每个实现 lane 必须有 disjoint writable_files。
@@ -19,7 +22,44 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 - 高上下文文件 AGENTS.md/CLAUDE.md/settings/hooks 默认禁止修改。
 - 每个 PR merge 前必须有独立 thread review。
 - merge 前必须用 thread-aware GitHub 数据检查 reviewThreads.isResolved；open PR/issue 为空不等于评论闭环完成。
-- 输出 lane_map、依赖图、执行顺序、验证命令、stop_conditions、threads_run_log。
+- 输出 queue_gate、issue_to_pr_map、lane_map、依赖图、执行顺序、验证命令、stop_conditions、threads_run_log。
+```
+
+## Queue Gate Thread
+
+```text
+只读 Queue Gate thread。
+Repo: {{repo_path}}
+GitHub repo: {{owner_repo}}
+Target queue: {{queue_scope}}
+
+不要修改文件，不要发 GitHub 评论，不要关闭 issue/PR。
+请读取 repo 指令，并用当前 session 的 live remote state 完成队列门。
+
+必须检查：
+1. git fetch --prune 后的当前 branch、dirty files、unpushed commits、worktrees。
+2. open PRs 和 open issues。
+3. 每个 open PR 的 head SHA、merge state、check rollup。
+4. GraphQL reviewThreads.isResolved / isOutdated；普通 PR comments 不足以证明闭环。
+5. open issues 是否已有覆盖 PR、重复 PR、或 superseding work。
+
+输出：
+1. open_prs_count / open_issues_count
+2. PR classification table：
+   - merge_ready
+   - review_thread_blocked
+   - ci_failed
+   - conflict_blocked
+   - stale_or_superseded
+   - needs_human_decision
+3. issue_to_pr_map：covered issue -> PR；uncovered issue -> still actionable/backlog reason
+4. 推荐执行顺序，优先关闭已有 PR blocker
+5. top 1-3 items 的第一批 lane prompts
+6. stop_conditions
+
+规则：
+- MERGEABLE/CLEAN 不足以判定 merge_ready；必须同时有当前 head SHA、check rollup、merge state、GraphQL review-thread state。
+- review-gated queue 默认一次收敛一个 blocker，除非 writable_files 明确不重叠且 PR 不 stacked。
 ```
 
 ## Read-Only Planning Thread
@@ -35,14 +75,15 @@ Target: {{issue_or_pr_or_queue}}
 
 输出：
 1. 目标摘要
-2. 已完成映射和证据
-3. 未完成/风险
-4. 推荐处理动作和理由
-5. 可并行 worktree 拆分
-6. 每个 lane 的 writable_files 和 forbidden_files
-7. 必须运行的验证命令
-8. 不应在本轮强做的范围
-9. 建议的 failure_codes（如 stale_remote_state、duplicate_work_missed、missing_intent_contract）
+2. queue_gate 和 issue_to_pr_map（GitHub queue 必填；非 queue 说明 N/A）
+3. 已完成映射和证据
+4. 未完成/风险
+5. 推荐处理动作和理由
+6. 可并行 worktree 拆分
+7. 每个 lane 的 writable_files 和 forbidden_files
+8. 必须运行的验证命令
+9. 不应在本轮强做的范围
+10. 建议的 failure_codes（如 stale_remote_state、duplicate_work_missed、missing_intent_contract）
 ```
 
 ## Implementation Worker
@@ -132,7 +173,7 @@ Target: {{issue_or_pr_or_queue}}
 
 检查：
 1. PR 是否仍 open、非 draft、head 是否匹配 {{head_sha}}
-2. CI/checks 是否对当前 head 通过
+2. CI/checks 是否对当前 head 通过；MERGEABLE/CLEAN 或单个绿灯不足以证明可合并
 3. diff 是否只包含声明范围
 4. review findings 是否已解决
 5. GraphQL reviewThreads 是否无 unresolved actionable thread；不要只看普通 PR comments
@@ -203,6 +244,11 @@ No findings; safe to merge.
 - lanes_total
 - failure_codes
 - verification.fresh
+- remote_truth.open_prs
+- remote_truth.open_issues
+- remote_truth.checked_review_threads
+- local_state.dirty_worktrees
+- local_state.stale_branches
 - remote_closure.checked
 - outcome
 ```
