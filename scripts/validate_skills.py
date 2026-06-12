@@ -10,6 +10,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from skill_path_safety import UnsafePathError, safe_kebab_name, safe_output_path
+
 try:
     import yaml
 except ImportError:  # pragma: no cover - exercised only on minimal user systems.
@@ -415,6 +417,13 @@ def validate_entries(entries: list[SkillEntry]) -> list[str]:
     seen_frontmatter_names: dict[str, str] = {}
 
     for entry in entries:
+        try:
+            safe_kebab_name(entry.install_name, kind="install name")
+            safe_output_path(ROOT, entry.path, kind="skill registry path")
+        except UnsafePathError as exc:
+            messages.append(error(f"{entry.path} has unsafe registry path or install name: {exc}"))
+            continue
+
         path = ROOT / entry.path
         frontmatter, parse_messages = parse_frontmatter(path)
         messages.extend(parse_messages)
@@ -681,7 +690,9 @@ def main() -> int:
     entries = discover_skills()
     messages = validate_entries(entries)
 
-    if args.write:
+    validation_errors = [message for message in messages if message.startswith("ERROR:")]
+
+    if args.write and not validation_errors:
         write_generated_files(entries)
 
     if args.check:
