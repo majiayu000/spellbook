@@ -139,6 +139,7 @@ Recommended fields:
       "worktree": "/tmp/repo-worker-1",
       "writable_files": ["src/example.rs"],
       "files_changed": ["src/example.rs"],
+      "verification_scope": "targeted",
       "verification": ["cargo test example"],
       "result": "passed|blocked|failed"
     }
