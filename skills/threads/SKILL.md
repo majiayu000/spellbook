@@ -22,7 +22,7 @@ Choose one mode:
 
 Prefer `single_agent` for one-file fixes, simple questions, or tasks where the next step depends on one immediate result. Use parallel lanes only when the work can be split by independent targets or disjoint writable files.
 
-For any implementation mode, start with a lane map before spawning workers.
+For any implementation mode, start with a lane map before spawning workers. For GitHub issue/PR queues, complete the Queue Gate first; do not create worker lanes until `queue_gate` and `issue_to_pr_map` are written.
 
 ## Operating Contract
 
@@ -45,7 +45,56 @@ Evidence-backed pushback: choose `single_agent` when parallelism adds coordinati
 
 Feedback loop: record notable failures in `threads_run_log`, classify the failure mode, tighten the lane prompt or split, then retry only after the hypothesis changes.
 
-If the user asks for issue/PR queue handling, `remote_truth_required` is `yes`: run `git fetch --prune`, inspect open PRs/issues, and search for duplicate or superseding work before planning lanes.
+If the user asks for issue/PR queue handling, `remote_truth_required` is `yes`: run `git fetch --prune`, inspect open PRs/issues, run the Queue Gate, and search for duplicate or superseding work before planning lanes.
+
+## Queue Gate
+
+For GitHub issue/PR queue handling, write a `queue_gate` block before the lane map and before any implementation worker is launched. This is mandatory even when all open PRs look `MERGEABLE` or `CLEAN`.
+
+The gate must use live state from the current session:
+
+```text
+queue_gate:
+- fetched_remote:
+- current_branch:
+- dirty_files:
+- unpushed_commits:
+- worktrees:
+- open_prs:
+- open_issues:
+- pr_classification:
+  - PR:
+    head_sha:
+    merge_state:
+    check_rollup:
+    review_threads:
+    classification:
+    reason:
+- issue_to_pr_map:
+  - issue:
+    covering_pr:
+    status: covered | uncovered | stale_or_superseded | needs_human_decision
+    reason:
+- recommended_order:
+- stop_conditions:
+```
+
+Classify every open PR as exactly one of:
+
+- `merge_ready`
+- `review_thread_blocked`
+- `ci_failed`
+- `conflict_blocked`
+- `stale_or_superseded`
+- `needs_human_decision`
+
+Rules:
+
+- `MERGEABLE` or `CLEAN` is never sufficient by itself. A PR is `merge_ready` only when the current head SHA, check rollup, merge state, and GraphQL review-thread state are all fresh and clean.
+- Query review threads with a thread-aware source such as GraphQL `reviewThreads { isResolved isOutdated }`; flat PR comments are not sufficient.
+- Map open issues to existing PRs before opening new implementation lanes. Prefer fixing, reviewing, or merging an existing covering PR over opening a competing PR.
+- For review-gated queues, work one blocker to closure unless writable file ownership is clearly disjoint and the PRs are not stacked.
+- Keep remote truth separate from local stale or dirty worktree state.
 
 ## Lane Map
 
@@ -72,6 +121,7 @@ lanes:
 Rules:
 
 - Search first: inspect repo state, open issues/PRs, current branch, dirty files, and applicable instructions before assigning work.
+- For GitHub queues, the lane map must be based on the preceding `queue_gate`; no worker lane may start from open issue/PR lists alone.
 - Keep planners and reviewers read-only.
 - Give implementation workers disjoint writable paths. Never assign two workers the same writable file.
 - Put high-context files such as `AGENTS.md`, `CLAUDE.md`, settings, hooks, and setup scripts in `forbidden_files` unless the user explicitly asks to modify them.
@@ -116,7 +166,8 @@ Do not merge from worker output alone. Merge only after:
 
 - The PR/diff has at least one independent review lane.
 - Blocking findings are fixed or explicitly ruled out with evidence.
-- Required checks are fresh and tied to the current head.
+- Required checks are fresh and tied to the current head SHA.
+- Current merge state is clean. `MERGEABLE`, `CLEAN`, or a green check alone is not sufficient without the matching current head SHA, full check rollup, merge state, and GraphQL review-thread state.
 - GitHub review-thread state is checked with a thread-aware source such as GraphQL `reviewThreads { isResolved isOutdated }`; flat PR comments are not sufficient.
 - The PR has no unresolved actionable review threads, and any fixed review feedback has an explicit reply or resolved thread unless the user forbids GitHub writes.
 - If auto-review can arrive after marking a draft ready or after CI finishes, wait briefly and re-check comments/review threads before merging.
@@ -149,6 +200,13 @@ remaining:
 - blocker_or_risk:
   next_action:
 
+remote_truth:
+- open_prs:
+- open_issues:
+- checked_pr_heads:
+- checked_review_threads:
+- checked_ci:
+
 local_state:
 - dirty_worktree:
 - stale_worktree:
@@ -163,7 +221,7 @@ threads_run_log:
 - log_path:
 ```
 
-Separate remote truth from local machine state. State when a branch is merged remotely but local main is stale, dirty, or diverged.
+Separate remote truth from local machine state in all GitHub queue final reports. State when a branch is merged remotely but local main is stale, dirty, diverged, or a worktree branch is no longer tied to an open remote branch.
 
 For GitHub queue work, include remote closure fields:
 
