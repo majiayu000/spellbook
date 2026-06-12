@@ -65,11 +65,11 @@ When both frontend and backend exist (e.g., React + FastAPI, Next.js + Go).
 
 | # | Agent | Type | Scope (merged dimensions) |
 |---|-------|------|---------------------------|
-| 1 | **Frontend-Backend Contract** | `code-reviewer` | Type consistency (field names, types, missing fields) + Rendering pipeline (layout/block/card routing completeness, dead slots, unrendered fields) + Serialization boundaries (models that silently drop fields). This agent reads BOTH sides and traces data across the API boundary. |
-| 2 | **Data Integrity & Flow** | `code-reviewer` | Data pipeline end-to-end: from input through every transformation layer to output. Covers: field resolver filters, serialization/deserialization, model_validate/model_dump, cache read/write symmetry, registry key-set alignment (sole owner — Agent 4 must not re-check). Also covers: declaration-execution gaps (registered but unwired handlers, enum without config), and Concurrency & Async Hygiene when an async runtime is detected. |
-| 3 | **Error Handling & Security** | `security-reviewer` | Exception patterns (bare except, debug-level errors, warning+fallback), security (hardcoded secrets, injection, unsafe deserialization), silent degradation (error paths that produce user-visible wrong output instead of failing), classification of Phase 0 dependency-audit output. |
-| 4 | **Architecture & Code Quality** | `architect` | Layer violations, circular dependencies, god objects (files >800 lines), code duplication (parallel systems, scattered mapping tables), extension cost analysis (how many files to add a new type), DI pattern consistency, test quality (coverage gaps, weakened assertions, skip markers, stale tests). |
-| 5 | **Config & Persistence** | `database-reviewer` | Config completeness (template/schema vs code expectations, conflicting defaults), cache key completeness (missing code version dimension), DB schema consistency, temp file cleanup, state persistence across restarts. |
+| 1 | **Frontend-Backend Contract** | `senior-code-reviewer` | Type consistency (field names, types, missing fields) + Rendering pipeline (layout/block/card routing completeness, dead slots, unrendered fields) + Serialization boundaries (models that silently drop fields). This agent reads BOTH sides and traces data across the API boundary. |
+| 2 | **Data Integrity & Flow** | `senior-code-reviewer` | Data pipeline end-to-end: from input through every transformation layer to output. Covers: field resolver filters, serialization/deserialization, model_validate/model_dump, cache read/write symmetry, registry key-set alignment (sole owner — Agent 4 must not re-check). Also covers: declaration-execution gaps (registered but unwired handlers, enum without config), and Concurrency & Async Hygiene when an async runtime is detected. |
+| 3 | **Error Handling & Security** | `security-auditor` | Exception patterns (bare except, debug-level errors, warning+fallback), security (hardcoded secrets, injection, unsafe deserialization), silent degradation (error paths that produce user-visible wrong output instead of failing), classification of Phase 0 dependency-audit output. |
+| 4 | **Architecture & Code Quality** | `code-archaeologist` | Layer violations, circular dependencies, god objects (files >800 lines), code duplication (parallel systems, scattered mapping tables), extension cost analysis (how many files to add a new type), DI pattern consistency, test quality (coverage gaps, weakened assertions, skip markers, stale tests). |
+| 5 | **Config & Persistence** | `code-archaeologist` | Config completeness (template/schema vs code expectations, conflicting defaults), cache key completeness (missing code version dimension), DB schema consistency, temp file cleanup, state persistence across restarts. |
 
 ---
 
@@ -79,10 +79,10 @@ When only backend exists (Python API, Rust service, Go microservice, etc.)
 
 | # | Agent | Type | Scope |
 |---|-------|------|-------|
-| 1 | **API Contract & Data Integrity** | `code-reviewer` | API schema vs internal models, serialization boundaries, data pipeline tracing, field dropping, registry key-set alignment, declaration-execution gaps, concurrency hygiene when async runtime detected. |
-| 2 | **Error Handling & Security** | `security-reviewer` | Same as full-stack Agent 3. |
-| 3 | **Architecture & Code Quality** | `architect` | Same as full-stack Agent 4. |
-| 4 | **Config & Persistence** | `database-reviewer` | Same as full-stack Agent 5. |
+| 1 | **API Contract & Data Integrity** | `senior-code-reviewer` | API schema vs internal models, serialization boundaries, data pipeline tracing, field dropping, registry key-set alignment, declaration-execution gaps, concurrency hygiene when async runtime detected. |
+| 2 | **Error Handling & Security** | `security-auditor` | Same as full-stack Agent 3. |
+| 3 | **Architecture & Code Quality** | `code-archaeologist` | Same as full-stack Agent 4. |
+| 4 | **Config & Persistence** | `code-archaeologist` | Same as full-stack Agent 5. |
 
 ---
 
@@ -92,9 +92,9 @@ When only frontend exists (React SPA, Vue app, etc.)
 
 | # | Agent | Type | Scope |
 |---|-------|------|-------|
-| 1 | **Component Architecture & Rendering** | `code-reviewer` | Type routing completeness, component registration gaps, dead props/slots, state management consistency, API consumption patterns, minimal accessibility checks (alt/label/keyboard reachability). |
-| 2 | **Error Handling & Code Quality** | `code-reviewer` | Unhandled promise rejections, error boundaries, catch-and-ignore patterns, god components, code duplication, test quality, dependency-audit classification. |
-| 3 | **Config & Build** | `general-purpose` | Build config consistency, env variable management, bundle analysis, dead dependencies. |
+| 1 | **Component Architecture & Rendering** | `senior-code-reviewer` | Type routing completeness, component registration gaps, dead props/slots, state management consistency, API consumption patterns, minimal accessibility checks (alt/label/keyboard reachability). |
+| 2 | **Error Handling & Code Quality** | `senior-code-reviewer` | Unhandled promise rejections, error boundaries, catch-and-ignore patterns, god components, code duplication, test quality, dependency-audit classification. |
+| 3 | **Config & Build** | `code-archaeologist` | Build config consistency, env variable management, bundle analysis, dead dependencies. |
 
 ---
 

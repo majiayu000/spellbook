@@ -21,6 +21,7 @@ Every agent MUST end its report with findings in this exact Markdown table, one 
   - Low: informational / style-level findings
 - files: every involved `path:line`, comma-separated (this is the dedup key — mandatory)
 - evidence: code snippet ≤3 lines
+- Table cells must stay parseable: replace newlines inside cells with `<br>` and escape literal pipe characters as `\|` in every cell, especially `evidence`.
 - evidence_type: `observed` (directly visible in code) / `inferred` (cross-file reasoning)
 - confidence: high / medium / low (inference chains >2 steps MUST be ≤ medium)
 - Max 25 findings. If zero findings, write `NO_FINDINGS` and list the patterns you searched.
@@ -32,7 +33,7 @@ Every agent MUST end its report with findings in this exact Markdown table, one 
 
 ## Full-Stack Configuration (5 agents)
 
-### Agent 1: Frontend-Backend Contract (code-reviewer)
+### Agent 1: Frontend-Backend Contract (senior-code-reviewer)
 
 ```
 Deep audit of {TARGET_DIR} for frontend-backend contract consistency.
@@ -67,7 +68,7 @@ For every finding, `files` must include BOTH sides (frontend AND backend path:li
 [Unified Output Contract]
 ```
 
-### Agent 2: Data Integrity & Flow (code-reviewer)
+### Agent 2: Data Integrity & Flow (senior-code-reviewer)
 
 ```
 Deep audit of {TARGET_DIR} for data pipeline integrity.
@@ -139,7 +140,7 @@ For data-flow findings, `files` must include the full path (source → transform
 [Unified Output Contract]
 ```
 
-### Agent 3: Error Handling & Security (security-reviewer)
+### Agent 3: Error Handling & Security (security-auditor)
 
 ```
 Deep audit of {TARGET_DIR} for exception handling and security issues.
@@ -183,7 +184,7 @@ Mark these findings evidence_type = observed (tool output is evidence).
 [Unified Output Contract]
 ```
 
-### Agent 4: Architecture & Code Quality (architect)
+### Agent 4: Architecture & Code Quality (code-archaeologist)
 
 ```
 Deep audit of {TARGET_DIR} for architectural issues and technical debt.
@@ -224,12 +225,12 @@ Note: Registry key-set alignment is owned by the Data Integrity agent — do not
 1. Multiple dependency injection patterns in use? (global state, factory, constructor mixed)
 2. Inconsistent error handling patterns across modules
 
-End with an "Extension Cost" table in addition to the findings table.
+If useful, include an "Extension Cost" table before the final findings table. The report must still end with the Unified Output Contract findings table; do not place any extra table or prose after it.
 
 [Unified Output Contract]
 ```
 
-### Agent 5: Config & Persistence (database-reviewer)
+### Agent 5: Config & Persistence (code-archaeologist)
 
 ```
 Deep audit of {TARGET_DIR} for configuration and persistence issues.
@@ -270,7 +271,7 @@ Tech stack: {STACK_INFO}
 
 Use Agent 3, 4, 5 from the full-stack config unchanged. Agent 1 below replaces both full-stack Agent 1 and Agent 2 — its content is fully inlined so the prompt works with zero external context:
 
-### Agent 1: API Contract & Data Integrity (code-reviewer)
+### Agent 1: API Contract & Data Integrity (senior-code-reviewer)
 
 ```
 Deep audit of {TARGET_DIR} for API contract and data integrity.
@@ -326,7 +327,7 @@ For data-flow findings, `files` must include the full path (source → transform
 
 ## Frontend-Only Configuration (3 agents)
 
-### Agent 1: Component Architecture & Rendering (code-reviewer)
+### Agent 1: Component Architecture & Rendering (senior-code-reviewer)
 
 ```
 Deep audit of {TARGET_DIR} for component architecture and rendering integrity.
@@ -346,7 +347,7 @@ Tech stack: {STACK_INFO}
 [Unified Output Contract]
 ```
 
-### Agent 2: Error Handling & Code Quality (code-reviewer)
+### Agent 2: Error Handling & Code Quality (senior-code-reviewer)
 
 ```
 Deep audit of {TARGET_DIR} for error handling and code quality.
@@ -367,7 +368,7 @@ Tech stack: {STACK_INFO}
 [Unified Output Contract]
 ```
 
-### Agent 3: Config & Build (general-purpose)
+### Agent 3: Config & Build (code-archaeologist)
 
 ```
 Deep audit of {TARGET_DIR} for build configuration and dependency hygiene.
