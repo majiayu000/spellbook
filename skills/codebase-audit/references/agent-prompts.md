@@ -1,14 +1,39 @@
 # Agent Prompt Templates
 
-**CRITICAL: All agents MUST be launched with `model="opus"`.** Never downgrade to sonnet or haiku.
+**Model policy: see SKILL.md Core Principles #1** (highest-tier model for every audit agent).
 
-Replace `{TARGET_DIR}` and `{STACK_INFO}` based on detected stack. Adapt technology-specific sections accordingly.
+Replace `{TARGET_DIR}` and `{STACK_INFO}` based on detected stack. Adapt technology-specific sections accordingly. Every template MUST be sent self-contained — sub-agents cannot see SKILL.md or this file's other sections, so always append the Unified Output Contract below to every prompt.
+
+---
+
+## Unified Output Contract (append to EVERY agent prompt)
+
+```
+Every agent MUST end its report with findings in this exact Markdown table, one row per finding:
+
+| severity | title | files | evidence | evidence_type | confidence | impact | fix |
+|---|---|---|---|---|---|---|---|
+
+- severity: Critical / High / Medium / Low — use this rubric:
+  - Critical: data loss, rendering failure, security vulnerability, complete feature breakage affecting users NOW
+  - High: silent degradation (user sees wrong/incomplete output), type mismatch causing truncation, missing config causing empty output, architectural violations blocking development
+  - Medium: code duplication, inconsistent patterns, suboptimal error handling, tech debt that slows development
+  - Low: informational / style-level findings
+- files: every involved `path:line`, comma-separated (this is the dedup key — mandatory)
+- evidence: code snippet ≤3 lines
+- Table cells must stay parseable: replace newlines inside cells with `<br>` and escape literal pipe characters as `\|` in every cell, especially `evidence`.
+- evidence_type: `observed` (directly visible in code) / `inferred` (cross-file reasoning)
+- confidence: high / medium / low (inference chains >2 steps MUST be ≤ medium)
+- Max 25 findings. If zero findings, write `NO_FINDINGS` and list the patterns you searched.
+- Write all finding descriptions in Chinese; keep code identifiers, paths, and error messages as-is.
+- No prose summaries outside the table.
+```
 
 ---
 
 ## Full-Stack Configuration (5 agents)
 
-### Agent 1: Frontend-Backend Contract (reviewer)
+### Agent 1: Frontend-Backend Contract (senior-code-reviewer)
 
 ```
 Deep audit of {TARGET_DIR} for frontend-backend contract consistency.
@@ -38,10 +63,12 @@ For each model that participates in serialization/deserialization:
 1. Does it silently drop unknown fields? (Pydantic extra="ignore", serde default, Zod strict)
 2. Is it on a cache/LLM/API hot path where field dropping causes user-visible issues?
 
-Output: Findings sorted by severity. For each: both file:line references (frontend AND backend).
+For every finding, `files` must include BOTH sides (frontend AND backend path:line).
+
+[Unified Output Contract]
 ```
 
-### Agent 2: Data Integrity & Flow (code-reviewer)
+### Agent 2: Data Integrity & Flow (senior-code-reviewer)
 
 ```
 Deep audit of {TARGET_DIR} for data pipeline integrity.
@@ -79,7 +106,7 @@ Trace data from input to output through every transformation layer:
 3. Generation mode declarations (e.g., "deterministic" vs "llm") that contradict code behavior
 4. Registered but never-called methods (persist/save/restore that no startup code invokes)
 
-### Registry Coverage Alignment (critical — easy to miss)
+### Registry Coverage Alignment (critical — easy to miss; you are the SOLE owner of this check)
 This is the hardest class of bug to find: two dicts/maps/registries that SHOULD have the same key set but DON'T. The system works for the keys that overlap but silently does nothing for the missing ones.
 
 Pattern to search for:
@@ -92,16 +119,28 @@ Examples of what this catches:
 - SectionType enum has 25 values but fieldConfig only has 20 → 5 sections get empty data from FieldResolver
 - DETERMINISTIC_SECTION_BUILDERS has 18 entries but ROUTABLE_SECTION_BUILDERS has 14 → 4 sections can't route
 
-For each pair of registries that share a key type, output:
-- Registry A: file:line, N keys
-- Registry B: file:line, M keys
+For each pair of registries that share a key type, the finding must list:
+- Registry A: file:line, N keys / Registry B: file:line, M keys
 - Missing in B: [list of keys]
 - Impact: what happens when a key is in A but not B
 
-Output: Each finding with the full data path (source file:line → transform file:line → destination file:line).
+### Concurrency & Async Hygiene (only when Phase 0 detected an async runtime)
+Only report statically provable items with file:line evidence. NO speculative performance guesses.
+1. Lock guards held across .await (std::sync::Mutex/RwLock guard crossing an await point)
+2. tokio::spawn with discarded JoinHandle / no panic propagation
+3. unbounded_channel and unbounded queues on hot paths
+4. Arc<Mutex<HashMap>> hot write contention
+5. Go: goroutines with no exit path; concurrent map writes
+6. Blocking calls inside async context: std::fs, reqwest::blocking, thread::sleep
+7. Per-item DB/HTTP calls inside loops (N+1)
+8. Grow-only caches/collections (insert with no eviction)
+
+For data-flow findings, `files` must include the full path (source → transform → destination).
+
+[Unified Output Contract]
 ```
 
-### Agent 3: Error Handling & Security (security-reviewer)
+### Agent 3: Error Handling & Security (security-auditor)
 
 ```
 Deep audit of {TARGET_DIR} for exception handling and security issues.
@@ -135,10 +174,17 @@ The most dangerous pattern: errors that produce WRONG output instead of failing.
 6. Sensitive data in logs
 7. CORS misconfiguration (origins: ["*"] in production)
 
-Output: Sorted by severity, each with file:line and code snippet.
+### Dependency Audit Classification (when Phase 0 output is provided)
+Classify the attached dependency-audit tool output:
+- Critical = RCE-grade CVE with PoC on a reachable path
+- High = known vuln on a reachable path
+- Medium = known vuln, reachability unclear
+Mark these findings evidence_type = observed (tool output is evidence).
+
+[Unified Output Contract]
 ```
 
-### Agent 4: Architecture & Code Quality (architect)
+### Agent 4: Architecture & Code Quality (code-archaeologist)
 
 ```
 Deep audit of {TARGET_DIR} for architectural issues and technical debt.
@@ -167,18 +213,24 @@ Tech stack: {STACK_INFO}
 Calculate: how many files must change to add a new [type/variant/feature]?
 List the exact files for the most common extension operation.
 
-### Registry Cross-Reference
-Find all module-level dicts/maps that act as registries for the same key type. Compare their key sets. This catches "works for 10 items but silently skips 14" bugs — the hardest to find because no error is thrown.
+Note: Registry key-set alignment is owned by the Data Integrity agent — do not re-check it.
+
+### Test Quality
+1. Business-logic modules with no matching test file / #[cfg(test)] block — list them
+2. Weakened assertions: assertTrue wrapping, containment instead of exact match
+3. Skip markers without justification: pytest.mark.skip, test.skip, #[ignore]
+4. Test-stale: tests referencing signatures that no longer match the code under test
 
 ### DI & Pattern Consistency
 1. Multiple dependency injection patterns in use? (global state, factory, constructor mixed)
 2. Inconsistent error handling patterns across modules
 
-Output: Each finding with [P0/P1/P2] severity, file(s), and impact description.
-End with an "Extension Cost" table.
+If useful, include an "Extension Cost" table before the final findings table. The report must still end with the Unified Output Contract findings table; do not place any extra table or prose after it.
+
+[Unified Output Contract]
 ```
 
-### Agent 5: Config & Persistence (database-reviewer)
+### Agent 5: Config & Persistence (code-archaeologist)
 
 ```
 Deep audit of {TARGET_DIR} for configuration and persistence issues.
@@ -210,67 +262,125 @@ Tech stack: {STACK_INFO}
 4. File paths — hardcoded relative paths that depend on cwd?
 5. TTL cleanup — consistent semantics across all stores?
 
-Output: Sorted by severity with file:line references.
+[Unified Output Contract]
 ```
 
 ---
 
 ## Backend-Only Configuration (4 agents)
 
-Use Agent 2, 3, 4, 5 from full-stack config. Replace Agent 1 with:
+Use Agent 3, 4, 5 from the full-stack config unchanged. Agent 1 below replaces both full-stack Agent 1 and Agent 2 — its content is fully inlined so the prompt works with zero external context:
 
-### Agent 1: API Contract & Data Integrity (code-reviewer)
+### Agent 1: API Contract & Data Integrity (senior-code-reviewer)
 
 ```
 Deep audit of {TARGET_DIR} for API contract and data integrity.
 
 Tech stack: {STACK_INFO}
 
-Combines: API schema consistency, serialization boundaries, data flow tracing, declaration-execution gaps.
-
+### API Contract
 1. API response models vs internal domain models — field mismatches?
 2. Serialization models (Pydantic/serde/Zod) — do they silently drop fields?
-3. Data pipeline tracing (same as full-stack Agent 2)
-4. Declaration-execution gaps (same as full-stack Agent 2)
+   (Pydantic extra="ignore", serde missing deny_unknown_fields, struct tags missing)
+3. Enum/union values — all variants handled at every consumption site?
 
-Output: Each finding with full data path and severity.
+### Data Flow Tracing
+Trace data from input to output through every transformation layer:
+1. Input → extraction/validation — where do fields first get filtered?
+   Field resolvers that only pass declared fields; schema validators that strip unknown fields.
+2. Extraction → context building — fields injected by orchestrator but not declared in
+   config get silently dropped by resolvers; watch for TWO parallel injection mechanisms.
+3. Context → builder/generator — search for context.get("field_name") calls and
+   cross-reference with what's actually in the context at that point.
+4. Builder → serialization — model_dump(exclude_none=True) drops None fields;
+   are all by_alias names correct?
+5. Serialization → cache — cache key completeness (code version? prompt version?);
+   cache deserialization wrapped in try/except or crashes on schema change?
+
+### Declaration-Execution Integrity
+1. Registered handlers/builders without corresponding implementation
+2. Enum values without config entries, config entries without code
+3. Generation mode declarations contradicting code behavior
+4. Registered but never-called methods (persist/save/restore that no startup code invokes)
+
+### Registry Coverage Alignment (you are the SOLE owner of this check)
+Find all module-level dicts/maps/match statements sharing a key type; compare key sets
+pairwise; flag any registry with fewer keys than the source-of-truth registry. For each
+pair, list both file:line locations, the missing keys, and the runtime impact.
+
+### Concurrency & Async Hygiene (only when Phase 0 detected an async runtime)
+Only report statically provable items. NO speculative performance guesses.
+1. Lock guards held across .await
+2. tokio::spawn with discarded JoinHandle
+3. unbounded channels/queues on hot paths
+4. Go: goroutines with no exit path; concurrent map writes
+5. Blocking calls inside async context (std::fs, reqwest::blocking, thread::sleep)
+6. Per-item DB/HTTP calls inside loops (N+1)
+7. Grow-only caches/collections
+
+For data-flow findings, `files` must include the full path (source → transform → destination).
+
+[Unified Output Contract]
 ```
 
 ---
 
 ## Frontend-Only Configuration (3 agents)
 
-### Agent 1: Component Architecture & Rendering (reviewer)
+### Agent 1: Component Architecture & Rendering (senior-code-reviewer)
 
 ```
-Deep audit of {TARGET_DIR} for component architecture.
+Deep audit of {TARGET_DIR} for component architecture and rendering integrity.
 
-1. Type routing completeness — all possible types have renderers?
+Tech stack: {STACK_INFO}
+
+1. Type routing completeness — all possible types have renderers? What happens with
+   unknown types: crash, blank, or graceful fallback?
 2. Component registration — dead components, missing registrations?
+   Check switch(type)/if-else routing chains for exhaustiveness.
 3. Props consumed but never provided? Props provided but never consumed?
 4. State management — inconsistent patterns, prop drilling, stale state?
 5. API consumption — error handling for API calls, loading states, empty states?
+6. Minimal accessibility pass: images without alt, form controls without labels,
+   interactive elements unreachable by keyboard.
 
-Output: Sorted by severity.
+[Unified Output Contract]
 ```
 
-### Agent 2: Error Handling & Code Quality (code-reviewer)
+### Agent 2: Error Handling & Code Quality (senior-code-reviewer)
 
 ```
-1. Unhandled promise rejections, empty catch blocks
-2. Error boundaries coverage
-3. God components (>300 lines), code duplication
-4. Accessibility issues
+Deep audit of {TARGET_DIR} for error handling and code quality.
 
-Output: Sorted by severity.
+Tech stack: {STACK_INFO}
+
+1. Unhandled promise rejections — search: .then( without .catch, async functions
+   without try/catch at call sites
+2. Empty catch blocks — search: catch(e) {}, .catch(() => {}), catch (_)
+3. Error boundaries — list route-level components without an ErrorBoundary wrapper
+4. God components (>300 lines) — list each with line count
+5. Code duplication — parallel components doing the same job
+6. Test quality — components with logic but no test file; weakened assertions;
+   test.skip without justification
+7. Dependency audit classification (when Phase 0 npm audit output is provided):
+   Critical = RCE-grade CVE on a reachable path; High = known vuln on a reachable path
+
+[Unified Output Contract]
 ```
 
-### Agent 3: Config & Build (reviewer)
+### Agent 3: Config & Build (code-archaeologist)
 
 ```
-1. Build config consistency, dead dependencies
-2. Environment variable management
-3. Bundle size issues (large imports, tree-shaking failures)
+Deep audit of {TARGET_DIR} for build configuration and dependency hygiene.
 
-Output: Sorted by severity.
+Tech stack: {STACK_INFO}
+
+1. Build config consistency — conflicting settings across tsconfig/vite/webpack configs
+2. Dead dependencies — packages in package.json never imported
+3. Environment variable management — env vars referenced in code but missing from
+   .env.example; secrets committed in env files
+4. Bundle size issues — large imports (full lodash/moment), tree-shaking failures,
+   missing code splitting on routes
+
+[Unified Output Contract]
 ```
