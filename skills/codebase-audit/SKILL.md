@@ -45,7 +45,7 @@ After stack detection, run the matching dependency audit from the target project
 ```
 - Rust → cd "{TARGET_DIR}" && cargo audit
 - Node → cd "{TARGET_DIR}" && npm audit
-- Python → cd "{TARGET_DIR}" && if [ -f requirements.txt ]; then pip-audit -r requirements.txt; else pip-audit .; fi
+- Python → cd "{TARGET_DIR}" && if [ -f pyproject.toml ] || [ -f setup.py ]; then pip-audit .; [ -f requirements.txt ] && pip-audit -r requirements.txt; elif [ -f requirements.txt ]; then pip-audit -r requirements.txt; else pip-audit .; fi
 - Go → cd "{TARGET_DIR}" && govulncheck ./...
 ```
 
