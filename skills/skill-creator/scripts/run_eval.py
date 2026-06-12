@@ -6,6 +6,7 @@ for a set of queries. Outputs results as JSON.
 """
 
 import argparse
+import importlib.util
 import json
 import os
 import select
@@ -17,6 +18,24 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 from scripts.utils import parse_skill_md
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+PATH_SAFETY_PATH = SCRIPT_DIR / "path_safety.py"
+
+
+def load_path_safety():
+    spec = importlib.util.spec_from_file_location(
+        "spellbook_path_safety",
+        PATH_SAFETY_PATH,
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not load path safety helpers from {PATH_SAFETY_PATH}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+path_safety = load_path_safety()
 
 
 def find_project_root() -> Path:
@@ -49,9 +68,14 @@ def run_single_query(
     full assistant message, which only arrives after tool execution.
     """
     unique_id = uuid.uuid4().hex[:8]
-    clean_name = f"{skill_name}-skill-{unique_id}"
+    safe_skill_name = path_safety.safe_kebab_name(skill_name, kind="skill name")
+    clean_name = f"{safe_skill_name}-skill-{unique_id}"
     project_commands_dir = Path(project_root) / ".claude" / "commands"
-    command_file = project_commands_dir / f"{clean_name}.md"
+    command_file = path_safety.safe_output_path(
+        project_commands_dir,
+        f"{clean_name}.md",
+        kind="command file",
+    )
 
     try:
         project_commands_dir.mkdir(parents=True, exist_ok=True)
