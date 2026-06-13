@@ -6,9 +6,13 @@ A lightweight framework for coordinating work across multiple AI agents (Claude,
 
 ## Quick Start
 
-1. **Copy the template**:
+1. **Create a handoff from the bundled template**:
+   Ask your agent to load this skill's `templates/handoff-template.yaml` and write it to `.claude/handoffs/my-task.yaml`.
+
+   From a Spellbook checkout, you can run:
    ```bash
-   cp templates/handoff-template.yaml .claude/handoffs/my-task.yaml
+   mkdir -p .claude/handoffs
+   cp skills/multi-model-orchestrator/templates/handoff-template.yaml .claude/handoffs/my-task.yaml
    ```
 
 2. **Fill in your goal and subtasks** — describe what you want to accomplish
@@ -233,13 +237,13 @@ When using Claude Code interactively:
 
 ## Integration with Codex
 
-Codex can read and manage handoffs:
+Codex can work from handoffs when the task is passed through `codex exec`:
 
 ```bash
-codex execute .claude/handoffs/task.yaml --subtask task-1 --agent opus
+codex exec "Read .claude/handoffs/task.yaml. Execute subtask task-1 only. Return the result, blockers, files changed, and verification evidence."
 ```
 
-(Optional automation — handoffs work without it.)
+(Optional CLI workflow — handoffs work without it.)
 
 ## License
 

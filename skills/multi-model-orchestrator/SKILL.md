@@ -161,7 +161,7 @@ I have a complex goal that needs to be decomposed into subtasks for different ag
 
 Goal: [copy your goal from handoff]
 
-Here's my context: [copy execution.context from handoff]
+Here's my context: [copy goal.context from handoff]
 
 Please decompose this into 3-5 concrete subtasks that can be executed in parallel or sequence.
 For each subtask:
@@ -254,14 +254,19 @@ If you want automation, see "Advanced: Handoff Sync" below.
 
 ## Using with Codex
 
-Codex can read and modify handoff documents directly:
+Codex does not have handoff-specific subcommands. Use `codex exec` with a focused prompt that names the handoff file and the exact subtask:
 
-```
-$ codex analyze .claude/handoffs/task.yaml --format subtasks
-$ codex execute .claude/handoffs/task.yaml --task task-1 --executor opus
+```bash
+codex exec "Read .claude/handoffs/task.yaml. Execute subtask task-1 only. Return the result, blockers, files changed, and verification evidence."
 ```
 
-(Optional tool — the core skill works without it.)
+For decomposition:
+
+```bash
+codex exec "Read .claude/handoffs/task.yaml. Propose 3-5 YAML subtasks using goal.summary, goal.context, and goal.acceptance_criteria. Do not edit files."
+```
+
+(Optional CLI workflow — the core skill works without it.)
 
 ---
 

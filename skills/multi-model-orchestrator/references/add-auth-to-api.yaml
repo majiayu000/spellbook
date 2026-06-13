@@ -368,14 +368,14 @@ feedback:
 
     What worked well:
     - Clear design upfront prevented rework
-    - Parallel execution of middleware + endpoints (tasks 2 and 3)
+    - Clear sequencing from middleware to endpoint implementation prevented contract drift
     - Haiku effectively handled the endpoint protection
 
     Unexpected learnings:
     - Redis for refresh token storage was necessary for single-use tokens
     - Rate limiting on login became important (brute force protection)
 
-    The task took 5 execution rounds (parallel where possible)
+    The task took 5 execution rounds, with dependent tasks sequenced and independent review/validation work parallelized where possible
     estimated timeline: 3-4 hours total
     actual timeline: 3 hours
 
