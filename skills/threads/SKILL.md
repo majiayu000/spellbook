@@ -35,7 +35,7 @@ For any implementation mode, start with a lane map before spawning workers. For 
 
 ## Explicit Thread Dispatch Gate
 
-When the user explicitly asks for threads, subagents, "开几个子 agent", or a GitHub issue/PR queue that the skill classifies as `execute_direct`, `review_only`, or `research_spec`, native dispatch is required whenever native subagent tools are available.
+When the user explicitly asks for threads, subagents, "开几个子 agent", or a GitHub issue/PR queue that the skill classifies as `plan_only`, `execute_direct`, `review_only`, or `research_spec`, native dispatch is required whenever native subagent tools are available.
 
 Record this gate before implementation, review, or merge work:
 
@@ -44,11 +44,14 @@ thread_dispatch_gate:
 - explicit_thread_request: yes | no
 - native_subagents: available | unavailable
 - spawn_requirement: required | optional | unavailable
+- fallback_mode: single_agent | prompt_pack_only | none
 - planned_native_threads:
   - id:
     role:
     target:
     write_scope: read_only | disjoint_writable | none
+    spawn_status: planned | spawned | skipped
+    no_spawn_reason:
 - native_thread_evidence:
     user_requested_native_threads: yes | no
     spawned_agents:
@@ -66,6 +69,7 @@ Rules:
 
 - If `explicit_thread_request: yes`, `native_subagents: available`, and `spawn_requirement: required`, spawn at least one bounded native subagent before claiming the run is using threads.
 - `native_subagents: available` plus `fallback_mode: none` is valid only when `native_thread_evidence.spawned_agents` contains at least one real agent/thread ID.
+- Every `planned_native_threads` lane must have a matching `native_thread_evidence.spawned_agents[].lane_id` or a lane-level `no_spawn_reason`; spawning one native thread does not justify running the remaining planned lanes serially.
 - A main-thread lane is a coordinator lane, not a native thread. Do not count the coordinator as `native_thread_evidence.spawned_agents`.
 - If no native thread is spawned, set `fallback_mode: single_agent` and write `no_spawn_reason` before editing files, commenting on GitHub, or merging. Valid reasons are narrow: task is tiny and truly sequential, all possible writable lanes overlap, native tools are unavailable, or the user explicitly asks not to spawn.
 - For GitHub PR merge work, at least one read-only reviewer or merge-reviewer native thread is required when native subagents are available. A self-review by the coordinator does not satisfy the independent review lane.

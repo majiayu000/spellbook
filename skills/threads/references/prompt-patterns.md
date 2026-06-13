@@ -103,8 +103,8 @@ Target: {{issue_or_pr_or_queue}}
 
 输出：
 1. 目标摘要
-2. capability_gate（native_subagents / tools_seen / explicit_thread_request / spawn_requirement / fallback_mode）
-3. native_thread_evidence：spawned_agents 的 lane_id、spawn_tool、agent_id_or_thread_id、result_collected；若未 spawn，必须说明 fallback_reason
+2. capability_gate（native_subagents / tools_seen / explicit_thread_request / spawn_requirement / fallback_mode / no_spawn_reason）
+3. native_thread_evidence：spawned_agents 的 lane_id、spawn_tool、agent_id_or_thread_id、wait_evidence、close_evidence、result_collected；若未 spawn，必须说明 no_spawn_reason / fallback_reason
 4. intent_contract（含 merge_policy 默认 no_merge、truth_level、data_collection）
 5. queue_gate、queue_ledger 和 issue_to_pr_map（GitHub queue 必填；非 queue 说明 N/A）
 6. queue_bounds：max_items / time_budget / queue_tranche
@@ -273,6 +273,15 @@ No findings; safe to merge.
 开 {{n}} 个只读 researcher threads。
 默认 n<=3。不要修改文件，不要开 PR，不要 merge。
 
+先输出 thread_dispatch_gate：
+- explicit_thread_request
+- native_subagents
+- spawn_requirement
+- fallback_mode
+- planned_native_threads（每个 lane 的 id/role/target/spawn_status/no_spawn_reason）
+- native_thread_evidence.spawned_agents（每个实际 native thread 的 lane_id/spawn_tool/agent_id_or_thread_id/wait_evidence/close_evidence/result_collected）
+- no_spawn_reason（仅未 spawn 时允许）
+
 每个 thread 只负责一个明确角度：
 {{angles}}
 
@@ -286,6 +295,15 @@ No findings; safe to merge.
 不要修改文件，不要提交，不要 merge。
 默认 verification_scope=inspection_only；只运行便宜静态检查或 touched behavior targeted tests。
 不要运行 full project test suite，除非 lane_map 明确指定 reviewer 是 verification_owner 或 merge_reviewer。
+
+先输出 thread_dispatch_gate：
+- explicit_thread_request
+- native_subagents
+- spawn_requirement
+- fallback_mode
+- planned_native_threads（每个 lane 的 id/role/target/spawn_status/no_spawn_reason）
+- native_thread_evidence.spawned_agents（每个实际 native thread 的 lane_id/spawn_tool/agent_id_or_thread_id/wait_evidence/close_evidence/result_collected）
+- no_spawn_reason（仅未 spawn 时允许）
 
 输出 findings first；如果没有 blocking issue，写 No findings; safe to proceed。
 说明未验证项和残余风险。

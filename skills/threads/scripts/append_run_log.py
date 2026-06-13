@@ -40,6 +40,16 @@ ALLOWED_MODES = {
     "clarify_first",
 }
 ALLOWED_TRUTH_LEVELS = {"A", "B", "C", "D"}
+ALLOWED_FALLBACK_MODES = {"none", "single_agent", "prompt_pack_only"}
+ALLOWED_NATIVE_SPAWN_TOOLS = {"multi_agent_v1.spawn_agent"}
+INVALID_AGENT_IDS = {"", "none", "n/a", "na", "null", "main", "main_thread", "coordinator"}
+ALLOWED_SINGLE_AGENT_REASONS = {
+    "no_independent_lanes",
+    "sequential_dependency",
+    "shared_writable_files",
+    "tool_unavailable",
+    "user_requested_single_agent",
+}
 ALLOWED_TOP_LEVEL_FIELDS = {
     "schema_version",
     "recorded_at_utc",
@@ -63,6 +73,7 @@ ALLOWED_TOP_LEVEL_FIELDS = {
     "no_spawn_reason",
     "single_agent_justification",
     "capability_gate",
+    "thread_dispatch_gate",
     "queue_bounds",
     "remote_refresh",
     "queue_ledger",
@@ -186,16 +197,55 @@ def truthy(value: Any) -> bool:
     return False
 
 
+def canonical_gate_value(field: str, value: Any) -> Any:
+    if field == "explicit_thread_request":
+        return truthy(value)
+    return value
+
+
 def nested_get(mapping: dict[str, Any], field: str) -> Any:
-    nested = mapping.get("capability_gate")
-    if isinstance(nested, dict) and field in nested:
-        return nested.get(field)
-    return mapping.get(field)
+    values: list[tuple[str, Any]] = []
+    if field in mapping:
+        values.append(("top-level", mapping.get(field)))
+    for container in ("capability_gate", "thread_dispatch_gate"):
+        nested = mapping.get(container)
+        if isinstance(nested, dict) and field in nested:
+            values.append((container, nested.get(field)))
+
+    present = [(source, value) for source, value in values if value is not None]
+    if not present:
+        return None
+    canonical_values = {
+        canonical_gate_value(field, value)
+        for _, value in present
+    }
+    if len(canonical_values) > 1:
+        sources = ", ".join(source for source, _ in present)
+        raise ValueError(f"conflicting {field} values across {sources}")
+    return present[0][1]
+
+
+def native_thread_evidence(record: dict[str, Any]) -> dict[str, Any] | None:
+    evidence = record.get("native_thread_evidence")
+    if isinstance(evidence, dict):
+        return evidence
+    dispatch_gate = record.get("thread_dispatch_gate")
+    if isinstance(dispatch_gate, dict):
+        nested = dispatch_gate.get("native_thread_evidence")
+        if isinstance(nested, dict):
+            return nested
+    return None
+
+
+def valid_agent_id(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    return value.strip().lower() not in INVALID_AGENT_IDS
 
 
 def has_spawned_agent(record: dict[str, Any]) -> bool:
-    evidence = record.get("native_thread_evidence")
-    if not isinstance(evidence, dict):
+    evidence = native_thread_evidence(record)
+    if evidence is None:
         return False
     spawned_agents = evidence.get("spawned_agents")
     if not isinstance(spawned_agents, list):
@@ -203,19 +253,51 @@ def has_spawned_agent(record: dict[str, Any]) -> bool:
     for agent in spawned_agents:
         if not isinstance(agent, dict):
             continue
-        if agent.get("agent_id_or_thread_id") or agent.get("tool_agent_id"):
+        agent_id = agent.get("agent_id_or_thread_id") or agent.get("tool_agent_id")
+        if (
+            agent.get("spawn_tool") in ALLOWED_NATIVE_SPAWN_TOOLS
+            and valid_agent_id(agent_id)
+            and agent.get("result_collected") is True
+            and bool(agent.get("wait_evidence"))
+            and bool(agent.get("close_evidence"))
+        ):
             return True
     return False
 
 
+def normalize_reason(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip().lower().replace("-", "_").replace(" ", "_")
+    return normalized or None
+
+
+def allowed_reason(reason: Any, evidence: Any = None) -> bool:
+    normalized = normalize_reason(reason)
+    if normalized not in ALLOWED_SINGLE_AGENT_REASONS:
+        return False
+    return evidence is None or bool(evidence)
+
+
 def has_single_agent_reason(record: dict[str, Any]) -> bool:
-    if record.get("no_spawn_reason"):
+    no_spawn_reason = record.get("no_spawn_reason")
+    if isinstance(no_spawn_reason, dict):
+        if allowed_reason(no_spawn_reason.get("reason"), no_spawn_reason.get("evidence")):
+            return True
+    elif allowed_reason(no_spawn_reason):
         return True
+
     justification = record.get("single_agent_justification")
-    if isinstance(justification, dict) and justification.get("reason"):
+    if (
+        isinstance(justification, dict)
+        and allowed_reason(justification.get("reason"), justification.get("evidence"))
+    ):
         return True
-    evidence = record.get("native_thread_evidence")
-    return isinstance(evidence, dict) and bool(evidence.get("fallback_reason"))
+
+    evidence = native_thread_evidence(record)
+    if not isinstance(evidence, dict):
+        return False
+    return allowed_reason(evidence.get("fallback_reason"))
 
 
 def validate_native_thread_evidence(record: dict[str, Any]) -> None:
@@ -224,14 +306,23 @@ def validate_native_thread_evidence(record: dict[str, Any]) -> None:
     fallback_mode = nested_get(record, "fallback_mode")
     explicit_request = nested_get(record, "explicit_thread_request")
     spawn_requirement = nested_get(record, "spawn_requirement")
-    dispatch_mode = mode in {"execute_direct", "review_only", "research_spec"}
+    dispatch_mode = mode in {"plan_only", "execute_direct", "review_only", "research_spec"}
     required = truthy(explicit_request) or spawn_requirement == "required"
 
+    if fallback_mode is not None and fallback_mode not in ALLOWED_FALLBACK_MODES:
+        raise ValueError(f"unknown fallback_mode: {fallback_mode}")
+
+    explicit_native_required = dispatch_mode and native_subagents == "available" and required
+
+    if explicit_native_required and fallback_mode is None:
+        raise ValueError(
+            "fallback_mode is required when native subagents are available "
+            "for an explicit threads run"
+        )
+
     if (
-        dispatch_mode
-        and native_subagents == "available"
+        explicit_native_required
         and fallback_mode == "none"
-        and required
         and not has_spawned_agent(record)
     ):
         raise ValueError(
@@ -240,15 +331,19 @@ def validate_native_thread_evidence(record: dict[str, Any]) -> None:
         )
 
     if (
-        dispatch_mode
-        and native_subagents == "available"
+        explicit_native_required
         and fallback_mode == "single_agent"
-        and required
         and not has_single_agent_reason(record)
     ):
         raise ValueError(
             "single_agent fallback for an explicit threads run requires "
-            "no_spawn_reason or single_agent_justification.reason"
+            "an allowed no_spawn_reason or single_agent_justification.reason"
+        )
+
+    if explicit_native_required and fallback_mode == "prompt_pack_only":
+        raise ValueError(
+            "prompt_pack_only fallback is invalid when native subagents are "
+            "available for an explicit threads run"
         )
 
 

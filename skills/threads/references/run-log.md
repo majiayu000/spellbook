@@ -67,6 +67,8 @@ python3 skills/threads/scripts/append_run_log.py <<'JSON'
         "lane_id": "merge-reviewer",
         "spawn_tool": "multi_agent_v1.spawn_agent",
         "agent_id_or_thread_id": "agent-123",
+        "wait_evidence": "wait_agent completed",
+        "close_evidence": "close_agent completed",
         "result_collected": true
       }
     ]
@@ -125,7 +127,7 @@ Recommended fields:
   "explicit_thread_request": true,
   "spawn_requirement": "required|optional|unavailable",
   "fallback_mode": "none|single_agent|prompt_pack_only",
-  "no_spawn_reason": "required when an explicit threads run falls back to single_agent",
+  "no_spawn_reason": "required when an explicit threads run falls back to single_agent; use no_independent_lanes|sequential_dependency|shared_writable_files|tool_unavailable|user_requested_single_agent",
   "single_agent_justification": {
     "reason": "no_independent_lanes|sequential_dependency|shared_writable_files|tool_unavailable|user_requested_single_agent",
     "evidence": "short evidence summary"
