@@ -510,6 +510,26 @@ class ThreadsRunLogTests(unittest.TestCase):
             self.assertIn("single_agent fallback", result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_rejects_explicit_single_agent_mode_without_fallback_reason(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "single-agent-mode-missing.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "single_agent",
+                    "native_subagents": "available",
+                    "explicit_thread_request": "yes",
+                    "spawn_requirement": "required",
+                    "fallback_mode": "none",
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("native_thread_evidence.spawned_agents", result.stderr)
+            self.assertFalse(log_path.exists())
+
     def test_accepts_reasoned_explicit_single_agent_fallback(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "fallback-reason.jsonl"

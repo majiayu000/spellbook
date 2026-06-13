@@ -367,7 +367,13 @@ def validate_native_thread_evidence(record: dict[str, Any]) -> None:
     fallback_mode = nested_get(record, "fallback_mode")
     explicit_request = nested_get(record, "explicit_thread_request")
     spawn_requirement = nested_get(record, "spawn_requirement")
-    dispatch_mode = mode in {"plan_only", "execute_direct", "review_only", "research_spec"}
+    dispatch_mode = mode in {
+        "single_agent",
+        "plan_only",
+        "execute_direct",
+        "review_only",
+        "research_spec",
+    }
     required = truthy(explicit_request) or spawn_requirement == "required"
 
     if fallback_mode is not None and fallback_mode not in ALLOWED_FALLBACK_MODES:
