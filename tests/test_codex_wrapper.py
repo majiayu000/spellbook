@@ -81,6 +81,43 @@ class CodexWrapperTests(unittest.TestCase):
             ],
         )
 
+    def test_passes_config_overrides_to_new_exec_task(self):
+        result, captured_args = self.run_wrapper(
+            [
+                "--dir",
+                "/project",
+                "--sandbox",
+                "workspace-write",
+                "--config",
+                "sandbox_workspace_write.network_access=true",
+                "install dependencies",
+            ]
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(
+            captured_args,
+            [
+                "exec",
+                "-C",
+                "/project",
+                "-s",
+                "workspace-write",
+                "-c",
+                "sandbox_workspace_write.network_access=true",
+                "install dependencies",
+            ],
+        )
+
+    def test_rejects_config_overrides_on_resume(self):
+        result, captured_args = self.run_wrapper(
+            ["--session", "abc123", "--config", "sandbox_workspace_write.network_access=true", "continue"]
+        )
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--config is only supported for new codex exec tasks", result.stderr)
+        self.assertEqual(captured_args, [])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -10,6 +10,7 @@ OUTPUT_FORMAT=""
 OUTPUT_FILE=""
 SESSION=""
 WORKDIR="${PWD}"
+CONFIG_OVERRIDES=()
 
 usage() {
     cat << EOF
@@ -19,6 +20,7 @@ Options:
   -d, --dir <path>       Working directory (default: current)
   -s, --sandbox <mode>   Sandbox mode: read-only, workspace-write, danger-full-access
   -j, --json             Output as JSON
+  -c, --config <key=val> Pass a Codex config override (repeatable)
   -o, --output <file>    Save output to file
   -S, --session <id>     Use session ID for follow-up
   -h, --help             Show this help
@@ -26,6 +28,7 @@ Options:
 Examples:
   codex-wrapper.sh -d /path/to/project "Analyze the code"
   codex-wrapper.sh -j -s workspace-write "Fix the bug in main.ts"
+  codex-wrapper.sh -s workspace-write -c 'sandbox_workspace_write.network_access=true' "Install dependencies"
   codex-wrapper.sh -S abc123 "Continue from where we left off"
 EOF
     exit 0
@@ -48,6 +51,11 @@ while [[ $# -gt 0 ]]; do
         -j|--json)
             OUTPUT_FORMAT="--json"
             shift
+            ;;
+        -c|--config)
+            [[ $# -ge 2 ]] || { echo "Error: --config requires key=value" >&2; exit 2; }
+            CONFIG_OVERRIDES+=(-c "$2")
+            shift 2
             ;;
         -o|--output)
             [[ $# -ge 2 ]] || { echo "Error: --output requires a file" >&2; exit 2; }
@@ -96,12 +104,18 @@ if [[ "$SANDBOX" == "danger-full-access" && "${CODEX_ALLOW_DANGER_FULL_ACCESS:-}
     exit 2
 fi
 
+if [[ -n "$SESSION" && ${#CONFIG_OVERRIDES[@]} -gt 0 ]]; then
+    echo "Error: --config is only supported for new codex exec tasks, not session resume" >&2
+    exit 2
+fi
+
 if [[ -n "$SESSION" ]]; then
     # Build command as an argv array. Do not use eval with user-controlled text.
     CMD=(codex exec -C "$WORKDIR" resume)
 else
     # Build command as an argv array. Do not use eval with user-controlled text.
     CMD=(codex exec -C "$WORKDIR" -s "$SANDBOX")
+    CMD+=("${CONFIG_OVERRIDES[@]}")
 fi
 
 if [[ -n "$OUTPUT_FORMAT" ]]; then

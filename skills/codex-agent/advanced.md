@@ -25,13 +25,17 @@ search = true
 
 ### Profiles
 
-Create named profiles for different use cases:
+Create a separate profile file for each use case. In Codex 0.134.0 and later,
+`--profile <name>` overlays `$CODEX_HOME/<name>.config.toml` on top of the base
+config; it does not read `[profiles.<name>]` tables from `config.toml`.
 
 ```toml
-[profiles.review]
+# ~/.codex/review.config.toml
 sandbox_mode = "read-only"
+```
 
-[profiles.implement]
+```toml
+# ~/.codex/implement.config.toml
 sandbox_mode = "workspace-write"
 ```
 
@@ -39,7 +43,7 @@ Do not persist a `danger-full-access` + no-approval profile. If broad access is
 unavoidable, use it as a one-off command after explicit user approval and record
 what directory or system boundary required it.
 
-Use with `-p` flag:
+Use with `-p` / `--profile`:
 
 ```bash
 codex exec -p review -C /project "Analyze code"
