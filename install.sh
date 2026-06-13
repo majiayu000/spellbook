@@ -16,10 +16,10 @@ NC='\033[0m' # No Color
 REPO_URL="${SPELLBOOK_REPO_URL:-https://github.com/majiayu000/spellbook.git}"
 LEGACY_REPO_URL="https://github.com/majiayu000/claude-arsenal.git"
 CLAUDE_DIR="$HOME/.claude"
-CODEX_DIR="$HOME/.codex"
 CLAUDE_SKILLS_DIR="$CLAUDE_DIR/skills"
 CLAUDE_AGENTS_DIR="$CLAUDE_DIR/agents"
-CODEX_SKILLS_DIR="$CODEX_DIR/skills"
+CODEX_SKILLS_DIR="${CODEX_SKILLS_DIR:-$HOME/.agents/skills}"
+LEGACY_CODEX_SKILLS_DIR="${CODEX_HOME:-$HOME/.codex}/skills"
 INSTALL_DIR="$HOME/.spellbook"
 LEGACY_INSTALL_DIR="$HOME/.claude-arsenal"
 TARGET="claude"
@@ -224,6 +224,46 @@ prune_stale_managed_skills_from_dir() {
     fi
 }
 
+prune_all_managed_skills_from_dir() {
+    local skills_dir="$1"
+    local runtime_name="$2"
+
+    [ -d "$skills_dir" ] || return
+
+    local pruned=0
+    local skill_path
+    for skill_path in "$skills_dir"/*; do
+        [ -e "$skill_path" ] || [ -L "$skill_path" ] || continue
+
+        local target
+        if [ -L "$skill_path" ]; then
+            target=$(read_managed_target "$skill_path")
+            if is_managed_path "$target"; then
+                rm -f "$skill_path"
+                pruned=$((pruned + 1))
+            fi
+        elif [ -d "$skill_path" ] && [ -L "$skill_path/SKILL.md" ]; then
+            target=$(read_managed_target "$skill_path/SKILL.md")
+            if is_managed_path "$target"; then
+                rm -rf "$skill_path"
+                pruned=$((pruned + 1))
+            fi
+        fi
+    done
+
+    if [ "$pruned" -gt 0 ]; then
+        info "Pruned $pruned legacy managed skill(s) for $runtime_name"
+    fi
+}
+
+prune_legacy_codex_skills() {
+    if [ "$CODEX_SKILLS_DIR" = "$LEGACY_CODEX_SKILLS_DIR" ]; then
+        return
+    fi
+
+    prune_all_managed_skills_from_dir "$LEGACY_CODEX_SKILLS_DIR" "legacy Codex"
+}
+
 prepare_directory_skill_target() {
     local skills_dir="$1"
     local skill_name="$2"
@@ -292,6 +332,7 @@ install_all_skills() {
     fi
 
     if target_includes_codex; then
+        prune_legacy_codex_skills
         install_all_skills_to_dir "$CODEX_SKILLS_DIR" "Codex"
     fi
 }
@@ -340,6 +381,7 @@ install_skills() {
     fi
 
     if target_includes_codex; then
+        prune_legacy_codex_skills
         install_skills_to_dir "$CODEX_SKILLS_DIR" "Codex" "$skills_list"
     fi
 }
@@ -559,7 +601,7 @@ main() {
         echo "  - Claude Code: type '/' to see installed skills"
     fi
     if target_includes_codex; then
-        echo "  - Codex: restart Codex so it reloads ~/.codex/skills"
+        echo "  - Codex: restart Codex so it reloads $CODEX_SKILLS_DIR"
     fi
     echo "  - Start using skills like /typescript-project"
     echo ""

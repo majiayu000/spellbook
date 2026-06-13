@@ -29,7 +29,12 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 - 不要把 Codex threads 路由到 OMX/tmux。
 - 每个实现 lane 必须有 disjoint writable_files。
 - shared-state verification（如 .git/hooks、HOME、global cache、daemon）必须由 verification_owner 串行执行，除非显式隔离。
+- lane_map 必须写 `verification_scope`：`inspection_only` / `targeted` / `full_local` / `ci_only`。
+- reviewer lane 默认只读 diff/code inspection，可跑 `git diff --check` 或便宜静态检查；只在需要 review confidence 时跑 touched behavior 的 targeted tests。
+- reviewer lane 默认不跑 full project test suite；full suite 只能由一个明确 owner 跑，通常是 root orchestrator、verification_owner、merge_reviewer，或由当前 head SHA 的 fresh CI 提供。
+- Cargo 测试过滤要合法：每个 `cargo test` 命令只传一个 filter，或使用 module/path 级 filter；不要把多个无关 test name 当多个 positional filters 传给同一条命令。
 - review lane 只读。
+- 完成的 subagent 要及时 close；长 issue/PR 队列完成一个 bounded tranche 后，记录 ledger/resume query，并考虑开新 parent thread 降低上下文负担。
 - 高上下文文件 AGENTS.md/CLAUDE.md/settings/hooks 默认禁止修改。
 - 每个 PR merge 前必须有独立 thread review。
 - merge 前必须 truth_level=A，并用 thread-aware GitHub 数据检查 reviewThreads.isResolved；open PR/issue 为空不等于评论闭环完成。
@@ -103,7 +108,7 @@ Target: {{issue_or_pr_or_queue}}
 8. 未完成/风险
 9. 推荐处理动作和理由
 10. 可并行 worktree 拆分
-11. 每个 lane 的 writable_files、forbidden_files、exclusive_verification
+11. 每个 lane 的 writable_files、forbidden_files、exclusive_verification、verification_scope
 12. 必须运行的验证命令
 13. 不应在本轮强做的范围
 14. 建议的 failure_codes（如 stale_remote_state、duplicate_work_missed、missing_intent_contract）
@@ -134,6 +139,8 @@ Target: {{issue_or_pr_or_queue}}
 
 验证：
 {{verification_commands}}
+verification_scope:
+{{verification_scope}}
 
 Remote refresh:
 - 在 push 前运行 git fetch --prune origin 并比较 origin/main 与 lane base_ref。
@@ -156,6 +163,13 @@ Remote refresh:
 ```text
 请对 {{target_pr_or_worktree}} 做只读 code review，不要修改文件，不要提交，不要 merge。
 目标：{{issue_or_pr_goal}}
+
+验证范围：
+- 默认 `verification_scope=inspection_only`：做 diff/code inspection。
+- 可运行便宜静态检查，如 `git diff --check`，或与 touched behavior 直接相关的 targeted tests。
+- 不要运行 full project test suite，除非 lane_map 明确指定你是 `verification_owner` 或 `merge_reviewer`。
+- 如果需要 Cargo targeted tests，每条 `cargo test` 命令只传一个 test filter，或使用 module/path 级 filter；不要把多个无关 test name 放进同一条命令。
+- 报告未运行的 full-suite 验证，并说明由谁负责：root orchestrator、verification_owner、merge_reviewer，或 fresh CI。
 
 重点检查：
 - security and injection risks
@@ -265,6 +279,8 @@ No findings; safe to merge.
 ```text
 开最多 2 个只读 reviewer threads 审查 {{target_pr_or_diff}}。
 不要修改文件，不要提交，不要 merge。
+默认 verification_scope=inspection_only；只运行便宜静态检查或 touched behavior targeted tests。
+不要运行 full project test suite，除非 lane_map 明确指定 reviewer 是 verification_owner 或 merge_reviewer。
 
 输出 findings first；如果没有 blocking issue，写 No findings; safe to proceed。
 说明未验证项和残余风险。

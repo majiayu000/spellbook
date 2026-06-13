@@ -56,7 +56,7 @@ cd spellbook
 ### 验证安装
 
 - Claude Code：输入 `/` 查看已安装的技能。
-- Codex：重启 Codex，让它重新加载 `~/.codex/skills`。
+- Codex：重启 Codex，让它重新加载 `~/.agents/skills`。
 
 ---
 
@@ -67,10 +67,11 @@ Spellbook 将 skill 源文件保存在一个地方，再安装到你实际使用
 | 目标 | 安装位置 | 状态 |
 |------|----------|------|
 | Claude Code | `~/.claude/skills` 和 `~/.claude/agents` | 支持 skills 和 agents |
-| Codex | `~/.codex/skills` | 支持 skills；跳过 agents |
+| Codex | `~/.agents/skills` | 支持 skills；跳过 agents |
 | all | 同时安装到 Claude Code 和 Codex 路径 | 推荐给多工具用户 |
 
 Claude Code 仍是一等支持目标，也是用户搜索和认知入口。项目原名 Claude Arsenal；改名为 Spellbook 是为了表达更长期的目标：让可复用 skills 在不同 coding agents 之间流动。
+旧版 Spellbook 曾将 Codex skills 安装到 `~/.codex/skills`；请重新运行当前安装器，以使用 Codex 文档中的用户级 skill 路径。
 
 ---
 

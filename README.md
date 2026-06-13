@@ -56,7 +56,7 @@ cd spellbook
 ### Verify Installation
 
 - Claude Code: type `/` to see your installed skills.
-- Codex: restart Codex so it reloads `~/.codex/skills`.
+- Codex: restart Codex so it reloads `~/.agents/skills`.
 
 ---
 
@@ -67,10 +67,11 @@ Spellbook keeps the skill source in one place and installs it into the runtime y
 | Target | Installed To | Status |
 |--------|--------------|--------|
 | Claude Code | `~/.claude/skills` plus `~/.claude/agents` | Skills and agents supported |
-| Codex | `~/.codex/skills` | Skills supported; agents skipped |
+| Codex | `~/.agents/skills` | Skills supported; agents skipped |
 | All | Both Claude Code and Codex paths | Recommended for multi-tool users |
 
 Claude Code remains a first-class target and search entry. The project was formerly known as Claude Arsenal; the new Spellbook name reflects the broader goal: reusable skills that can travel across coding agents.
+Older Spellbook versions installed Codex skills under `~/.codex/skills`; reinstall with the current installer to use the documented Codex user-level skill path.
 
 ---
 

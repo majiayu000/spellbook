@@ -47,32 +47,13 @@ class CodexWrapperTests(unittest.TestCase):
             captured_args = capture.read_text(encoding="utf-8").splitlines() if capture.exists() else []
             return result, captured_args
 
-    def test_allows_workspace_read_network_write_sandbox(self):
-        result, captured_args = self.run_wrapper(
-            ["--dir", "/project", "--sandbox", "workspace-read-network-write", "task needing network"],
-            env_extra={"CODEX_FAKE_EXEC_HELP": "possible values: workspace-read-network-write"},
-        )
-
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(
-            captured_args,
-            [
-                "exec",
-                "-C",
-                "/project",
-                "-s",
-                "workspace-read-network-write",
-                "task needing network",
-            ],
-        )
-
-    def test_rejects_workspace_read_network_write_when_cli_does_not_support_it(self):
+    def test_rejects_workspace_read_network_write_sandbox(self):
         result, captured_args = self.run_wrapper(
             ["--dir", "/project", "--sandbox", "workspace-read-network-write", "task needing network"]
         )
 
         self.assertEqual(result.returncode, 2)
-        self.assertIn("workspace-read-network-write is not supported", result.stderr)
+        self.assertIn("unsupported sandbox mode: workspace-read-network-write", result.stderr)
         self.assertEqual(captured_args, [])
 
     def test_rejects_unknown_full_auto_option(self):
@@ -99,6 +80,43 @@ class CodexWrapperTests(unittest.TestCase):
                 "continue work",
             ],
         )
+
+    def test_passes_config_overrides_to_new_exec_task(self):
+        result, captured_args = self.run_wrapper(
+            [
+                "--dir",
+                "/project",
+                "--sandbox",
+                "workspace-write",
+                "--config",
+                "sandbox_workspace_write.network_access=true",
+                "install dependencies",
+            ]
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(
+            captured_args,
+            [
+                "exec",
+                "-C",
+                "/project",
+                "-s",
+                "workspace-write",
+                "-c",
+                "sandbox_workspace_write.network_access=true",
+                "install dependencies",
+            ],
+        )
+
+    def test_rejects_config_overrides_on_resume(self):
+        result, captured_args = self.run_wrapper(
+            ["--session", "abc123", "--config", "sandbox_workspace_write.network_access=true", "continue"]
+        )
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--config is only supported for new codex exec tasks", result.stderr)
+        self.assertEqual(captured_args, [])
 
 
 if __name__ == "__main__":

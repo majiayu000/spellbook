@@ -58,7 +58,7 @@ codex login
 
 ```bash
 cp -r codex-agent ~/.claude/skills/codex-agent
-cp -r codex-agent ~/.codex/skills/codex-agent
+cp -r codex-agent ~/.agents/skills/codex-agent
 ```
 
 ### Option 2: Project-level
@@ -66,6 +66,9 @@ cp -r codex-agent ~/.codex/skills/codex-agent
 ```bash
 mkdir -p .claude/skills
 cp -r codex-agent .claude/skills/codex-agent
+
+mkdir -p .agents/skills
+cp -r codex-agent .agents/skills/codex-agent
 ```
 
 ## Usage
@@ -170,7 +173,6 @@ Add to `.claude/settings.local.json`:
 |------|-------------|
 | `read-only` | No file writes (used for reviews) |
 | `workspace-write` | Write to project directory |
-| `workspace-read-network-write` | Write to project and use network when supported by the installed Codex CLI |
 | `danger-full-access` | Unrestricted (use with caution) |
 
 Use `read-only` for review and re-verification by default. Treat

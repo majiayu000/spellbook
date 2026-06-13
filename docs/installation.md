@@ -23,7 +23,11 @@ Target paths:
 | Target | Skills | Agents |
 |--------|--------|--------|
 | Claude Code | `~/.claude/skills` | `~/.claude/agents` |
-| Codex | `~/.codex/skills` | Not supported by this installer |
+| Codex | `~/.agents/skills` | Not supported by this installer |
+
+Codex user-level skills follow the current OpenAI-documented path,
+`$HOME/.agents/skills`. Older Spellbook releases used `~/.codex/skills`; run
+the current installer again to refresh symlinks into the supported location.
 
 ## Installing Plugins
 
@@ -70,7 +74,7 @@ Use the generated [Skill Registry](./skill-registry.md) to check a skill's `form
 cp -R skills/<skill-name> ~/.claude/skills/<skill-name>
 
 # Codex
-cp -R skills/<skill-name> ~/.codex/skills/<skill-name>
+cp -R skills/<skill-name> ~/.agents/skills/<skill-name>
 ```
 
 #### File skill
@@ -84,21 +88,15 @@ curl -o ~/.claude/skills/<skill-name>/SKILL.md \
   https://raw.githubusercontent.com/majiayu000/spellbook/main/skills/<skill-name>.SKILL.md
 
 # Codex: create skill directory and download the same source
-mkdir -p ~/.codex/skills/<skill-name>
-curl -o ~/.codex/skills/<skill-name>/SKILL.md \
+mkdir -p ~/.agents/skills/<skill-name>
+curl -o ~/.agents/skills/<skill-name>/SKILL.md \
   https://raw.githubusercontent.com/majiayu000/spellbook/main/skills/<skill-name>.SKILL.md
 ```
 
 ### Commands
 
-```bash
-# Create commands directory if not exists
-mkdir -p ~/.claude/commands
-
-# Download a command
-curl -o ~/.claude/commands/<command-name>.md \
-  https://raw.githubusercontent.com/majiayu000/spellbook/main/commands/<command-name>.md
-```
+Spellbook no longer ships repository-level Claude command files. Use the
+corresponding skill entry instead.
 
 ### Agents
 
@@ -127,14 +125,11 @@ After installation, verify components are loaded:
 # Check installed plugins
 /plugin list
 
-# Check available commands
-/help
-
 # Ask Claude about available skills
 "What skills do you have available?"
 
 # Codex
-# Restart Codex so it reloads ~/.codex/skills.
+# Restart Codex so it reloads ~/.agents/skills.
 ```
 
 ## Uninstallation
@@ -146,6 +141,4 @@ After installation, verify components are loaded:
 # Remove a skill
 rm -rf ~/.claude/skills/<skill-name>
 
-# Remove a command
-rm ~/.claude/commands/<command-name>.md
 ```

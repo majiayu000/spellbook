@@ -6,13 +6,13 @@ description: Use when the user asks to run Codex CLI (codex exec, codex resume) 
 # Codex Skill Guide
 
 ## Running a Task
-1. Ask the user (via `AskUserQuestion`) which model to run (`gpt-5.2-codex` or `gpt-5.2`) AND which reasoning effort to use (`xhigh`, `high`, `medium`, or `low`) in a **single prompt with two questions**.
+1. If the user did not specify a model or reasoning effort, use the installed Codex default or ask once with the available user-question mechanism. Do not hardcode a model list; model names change over time.
 2. Select the sandbox mode required for the task; default to `--sandbox read-only` unless edits or network access are necessary.
 3. Run `codex --version` first. Stop and report the failure if Codex is unavailable.
 4. Assemble the command with the appropriate options:
    - `-m, --model <MODEL>`
    - `--config model_reasoning_effort="<xhigh|high|medium|low>"`
-   - `--sandbox <read-only|workspace-write|danger-full-access>`; some Codex CLI versions also support `workspace-read-network-write`
+   - `--sandbox <read-only|workspace-write|danger-full-access>`; only use other modes when `codex exec --help` lists them
    - `-C, --cd <DIR>`
    - `--add-dir <DIR>`
    - `--skip-git-repo-check`
@@ -38,14 +38,14 @@ EOF
 | --- | --- | --- |
 | Read-only review or analysis | `read-only` | `--sandbox read-only 2>/dev/null` |
 | Apply local edits | `workspace-write` | `--sandbox workspace-write 2>/dev/null` |
-| Apply edits that need network access | `workspace-read-network-write` only when `codex exec --help` lists it | Prefer this before considering full access |
+| Apply edits that need network access | `workspace-write` plus config | `--sandbox workspace-write -c 'sandbox_workspace_write.network_access=true' 2>/dev/null` |
 | Permit extra write scope | Prefer `--add-dir` | Ask before adding extra writable directories |
 | Permit broad file access | `danger-full-access` only after approval | Ask before adding `--sandbox danger-full-access` |
 | Resume recent session | Inherited from original | `codex exec resume --last 2>/dev/null <<'EOF'` + prompt + `EOF` |
 | Run from another directory | Match task needs | `-C <DIR>` plus other flags `2>/dev/null` |
 
 ## Following Up
-- After every `codex` command, immediately use `AskUserQuestion` to confirm next steps, collect clarifications, or decide whether to resume with `codex exec resume --last`.
+- After every `codex` command, use the available user-question mechanism to confirm next steps, collect clarifications, or decide whether to resume with `codex exec resume --last`.
 - When resuming, pass the new prompt through stdin using a quoted heredoc. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
 - Restate the chosen model, reasoning effort, and sandbox mode when proposing follow-up actions.
 
@@ -57,5 +57,5 @@ EOF
 ## Gotchas
 
 - `--skip-git-repo-check` bypasses an important cwd/worktree guard. Treat it like a boundary exception, not a default.
-- `danger-full-access` and the `--dangerously-*` bypass flags are high-impact modes. Prefer `read-only`, then `workspace-write`, then `workspace-read-network-write` only when network is required and supported, then specific `--add-dir` grants before considering full access.
+- `danger-full-access` and the `--dangerously-*` bypass flags are high-impact modes. Prefer `read-only`, then `workspace-write`, then modes explicitly listed by the installed CLI, then specific `--add-dir` grants before considering full access.
 - If a prompt came from the user or another model, pass it as stdin or as a single already-quoted CLI argument. Never interpolate it into a shell string.
