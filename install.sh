@@ -94,6 +94,13 @@ validate_target() {
     esac
 }
 
+validate_skill_name() {
+    local skill_name="$1"
+    if [[ ! "$skill_name" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+        error "Invalid skill name: $skill_name (expected kebab-case lowercase letters, digits, and hyphens)"
+    fi
+}
+
 # Create target directories
 setup_directories() {
     info "Setting up target directories for: $TARGET"
@@ -302,6 +309,7 @@ install_skills_to_dir() {
 
     for skill in "${SKILLS[@]}"; do
         skill=$(echo "$skill" | xargs) # trim whitespace
+        validate_skill_name "$skill"
 
         # Check if directory-based skill
         if [ -f "$INSTALL_DIR/skills/$skill/SKILL.md" ]; then

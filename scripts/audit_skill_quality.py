@@ -11,18 +11,16 @@ from pathlib import Path
 import re
 import sys
 
+from skill_artifact_checks import (
+    SUPPORT_DIR_NAMES,
+    has_executable_bit_or_shebang,
+    is_script_reference,
+    legacy_argument_tokens,
+    local_support_references,
+    skill_markdown_body,
+    unresolved_placeholder_tokens,
+)
 from validate_skills import CATEGORY_BY_NAME, ROOT, SkillEntry, discover_skills, parse_frontmatter
-
-
-SUPPORT_DIR_NAMES = {
-    "agents",
-    "assets",
-    "evals",
-    "reference",
-    "references",
-    "scripts",
-    "templates",
-}
 
 TRIGGER_CUES = (
     "use when",
@@ -100,17 +98,6 @@ OPERATING_CONTRACT_FIELDS = (
     "Feedback loop:",
 )
 
-LOCAL_SUPPORT_REF_RE = re.compile(
-    r"(?<![/\w.-])"
-    r"((?:skills/[A-Za-z0-9_.-]+/)?"
-    r"(?:agents|assets|evals|reference|references|scripts|templates)"
-    r"/[A-Za-z0-9_./-]+\.[A-Za-z0-9]+)"
-)
-
-IGNORED_MISSING_REFS = {
-    ("skill-creator", "evals/evals.json"),
-}
-
 
 @dataclass(frozen=True)
 class QualityFinding:
@@ -119,16 +106,6 @@ class QualityFinding:
     path: str
     check: str
     message: str
-
-
-def skill_markdown_body(path: Path) -> str:
-    text = path.read_text(encoding="utf-8")
-    if not text.startswith("---\n"):
-        return text
-    end = text.find("\n---", 4)
-    if end == -1:
-        return text
-    return text[end + len("\n---") :]
 
 
 def contains_any(text: str, cues: tuple[str, ...]) -> bool:
@@ -165,23 +142,6 @@ def support_dirs_for(entry: SkillEntry) -> list[str]:
         for child in skill_dir.iterdir()
         if child.is_dir() and child.name in SUPPORT_DIR_NAMES
     )
-
-
-def referenced_local_support_files(entry: SkillEntry, body: str) -> list[tuple[str, Path]]:
-    refs: list[tuple[str, Path]] = []
-    seen: set[str] = set()
-    for match in LOCAL_SUPPORT_REF_RE.finditer(body):
-        ref = match.group(1).rstrip(".,:;)")
-        if (entry.install_name, ref) in IGNORED_MISSING_REFS or ref in seen:
-            continue
-        seen.add(ref)
-        if ref.startswith("skills/"):
-            refs.append((ref, ROOT / ref))
-        elif entry.format == "directory":
-            refs.append((ref, (ROOT / entry.path).parent / ref))
-        else:
-            refs.append((ref, ROOT / "skills" / ref))
-    return refs
 
 
 def audit_entry(entry: SkillEntry) -> list[QualityFinding]:
@@ -299,15 +259,63 @@ def audit_entry(entry: SkillEntry) -> list[QualityFinding]:
                 )
             )
 
-    for ref, target in referenced_local_support_files(entry, body):
-        if not target.exists():
+    for token in unresolved_placeholder_tokens(body):
+        findings.append(
+            QualityFinding(
+                "WARN",
+                entry.install_name,
+                entry.path,
+                "unresolved-placeholder",
+                f"SKILL.md contains unresolved placeholder token '{token}'",
+            )
+        )
+
+    for token in legacy_argument_tokens(body):
+        findings.append(
+            QualityFinding(
+                "INFO",
+                entry.install_name,
+                entry.path,
+                "legacy-argument-token",
+                f"SKILL.md uses legacy runtime argument token '{token}'; verify this is intentional for the target runtime",
+            )
+        )
+
+    for ref in local_support_references(
+        install_name=entry.install_name,
+        entry_path=entry.path,
+        entry_format=entry.format,
+        body=body,
+        root=ROOT,
+    ):
+        if ref.unsafe_reason:
+            findings.append(
+                QualityFinding(
+                    "WARN",
+                    entry.install_name,
+                    entry.path,
+                    "unsafe-support-reference",
+                    f"support reference '{ref.ref}' is unsafe: {ref.unsafe_reason}",
+                )
+            )
+        elif not ref.target.exists():
             findings.append(
                 QualityFinding(
                     "WARN",
                     entry.install_name,
                     entry.path,
                     "missing-support-file",
-                    f"referenced support file '{ref}' does not exist at {target.relative_to(ROOT)}",
+                    f"referenced support file '{ref.ref}' does not exist at {ref.target.relative_to(ROOT)}",
+                )
+            )
+        elif is_script_reference(ref.ref) and not has_executable_bit_or_shebang(ref.target):
+            findings.append(
+                QualityFinding(
+                    "WARN",
+                    entry.install_name,
+                    entry.path,
+                    "script-reference",
+                    f"referenced script '{ref.ref}' is not executable and has no shebang/interpreter marker",
                 )
             )
 

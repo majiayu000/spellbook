@@ -840,7 +840,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/threads/SKILL.md",
-    "description": "Coordinate Codex-native thread workflows when the user explicitly asks for $threads, Codex threads, open threads, 开几个 thread/子agent, or a repo issue/PR queue flow needing parallel lanes, worktrees, independent review, merge gates, review-thread/comment closure, final cleanup, or threads run-log data collection.",
+    "description": "Use when the user explicitly asks for $threads, Codex-native subagents, 开几个子 agent, or a GitHub issue/PR queue needing parallel lanes, worktrees, review/merge gates, and closure audit. Do not use for OS/language threads, chat/email/forum threads, or Assistants product threads unless Codex workflow orchestration is explicit.",
     "language": "mixed",
     "tags": [
       "agent",

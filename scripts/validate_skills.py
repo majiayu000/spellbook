@@ -10,10 +10,18 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from skill_path_safety import UnsafePathError, safe_kebab_name, safe_output_path
+
 try:
     import yaml
 except ImportError:  # pragma: no cover - exercised only on minimal user systems.
     yaml = None
+
+from skill_artifact_checks import (
+    local_support_references,
+    skill_markdown_body,
+    unresolved_placeholder_tokens,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -416,6 +424,13 @@ def validate_entries(entries: list[SkillEntry]) -> list[str]:
     seen_frontmatter_names: dict[str, str] = {}
 
     for entry in entries:
+        try:
+            safe_kebab_name(entry.install_name, kind="install name")
+            safe_output_path(ROOT, entry.path, kind="skill registry path")
+        except UnsafePathError as exc:
+            messages.append(error(f"{entry.path} has unsafe registry path or install name: {exc}"))
+            continue
+
         path = ROOT / entry.path
         frontmatter, parse_messages = parse_frontmatter(path)
         messages.extend(parse_messages)
@@ -455,6 +470,22 @@ def validate_entries(entries: list[SkillEntry]) -> list[str]:
             messages.append(error(f"{entry.path} is missing non-empty description"))
         elif len(description.strip()) > 1024:
             messages.append(warning(f"{entry.path} description exceeds 1024 characters"))
+
+        body = skill_markdown_body(path)
+        for token in unresolved_placeholder_tokens(body):
+            messages.append(error(f"{entry.path} contains unresolved placeholder token: {token}"))
+
+        for ref in local_support_references(
+            install_name=entry.install_name,
+            entry_path=entry.path,
+            entry_format=entry.format,
+            body=body,
+            root=ROOT,
+        ):
+            if ref.unsafe_reason:
+                messages.append(error(f"{entry.path} references unsafe support path {ref.ref}: {ref.unsafe_reason}"))
+            elif not ref.target.exists():
+                messages.append(error(f"{entry.path} references missing support file: {ref.ref}"))
 
         line_count = len(path.read_text(encoding="utf-8").splitlines())
         if line_count > 500:
@@ -682,7 +713,9 @@ def main() -> int:
     entries = discover_skills()
     messages = validate_entries(entries)
 
-    if args.write:
+    validation_errors = [message for message in messages if message.startswith("ERROR:")]
+
+    if args.write and not validation_errors:
         write_generated_files(entries)
 
     if args.check:
