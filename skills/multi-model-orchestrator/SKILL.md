@@ -129,18 +129,7 @@ subtasks:
     status: "pending"
 
 execution:
-  rounds:
-    - round: 1
-      task_id: "task-1"
-      executor: "Opus"
-      status: "done"
-      result: |
-        What was delivered?
-      issues: |
-        Any blockers or concerns?
-      next_step: |
-        What should happen next?
-      timestamp: "2026-06-12T10:30:00Z"
+  rounds: []
 
 feedback:
   synthesis: |
@@ -521,7 +510,9 @@ A: Yes. The skill is agent-agnostic. Use any LLM model. The `executor` field is 
 
 **Q: Should I commit handoffs to git?**
 
-A: Yes. It's a great audit trail. Use git diff to see how the task evolved.
+A: Commit handoffs only when the repository is private or the file has been
+reviewed for secrets, customer data, internal plans, and copied prompts/logs.
+For sensitive work, keep handoffs outside git or commit a redacted summary.
 
 **Q: Can I parallelize execution?**
 

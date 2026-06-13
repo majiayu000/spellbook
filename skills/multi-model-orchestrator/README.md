@@ -99,11 +99,13 @@ Please decompose this goal into subtasks for:
 - Testing (use Claude Code)
 ```
 
-### 3. Execute in Parallel
-- Opus works on design
-- Codex writes code
-- Claude Code runs tests
-- All at the same time
+### 3. Execute in Dependency Order
+- Opus completes the design first
+- Codex implements from the approved design
+- Claude Code tests after the implementation exists
+
+Run tasks in parallel only when their `depends_on` fields are empty and they do
+not need each other's outputs.
 
 ### 4. Record Results
 ```yaml

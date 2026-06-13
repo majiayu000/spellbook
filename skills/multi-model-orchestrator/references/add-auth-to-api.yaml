@@ -217,7 +217,10 @@ subtasks:
 
     acceptance: |
       - Public endpoints still work without token
-      - Protected endpoints return 401 without valid token
+      - During the two-week deprecation window, legacy clients without tokens
+        receive the documented compatibility response or warning path
+      - After the deprecation window, protected endpoints return 401 without
+        valid token
       - Protected endpoints return 200 with valid token
       - Existing tests updated to include auth headers
       - No endpoints left unintentionally public
