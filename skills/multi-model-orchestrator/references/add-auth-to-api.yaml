@@ -19,7 +19,8 @@ goal:
 
   acceptance_criteria:
     - "Login endpoint returns valid JWT token"
-    - "All protected endpoints require valid JWT"
+    - "Protected endpoints support the documented two-week legacy compatibility window"
+    - "After the deprecation window, all protected endpoints require valid JWT"
     - "Token refresh works and extends expiry"
     - "Invalid/expired tokens return 401"
     - "All existing tests pass"
@@ -243,9 +244,10 @@ subtasks:
       4. End-to-end scenario:
          a. POST /auth/login → get accessToken + refreshToken
          b. GET /products with accessToken header → success (200)
-         c. GET /products without token → failure (401)
-         d. POST /auth/refresh with refreshToken → new accessToken
-         e. GET /products with new token → success (200)
+         c. GET /products without token during deprecation → compatibility warning/path
+         d. GET /products without token after deprecation → failure (401)
+         e. POST /auth/refresh with refreshToken → new accessToken
+         f. GET /products with new token → success (200)
       5. Error cases:
          a. Expired token → 401
          b. Invalid signature → 401
@@ -339,10 +341,11 @@ execution:
       result: |
         All endpoints protected:
         - 3 public endpoints (health, login, refresh)
-        - 12 protected endpoints (require JWT)
+        - 12 protected endpoints with JWT enforcement after the deprecation window
+        - Legacy clients receive the documented temporary compatibility warning/path
 
         Updated API documentation
-        All existing tests updated to include auth headers
+        Existing tests cover both deprecation-window and JWT-required behavior
       issues: |
         None. All endpoints protected correctly.
       next_step: "Run full validation suite"
