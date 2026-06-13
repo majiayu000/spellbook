@@ -159,6 +159,128 @@ class ThreadsRunLogTests(unittest.TestCase):
             record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
             self.assertEqual(record["mode"], "clarify_first")
 
+    def test_rejects_required_native_threads_without_spawned_agent(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "native-missing.jsonl"
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--path", str(log_path)],
+                input=json.dumps(
+                    {
+                        "skill": "threads",
+                        "mode": "execute_direct",
+                        "native_subagents": "available",
+                        "explicit_thread_request": True,
+                        "spawn_requirement": "required",
+                        "fallback_mode": "none",
+                        "lanes_total": 2,
+                    }
+                ),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("native_thread_evidence.spawned_agents", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_accepts_required_native_threads_with_spawned_agent(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "native-present.jsonl"
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--path", str(log_path)],
+                input=json.dumps(
+                    {
+                        "skill": "threads",
+                        "mode": "execute_direct",
+                        "native_subagents": "available",
+                        "explicit_thread_request": True,
+                        "spawn_requirement": "required",
+                        "fallback_mode": "none",
+                        "native_thread_evidence": {
+                            "spawned_agents": [
+                                {
+                                    "lane_id": "review-pr",
+                                    "spawn_tool": "multi_agent_v1.spawn_agent",
+                                    "agent_id_or_thread_id": "agent-123",
+                                    "result_collected": True,
+                                }
+                            ]
+                        },
+                        "lanes_total": 2,
+                    }
+                ),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(
+                record["native_thread_evidence"]["spawned_agents"][0]["agent_id_or_thread_id"],
+                "agent-123",
+            )
+
+    def test_requires_reason_for_explicit_single_agent_fallback(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "fallback-missing.jsonl"
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--path", str(log_path)],
+                input=json.dumps(
+                    {
+                        "skill": "threads",
+                        "mode": "review_only",
+                        "native_subagents": "available",
+                        "explicit_thread_request": "yes",
+                        "spawn_requirement": "required",
+                        "fallback_mode": "single_agent",
+                    }
+                ),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("single_agent fallback", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_accepts_reasoned_explicit_single_agent_fallback(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "fallback-reason.jsonl"
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--path", str(log_path)],
+                input=json.dumps(
+                    {
+                        "skill": "threads",
+                        "mode": "review_only",
+                        "native_subagents": "available",
+                        "explicit_thread_request": "yes",
+                        "spawn_requirement": "required",
+                        "fallback_mode": "single_agent",
+                        "single_agent_justification": {
+                            "reason": "sequential_dependency",
+                            "evidence": "next step depends on one immediate result",
+                        },
+                    }
+                ),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(
+                record["single_agent_justification"]["reason"],
+                "sequential_dependency",
+            )
+
     def test_rejects_non_object_input(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "bad.jsonl"

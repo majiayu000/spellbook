@@ -56,7 +56,12 @@ ALLOWED_TOP_LEVEL_FIELDS = {
     "data_collection",
     "truth_level",
     "native_subagents",
+    "explicit_thread_request",
+    "spawn_requirement",
+    "native_thread_evidence",
     "fallback_mode",
+    "no_spawn_reason",
+    "single_agent_justification",
     "capability_gate",
     "queue_bounds",
     "remote_refresh",
@@ -166,10 +171,85 @@ def normalize_record(raw: Any, allow_extra: bool = False) -> dict[str, Any]:
     truth_level = record.get("truth_level")
     if truth_level is not None and truth_level not in ALLOWED_TRUTH_LEVELS:
         raise ValueError(f"unknown truth_level: {truth_level}")
+    validate_native_thread_evidence(record)
 
     record.setdefault("schema_version", 1)
     record["recorded_at_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     return record
+
+
+def truthy(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"yes", "true", "1", "required"}
+    return False
+
+
+def nested_get(mapping: dict[str, Any], field: str) -> Any:
+    nested = mapping.get("capability_gate")
+    if isinstance(nested, dict) and field in nested:
+        return nested.get(field)
+    return mapping.get(field)
+
+
+def has_spawned_agent(record: dict[str, Any]) -> bool:
+    evidence = record.get("native_thread_evidence")
+    if not isinstance(evidence, dict):
+        return False
+    spawned_agents = evidence.get("spawned_agents")
+    if not isinstance(spawned_agents, list):
+        return False
+    for agent in spawned_agents:
+        if not isinstance(agent, dict):
+            continue
+        if agent.get("agent_id_or_thread_id") or agent.get("tool_agent_id"):
+            return True
+    return False
+
+
+def has_single_agent_reason(record: dict[str, Any]) -> bool:
+    if record.get("no_spawn_reason"):
+        return True
+    justification = record.get("single_agent_justification")
+    if isinstance(justification, dict) and justification.get("reason"):
+        return True
+    evidence = record.get("native_thread_evidence")
+    return isinstance(evidence, dict) and bool(evidence.get("fallback_reason"))
+
+
+def validate_native_thread_evidence(record: dict[str, Any]) -> None:
+    mode = record.get("mode")
+    native_subagents = nested_get(record, "native_subagents")
+    fallback_mode = nested_get(record, "fallback_mode")
+    explicit_request = nested_get(record, "explicit_thread_request")
+    spawn_requirement = nested_get(record, "spawn_requirement")
+    dispatch_mode = mode in {"execute_direct", "review_only", "research_spec"}
+    required = truthy(explicit_request) or spawn_requirement == "required"
+
+    if (
+        dispatch_mode
+        and native_subagents == "available"
+        and fallback_mode == "none"
+        and required
+        and not has_spawned_agent(record)
+    ):
+        raise ValueError(
+            "native_thread_evidence.spawned_agents is required when native "
+            "subagents are available for an explicit threads run"
+        )
+
+    if (
+        dispatch_mode
+        and native_subagents == "available"
+        and fallback_mode == "single_agent"
+        and required
+        and not has_single_agent_reason(record)
+    ):
+        raise ValueError(
+            "single_agent fallback for an explicit threads run requires "
+            "no_spawn_reason or single_agent_justification.reason"
+        )
 
 
 def append_record(record: dict[str, Any], path: Path) -> None:

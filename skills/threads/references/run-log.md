@@ -58,7 +58,19 @@ python3 skills/threads/scripts/append_run_log.py <<'JSON'
   },
   "truth_level": "A",
   "native_subagents": "available",
+  "explicit_thread_request": true,
+  "spawn_requirement": "required",
   "fallback_mode": "none",
+  "native_thread_evidence": {
+    "spawned_agents": [
+      {
+        "lane_id": "merge-reviewer",
+        "spawn_tool": "multi_agent_v1.spawn_agent",
+        "agent_id_or_thread_id": "agent-123",
+        "result_collected": true
+      }
+    ]
+  },
   "queue_bounds": {
     "max_items": 1,
     "time_budget": "30m",
@@ -110,7 +122,27 @@ Recommended fields:
   },
   "truth_level": "A|B|C|D",
   "native_subagents": "available|unavailable",
+  "explicit_thread_request": true,
+  "spawn_requirement": "required|optional|unavailable",
   "fallback_mode": "none|single_agent|prompt_pack_only",
+  "no_spawn_reason": "required when an explicit threads run falls back to single_agent",
+  "single_agent_justification": {
+    "reason": "no_independent_lanes|sequential_dependency|shared_writable_files|tool_unavailable|user_requested_single_agent",
+    "evidence": "short evidence summary"
+  },
+  "native_thread_evidence": {
+    "spawned_agents": [
+      {
+        "lane_id": "review-pr",
+        "spawn_tool": "multi_agent_v1.spawn_agent",
+        "agent_id_or_thread_id": "agent-123",
+        "wait_evidence": "completed status collected",
+        "close_evidence": "closed after collection",
+        "result_collected": true
+      }
+    ],
+    "fallback_reason": ""
+  },
   "queue_bounds": {
     "max_items": 1,
     "time_budget": "30m",
@@ -139,6 +171,7 @@ Recommended fields:
       "worktree": "/tmp/repo-worker-1",
       "writable_files": ["src/example.rs"],
       "files_changed": ["src/example.rs"],
+      "native_thread_id": "agent-123",
       "verification_scope": "targeted",
       "verification": ["cargo test example"],
       "result": "passed|blocked|failed"
@@ -223,6 +256,7 @@ Use stable codes so later analysis can aggregate them:
 - `verification_gap`: completion was claimed without fresh command output.
 - `review_thread_missed`: inline review thread/comment state was not checked.
 - `review_loop`: repeated review-thread fix cycles hit the configured limit.
+- `native_thread_not_spawned`: explicit threads run did not spawn a native subagent and did not record a valid fallback.
 - `waiting_ci`: only remote CI remained and the wait budget was exhausted.
 - `merge_gate_bypass`: merge happened without independent review or closure audit.
 - `tool_unavailable`: native subagent, GitHub, or validation tool was unavailable.
