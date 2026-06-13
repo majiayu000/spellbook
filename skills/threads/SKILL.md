@@ -227,6 +227,7 @@ lanes:
   writable_files:
   forbidden_files:
   exclusive_verification:
+  verification_scope: inspection_only | targeted | full_local | ci_only
   expected_output:
   verification:
 ```
@@ -244,11 +245,29 @@ Rules:
 - For GitHub queues, treat comments and review threads as first-class remote state; open PR/issue lists alone are not enough.
 - Default WIP limit: at most 3 planning/research lanes, 2 concurrent writable implementation lanes, and 2 reviewers per PR unless the user explicitly grants a larger budget.
 
+## Verification Budget
+
+Use `verification_scope` to keep review evidence useful without duplicating expensive full-suite work:
+
+- `inspection_only`: read-only diff/code inspection. Cheap static checks such as `git diff --check` are allowed when they are relevant.
+- `targeted`: focused tests or linters for touched behavior only.
+- `full_local`: one owner runs the project-wide local suite for the tranche, usually the root orchestrator, `verification_owner`, or a `merge_reviewer`.
+- `ci_only`: fresh CI tied to the current head SHA is the full-suite truth source.
+
+Rules:
+
+- Assign at most one full-suite owner per tranche. If fresh CI is the full-suite truth source, do not also ask every reviewer to repeat the local full suite.
+- Reviewer lanes default to `inspection_only` or `targeted`. They must not run full project test suites unless the lane map explicitly names them as `verification_owner` or `merge_reviewer`.
+- Targeted reviewer checks should be command-valid for the language/tool. For Cargo, pass one test filter per `cargo test` command, or use a broader module/path filter; do not pass several unrelated test names as positional filters in one command.
+- If a targeted check touches shared state, global caches, local daemons, or repo-level generated state, move it to the serialized `verification_owner` lane.
+
 ## Dispatch
 
 Use native subagents when available. If the multi-agent tool is not loaded, search for it using tool discovery. Do not use shell/tmux/OMX orchestration unless explicitly requested.
 
 When `multi_agent_v1` tools are available, use `spawn_agent` for bounded sidecar lanes, `wait_agent` only when the next critical-path step needs that result, and `close_agent` after collecting completed output. Keep immediate blockers in the main thread.
+
+Close completed subagents as soon as their evidence has been collected. For long issue/PR queues, finish a bounded tranche, record the ledger and resume query, and consider starting a fresh parent thread instead of carrying oversized context forward.
 
 Use these lane types:
 
