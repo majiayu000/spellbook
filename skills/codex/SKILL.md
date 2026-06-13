@@ -38,7 +38,7 @@ EOF
 | --- | --- | --- |
 | Read-only review or analysis | `read-only` | `--sandbox read-only 2>/dev/null` |
 | Apply local edits | `workspace-write` | `--sandbox workspace-write 2>/dev/null` |
-| Apply edits that need network access | Use a mode listed by the installed CLI | Check `codex exec --help`; do not assume network-write modes exist |
+| Apply edits that need network access | `workspace-write` plus config | `--sandbox workspace-write -c 'sandbox_workspace_write.network_access=true' 2>/dev/null` |
 | Permit extra write scope | Prefer `--add-dir` | Ask before adding extra writable directories |
 | Permit broad file access | `danger-full-access` only after approval | Ask before adding `--sandbox danger-full-access` |
 | Resume recent session | Inherited from original | `codex exec resume --last 2>/dev/null <<'EOF'` + prompt + `EOF` |
