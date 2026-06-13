@@ -443,6 +443,18 @@
     ]
   },
   {
+    "name": "multi-model-orchestrator",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/multi-model-orchestrator/SKILL.md",
+    "description": "Use when coordinating complex tasks across multiple AI agents with a centralized handoff document for planning, execution tracking, and feedback fusion.",
+    "language": "en",
+    "tags": [
+      "agent",
+      "documentation"
+    ]
+  },
+  {
     "name": "observability-sre",
     "category": "Operations & Deploy",
     "format": "directory",

@@ -1,0 +1,402 @@
+---
+# Real-World Example: Add JWT Authentication to Existing REST API
+# This handoff shows how to decompose a complex feature across multiple agents
+
+metadata:
+  name: "add-jwt-auth-to-api"
+  created: "2026-06-12"
+  goal: "Add JWT-based authentication to existing REST API"
+  status: "complete"
+
+goal:
+  summary: |
+    The ProductAPI currently accepts all requests without authentication.
+    We need to:
+    1. Add JWT token generation on login
+    2. Protect all endpoints with JWT verification
+    3. Support token refresh
+    4. Maintain backward compatibility for a 2-week deprecation period
+
+  acceptance_criteria:
+    - "Login endpoint returns valid JWT token"
+    - "Protected endpoints support the documented two-week legacy compatibility window"
+    - "After the deprecation window, all protected endpoints require valid JWT"
+    - "Token refresh works and extends expiry"
+    - "Invalid/expired tokens return 401"
+    - "All existing tests pass"
+    - "New tests cover auth happy path + error cases"
+    - "Documentation updated"
+    - "Performance regression < 5%"
+
+  context: |
+    Project: ProductAPI (Node.js/Express, TypeScript)
+    Code location: src/api/
+    Current auth: None
+    Related files:
+      - src/api/routes/ (endpoint definitions)
+      - src/api/middleware/ (existing middleware patterns)
+      - src/db/users.ts (user model)
+    Dependencies already installed: jsonwebtoken, bcrypt
+    Constraints:
+      - No breaking changes to existing API contracts
+      - Must work with existing API clients for 2 weeks
+      - Token expiry: 1 hour (access), 7 days (refresh)
+
+subtasks:
+  - id: "auth-design"
+    title: "Design JWT authentication flow"
+    type: "design"
+    executor: "Opus"
+
+    input: |
+      Design the JWT authentication system for ProductAPI:
+
+      Requirements:
+      - Stateless JWT tokens (no session database)
+      - Token structure: { userId, role, issuedAt, expiresAt }
+      - Login endpoint: POST /auth/login { email, password } → { accessToken, refreshToken }
+      - Refresh endpoint: POST /auth/refresh { refreshToken } → { accessToken }
+      - Logout endpoint: POST /auth/logout (optional, client-side token deletion)
+
+      Decisions to make:
+      - Algorithm: HS256 or RS256? (HS256 simpler, RS256 more secure for micro-services)
+      - Token storage in client? (localStorage vs secure cookies)
+      - How to handle token in headers? (Authorization: Bearer <token>)
+      - Refresh token rotation? (Single use vs reusable?)
+
+      Output: Design document covering:
+      1. JWT token structure and claims
+      2. Auth flow diagram (login → access + refresh → protected endpoint)
+      3. Error handling (invalid token, expired, malformed)
+      4. Migration plan (2-week deprecation window)
+      5. Security considerations (CORS, token expiry, refresh rotation)
+
+      File reference: src/api/routes/auth.ts (will be created)
+
+    acceptance: |
+      - Design document is complete (docs/AUTH_DESIGN.md)
+      - Flow diagram covers happy path + error cases
+      - Security review completed (no obvious vulnerabilities)
+      - Stakeholders reviewed and approved (dev team)
+
+    depends_on: []
+    status: "done"
+
+  - id: "auth-middleware"
+    title: "Implement JWT verification middleware"
+    type: "code"
+    executor: "Codex"
+
+    input: |
+      Implement JWT verification middleware based on the design from task auth-design.
+
+      Create src/api/middleware/authMiddleware.ts:
+      ```typescript
+      export function verifyJWT(req, res, next) {
+        // Extract token from Authorization header
+        // Verify token signature
+        // Attach user to req.user
+        // Return 401 if invalid/expired
+      }
+      ```
+
+      Requirements:
+      - Verify JWT signature using secret from environment
+      - Extract userId and role from token
+      - Handle expired tokens gracefully
+      - Return clear 401 response with error message
+      - No database lookups in middleware (stateless)
+
+      Code patterns to follow:
+      - See src/api/middleware/loggerMiddleware.ts for existing middleware style
+      - Error handling matches src/api/errors/ApiError.ts
+      - Type definitions in src/types/auth.ts
+
+      Tests:
+      - Create tests/middleware/authMiddleware.test.ts
+      - Test valid token → request continues
+      - Test expired token → 401
+      - Test invalid signature → 401
+      - Test missing Authorization header → 401
+      - Test malformed token → 401
+
+    acceptance: |
+      - Middleware verifies JWT correctly
+      - All test cases pass
+      - Performance: < 5ms per verification
+      - No console.log statements (use logger)
+      - Follows TypeScript strict mode
+
+    depends_on: ["auth-design"]
+    status: "done"
+
+  - id: "auth-endpoints"
+    title: "Implement login, refresh, logout endpoints"
+    type: "code"
+    executor: "Codex"
+
+    input: |
+      Implement authentication endpoints in src/api/routes/authRoutes.ts:
+
+      1. POST /auth/login
+         Input: { email: string, password: string }
+         Output: { accessToken, refreshToken, expiresIn }
+         Logic:
+         - Find user by email
+         - Verify password using bcrypt
+         - Generate JWT tokens
+         - Return tokens to client
+
+      2. POST /auth/refresh
+         Input: { refreshToken: string }
+         Output: { accessToken, expiresIn }
+         Logic:
+         - Verify refresh token is valid
+         - Generate new access token
+         - Return new token
+
+      3. POST /auth/logout
+         Input: (body empty)
+         Output: { success: true }
+         Logic:
+         - Client-side: delete tokens
+         - Server-side: optional (could track invalidated tokens)
+
+      Requirements:
+      - Use bcrypt.compare() for password validation
+      - Use jsonwebtoken.sign() with secret from process.env.JWT_SECRET
+      - Return appropriate status codes (200, 400, 401)
+      - Log authentication attempts (success + failures)
+      - Rate limit login attempts (max 5 per minute per IP)
+
+      Code references:
+      - User model: src/db/users.ts
+      - Error handling: src/api/errors/ApiError.ts
+      - Config: src/config/jwt.ts (define token expiry constants)
+
+    acceptance: |
+      - All three endpoints work correctly
+      - Password validation passes for correct/incorrect passwords
+      - Generated tokens can be verified by middleware
+      - Rate limiting prevents brute force
+      - Error messages don't leak user existence
+      - All tests pass
+
+    depends_on: ["auth-middleware"]
+    status: "done"
+
+  - id: "protect-endpoints"
+    title: "Protect existing API endpoints with JWT middleware"
+    type: "code"
+    executor: "Haiku"
+
+    input: |
+      Apply JWT middleware to existing API endpoints.
+
+      Steps:
+      1. Import authMiddleware from src/api/middleware/authMiddleware.ts
+      2. Add middleware to all protected routes in:
+         - src/api/routes/productsRoutes.ts
+         - src/api/routes/usersRoutes.ts
+         - src/api/routes/ordersRoutes.ts
+      3. PUBLIC endpoints (no auth required):
+         - GET /health
+         - POST /auth/login
+         - POST /auth/refresh
+      4. PROTECTED endpoints (require auth):
+         - All other endpoints
+
+      Pattern:
+      ```typescript
+      router.get('/protected', verifyJWT, (req, res) => {
+        const userId = req.user.userId;
+        // Access protected resource
+      });
+      ```
+
+      Update API documentation to note which endpoints require auth.
+
+    acceptance: |
+      - Public endpoints still work without token
+      - During the two-week deprecation window, legacy clients without tokens
+        receive the documented compatibility response or warning path
+      - After the deprecation window, protected endpoints return 401 without
+        valid token
+      - Protected endpoints return 200 with valid token
+      - Existing tests updated to include auth headers
+      - No endpoints left unintentionally public
+
+    depends_on: ["auth-endpoints"]
+    status: "done"
+
+  - id: "tests-and-validation"
+    title: "Write comprehensive tests and validate end-to-end"
+    type: "validation"
+    executor: "Claude Code"
+
+    input: |
+      Run full test suite and validate the authentication flow end-to-end.
+
+      Testing checklist:
+      1. Unit tests for JWT middleware (task auth-middleware)
+      2. Integration tests for auth endpoints (task auth-endpoints)
+      3. Integration tests for protected endpoints (task protect-endpoints)
+      4. End-to-end scenario:
+         a. POST /auth/login → get accessToken + refreshToken
+         b. GET /products with accessToken header → success (200)
+         c. GET /products without token during deprecation → compatibility warning/path
+         d. GET /products without token after deprecation → failure (401)
+         e. POST /auth/refresh with refreshToken → new accessToken
+         f. GET /products with new token → success (200)
+      5. Error cases:
+         a. Expired token → 401
+         b. Invalid signature → 401
+         c. Malformed token → 400
+         d. Token from different secret → 401
+
+      Performance validation:
+      - Load test: 100 concurrent requests to protected endpoint
+      - Measure auth middleware latency (should be < 5ms)
+      - Compare to baseline (no auth) — regression < 5%
+
+      Commands to run:
+      ```bash
+      npm test -- auth.test.ts
+      npm test -- integration/auth-flow.test.ts
+      npm run load-test -- --endpoint /products --concurrency 100
+      ```
+
+    acceptance: |
+      - All tests pass
+      - Performance regression < 5%
+      - No console errors or warnings
+      - Auth flow works end-to-end
+      - Documentation reflects changes
+
+    depends_on: ["protect-endpoints"]
+    status: "done"
+
+execution:
+  rounds:
+    - round: 1
+      task_id: "auth-design"
+      executor: "Opus"
+      status: "done"
+      result: |
+        Design document completed at docs/AUTH_DESIGN.md
+
+        Key decisions made:
+        - Use HS256 (simpler, sufficient for single service)
+        - Bearer token in Authorization header
+        - Access token: 1 hour, Refresh token: 7 days
+        - Refresh token single-use (rotate on each refresh)
+        - Store refresh tokens in Redis for invalidation
+
+        Flow diagram: See docs/AUTH_DESIGN.md diagram section
+      issues: |
+        None. Design is clear and secure.
+      next_step: "Proceed to auth-middleware implementation"
+      timestamp: "2026-06-12T10:00:00Z"
+
+    - round: 2
+      task_id: "auth-middleware"
+      executor: "Codex"
+      status: "done"
+      result: |
+        Middleware implemented at src/api/middleware/authMiddleware.ts
+        Tests pass (6/6)
+
+        Implementation includes:
+        - Bearer token extraction from Authorization header
+        - JWT verification with HS256
+        - User payload extraction
+        - Clear error messages for different failure modes
+      issues: |
+        None. Tests all passing.
+      next_step: "Implement auth endpoints"
+      timestamp: "2026-06-12T10:45:00Z"
+
+    - round: 3
+      task_id: "auth-endpoints"
+      executor: "Codex"
+      status: "done"
+      result: |
+        Auth endpoints implemented:
+        - POST /auth/login → works, returns tokens
+        - POST /auth/refresh → works, generates new access token
+        - POST /auth/logout → works
+
+        Rate limiting added (5 requests per minute per IP)
+        Password validation using bcrypt working correctly
+      issues: |
+        Edge case: What if refresh token expires?
+        Solution: User needs to re-login. Added documentation.
+      next_step: "Protect existing endpoints"
+      timestamp: "2026-06-12T11:30:00Z"
+
+    - round: 4
+      task_id: "protect-endpoints"
+      executor: "Haiku"
+      status: "done"
+      result: |
+        All endpoints protected:
+        - 3 public endpoints (health, login, refresh)
+        - 12 protected endpoints with JWT enforcement after the deprecation window
+        - Legacy clients receive the documented temporary compatibility warning/path
+
+        Updated API documentation
+        Existing tests cover both deprecation-window and JWT-required behavior
+      issues: |
+        None. All endpoints protected correctly.
+      next_step: "Run full validation suite"
+      timestamp: "2026-06-12T12:15:00Z"
+
+    - round: 5
+      task_id: "tests-and-validation"
+      executor: "Claude Code"
+      status: "done"
+      result: |
+        ✓ All tests pass (42/42)
+        ✓ End-to-end scenario validated
+        ✓ Error cases handled correctly
+        ✓ Performance regression: 2.3% (< 5% threshold)
+        ✓ Load test: 100 concurrent requests all succeed
+
+        Full results: See tests/results/auth-validation-2026-06-12.log
+      issues: |
+        None. All acceptance criteria met.
+      next_step: "Deploy to staging for smoke test"
+      timestamp: "2026-06-12T13:00:00Z"
+
+feedback:
+  synthesis: |
+    Execution was smooth and efficient. All subtasks completed successfully.
+
+    What worked well:
+    - Clear design upfront prevented rework
+    - Clear sequencing from middleware to endpoint implementation prevented contract drift
+    - Haiku effectively handled the endpoint protection
+
+    Unexpected learnings:
+    - Redis for refresh token storage was necessary for single-use tokens
+    - Rate limiting on login became important (brute force protection)
+
+    The task took 5 execution rounds, with dependent tasks sequenced and independent review/validation work parallelized where possible
+    estimated timeline: 3-4 hours total
+    actual timeline: 3 hours
+
+  improvements:
+    - Consider adding OAuth2 support for future integrations
+    - Add email verification for new accounts
+    - Implement password reset flow
+    - Add session management (track multiple login devices)
+
+  decision_log: |
+    Q: Why HS256 instead of RS256?
+    A: Single service, simpler deployment, sufficient security. RS256 would be needed for distributed microservices.
+
+    Q: Why refresh tokens expire after 7 days?
+    A: Balance between security (short window for compromise) and UX (user doesn't need to re-login constantly).
+
+    Q: Why store refresh tokens in Redis?
+    A: Enables single-use tokens + invalidation (logout), without database writes for every auth check.
