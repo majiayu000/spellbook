@@ -18,6 +18,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 QUICK_VALIDATE_PATH = SCRIPT_DIR / "quick_validate.py"
+SAFE_PATHS_PATH = SCRIPT_DIR / "path_safety.py"
 
 
 def load_validate_skill():
@@ -34,21 +35,27 @@ def load_validate_skill():
 
 validate_skill = load_validate_skill()
 
+
+def load_safe_paths():
+    spec = importlib.util.spec_from_file_location(
+        "skill_creator_safe_paths",
+        SAFE_PATHS_PATH,
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Could not load path safety helpers from {SAFE_PATHS_PATH}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+safe_paths = load_safe_paths()
+
 # Patterns to exclude when packaging skills.
 EXCLUDE_DIRS = {"__pycache__", "node_modules"}
 EXCLUDE_GLOBS = {"*.pyc"}
 EXCLUDE_FILES = {".DS_Store"}
 # Directories excluded only at the skill root (not when nested deeper).
 ROOT_EXCLUDE_DIRS = {"evals"}
-
-
-def is_relative_to(path: Path, directory: Path) -> bool:
-    """Return whether path is contained by directory after resolution."""
-    try:
-        path.relative_to(directory)
-        return True
-    except ValueError:
-        return False
 
 
 def should_exclude(rel_path: Path) -> bool:
@@ -69,9 +76,11 @@ def should_exclude(rel_path: Path) -> bool:
 def collect_package_entries(skill_path: Path):
     """Collect package entries after rejecting unsafe filesystem paths."""
     entries = []
+    skill_root_name = safe_paths.safe_kebab_name(skill_path.name, kind="skill directory name")
 
     for file_path in skill_path.rglob('*'):
-        arcname = file_path.relative_to(skill_path.parent)
+        rel_arcname = file_path.relative_to(skill_path.parent)
+        arcname = Path(safe_paths.safe_archive_name(skill_root_name, *rel_arcname.parts[1:]))
         if should_exclude(arcname):
             continue
         if file_path.is_symlink():
@@ -80,7 +89,7 @@ def collect_package_entries(skill_path: Path):
             continue
 
         resolved_file = file_path.resolve(strict=True)
-        if not is_relative_to(resolved_file, skill_path):
+        if not safe_paths.is_relative_to(resolved_file, skill_path):
             raise ValueError(f"Refusing to package file outside skill folder: {arcname}")
         entries.append((file_path, arcname))
 
@@ -124,18 +133,17 @@ def package_skill(skill_path, output_dir=None):
         return None
     print(f"✅ {message}\n")
 
-    # Determine output location
-    skill_name = skill_path.name
-    if output_dir:
-        output_path = Path(output_dir).resolve()
-        output_path.mkdir(parents=True, exist_ok=True)
-    else:
-        output_path = Path.cwd()
-
-    skill_filename = output_path / f"{skill_name}.skill"
-
     # Create the .skill file (zip format)
     try:
+        # Determine output location only after validating the package root name.
+        skill_name = safe_paths.safe_kebab_name(skill_path.name, kind="skill directory name")
+        if output_dir:
+            output_path = Path(output_dir).resolve()
+            output_path.mkdir(parents=True, exist_ok=True)
+        else:
+            output_path = Path.cwd()
+
+        skill_filename = safe_paths.safe_output_path(output_path, f"{skill_name}.skill")
         package_entries = collect_package_entries(skill_path)
         with zipfile.ZipFile(skill_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for file_path, arcname in package_entries:

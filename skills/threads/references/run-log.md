@@ -1,6 +1,6 @@
 # Threads Run Log
 
-Use this reference when the user asks to collect problems encountered by the `threads` skill, or when a non-trivial run should leave a compact diagnostic trail.
+Use this reference when the user asks to collect problems encountered by the `threads` skill, or when a non-trivial run should leave a compact diagnostic trail. Durable JSONL logging is opt-in through `data_collection: local_jsonl`, an explicit user request, or an explicitly enabled debug run.
 
 ## Purpose
 
@@ -10,14 +10,18 @@ Collect enough structured data to answer:
 - Did the task need multiple lanes, or should it have stayed single-agent?
 - Did any lane drift outside its role or writable files?
 - Were GitHub, worktree, CI, and review-thread states checked with fresh evidence?
+- What remote `truth_level` was available, and which actions were forbidden by that level?
+- Did the run refresh `origin/main` often enough to notice stale bases?
+- Was the queue bounded to an explicit tranche instead of expanding indefinitely?
 - Which failure modes repeat across runs?
 
 ## Storage
 
-Default local path:
+Default local path is project-scoped and kept out of tracked worktree content
+when the current directory is inside a Git repository:
 
 ```text
-~/.codex/threads-run-log.jsonl
+<git-dir>/codex/threads/run-log.jsonl
 ```
 
 Override with:
@@ -25,6 +29,17 @@ Override with:
 ```text
 CODEX_THREADS_RUN_LOG=/path/to/threads-run-log.jsonl
 ```
+
+The script discovers the project by walking up from the current working
+directory until it finds `.git`. For a normal checkout, `<git-dir>` is
+`<project>/.git`; for a linked worktree, it is the metadata directory referenced
+by the `.git` file. This keeps durable logging per project without adding
+untracked `.codex/` files to the repository. If no Git project is found, the
+fallback path is `<current-directory>/.codex/threads/run-log.jsonl`.
+
+Do not use a global log file by default; different repositories should not
+share durable threads telemetry unless the user explicitly sets
+`CODEX_THREADS_RUN_LOG`.
 
 Append one JSON object per run:
 
@@ -36,8 +51,33 @@ python3 skills/threads/scripts/append_run_log.py <<'JSON'
   "repo": "/abs/repo/path",
   "trigger_summary": "user asked to process issue and PR queue with threads",
   "goal": "fix and merge actionable PR queue",
+  "intent_contract": {
+    "merge_policy": "no_merge",
+    "remote_truth_required": true,
+    "data_collection": "local_jsonl"
+  },
+  "truth_level": "A",
+  "native_subagents": "available",
+  "fallback_mode": "none",
+  "queue_bounds": {
+    "max_items": 1,
+    "time_budget": "30m",
+    "queue_tranche": "first merge-ready blocker"
+  },
   "lanes_total": 4,
   "failure_codes": ["review_thread_missed"],
+  "remote_refresh": {
+    "origin_main_sha": "abc123",
+    "stale_base": false,
+    "refreshes": 3
+  },
+  "remote_truth": {
+    "open_prs": 0,
+    "open_issues": 0
+  },
+  "local_state": {
+    "dirty_worktree": false
+  },
   "outcome": "partial",
   "verification": {
     "fresh": true,
@@ -57,12 +97,39 @@ Recommended fields:
   "recorded_at_utc": "auto-filled by script",
   "skill": "threads",
   "skill_source": "local|spellbook|unknown",
-  "mode": "single_agent|plan_only|execute_direct|review_only|research_spec",
+  "mode": "single_agent|plan_only|execute_direct|review_only|research_spec|clarify_first",
   "repo": "/absolute/repo/path",
   "base_ref": "origin/main",
   "trigger_summary": "short summary, not the raw prompt",
   "goal": "short goal",
   "non_goals": ["out of scope item"],
+  "intent_contract": {
+    "merge_policy": "no_merge|merge_after_gate|user_confirm_before_merge",
+    "remote_truth_required": true,
+    "data_collection": "final_report|local_jsonl|none"
+  },
+  "truth_level": "A|B|C|D",
+  "native_subagents": "available|unavailable",
+  "fallback_mode": "none|single_agent|prompt_pack_only",
+  "queue_bounds": {
+    "max_items": 1,
+    "time_budget": "30m",
+    "queue_tranche": "first blocker"
+  },
+  "remote_refresh": {
+    "cadence": "queue_start|before_lane|before_push|before_merge|after_ci_wait",
+    "origin_main_sha": "abc123",
+    "local_base_sha": "def456",
+    "stale_base": false,
+    "refreshes": 1,
+    "policy": "continue|rebase|required_stop"
+  },
+  "queue_ledger": {
+    "items_total": 0,
+    "items_closed": 0,
+    "items_deferred": 0,
+    "superseded_items": []
+  },
   "lanes_total": 0,
   "lanes": [
     {
@@ -72,6 +139,7 @@ Recommended fields:
       "worktree": "/tmp/repo-worker-1",
       "writable_files": ["src/example.rs"],
       "files_changed": ["src/example.rs"],
+      "verification_scope": "targeted",
       "verification": ["cargo test example"],
       "result": "passed|blocked|failed"
     }
@@ -83,6 +151,33 @@ Recommended fields:
     "open_issues": 0,
     "unresolved_review_threads": 0
   },
+  "remote_truth": {
+    "open_prs": 0,
+    "open_issues": 0,
+    "checked_pr_heads": [],
+    "checked_review_threads": [],
+    "checked_ci": [],
+    "origin_main_sha": "abc123",
+    "stale_base": false
+  },
+  "local_state": {
+    "dirty_worktree": false,
+    "stale_worktree": false,
+    "high_context_file": false
+  },
+  "ci_wait": {
+    "duration_seconds": 0,
+    "budget_exhausted": false,
+    "pending_checks": []
+  },
+  "review_loop": {
+    "cycles": 0,
+    "outcome": "resolved|review_loop|not_applicable"
+  },
+  "exclusive_verification": {
+    "serialized_commands": [],
+    "reason": ""
+  },
   "verification": {
     "fresh": true,
     "commands": ["cargo test"],
@@ -93,20 +188,42 @@ Recommended fields:
 }
 ```
 
+Truth levels:
+
+- `A`: git fetch plus GitHub API or GraphQL can prove current PR head, checks, merge state, and review-thread state.
+- `B`: git fetch plus REST PR/review/comment data is available, but GraphQL review-thread state is unavailable; merge is forbidden.
+- `C`: only local git state is reliable; remote closure and merge claims are forbidden.
+- `D`: no reliable repo or remote state is available; only plan or prompt-pack output is allowed.
+
+The append script enforces an allowlist of top-level fields by default. Use `--allow-extra` only for local debugging when extra fields are needed; sensitive keys and common token patterns are still redacted.
+
+Safety limits:
+
+- maximum input size: 64 KiB
+- maximum string length: 4000 characters
+- maximum nesting depth: 8
+- maximum array items retained: 100
+- new log files are created with `0600` permissions
+- append uses a POSIX file lock when available
+
 ## Failure Codes
 
 Use stable codes so later analysis can aggregate them:
 
 - `trigger_too_broad`: skill activated for a task that did not need threads.
 - `missing_intent_contract`: goal, non-goals, done-when, or merge policy was unclear.
+- `truth_level_too_low`: requested action required a higher remote truth level.
 - `source_drift`: local installed skill and Spellbook/source version differed.
 - `stale_remote_state`: PR, issue, branch, or CI state was not freshly fetched.
+- `stale_base`: `origin/main` advanced under a lane and may invalidate its base.
 - `duplicate_work_missed`: existing PR/issue/branch already covered the task.
 - `role_drift`: planner/reviewer/worker acted outside its lane role.
 - `write_scope_violation`: worker touched unassigned or forbidden files.
 - `vague_lane_output`: lane returned claims without commands, files, or evidence.
 - `verification_gap`: completion was claimed without fresh command output.
 - `review_thread_missed`: inline review thread/comment state was not checked.
+- `review_loop`: repeated review-thread fix cycles hit the configured limit.
+- `waiting_ci`: only remote CI remained and the wait budget was exhausted.
 - `merge_gate_bypass`: merge happened without independent review or closure audit.
 - `tool_unavailable`: native subagent, GitHub, or validation tool was unavailable.
 - `environment_mismatch`: wrong cwd, worktree, binary, branch, or runtime was used.
@@ -118,11 +235,11 @@ Use stable codes so later analysis can aggregate them:
 Common local checks:
 
 ```bash
-jq -r '.failure_codes[]?' ~/.codex/threads-run-log.jsonl | sort | uniq -c | sort -nr
-jq -r 'select(.outcome!="success") | [.recorded_at_utc,.repo,.mode,.failure_codes|join(",")] | @tsv' ~/.codex/threads-run-log.jsonl
-jq -r 'select(.verification.fresh==false) | [.recorded_at_utc,.repo,.goal] | @tsv' ~/.codex/threads-run-log.jsonl
+jq -r '.failure_codes[]?' "$(git rev-parse --git-dir)/codex/threads/run-log.jsonl" | sort | uniq -c | sort -nr
+jq -r 'select(.outcome!="success") | [.recorded_at_utc,.repo,.mode,.failure_codes|join(",")] | @tsv' "$(git rev-parse --git-dir)/codex/threads/run-log.jsonl"
+jq -r 'select(.verification.fresh==false) | [.recorded_at_utc,.repo,.goal] | @tsv' "$(git rev-parse --git-dir)/codex/threads/run-log.jsonl"
 ```
 
 ## Privacy
 
-Do not log secrets, tokens, cookies, private messages, raw prompts, or full command output. Log concise summaries and stable evidence identifiers instead: file paths, command names, PR/issue numbers, head SHAs, and failure codes.
+Do not log secrets, tokens, cookies, private messages, raw prompts, or full command output. Log concise summaries and stable evidence identifiers instead: file paths, command names, PR/issue numbers, head SHAs, and failure codes. Unknown top-level fields are rejected unless `--allow-extra` is supplied.

@@ -131,6 +131,7 @@ class InstallPruneTests(unittest.TestCase):
             env["HOME"] = str(home)
             env.pop("CODEX_SKILLS_DIR", None)
             env.pop("CODEX_HOME", None)
+
             result = subprocess.run(
                 [
                     "bash",
@@ -150,6 +151,36 @@ class InstallPruneTests(unittest.TestCase):
             self.assertFalse(managed_stale_link.exists())
             self.assertFalse(managed_stale_link.is_symlink())
             self.assertTrue(user_link.is_symlink())
+
+    def test_selected_skill_name_cannot_escape_target_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            source_skills = home / ".spellbook" / "skills"
+            target_skills = home / ".claude" / "skills"
+            source_skills.mkdir(parents=True)
+            target_skills.mkdir(parents=True)
+
+            env = os.environ.copy()
+            env["HOME"] = str(home)
+            result = subprocess.run(
+                [
+                    "bash",
+                    "-c",
+                    (
+                        "source ./install.sh; "
+                        'install_skills_to_dir "$CLAUDE_SKILLS_DIR" "Claude Code" "../outside"'
+                    ),
+                ],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Invalid skill name", result.stdout + result.stderr)
+            self.assertFalse((home / ".claude" / "outside").exists())
 
 
 if __name__ == "__main__":

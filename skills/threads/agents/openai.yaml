@@ -1,4 +1,4 @@
 interface:
   display_name: "Threads"
   short_description: "Coordinate native Codex threads with evidence gates and run logs"
-  default_prompt: "Use $threads to plan and run a Codex thread workflow with intent contracts, worktrees, reviews, merge gates, review-thread closure, and run-log data collection."
+  default_prompt: "Use $threads only for explicit Codex-native subagent orchestration or repo queues with independent lanes. Default to single-agent when work is not clearly parallel, and require intent contracts, ownership, review gates, merge permission, truth levels, and evidence-backed closure."
