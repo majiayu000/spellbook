@@ -199,7 +199,7 @@ subtasks:
 2. **Testable Acceptance Criteria** — "it works" is not enough
 3. **Explicit Dependencies** — declare ordering clearly
 4. **Record Everything** — even failures teach us something
-5. **Commit to Git** — use `git log -p handoff.yaml` to see evolution
+5. **Commit Carefully** — keep sensitive handoffs out of git, or commit only after reviewing for secrets, customer data, internal plans, copied prompts, and logs
 
 ## Examples
 
@@ -217,7 +217,7 @@ See `references/add-auth-to-api.yaml` for a complete walkthrough of:
 A: Yes. The skill is model-agnostic. Assign subtasks to Claude, Opus, Haiku, Codex, or any LLM.
 
 **Q: Do I need to commit handoffs to git?**
-A: Recommended. Gives you a complete audit trail and lets you see how the task evolved.
+A: Recommended only when the repository is private or the handoff has been reviewed for secrets, customer data, internal plans, copied prompts, and logs. Otherwise keep it outside git or commit a redacted summary.
 
 **Q: How do I know when a subtask is done?**
 A: Define acceptance criteria clearly. When all criteria are met, it's done.
