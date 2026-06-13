@@ -273,6 +273,8 @@ lanes:
   role: planner | worker | reviewer | merge_reviewer | researcher
   target:
   depends_on:
+  execution_mode: parallel | serial_after_dependency | read_only_until_dependency
+  base_gate:
   worktree:
   writable_files:
   forbidden_files:
@@ -288,15 +290,43 @@ Rules:
 
 - Search first: inspect repo state, open issues/PRs, current branch, dirty files, and applicable instructions before assigning work.
 - For GitHub queues, the lane map must be based on the preceding `queue_gate`; no worker lane may start from open issue/PR lists alone.
+- Build a dependency graph before spawning writable workers. Lanes with no dependency edge and disjoint writable files may run in parallel; lanes with dependency edges must run serially after their upstream lane is stable.
+- For stacked PRs or issue chains, set downstream writable lanes to `read_only_until_dependency` until the upstream head is pushed and the `base_gate` is satisfied. Downstream planners may inspect and prepare a patch plan in parallel, but they must not edit files before the gate opens.
+- `base_gate` must name the upstream condition that makes a downstream writable lane safe to start: current head SHA recorded, upstream CI/targeted verification status known, dirty upstream worktree absent or committed, and overlapping files checked.
 - Keep planners and reviewers read-only.
 - Mark coordinator-only lanes with `native_thread_id: none`; every spawned lane must record the returned native tool agent ID.
 - Give implementation workers disjoint writable paths. Never assign two workers the same writable file.
+- Do not start two writable workers when either lane depends on the other's branch, PR, generated output, or verification result. Dependency means serial execution even if the writable file lists appear disjoint.
 - Put high-context files such as `AGENTS.md`, `CLAUDE.md`, settings, hooks, and setup scripts in `forbidden_files` unless the user explicitly asks to modify them.
 - Prefer existing worktrees when they are already tied to the target branch. Otherwise create clean worktrees from `origin/main` or the requested base.
+- Prefer creating downstream worktrees only after the upstream `base_gate` opens. Avoid starting writable downstream work on a stale base; if early exploration is useful, use a read-only planner lane instead.
 - Commands that mutate shared state such as `.git/hooks`, shared `$HOME` files, global caches, local daemons, or repo-level generated state belong to `verification_owner` and must not run in parallel lanes unless that mutable state is isolated.
 - Require fresh verification from the worker or the verification owner before claiming success.
 - For GitHub queues, treat comments and review threads as first-class remote state; open PR/issue lists alone are not enough.
 - Default WIP limit: at most 3 planning/research lanes, 2 concurrent writable implementation lanes, and 2 reviewers per PR unless the user explicitly grants a larger budget.
+
+## Dependency-Aware Dispatch
+
+Choose parallelism on demand after the lane map, not by default.
+
+Use **parallel writable workers** only when all are true:
+
+- no `depends_on` edge exists between the lanes
+- writable files and generated outputs are disjoint
+- verification does not mutate shared state
+- neither lane's branch, PR, or acceptance evidence depends on the other's result
+
+Use **serial writable workers** when any lane depends on another lane's branch, PR, generated output, CI result, review result, schema migration, shared setup/install behavior, or version bump. In that case, run the upstream writable lane first, record its head SHA and verification, then create or rebase the downstream worktree from that stable head.
+
+Use **parallel read-only planners/reviewers** for dependent work only when they do not edit files or mutate GitHub state. Their output should be a patch plan, risk map, or review findings that can be applied after the upstream gate opens.
+
+For stacked PRs:
+
+- Model the stack as a serial pipeline, not a parallel writable queue.
+- Do not spawn a downstream writable worker until the upstream branch has a recorded stable head and any required CI or targeted verification has completed or been deliberately deferred.
+- If the upstream head changes while a downstream worker has uncommitted changes, stop that downstream lane and require a handoff artifact: committed WIP SHA, patch file, or explicit abandon/recreate decision.
+- The coordinator must not edit a worker-owned dirty downstream worktree. Recreate from the stable upstream head and apply a reviewed patch when possible.
+- Record `stale_base` and the recovery decision in `queue_ledger` and `threads_run_log`.
 
 ## Verification Budget
 
