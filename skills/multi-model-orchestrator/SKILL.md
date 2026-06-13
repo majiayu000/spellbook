@@ -337,12 +337,12 @@ subtasks:
     title: "Analyze requirements"
     executor: "Claude"
     depends_on: []
-    
+
   - id: task-2
     title: "Design architecture"
     executor: "Opus"
     depends_on: []  # No dependency on task-1
-    
+
   - id: task-3
     title: "Set up project"
     executor: "Claude Code"
@@ -361,12 +361,12 @@ subtasks:
     title: "Understand the problem"
     executor: "Fable"
     depends_on: []
-    
+
   - id: task-2
     title: "Write the code"
     executor: "Codex"
     depends_on: ["task-1"]  # Waits for task-1
-    
+
   - id: task-3
     title: "Test and validate"
     executor: "Claude Code"
@@ -384,11 +384,11 @@ subtasks:
   - id: task-1a
     executor: "Opus"
     depends_on: []
-    
+
   - id: task-1b
     executor: "Haiku"
     depends_on: []
-    
+
   - id: task-2
     title: "Synthesize results"
     executor: "Claude"
@@ -415,10 +415,10 @@ Good:
   input: |
     The authentication middleware in src/auth.ts has a race condition
     when multiple requests arrive simultaneously.
-    
+
     Current behavior: requests can bypass the token refresh check
     Expected behavior: all requests wait for token refresh to complete
-    
+
     Code reference: src/auth.ts:45-62
     Test: tests/auth.race-condition.test.ts
 ```
@@ -485,10 +485,10 @@ If you want to automate handoff updates (instead of manual YAML editing):
 1. **Python script** (if you need it):
    ```python
    import yaml
-   
+
    with open('.claude/handoffs/task.yaml') as f:
        handoff = yaml.safe_load(f)
-   
+
    handoff['execution']['rounds'].append({
        'round': 2,
        'task_id': 'task-1',
@@ -497,7 +497,7 @@ If you want to automate handoff updates (instead of manual YAML editing):
        'result': '...',
        'timestamp': '2026-06-12T12:00:00Z'
    })
-   
+
    with open('.claude/handoffs/task.yaml', 'w') as f:
        yaml.dump(handoff, f)
    ```
@@ -556,7 +556,7 @@ A: This skill structures the work so:
 
 - **Template**: `templates/handoff-template.yaml`
 - **Real Example**: `references/add-auth-to-api.yaml`
-- **Companion Tools**: 
+- **Companion Tools**:
   - Codex (code-focused multi-agent router)
   - Claude Code (interactive execution)
 - **Patterns**: See the usage patterns in this skill.
@@ -569,6 +569,6 @@ This skill is designed to be simple, flexible, and composable. If you find edge 
 
 ---
 
-**Updated**: 2026-06-12  
-**Status**: Production ready  
+**Updated**: 2026-06-12
+**Status**: Production ready
 **License**: MIT

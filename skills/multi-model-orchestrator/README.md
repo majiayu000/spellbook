@@ -211,19 +211,19 @@ See `references/add-auth-to-api.yaml` for a complete walkthrough of:
 
 ## FAQ
 
-**Q: Can I use this with any AI model?**  
+**Q: Can I use this with any AI model?**
 A: Yes. The skill is model-agnostic. Assign subtasks to Claude, Opus, Haiku, Codex, or any LLM.
 
-**Q: Do I need to commit handoffs to git?**  
+**Q: Do I need to commit handoffs to git?**
 A: Recommended. Gives you a complete audit trail and lets you see how the task evolved.
 
-**Q: How do I know when a subtask is done?**  
+**Q: How do I know when a subtask is done?**
 A: Define acceptance criteria clearly. When all criteria are met, it's done.
 
-**Q: Can tasks run in parallel?**  
+**Q: Can tasks run in parallel?**
 A: Yes. If subtasks have no dependencies, execute them simultaneously.
 
-**Q: What if a subtask blocks?**  
+**Q: What if a subtask blocks?**
 A: Record it as `status: blocked` and explain why. Then decide to retry, reassign, or escalate.
 
 ## Integration with Claude Code
@@ -255,6 +255,6 @@ This skill is designed to be simple and flexible. Share handoff examples or impr
 
 ---
 
-**Status**: Production ready  
-**Last Updated**: 2026-06-12  
+**Status**: Production ready
+**Last Updated**: 2026-06-12
 **Version**: 1.0.0
