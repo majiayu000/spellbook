@@ -7,7 +7,7 @@ my-plugin/
 ├── .claude-plugin/
 │   └── plugin.json      # Required: Plugin manifest
 ├── skills/              # Optional: plugin skill files
-├── commands/            # Optional: Slash commands
+├── commands/            # Legacy/optional: Slash commands when the target runtime supports them
 ├── agents/              # Optional: Agent definitions
 └── hooks/               # Optional: Hook configurations
 ```
@@ -76,7 +76,9 @@ What Claude should do when this skill is activated...
 
 ## Creating Commands
 
-Place `*.md` files in the `commands/` directory:
+Prefer skills for new reusable behavior. Add `*.md` files in the `commands/`
+directory only when the target plugin runtime explicitly supports slash command
+packaging and a command shortcut is still the right UX:
 
 ```markdown
 ---

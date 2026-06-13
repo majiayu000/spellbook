@@ -31,7 +31,8 @@ Use this section for notable changes after the latest dated snapshot.
 
 ### Changed
 
-- Updated the installable skill count from 82 to 83.
+- Corrected current installable skill count references to match the validator
+  output of 82 skills.
 - Updated the installable skill count from 81 to 82.
 - Updated the installable skill count from 80 to 81.
 - Tightened the `threads` skill merge gate so GitHub queue work must check
