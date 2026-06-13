@@ -29,9 +29,51 @@ Choose one mode:
 - **research_spec**: split exploration by angle, then synthesize docs/spec/issues.
 - **clarify_first**: ask only when repo, target queue, permission, or done-when is missing.
 
-Prefer `single_agent` for one-file fixes, simple questions, or tasks where the next step depends on one immediate result. Use parallel lanes only when the work can be split by independent targets or disjoint writable files.
+Use `single_agent` only for one-file fixes, simple questions, or tasks where the next step depends on one immediate result. If the user explicitly asks for threads, subagents, or a GitHub issue/PR queue and native subagents are available, do not silently choose `single_agent`; record a concrete `no_spawn_reason` before implementation work begins.
 
 For any implementation mode, start with a lane map before spawning workers. For GitHub issue/PR queues, complete the Capability Gate and Queue Gate first; do not create worker lanes until `capability_gate`, `queue_gate`, `queue_ledger`, and `issue_to_pr_map` are written.
+
+## Explicit Thread Dispatch Gate
+
+When the user explicitly asks for threads, subagents, "开几个子 agent", or a GitHub issue/PR queue that the skill classifies as `plan_only`, `execute_direct`, `review_only`, or `research_spec`, native dispatch is required whenever native subagent tools are available.
+
+Record this gate before implementation, review, or merge work:
+
+```text
+thread_dispatch_gate:
+- explicit_thread_request: yes | no
+- native_subagents: available | unavailable
+- spawn_requirement: required | optional | unavailable
+- fallback_mode: single_agent | prompt_pack_only | none
+- planned_native_threads:
+  - id:
+    role:
+    target:
+    write_scope: read_only | disjoint_writable | none
+    spawn_status: planned | spawned | skipped
+    no_spawn_reason:
+- native_thread_evidence:
+    user_requested_native_threads: yes | no
+    spawned_agents:
+      - lane_id:
+        spawn_tool:
+        agent_id_or_thread_id:
+        wait_evidence:
+        close_evidence:
+        result_collected: yes | no
+    fallback_reason:
+- no_spawn_reason:
+```
+
+Rules:
+
+- If `explicit_thread_request: yes`, `native_subagents: available`, and `spawn_requirement: required`, spawn at least one bounded native subagent before claiming the run is using threads.
+- `native_subagents: available` plus `fallback_mode: none` is valid only when `native_thread_evidence.spawned_agents` contains at least one real agent/thread ID.
+- Every `planned_native_threads` lane must have a matching `native_thread_evidence.spawned_agents[].lane_id` or a lane-level `no_spawn_reason`; spawning one native thread does not justify running the remaining planned lanes serially.
+- A main-thread lane is a coordinator lane, not a native thread. Do not count the coordinator as `native_thread_evidence.spawned_agents`.
+- If no native thread is spawned, set `fallback_mode: single_agent` and write `no_spawn_reason` before editing files, commenting on GitHub, or merging. Valid reasons are narrow: task is tiny and truly sequential, all possible writable lanes overlap, native tools are unavailable, or the user explicitly asks not to spawn.
+- For GitHub PR merge work, at least one read-only reviewer or merge-reviewer native thread is required when native subagents are available. A self-review by the coordinator does not satisfy the independent review lane.
+- If native tools are unavailable, produce a prompt pack or continue as `single_agent` only after saying that no native threads were launched.
 
 ## Operating Contract
 
@@ -56,6 +98,10 @@ intent_contract:
     cadence:
     last_fetch:
     stale_base_policy:
+  thread_dispatch:
+    explicit_thread_request:
+    spawn_requirement:
+    no_spawn_reason:
 ```
 
 Defaults:
@@ -64,11 +110,11 @@ Defaults:
 - `data_collection` is `final_report` unless the user requests durable logging, debug data collection, or an issue/PR queue run explicitly sets `local_jsonl`.
 - If merge permission is ambiguous, stop after merge review and report the exact recommendation or merge command instead of merging.
 
-Direct actions: inspect repo instructions, fetch remote state, map lanes, spawn bounded native subagents when useful, integrate results, verify, and report closure.
+Direct actions: inspect repo instructions, fetch remote state, map lanes, apply the Explicit Thread Dispatch Gate, spawn required bounded native subagents, integrate results, verify, and report closure.
 
 Escalate before: modifying high-context files, merging without fresh CI/review-thread truth, sharing writable files across workers, or switching to shell/tmux/OMX orchestration.
 
-Evidence-backed pushback: choose `single_agent` when parallelism adds coordination risk without independent work; challenge vague worker output, stale remote state, or unverified completion claims.
+Evidence-backed pushback: choose `single_agent` only when parallelism adds coordination risk without independent work, and record the `no_spawn_reason`; challenge vague worker output, stale remote state, or unverified completion claims.
 
 Feedback loop: record notable failures in `threads_run_log`, classify the failure mode, tighten the lane prompt or split, then retry only after the hypothesis changes.
 
@@ -84,13 +130,17 @@ Before dispatching lanes, record whether native Codex subagents are actually ava
 capability_gate:
 - native_subagents: available | unavailable
 - tools_seen:
+- explicit_thread_request: yes | no
+- spawn_requirement: required | optional | unavailable
 - fallback_mode: single_agent | prompt_pack_only | none
+- no_spawn_reason:
 - manual_orchestration_allowed: yes | no
 ```
 
 Rules:
 
 - If native subagents are unavailable, do not claim threads were launched.
+- If native subagents are available and `spawn_requirement` is `required`, do not proceed past planning until at least one native subagent is spawned or `fallback_mode` and `no_spawn_reason` are recorded.
 - Do not switch to shell, tmux, OMX, Harness, or other manual orchestration unless the user explicitly asks for that fallback.
 - If `fallback_mode` is `single_agent`, explain why parallelism was rejected.
 - If `fallback_mode` is `prompt_pack_only`, output exact lane prompts and stop before implementation.
@@ -230,6 +280,8 @@ lanes:
   verification_scope: inspection_only | targeted | full_local | ci_only
   expected_output:
   verification:
+  native_thread_id:
+  no_spawn_reason:
 ```
 
 Rules:
@@ -237,6 +289,7 @@ Rules:
 - Search first: inspect repo state, open issues/PRs, current branch, dirty files, and applicable instructions before assigning work.
 - For GitHub queues, the lane map must be based on the preceding `queue_gate`; no worker lane may start from open issue/PR lists alone.
 - Keep planners and reviewers read-only.
+- Mark coordinator-only lanes with `native_thread_id: none`; every spawned lane must record the returned native tool agent ID.
 - Give implementation workers disjoint writable paths. Never assign two workers the same writable file.
 - Put high-context files such as `AGENTS.md`, `CLAUDE.md`, settings, hooks, and setup scripts in `forbidden_files` unless the user explicitly asks to modify them.
 - Prefer existing worktrees when they are already tied to the target branch. Otherwise create clean worktrees from `origin/main` or the requested base.
@@ -265,7 +318,7 @@ Rules:
 
 Use native subagents when available. If the multi-agent tool is not loaded, search for it using tool discovery. Do not use shell/tmux/OMX orchestration unless explicitly requested.
 
-When `multi_agent_v1` tools are available, use `spawn_agent` for bounded sidecar lanes, `wait_agent` only when the next critical-path step needs that result, and `close_agent` after collecting completed output. Keep immediate blockers in the main thread.
+When `multi_agent_v1` tools are available, use `spawn_agent` for required bounded sidecar lanes, `wait_agent` only when the next critical-path step needs that result, and `close_agent` after collecting completed output. Keep immediate blockers in the main thread, but do not count the main thread as a spawned native thread.
 
 Close completed subagents as soon as their evidence has been collected. For long issue/PR queues, finish a bounded tranche, record the ledger and resume query, and consider starting a fresh parent thread instead of carrying oversized context forward.
 
@@ -291,6 +344,7 @@ files_changed:
 unauthorized_or_unassigned_changes:
 commands_run:
 head_sha_or_artifact:
+native_thread_id:
 blockers:
 ```
 
@@ -301,6 +355,7 @@ Do not merge from worker output alone. Merge only after:
 - `merge_policy` is `merge_after_gate` or `user_confirm_before_merge` with explicit authorization from the current conversation.
 - `truth_level` is `A`; lower truth levels may produce recommendations but must not merge.
 - The PR/diff has at least one independent review lane.
+- When native subagents are available, the independent review lane must be a spawned native thread with a recorded tool agent ID.
 - Blocking findings are fixed or explicitly ruled out with evidence.
 - Required checks are fresh and tied to the current head SHA.
 - Current merge state is clean. `MERGEABLE`, `CLEAN`, or a green check alone is not sufficient without the matching current head SHA, full check rollup, merge state, and GraphQL review-thread state.
@@ -357,6 +412,11 @@ local_state:
 threads_run_log:
 - mode:
 - native_subagents:
+- explicit_thread_request:
+- spawn_requirement:
+- native_thread_evidence:
+    spawned_agents:
+- no_spawn_reason:
 - truth_level:
 - lanes_total:
 - queue_items_total:

@@ -13,7 +13,9 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 硬约束：
 - 先查 repo 指令、git 状态、open issues、open PRs、CI、dirty worktree。
 - 只有用户明确要求 Codex-native threads / 子 agent 编排，或 GitHub issue/PR queue 确实需要独立 lanes 时才使用本流程；不要用于 OS/language/chat/email/forum/API threads。
-- 先写 capability_gate：native_subagents / tools_seen / fallback_mode / manual_orchestration_allowed；不能在 native subagents 不可用时声称开了 threads。
+- 先写 capability_gate：native_subagents / tools_seen / explicit_thread_request / spawn_requirement / fallback_mode / no_spawn_reason / manual_orchestration_allowed；不能在 native subagents 不可用时声称开了 threads。
+- 用户明确要求 threads/subagents 且 native_subagents=available 时，必须先 spawn 至少一个 native subagent，或在任何实现/评论/merge 前记录 `fallback_mode: single_agent` 和结构化 `no_spawn_reason`。
+- `native_subagents: available` + `fallback_mode: none` 只有在 `native_thread_evidence.spawned_agents` 里有真实 agent/thread ID 时才成立；main coordinator 不能算 spawned thread。
 - GitHub issue/PR queue 必须先输出 queue_gate 和 issue_to_pr_map，再输出 lane_map；不能只凭 MERGEABLE/CLEAN 或 open 列表开 worker。
 - 先写 intent_contract：goal / non_goals / done_when / merge_policy / remote_truth_required / truth_level / queue_ledger / ci_truth_source / data_collection / queue_bounds / remote_refresh。
 - merge_policy 默认 no_merge；只有用户在当前对话明确授权 merge，才允许 merge_after_gate。
@@ -21,6 +23,7 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 - queue_gate 必须包含 truth_level：A=GitHub API/GraphQL/head/check/reviewThreads 全新鲜；B=GraphQL 不可用但 REST 可用，禁止 merge；C=仅 local git，禁止 remote closure/merge；D=remote 不可靠，仅 plan/prompt pack。
 - queue_gate 必须包含 remote_refresh：origin/main 当前 SHA、lane base SHA、是否 stale_base、处理策略。
 - 输出 queue_ledger，并在每个 queue item 上记录 owner_lane、head_sha、ci_status、review_thread_state、acceptance_evidence、remote_checked_at。
+- lane_map 每个 spawned lane 必须记录 `native_thread_id`；coordinator-only lane 必须写 `native_thread_id: none` 和需要时的 `no_spawn_reason`。
 - issue_to_pr_map 必须先判断 open issue 是否已有覆盖 PR；优先收敛已有 PR，不要开竞争 PR。
 - data_collection 默认 final_report；只有用户要求 durable logging 或 debug collection 时才写 local_jsonl。
 - broad queue 默认只做一个 bounded tranche；没有明确预算时不要承诺处理所有 issue/PR。
@@ -37,10 +40,11 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 - 完成的 subagent 要及时 close；长 issue/PR 队列完成一个 bounded tranche 后，记录 ledger/resume query，并考虑开新 parent thread 降低上下文负担。
 - 高上下文文件 AGENTS.md/CLAUDE.md/settings/hooks 默认禁止修改。
 - 每个 PR merge 前必须有独立 thread review。
+- 当 native_subagents=available 时，merge 前的独立 review 必须来自 spawned native thread，并在 `native_thread_evidence` 记录 agent/thread ID、wait evidence、close evidence。
 - merge 前必须 truth_level=A，并用 thread-aware GitHub 数据检查 reviewThreads.isResolved；open PR/issue 为空不等于评论闭环完成。
 - CI wait 必须有预算；无本地可行动失败时用 WAITING_CI 停止并给 resume 查询。
 - review-thread fix/recheck 同类循环超过 2 次，用 REVIEW_LOOP 停止并报告 blocker。
-- 输出 capability_gate、queue_gate、queue_ledger、issue_to_pr_map、lane_map、依赖图、执行顺序、验证命令、stop_conditions、threads_run_log。
+- 输出 capability_gate、thread_dispatch_gate、native_thread_evidence、queue_gate、queue_ledger、issue_to_pr_map、lane_map、依赖图、执行顺序、验证命令、stop_conditions、threads_run_log。
 ```
 
 ## Queue Gate Thread
@@ -99,19 +103,20 @@ Target: {{issue_or_pr_or_queue}}
 
 输出：
 1. 目标摘要
-2. capability_gate（native_subagents / tools_seen / fallback_mode）
-3. intent_contract（含 merge_policy 默认 no_merge、truth_level、data_collection）
-4. queue_gate、queue_ledger 和 issue_to_pr_map（GitHub queue 必填；非 queue 说明 N/A）
-5. queue_bounds：max_items / time_budget / queue_tranche
-6. remote_refresh：origin/main SHA、stale_base 判断、处理建议
-7. 已完成映射和证据
-8. 未完成/风险
-9. 推荐处理动作和理由
-10. 可并行 worktree 拆分
-11. 每个 lane 的 writable_files、forbidden_files、exclusive_verification、verification_scope
-12. 必须运行的验证命令
-13. 不应在本轮强做的范围
-14. 建议的 failure_codes（如 stale_remote_state、duplicate_work_missed、missing_intent_contract）
+2. capability_gate（native_subagents / tools_seen / explicit_thread_request / spawn_requirement / fallback_mode / no_spawn_reason）
+3. native_thread_evidence：spawned_agents 的 lane_id、spawn_tool、agent_id_or_thread_id、wait_evidence、close_evidence、result_collected；若未 spawn，必须说明 no_spawn_reason / fallback_reason
+4. intent_contract（含 merge_policy 默认 no_merge、truth_level、data_collection）
+5. queue_gate、queue_ledger 和 issue_to_pr_map（GitHub queue 必填；非 queue 说明 N/A）
+6. queue_bounds：max_items / time_budget / queue_tranche
+7. remote_refresh：origin/main SHA、stale_base 判断、处理建议
+8. 已完成映射和证据
+9. 未完成/风险
+10. 推荐处理动作和理由
+11. 可并行 worktree 拆分
+12. 每个 lane 的 writable_files、forbidden_files、exclusive_verification、verification_scope、native_thread_id
+13. 必须运行的验证命令
+14. 不应在本轮强做的范围
+15. 建议的 failure_codes（如 stale_remote_state、duplicate_work_missed、missing_intent_contract、native_thread_not_spawned）
 ```
 
 ## Implementation Worker
@@ -268,6 +273,15 @@ No findings; safe to merge.
 开 {{n}} 个只读 researcher threads。
 默认 n<=3。不要修改文件，不要开 PR，不要 merge。
 
+先输出 thread_dispatch_gate：
+- explicit_thread_request
+- native_subagents
+- spawn_requirement
+- fallback_mode
+- planned_native_threads（每个 lane 的 id/role/target/spawn_status/no_spawn_reason）
+- native_thread_evidence.spawned_agents（每个实际 native thread 的 lane_id/spawn_tool/agent_id_or_thread_id/wait_evidence/close_evidence/result_collected）
+- no_spawn_reason（仅未 spawn 时允许）
+
 每个 thread 只负责一个明确角度：
 {{angles}}
 
@@ -281,6 +295,15 @@ No findings; safe to merge.
 不要修改文件，不要提交，不要 merge。
 默认 verification_scope=inspection_only；只运行便宜静态检查或 touched behavior targeted tests。
 不要运行 full project test suite，除非 lane_map 明确指定 reviewer 是 verification_owner 或 merge_reviewer。
+
+先输出 thread_dispatch_gate：
+- explicit_thread_request
+- native_subagents
+- spawn_requirement
+- fallback_mode
+- planned_native_threads（每个 lane 的 id/role/target/spawn_status/no_spawn_reason）
+- native_thread_evidence.spawned_agents（每个实际 native thread 的 lane_id/spawn_tool/agent_id_or_thread_id/wait_evidence/close_evidence/result_collected）
+- no_spawn_reason（仅未 spawn 时允许）
 
 输出 findings first；如果没有 blocking issue，写 No findings; safe to proceed。
 说明未验证项和残余风险。
@@ -322,6 +345,8 @@ No findings; safe to merge.
 - mode
 - repo
 - lanes_total
+- native_thread_evidence.spawned_agents
+- no_spawn_reason
 - failure_codes
 - verification.fresh
 - truth_level
