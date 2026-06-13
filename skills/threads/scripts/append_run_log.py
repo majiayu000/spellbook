@@ -237,19 +237,25 @@ def native_thread_evidence(record: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
+def thread_dispatch_gate(record: dict[str, Any]) -> dict[str, Any] | None:
+    gate = record.get("thread_dispatch_gate")
+    return gate if isinstance(gate, dict) else None
+
+
 def valid_agent_id(value: Any) -> bool:
     if not isinstance(value, str):
         return False
     return value.strip().lower() not in INVALID_AGENT_IDS
 
 
-def has_spawned_agent(record: dict[str, Any]) -> bool:
+def valid_spawned_agents(record: dict[str, Any]) -> list[dict[str, Any]]:
     evidence = native_thread_evidence(record)
     if evidence is None:
-        return False
+        return []
     spawned_agents = evidence.get("spawned_agents")
     if not isinstance(spawned_agents, list):
-        return False
+        return []
+    valid_agents = []
     for agent in spawned_agents:
         if not isinstance(agent, dict):
             continue
@@ -261,8 +267,12 @@ def has_spawned_agent(record: dict[str, Any]) -> bool:
             and bool(agent.get("wait_evidence"))
             and bool(agent.get("close_evidence"))
         ):
-            return True
-    return False
+            valid_agents.append(agent)
+    return valid_agents
+
+
+def has_spawned_agent(record: dict[str, Any]) -> bool:
+    return bool(valid_spawned_agents(record))
 
 
 def normalize_reason(value: Any) -> str | None:
@@ -287,6 +297,15 @@ def has_single_agent_reason(record: dict[str, Any]) -> bool:
     elif allowed_reason(no_spawn_reason):
         return True
 
+    gate = thread_dispatch_gate(record)
+    if gate is not None:
+        gate_reason = gate.get("no_spawn_reason")
+        if isinstance(gate_reason, dict):
+            if allowed_reason(gate_reason.get("reason"), gate_reason.get("evidence")):
+                return True
+        elif allowed_reason(gate_reason):
+            return True
+
     justification = record.get("single_agent_justification")
     if (
         isinstance(justification, dict)
@@ -298,6 +317,48 @@ def has_single_agent_reason(record: dict[str, Any]) -> bool:
     if not isinstance(evidence, dict):
         return False
     return allowed_reason(evidence.get("fallback_reason"))
+
+
+def lane_has_no_spawn_reason(lane: dict[str, Any]) -> bool:
+    reason = lane.get("no_spawn_reason")
+    if isinstance(reason, dict):
+        return allowed_reason(reason.get("reason"), reason.get("evidence"))
+    return allowed_reason(reason)
+
+
+def validate_planned_native_threads(record: dict[str, Any]) -> None:
+    gate = thread_dispatch_gate(record)
+    if gate is None:
+        return
+    planned_threads = gate.get("planned_native_threads")
+    if planned_threads is None:
+        return
+    if not isinstance(planned_threads, list):
+        raise ValueError("thread_dispatch_gate.planned_native_threads must be a list")
+
+    spawned_lane_ids = {
+        agent.get("lane_id")
+        for agent in valid_spawned_agents(record)
+        if isinstance(agent.get("lane_id"), str) and agent.get("lane_id")
+    }
+    missing_reasons = []
+    for lane in planned_threads:
+        if not isinstance(lane, dict):
+            raise ValueError("thread_dispatch_gate.planned_native_threads entries must be objects")
+        lane_id = lane.get("id") or lane.get("lane_id")
+        if not lane_id:
+            raise ValueError("thread_dispatch_gate.planned_native_threads entries require id")
+        if lane_id in spawned_lane_ids:
+            continue
+        if lane_has_no_spawn_reason(lane):
+            continue
+        missing_reasons.append(str(lane_id))
+
+    if missing_reasons:
+        raise ValueError(
+            "thread_dispatch_gate.planned_native_threads missing spawned evidence "
+            "or no_spawn_reason for lane(s): " + ", ".join(missing_reasons)
+        )
 
 
 def validate_native_thread_evidence(record: dict[str, Any]) -> None:
@@ -345,6 +406,9 @@ def validate_native_thread_evidence(record: dict[str, Any]) -> None:
             "prompt_pack_only fallback is invalid when native subagents are "
             "available for an explicit threads run"
         )
+
+    if explicit_native_required and fallback_mode == "none":
+        validate_planned_native_threads(record)
 
 
 def append_record(record: dict[str, Any], path: Path) -> None:
