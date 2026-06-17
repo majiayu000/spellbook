@@ -85,6 +85,31 @@ class SkillDependencyChecksTests(unittest.TestCase):
 
             self.assertEqual(self.validate_demo_skill(root), [])
 
+    def test_lxml_parser_usage_requires_lxml_declaration(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.write_demo_skill(
+                root,
+                "from bs4 import BeautifulSoup\nsoup = BeautifulSoup(html, \"lxml\")\n",
+                "beautifulsoup4\n",
+            )
+
+            messages = self.validate_demo_skill(root)
+
+            self.assertEqual(len(messages), 1)
+            self.assertIn("missing script package declaration(s): lxml", messages[0])
+
+    def test_lxml_parser_usage_passes_when_declared(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.write_demo_skill(
+                root,
+                "from bs4 import BeautifulSoup\nsoup = BeautifulSoup(html, 'lxml')\n",
+                "beautifulsoup4\nlxml\n",
+            )
+
+            self.assertEqual(self.validate_demo_skill(root), [])
+
     def test_stdlib_only_scripts_do_not_require_requirements_file(self):
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

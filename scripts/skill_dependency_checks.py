@@ -20,6 +20,8 @@ LOCAL_SCRIPT_IMPORT_ROOTS = {
     "scripts",
 }
 
+BEAUTIFULSOUP_LXML_RE = re.compile(r"BeautifulSoup\s*\([^)]*['\"]lxml['\"]", re.DOTALL)
+
 
 def _normalize_package_name(name: str) -> str:
     return name.lower().replace("_", "-")
@@ -70,12 +72,15 @@ def required_script_dependencies(skill_dir: Path) -> set[str]:
 
     requirements: set[str] = set()
     for script in sorted(scripts_dir.rglob("*.py")):
+        script_text = script.read_text(encoding="utf-8")
         for import_root in python_import_roots(script):
             if import_root in LOCAL_SCRIPT_IMPORT_ROOTS:
                 continue
             requirement = IMPORT_TO_REQUIREMENT.get(import_root)
             if requirement:
                 requirements.add(requirement)
+        if BEAUTIFULSOUP_LXML_RE.search(script_text):
+            requirements.add("lxml")
     return requirements
 
 
