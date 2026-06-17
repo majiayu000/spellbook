@@ -90,7 +90,7 @@ class SkillDependencyChecksTests(unittest.TestCase):
             root = Path(temp_dir)
             self.write_demo_skill(
                 root,
-                "from bs4 import BeautifulSoup\nsoup = BeautifulSoup(html, \"lxml\")\n",
+                "from bs4 import BeautifulSoup\nsoup = BeautifulSoup(requests.get(url).text, \"lxml\")\n",
                 "beautifulsoup4\n",
             )
 
@@ -109,6 +109,24 @@ class SkillDependencyChecksTests(unittest.TestCase):
             )
 
             self.assertEqual(self.validate_demo_skill(root), [])
+
+    def test_requirements_include_file_satisfies_dependency(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            skill_dir = self.write_demo_skill(root, "import requests\n", "-r common.txt\n")
+            (skill_dir / "common.txt").write_text("requests\n", encoding="utf-8")
+
+            self.assertEqual(self.validate_demo_skill(root), [])
+
+    def test_marker_gated_requirement_does_not_satisfy_unconditional_import(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.write_demo_skill(root, "import requests\n", 'requests; python_version < "3.0"\n')
+
+            messages = self.validate_demo_skill(root)
+
+            self.assertEqual(len(messages), 1)
+            self.assertIn("missing script package declaration(s): requests", messages[0])
 
     def test_stdlib_only_scripts_do_not_require_requirements_file(self):
         with TemporaryDirectory() as temp_dir:
