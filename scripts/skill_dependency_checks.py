@@ -50,9 +50,8 @@ def python_import_roots(path: Path) -> set[str]:
     return imports
 
 
-def _requirement_include_path(requirements_path: Path, include_path: str) -> Path:
+def _requirement_include_path(requirements_path: Path, include_path: str, requirements_root: Path) -> Path:
     include = (requirements_path.parent / include_path).resolve()
-    requirements_root = requirements_path.parent.resolve()
     try:
         include.relative_to(requirements_root)
     except ValueError as exc:
@@ -62,12 +61,31 @@ def _requirement_include_path(requirements_path: Path, include_path: str) -> Pat
     return include
 
 
-def declared_requirements(requirements_path: Path, seen: set[Path] | None = None) -> set[str]:
+def _requirement_include_value(line: str) -> str | None:
+    if line.startswith("--requirement="):
+        return line.split("=", 1)[1].split(maxsplit=1)[0]
+    if line.startswith("--requirement "):
+        return line.split(maxsplit=1)[1].split(maxsplit=1)[0]
+    if line == "-r" or line == "--requirement":
+        raise RequirementParseError(f"requirements include missing file: {line}")
+    if line.startswith("-r "):
+        return line.split(maxsplit=1)[1].split(maxsplit=1)[0]
+    if line.startswith("-r"):
+        return line[2:].split(maxsplit=1)[0]
+    return None
+
+
+def declared_requirements(
+    requirements_path: Path,
+    seen: set[Path] | None = None,
+    requirements_root: Path | None = None,
+) -> set[str]:
     """Return normalized package names from a requirements.txt file."""
     if not requirements_path.exists():
         return set()
 
     resolved_requirements_path = requirements_path.resolve()
+    requirements_root = requirements_root or resolved_requirements_path.parent
     seen = seen or set()
     if resolved_requirements_path in seen:
         return set()
@@ -79,9 +97,15 @@ def declared_requirements(requirements_path: Path, seen: set[Path] | None = None
         if not stripped or stripped.startswith("#"):
             continue
 
-        if stripped.startswith("-r ") or stripped.startswith("--requirement "):
-            include_path = stripped.split(maxsplit=1)[1].split(maxsplit=1)[0]
-            packages.update(declared_requirements(_requirement_include_path(requirements_path, include_path), seen))
+        include_path = _requirement_include_value(stripped)
+        if include_path is not None:
+            packages.update(
+                declared_requirements(
+                    _requirement_include_path(requirements_path, include_path, requirements_root),
+                    seen,
+                    requirements_root,
+                )
+            )
             continue
 
         if stripped.startswith("-"):
@@ -105,11 +129,11 @@ def _is_beautifulsoup_call(node: ast.Call) -> bool:
     return False
 
 
-def _string_literal_contains_lxml(node: ast.AST) -> bool:
+def _string_literal_requires_lxml(node: ast.AST) -> bool:
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return node.value == "lxml"
+        return node.value in {"lxml", "lxml-xml", "xml"}
     if isinstance(node, (ast.List, ast.Tuple)):
-        return any(_string_literal_contains_lxml(item) for item in node.elts)
+        return any(_string_literal_requires_lxml(item) for item in node.elts)
     return False
 
 
@@ -122,10 +146,10 @@ def beautifulsoup_lxml_dependencies(path: Path) -> set[str]:
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call) or not _is_beautifulsoup_call(node):
             continue
-        if any(_string_literal_contains_lxml(arg) for arg in node.args[1:]):
+        if any(_string_literal_requires_lxml(arg) for arg in node.args[1:]):
             return {"lxml"}
         for keyword in node.keywords:
-            if keyword.arg in {"features", "builder"} and _string_literal_contains_lxml(keyword.value):
+            if keyword.arg in {"features", "builder"} and _string_literal_requires_lxml(keyword.value):
                 return {"lxml"}
     return set()
 

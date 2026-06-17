@@ -110,10 +110,44 @@ class SkillDependencyChecksTests(unittest.TestCase):
 
             self.assertEqual(self.validate_demo_skill(root), [])
 
+    def test_xml_parser_usage_requires_lxml_declaration(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.write_demo_skill(
+                root,
+                "from bs4 import BeautifulSoup\nsoup = BeautifulSoup(data, features='xml')\n",
+                "beautifulsoup4\n",
+            )
+
+            messages = self.validate_demo_skill(root)
+
+            self.assertEqual(len(messages), 1)
+            self.assertIn("missing script package declaration(s): lxml", messages[0])
+
     def test_requirements_include_file_satisfies_dependency(self):
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             skill_dir = self.write_demo_skill(root, "import requests\n", "-r common.txt\n")
+            (skill_dir / "common.txt").write_text("requests\n", encoding="utf-8")
+
+            self.assertEqual(self.validate_demo_skill(root), [])
+
+    def test_nested_requirements_include_is_bounded_by_skill_root(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            skill_dir = self.write_demo_skill(root, "import requests\n", "-r requirements/base.txt\n")
+            requirements_dir = skill_dir / "requirements"
+            requirements_dir.mkdir()
+            (requirements_dir / "base.txt").write_text("-r ../common.txt\n", encoding="utf-8")
+            (skill_dir / "common.txt").write_text("requests\n", encoding="utf-8")
+
+            self.assertEqual(self.validate_demo_skill(root), [])
+
+    def test_attached_requirements_include_forms_are_supported(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            skill_dir = self.write_demo_skill(root, "import requests\n", "--requirement=base.txt\n")
+            (skill_dir / "base.txt").write_text("-rcommon.txt\n", encoding="utf-8")
             (skill_dir / "common.txt").write_text("requests\n", encoding="utf-8")
 
             self.assertEqual(self.validate_demo_skill(root), [])
