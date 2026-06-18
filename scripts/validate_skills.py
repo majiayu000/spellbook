@@ -97,6 +97,7 @@ CATEGORY_BY_NAME = {
     "web-artifacts-builder": "UI/UX & Frontend",
     # AI and agent workflows
     "ask-opencli": "AI & Agent Workflow",
+    "agent-workflow": "AI & Agent Workflow",
     "brainstorming": "AI & Agent Workflow",
     "codex": "AI & Agent Workflow",
     "codex-agent": "AI & Agent Workflow",

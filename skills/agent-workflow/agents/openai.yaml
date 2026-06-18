@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Workflow"
+  short_description: "Guard long agent tasks from drift"
+  default_prompt: "Use $agent-workflow to run this task with preflight, checkpoints, fresh verification, and a handoff."
