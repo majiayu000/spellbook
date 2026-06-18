@@ -40,10 +40,10 @@
   },
   "index": {
     "agent": [
-      "agent-workflow",
       "auto-optimize",
       "codex-agent",
       "fixflow",
+      "flowguard",
       "multi-model-orchestrator",
       "skill-audit",
       "strategic-compact",

@@ -1,9 +1,9 @@
 ---
-name: agent-workflow
-description: "Lifecycle guard for long, ambiguous, or stateful AI-agent work. Use when the user asks to run or continue a multi-step task, autonomous loop, bug fix, repo change, PR readiness check, compaction handoff, resume from previous context, cost-control checkpoint, or any task likely to span many tool calls, files, sessions, agents, or verification gates."
+name: flowguard
+description: "Guard long, ambiguous, or stateful AI-agent work from drift. Use when the user asks to run or continue a multi-step task, autonomous loop, bug fix, repo change, PR readiness check, compaction handoff, resume from previous context, cost-control checkpoint, or any task likely to span many tool calls, files, sessions, agents, or verification gates."
 ---
 
-# Agent Workflow
+# Flowguard
 
 ## Overview
 
@@ -38,7 +38,7 @@ Do not hide ambiguity inside assumptions. If a wrong assumption would cause larg
 3. Run the state snapshot when working in a repo or resuming:
 
 ```bash
-skills/agent-workflow/scripts/workflow_state_snapshot.sh .
+skills/flowguard/scripts/workflow_state_snapshot.sh .
 ```
 
 4. If the task continues previous work, treat memory and summaries as hints only. Verify cwd, git branch, dirty files, relevant artifacts, and runtime state before relying on them.

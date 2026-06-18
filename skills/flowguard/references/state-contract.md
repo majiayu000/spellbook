@@ -1,4 +1,4 @@
-# Agent Workflow State Contract
+# Flowguard State Contract
 
 Use these compact formats when a task needs durable state across long loops, compaction, session boundaries, or automation. Keep entries factual and evidence-backed.
 

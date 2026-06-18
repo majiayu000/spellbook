@@ -1,16 +1,5 @@
 [
   {
-    "name": "agent-workflow",
-    "category": "AI & Agent Workflow",
-    "format": "directory",
-    "path": "skills/agent-workflow/SKILL.md",
-    "description": "Lifecycle guard for long, ambiguous, or stateful AI-agent work. Use when the user asks to run or continue a multi-step task, autonomous loop, bug fix, repo change, PR readiness check, compaction handoff, resume from previous context, cost-control checkpoint, or any task likely to span many tool calls, files, sessions, agents, or verification gates.",
-    "language": "en",
-    "tags": [
-      "agent"
-    ]
-  },
-  {
     "name": "api-design",
     "category": "API & Backend",
     "format": "directory",
@@ -343,6 +332,17 @@
       "agent",
       "debugging",
       "testing"
+    ]
+  },
+  {
+    "name": "flowguard",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/flowguard/SKILL.md",
+    "description": "Guard long, ambiguous, or stateful AI-agent work from drift. Use when the user asks to run or continue a multi-step task, autonomous loop, bug fix, repo change, PR readiness check, compaction handoff, resume from previous context, cost-control checkpoint, or any task likely to span many tool calls, files, sessions, agents, or verification gates.",
+    "language": "en",
+    "tags": [
+      "agent"
     ]
   },
   {

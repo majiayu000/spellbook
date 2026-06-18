@@ -8,7 +8,7 @@ if ! cd "$target" 2>/dev/null; then
   exit 2
 fi
 
-printf '# Agent Workflow State Snapshot\n\n'
+printf '# Flowguard State Snapshot\n\n'
 printf 'snapshot_time: %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')"
 printf 'cwd: %s\n' "$(pwd -P)"
 printf '\n'
