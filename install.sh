@@ -235,6 +235,33 @@ def strip_quotes(value):
     return value
 
 
+def strip_inline_comment(line):
+    in_single_quote = False
+    in_double_quote = False
+    escaped = False
+    for index, char in enumerate(line):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if char == "'" and not in_double_quote:
+            in_single_quote = not in_single_quote
+            continue
+        if char == '"' and not in_single_quote:
+            in_double_quote = not in_double_quote
+            continue
+        if (
+            char == "#"
+            and not in_single_quote
+            and not in_double_quote
+            and (index == 0 or line[index - 1].isspace())
+        ):
+            return line[:index].rstrip()
+    return line
+
+
 def parse_inline_list(value):
     value = value.strip()
     if value == "[]":
@@ -270,7 +297,8 @@ runtimes = None
 current_key = None
 in_runtime_list = False
 
-for line in text[4:end].splitlines():
+for raw_line in text[4:end].splitlines():
+    line = strip_inline_comment(raw_line).rstrip()
     if not line.strip() or line.lstrip().startswith("#"):
         continue
 
@@ -447,6 +475,25 @@ prune_legacy_codex_skills() {
     prune_all_managed_skills_from_dir "$LEGACY_CODEX_SKILLS_DIR" "legacy Codex"
 }
 
+prune_managed_skill_target() {
+    local skills_dir="$1"
+    local skill_name="$2"
+    local target="$skills_dir/$skill_name"
+    local linked_skill
+
+    if [ -L "$target" ]; then
+        linked_skill=$(read_managed_target "$target")
+        if is_managed_path "$linked_skill"; then
+            rm -f "$target"
+        fi
+    elif [ -d "$target" ] && [ -L "$target/SKILL.md" ]; then
+        linked_skill=$(read_managed_target "$target/SKILL.md")
+        if is_managed_path "$linked_skill"; then
+            rm -rf "$target"
+        fi
+    fi
+}
+
 prepare_directory_skill_target() {
     local skills_dir="$1"
     local skill_name="$2"
@@ -550,6 +597,7 @@ install_skills_to_dir() {
         # Check if directory-based skill
         if [ -f "$INSTALL_DIR/skills/$skill/SKILL.md" ]; then
             if ! skill_supports_runtime "$INSTALL_DIR/skills/$skill/SKILL.md" "$runtime_id"; then
+                prune_managed_skill_target "$skills_dir" "$skill"
                 warn "  ✗ $skill (not compatible with $runtime_name)"
                 continue
             fi
@@ -560,6 +608,7 @@ install_skills_to_dir() {
         # Check if file-based skill
         elif [ -f "$INSTALL_DIR/skills/$skill.SKILL.md" ]; then
             if ! skill_supports_runtime "$INSTALL_DIR/skills/$skill.SKILL.md" "$runtime_id"; then
+                prune_managed_skill_target "$skills_dir" "$skill"
                 warn "  ✗ $skill (not compatible with $runtime_name)"
                 continue
             fi

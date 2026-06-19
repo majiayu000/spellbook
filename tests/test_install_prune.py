@@ -162,6 +162,75 @@ class InstallPruneTests(unittest.TestCase):
             self.assertTrue((claude_skills / "shared-skill").is_symlink())
             self.assertTrue((codex_skills / "shared-skill").is_symlink())
 
+    def test_runtime_compatibility_accepts_yaml_inline_comments(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            source_skills = home / ".spellbook" / "skills"
+            threads_source = self.write_skill(
+                source_skills,
+                "threads",
+                "compatibility:\n  runtimes:\n    - codex # Codex-only",
+            )
+
+            env = os.environ.copy()
+            env["HOME"] = str(home)
+            result = subprocess.run(
+                [
+                    "bash",
+                    "-c",
+                    (
+                        "source ./install.sh; "
+                        f"skill_supports_runtime {str(threads_source / 'SKILL.md')!r} codex"
+                    ),
+                ],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_selected_incompatible_skill_prunes_managed_link(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            source_skills = home / ".spellbook" / "skills"
+            claude_skills = home / ".claude" / "skills"
+            threads_source = self.write_skill(
+                source_skills,
+                "threads",
+                "compatibility: {runtimes: [codex]}",
+            )
+            claude_skills.mkdir(parents=True)
+
+            try:
+                (claude_skills / "threads").symlink_to(threads_source, target_is_directory=True)
+            except (OSError, NotImplementedError) as exc:
+                self.skipTest(f"symlinks are not available: {exc}")
+
+            env = os.environ.copy()
+            env["HOME"] = str(home)
+            result = subprocess.run(
+                [
+                    "bash",
+                    "-c",
+                    (
+                        "source ./install.sh; "
+                        'install_skills_to_dir "$CLAUDE_SKILLS_DIR" "Claude Code" "threads"'
+                    ),
+                ],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertFalse((claude_skills / "threads").exists())
+            self.assertFalse((claude_skills / "threads").is_symlink())
+
     def test_prunes_legacy_codex_managed_links_during_migration(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
