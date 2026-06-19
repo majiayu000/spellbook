@@ -132,6 +132,26 @@ class SkillDependencyChecksTests(unittest.TestCase):
 
             self.assertEqual(self.validate_demo_skill(root), [])
 
+    def test_quoted_requirements_include_file_satisfies_dependency(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            skill_dir = self.write_demo_skill(root, "import requests\n", '-r "base deps.txt"\n')
+            (skill_dir / "base deps.txt").write_text("requests\n", encoding="utf-8")
+
+            self.assertEqual(self.validate_demo_skill(root), [])
+
+    def test_directory_requirements_include_reports_validation_error(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            skill_dir = self.write_demo_skill(root, "import requests\n", "-r includes\n")
+            (skill_dir / "includes").mkdir()
+
+            messages = self.validate_demo_skill(root)
+
+            self.assertEqual(len(messages), 1)
+            self.assertIn("invalid requirements include", messages[0])
+            self.assertIn("requirements include is not a file: includes", messages[0])
+
     def test_nested_requirements_include_is_bounded_by_skill_root(self):
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -152,6 +172,17 @@ class SkillDependencyChecksTests(unittest.TestCase):
 
             self.assertEqual(self.validate_demo_skill(root), [])
 
+    def test_editable_requirements_are_rejected(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.write_demo_skill(root, "import requests\n", "-e ./local-package\n")
+
+            messages = self.validate_demo_skill(root)
+
+            self.assertEqual(len(messages), 1)
+            self.assertIn("invalid requirements include", messages[0])
+            self.assertIn("editable requirements are not supported", messages[0])
+
     def test_marker_gated_requirement_does_not_satisfy_unconditional_import(self):
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -161,6 +192,20 @@ class SkillDependencyChecksTests(unittest.TestCase):
 
             self.assertEqual(len(messages), 1)
             self.assertIn("missing script package declaration(s): requests", messages[0])
+
+    def test_computed_lxml_parser_usage_requires_lxml_declaration(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.write_demo_skill(
+                root,
+                "from bs4 import BeautifulSoup\nparser = 'lxml'\nsoup = BeautifulSoup(html, parser)\n",
+                "beautifulsoup4\n",
+            )
+
+            messages = self.validate_demo_skill(root)
+
+            self.assertEqual(len(messages), 1)
+            self.assertIn("missing script package declaration(s): lxml", messages[0])
 
     def test_stdlib_only_scripts_do_not_require_requirements_file(self):
         with TemporaryDirectory() as temp_dir:
