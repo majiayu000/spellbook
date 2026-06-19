@@ -39,6 +39,9 @@ ALLOWED_FRONTMATTER_KEYS = {
     "metadata",
     "compatibility",
 }
+COMPATIBILITY_KEYS = {"runtimes"}
+RUNTIME_IDS = ("claude_code", "codex", "portable")
+UNSPECIFIED_RUNTIME = "unspecified"
 
 CATEGORY_BY_NAME = {
     # Development architecture
@@ -296,6 +299,45 @@ def normalize_scalar(value: object) -> object:
     return re.sub(r"\s+", " ", value).strip()
 
 
+def validate_compatibility(frontmatter: dict[str, object], path: str) -> list[str]:
+    if "compatibility" not in frontmatter:
+        return []
+    compatibility = frontmatter["compatibility"]
+    if not isinstance(compatibility, dict):
+        return [error(f"{path} compatibility must be a YAML mapping")]
+    messages: list[str] = []
+    unexpected = {str(key) for key in compatibility if key not in COMPATIBILITY_KEYS}
+    if unexpected:
+        messages.append(error(f"{path} has unsupported compatibility keys: {', '.join(sorted(unexpected))}"))
+    runtimes = compatibility.get("runtimes")
+    if not isinstance(runtimes, list) or not runtimes:
+        return messages + [error(f"{path} compatibility.runtimes must be a non-empty list")]
+    seen: set[str] = set()
+    for runtime in runtimes:
+        if not isinstance(runtime, str) or runtime != runtime.strip() or not runtime:
+            messages.append(error(f"{path} compatibility.runtimes entries must be non-empty strings"))
+        elif runtime == UNSPECIFIED_RUNTIME:
+            messages.append(error(f"{path} must not declare unspecified; omit compatibility metadata instead"))
+        elif runtime not in RUNTIME_IDS:
+            messages.append(error(f"{path} has unsupported runtime {runtime}; allowed: {', '.join(RUNTIME_IDS)}"))
+        elif runtime in seen:
+            messages.append(error(f"{path} declares duplicate runtime {runtime}"))
+        else:
+            seen.add(runtime)
+    return messages
+
+
+def compatibility_object(frontmatter: dict[str, object]) -> dict[str, list[str]]:
+    compatibility = frontmatter.get("compatibility")
+    if not isinstance(compatibility, dict):
+        return {"runtimes": [UNSPECIFIED_RUNTIME]}
+    runtimes = compatibility.get("runtimes")
+    if not isinstance(runtimes, list):
+        return {"runtimes": [UNSPECIFIED_RUNTIME]}
+    normalized = [runtime for runtime in RUNTIME_IDS if runtime in runtimes]
+    return {"runtimes": normalized or [UNSPECIFIED_RUNTIME]}
+
+
 def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[str, object], list[str]]:
     frontmatter: dict[str, object] = {}
     messages: list[str] = []
@@ -341,6 +383,11 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
                 quoted_key = current_key
                 quote_char = stripped_value[0]
                 quoted_parts = [stripped_value[1:]]
+                continue
+
+            if current_key == "compatibility" and stripped_value.startswith("{runtimes: [") and stripped_value.endswith("]}"):
+                raw_runtimes = stripped_value.removeprefix("{runtimes: [").removesuffix("]}")
+                frontmatter[current_key] = {"runtimes": [strip_quotes(item) for item in raw_runtimes.split(",") if item.strip()]}
                 continue
 
             frontmatter[current_key] = normalize_scalar(strip_quotes(stripped_value)) if stripped_value else {}
@@ -451,6 +498,7 @@ def validate_entries(entries: list[SkillEntry]) -> list[str]:
                     f"{entry.path} has unsupported frontmatter keys: {', '.join(sorted(unexpected))}"
                 )
             )
+        messages.extend(validate_compatibility(frontmatter, entry.path))
 
         name = frontmatter.get("name")
         description = frontmatter.get("description")
@@ -514,6 +562,7 @@ def registry_payload(entries: list[SkillEntry]) -> list[dict[str, object]]:
                 "path": entry.path,
                 "description": description,
                 "language": language,
+                "compatibility": compatibility_object(entry.frontmatter),
                 "tags": tags,
             }
         )
@@ -560,12 +609,13 @@ def render_registry_doc(entries: list[SkillEntry]) -> str:
         "",
         f"Total installable skills: {len(payload)}",
         "",
-        "| Name | Category | Format | Lang | Tags | Path | Description |",
-        "|---|---|---|---|---|---|---|",
+        "| Name | Category | Format | Lang | Runtime | Tags | Path | Description |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for item in payload:
         path = escape_table_cell(item["path"])
         tags = ", ".join(item.get("tags", []) or [])
+        runtimes = ", ".join(item["compatibility"]["runtimes"])
         lines.append(
             "| "
             + " | ".join(
@@ -574,6 +624,7 @@ def render_registry_doc(entries: list[SkillEntry]) -> str:
                     escape_table_cell(item["category"]),
                     escape_table_cell(item["format"]),
                     escape_table_cell(item.get("language", "en")),
+                    escape_table_cell(runtimes),
                     escape_table_cell(tags),
                     f"[{path}](../{path})",
                     escape_table_cell(item["description"]),

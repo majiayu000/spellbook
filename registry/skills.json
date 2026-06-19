@@ -6,6 +6,11 @@
     "path": "skills/api-design/SKILL.md",
     "description": "REST/GraphQL/gRPC API design best practices. Use when designing APIs, defining contracts, handling versioning. Covers OpenAPI 3.2, GraphQL Federation, gRPC streaming.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "backend"
     ]
@@ -17,6 +22,11 @@
     "path": "skills/app-ui-design/SKILL.md",
     "description": "Mobile app UI design expert for iOS and Android. Use when designing app interfaces, creating design systems, ensuring accessibility, or following platform guidelines. Covers Material Design 3, Human Interface Guidelines, color theory, typography, and 2025 trends.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "frontend",
       "ux"
@@ -29,6 +39,11 @@
     "path": "skills/architecture-foundation/SKILL.md",
     "description": "Design architecture foundations before implementation. Use when asked to design or refactor architecture, choose Rust/Go crate, package, module, runtime, workflow, or service boundaries, compare mature project architecture, prevent stacked one-off PRs, audit migration debt in existing repos, or produce a spec before coding.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "go",
@@ -43,6 +58,11 @@
     "path": "skills/ask-opencli/SKILL.md",
     "description": "Ask Grok or Gemini via opencli (browser-session based, no API cost). Use when the user says \"问 grok\", \"问 gemini\", \"ask grok\", \"ask gemini\", \"用 grok 查\", \"grok 怎么看\", \"让 gemini 分析\", or wants a second opinion from Grok/Gemini without paying API tokens. Routes to opencli which drives the already-logged-in Chrome session.",
     "language": "mixed",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "backend",
       "browser",
@@ -56,6 +76,11 @@
     "path": "skills/auth-security/SKILL.md",
     "description": "OAuth 2.1 + JWT authentication security best practices. Use when implementing auth, API authorization, token management. Follows RFC 9700 (2025).",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "auth",
       "backend",
@@ -70,6 +95,11 @@
     "path": "skills/auto-optimize/SKILL.md",
     "description": "使用 auto-run-agent 对目标项目进行自动化分析、评估、设计和优化。完整流程包括：探索项目现状 → 识别问题 → 设计任务列表 → 创建 runner 环境 → 启动自主执行。适用于任何需要批量优化的项目。",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "agent"
     ]
@@ -81,6 +111,11 @@
     "path": "skills/brainstorming.SKILL.md",
     "description": "Collaborative design refinement through Socratic dialogue. Use when exploring ideas, designing features, or planning architecture. Not for mechanical implementation tasks.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture"
     ]
@@ -92,6 +127,11 @@
     "path": "skills/clash-doctor/SKILL.md",
     "description": "Clash Verge 诊断与配置管理。网络诊断、配置 AI 工具路由规则（Claude/Codex/Cursor/Warp）、查看/克隆订阅配置、切换配置文件。当用户遇到网络问题、要配置代理规则、切换订阅、查看 Clash 配置时使用",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "proxy"
     ]
@@ -103,6 +143,11 @@
     "path": "skills/clash-routes/SKILL.md",
     "description": "查看指定进程的代理线路。通过 Mihomo API 查询当前活跃连接，显示进程匹配的规则和代理链路。用于确认某个进程（如 claude、chrome）走的是哪条订阅线路",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "backend",
       "browser",
@@ -116,6 +161,11 @@
     "path": "skills/cliproxy-deploy/SKILL.md",
     "description": "在 Linux VPS 上部署 CLIProxyAPI（router-for-me/CLIProxyAPI）并暴露 OpenAI 兼容 API。覆盖 Go 环境、源码拉取、最小配置、OAuth 登录（远端 / 本地同步两种路径）、UFW 放行、密钥轮换、健康校验、环境变量落盘。当用户说“部署 cliproxy / 把 codex/claude/gemini 账号暴露成 API / router-for-me 上线 VPS”时触发。",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "auth",
       "backend",
@@ -131,6 +181,11 @@
     "path": "skills/cliproxy-newapi-stack/SKILL.md",
     "description": "在 Linux VPS 上部署 CLIProxyAPI + NewAPI 组合栈，把 Codex/Claude/Gemini/Qwen 等订阅账号包装成可计费的 OpenAI 兼容 API。负责 NewAPI Docker 部署、容器→宿主桥接、模型计费倍率（ModelRatio/CacheRatio/CompletionRatio）、SQLite 直写额度、CLIProxyAPI 408 冷却补丁、多账号 OAuth 凭据热加载、双路径验证。当用户说\"部署 cliproxy + newapi\"、\"加 OpenAI 计费层\"、\"配置 newapi 渠道接 cliproxy\"、\"newapi 价格不对\"、\"加新的 codex/claude 账号到现有部署\"、\"172.17.0.1 容器网络\"、\"408 冷却放大故障\"时触发。",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "auth",
       "backend",
@@ -147,6 +202,11 @@
     "path": "skills/codebase-audit/SKILL.md",
     "description": "全面代码库审计 — 自适应并行深度分析（前后端契约、数据完整性、异常处理/安全、架构/技术债、配置/缓存），输出按严重程度排序的统一报告和修复路线图。Use when user asks to audit, analyze, or review an entire codebase for design issues, find hidden bugs, check architecture health, or asks '全面审查', '代码库审计', '分析设计问题', 'audit codebase', 'health check', '有哪些问题'. Also trigger when user asks to find silent degradation, data flow breakpoints, type mismatches between frontend and backend, or wants to understand technical debt across a project.",
     "language": "mixed",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "backend",
@@ -161,6 +221,11 @@
     "path": "skills/codex/SKILL.md",
     "description": "Use when the user asks to run Codex CLI (codex exec, codex resume) or references OpenAI Codex for code analysis, refactoring, or automated editing",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "claude_code"
+      ]
+    },
     "tags": [
       "multi-ai"
     ]
@@ -172,6 +237,11 @@
     "path": "skills/codex-agent/SKILL.md",
     "description": "Use when you want a second-opinion review via Codex CLI, cross-verification after another agent implements changes, debugging help, or alternative implementation proposals. Requires Codex CLI to be installed and authenticated.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "claude_code"
+      ]
+    },
     "tags": [
       "agent",
       "code-review"
@@ -184,6 +254,11 @@
     "path": "skills/codex-fluent/SKILL.md",
     "description": "Use when Codex feels slow, bloated, or heavy after heavy use. Provides safe session hygiene, archive strategy, and handoff discipline to keep daily Codex usage responsive and low-friction. Always pairs with comprehensive handoffs before archiving active work.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": []
   },
   {
@@ -193,6 +268,11 @@
     "path": "skills/codex-retrospective/SKILL.md",
     "description": "Use when you want Codex to review its own recent history (last N days or specific period) and improve its behavior. Produces minimal, high-signal updates to AGENTS.md and tiny reusable skills. The goal is long-term fluency — Codex gradually becomes better at your specific style, constraints, and workflows.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "code-review"
     ]
@@ -204,6 +284,11 @@
     "path": "skills/comprehensive-testing/SKILL.md",
     "description": "Complete testing strategy covering TDD workflow, test pyramid, unit/integration/E2E/property testing, framework best practices (Jest, Vitest, pytest), mock strategies, and CI integration. Use when writing tests, reviewing test quality, or establishing testing standards.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "python",
       "testing"
@@ -216,6 +301,11 @@
     "path": "skills/contribution-architect/SKILL.md",
     "description": "Use when a contributor wants to move beyond simple bug fixes into architectural improvements, technical debt discovery, design proposals, or module ownership opportunities.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "code-review",
@@ -229,6 +319,11 @@
     "path": "skills/contributor/SKILL.md",
     "description": "End-to-end open source contribution workflow: from scanning issues to submitting PRs. Use this skill whenever the user wants to contribute to an open source project, find issues to fix, submit a pull request, fork a repo to contribute, fix a GitHub issue, or mentions 'open source contribution'. Also trigger when they provide a GitHub repo URL and ask about contributing, say things like 'help me submit a PR', 'find good first issues', 'I want to contribute to X', or mention fixing bugs in someone else's project.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "code-review"
     ]
@@ -240,6 +335,11 @@
     "path": "skills/css-debug/SKILL.md",
     "description": "Use this skill to diagnose CSS and frontend layout issues such as positioning, overflow clipping, Tailwind class conflicts, z-index stacking, and React rendering visibility problems.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "debugging",
       "frontend",
@@ -253,6 +353,11 @@
     "path": "skills/database-patterns/SKILL.md",
     "description": "Use when designing PostgreSQL + Redis data models, indexes, caching strategies, JSONB usage, tiered storage, or cache consistency contracts.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "database"
     ]
@@ -264,6 +369,11 @@
     "path": "skills/devops-excellence/SKILL.md",
     "description": "DevOps and CI/CD expert. Use when setting up pipelines, containerizing applications, deploying to Kubernetes, or implementing release strategies. Covers GitHub Actions, Docker, K8s, Terraform, and GitOps.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "devops"
     ]
@@ -275,6 +385,11 @@
     "path": "skills/disk-cleaner/SKILL.md",
     "description": "当用户要扫描磁盘空间、找出可安全删除的缓存/编译产物/安装包、或交互式释放空间时使用。",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "system"
     ]
@@ -286,6 +401,11 @@
     "path": "skills/elegant-architecture/SKILL.md",
     "description": "Guides clean architecture design with strict 200-line file limits. Use when starting new features, refactoring large files, or planning module structure. Enforces modular design and real testing.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "testing"
@@ -298,6 +418,11 @@
     "path": "skills/figma-to-code/SKILL.md",
     "description": "Extract Figma designs and generate production-ready React/Next.js components with TypeScript, Tailwind CSS, and pixel-perfect accuracy. Use when a user provides a Figma URL or asks to convert Figma designs to code.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "design-system",
       "frontend",
@@ -313,6 +438,11 @@
     "path": "skills/figma-to-react/SKILL.md",
     "description": "Use when the user wants to extract Figma designs into production-ready React or Next.js components with TypeScript, Tailwind CSS, and pixel-perfect accuracy.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "design-system",
       "frontend",
@@ -328,6 +458,11 @@
     "path": "skills/fixflow/SKILL.md",
     "description": "Use when executing coding tasks with a strict delivery workflow: build a full plan, implement one step at a time, run tests continuously, and commit by default after each step (`per_step`). Support explicit commit policy overrides (`final_only`, `milestone`) and optional BDD (Given/When/Then) when users ask for behavior-driven delivery or requirements are unclear.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "agent",
       "debugging",
@@ -341,6 +476,11 @@
     "path": "skills/frontend-design/SKILL.md",
     "description": "Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, or applications. Generates creative, polished code that avoids generic AI aesthetics.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "frontend"
     ]
@@ -352,6 +492,11 @@
     "path": "skills/gemma4-local-deploy/SKILL.md",
     "description": "在本机 Mac 或 Apple Silicon 上部署 Gemma 4 12B。本地安装/升级 llama.cpp，下载 GGUF 量化模型，用 llama-server 暴露 OpenAI-compatible API，或用 Ollama 暴露本地模型服务；按用户需求在默认 Q4_K_M、64K/128K 长上下文、QAT Q4_0 @ 256K、左右对比演示之间选择，配置 tmux 后台运行，验证健康检查、问答接口、资源占用和常见故障。当用户说部署 Gemma 4、Gemma 4 12B、本地大模型、长上下文、QAT、量化、llama-server、Ollama、GGUF、Mac 本地模型服务时使用。",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "backend",
       "deploy",
@@ -365,6 +510,11 @@
     "path": "skills/git-commit-smart/SKILL.md",
     "description": "Generates meaningful, conventional commit messages automatically. Use when committing code changes. Analyzes diff to create descriptive commits following best practices.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "code-review",
       "documentation"
@@ -377,6 +527,11 @@
     "path": "skills/github-trending/SKILL.md",
     "description": "GitHub Trending 探索与分析。用于发现热门开源项目、技术趋势、开发者偏好，帮助理解技术社区的兴趣走向。使用场景包括“看看今天 GitHub 什么火了”、“Rust 最近热门项目”、“AI 领域趋势日报”、“这个方向有没有值得关注的开源项目”、“帮我做个 GitHub trending 分析”。",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "content",
       "research",
@@ -390,6 +545,11 @@
     "path": "skills/golang-web/SKILL.md",
     "description": "Modern Go Web application architecture guide. Use when creating new Go web projects, APIs, or microservices. Covers project structure, tech stack selection, and best practices based on Go standards.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "go"
@@ -402,6 +562,11 @@
     "path": "skills/gpu-use/SKILL.md",
     "description": "查看远程服务器 GPU 使用情况。SSH 连接服务器，展示每张卡的显存占用、运行进程、所属容器。当用户说查看 GPU、显卡占用、显存使用时使用",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "deploy",
       "system"
@@ -414,6 +579,11 @@
     "path": "skills/harmonyos-app/SKILL.md",
     "description": "HarmonyOS application development expert. Use when building HarmonyOS apps with ArkTS, ArkUI, Stage model, and distributed capabilities. Covers HarmonyOS NEXT (API 12+) best practices.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "backend",
       "harmonyos"
@@ -426,6 +596,11 @@
     "path": "skills/humanizer/SKILL.md",
     "description": "Remove signs of AI-generated writing from text. Use when editing or reviewing text to make it sound more natural and human-written. Based on Wikipedia's comprehensive \"Signs of AI writing\" guide. Detects and fixes patterns including: inflated symbolism, promotional language, superficial -ing analyses, vague attributions, em dash overuse, rule of three, AI vocabulary words, negative parallelisms, and excessive conjunctive phrases.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "content",
       "writing"
@@ -438,6 +613,11 @@
     "path": "skills/multi-ai-research/SKILL.md",
     "description": "Parallel multi-AI cross-validation research workflow (大版本). Dispatch N internal sub-agents + grok + gemini in parallel, automatically cross-validate findings, tier by confidence (strong consensus / partial / conflict / insufficient), generate tiered action items with arbitration. Use when user says \"多 AI 调研\", \"交叉验证\", \"独立共识\", \"三脑调研\", \"multi-ai research\", \"parallel research\", \"cross-validate\", or needs deep research that benefits from internal data + external 2026 consensus. NOT for quick factual Q&A, pure code reasoning, or tasks needing deep project context.",
     "language": "mixed",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "multi-ai"
     ]
@@ -449,6 +629,11 @@
     "path": "skills/multi-model-orchestrator/SKILL.md",
     "description": "Use when coordinating complex tasks across multiple AI agents with a centralized handoff document for planning, execution tracking, and feedback fusion.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "agent",
       "documentation"
@@ -461,6 +646,11 @@
     "path": "skills/observability-sre/SKILL.md",
     "description": "Observability and SRE expert. Use when setting up monitoring, logging, tracing, defining SLOs, or managing incidents. Covers Prometheus, Grafana, OpenTelemetry, and incident response best practices.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "observability"
     ]
@@ -472,6 +662,11 @@
     "path": "skills/openclaw-deploy/SKILL.md",
     "description": "在远程服务器上一键部署 OpenClaw。当用户需要安装 OpenClaw、部署 OpenClaw、配置 OpenClaw 到服务器时使用",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "deploy"
     ]
@@ -483,6 +678,11 @@
     "path": "skills/optflow/SKILL.md",
     "description": "Use when the user asks to discover and deliver repository optimization work end to end: identify performance/reliability/maintainability/security/dx/cost optimization points, prioritize by impact-effort-risk, then execute fixes step by step with continuous testing and explicit commit policy (`final_only`, `per_step`, `milestone`). Default to `per_step` for implementation work so each feature is tested then committed before the next feature. Supports optional BDD (Given/When/Then).",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "performance",
       "security",
@@ -496,6 +696,11 @@
     "path": "skills/optimize-network/SKILL.md",
     "description": "Safely diagnose and improve local network speed, latency, jitter, DNS, Wi-Fi, Ethernet, macOS network services, and bufferbloat. Use this skill whenever the user asks to optimize internet/network speed, make the network faster, diagnose slow Wi-Fi, latency, packet loss, DNS delay, unstable Codex/AI tool connectivity, or asks about the viral Codex network optimization workflow. Always protect VPN/proxy tools such as Clash Verge, Mihomo, Shadowrocket, Tailscale, V2Ray, Surge, and corporate VPNs; do not modify or disable them unless the user explicitly asks for that specific change.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "debugging",
       "performance",
@@ -509,6 +714,11 @@
     "path": "skills/personal-arsenal-lifecycle-doctor/SKILL.md",
     "description": "扫描并诊断你个人 ~/.claude/skills 里的技能健康状态。当用户说以下任意内容时使用： - “我的技能失效了”“升级后老技能不认了” - “技能腐烂了”“外部依赖坏了”“我的个人 Arsenal 乱了” - “帮我检查技能健康”“技能生命周期”“长期维护技能” - “我 1-2 年前超好用的 Skill 现在 Claude 完全不认了” - “我的部署类技能现在执行不了了，外部项目下线了” 特别适合维护 1 年以上个人技能集合（Arsenal + 自定义 + 社区拷贝混合）的重度用户。 Always protect 用户现有的 CLAUDE.md / AGENTS.md / 自定义配置，只读优先，任何修改必须用户明确确认后才执行。 发现问题时优先给出最小变更 + 备份建议，绝不擅自大规模修改。",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": []
   },
   {
@@ -518,6 +728,11 @@
     "path": "skills/plan-flow/SKILL.md",
     "description": "Use when deep architecture review or convergence planning requires analyzing repository-level duplicate/redundant design first, then building and executing a strict step-test-update plan in docs/plan.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "code-review"
@@ -530,6 +745,11 @@
     "path": "skills/playwright-automation/SKILL.md",
     "description": "Browser automation and testing with Playwright. Use when testing web applications, automating browser tasks, taking screenshots, or validating UI behavior.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "browser",
       "frontend",
@@ -543,6 +763,11 @@
     "path": "skills/prd-master/SKILL.md",
     "description": "PRD writing and product definition expert. Use when writing PRDs, user stories, acceptance criteria, or prioritizing features. Covers RICE/MoSCoW frameworks, agile requirements, and specification best practices.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "documentation",
       "product-management"
@@ -555,6 +780,11 @@
     "path": "skills/product-analytics/SKILL.md",
     "description": "Product analytics and growth expert. Use when designing event tracking, defining metrics, running A/B tests, or analyzing retention. Covers AARRR framework, funnel analysis, cohort analysis, and experimentation.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "documentation",
       "product-management"
@@ -567,6 +797,11 @@
     "path": "skills/product-discovery/SKILL.md",
     "description": "Product discovery and market research expert. Use when validating product ideas, conducting market research, user interviews, competitive analysis, or opportunity assessment. Covers JTBD, Kano model, and Value Proposition Canvas.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "product-management"
     ]
@@ -578,6 +813,11 @@
     "path": "skills/product-manager-toolkit/SKILL.md",
     "description": "Use when the user needs product management workflows such as RICE prioritization, customer interview analysis, PRD templates, discovery frameworks, go-to-market strategy, feature prioritization, research synthesis, or requirements documentation.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "documentation",
       "go",
@@ -591,6 +831,11 @@
     "path": "skills/product-ux-expert/SKILL.md",
     "description": "Product interaction and UX expert. Use when reviewing UI/UX, conducting heuristic evaluations, designing user journeys, applying cognitive psychology principles, or ensuring WCAG 2.2 accessibility compliance.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "frontend",
       "ux"
@@ -603,6 +848,11 @@
     "path": "skills/project-health-auditor/SKILL.md",
     "description": "Comprehensive codebase health analysis. Use when reviewing code quality, identifying technical debt, checking dependencies, or assessing project structure.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "code-review"
@@ -615,6 +865,11 @@
     "path": "skills/push-all.SKILL.md",
     "description": "Use when the user explicitly asks to stage all current changes, create a commit, and push to the remote after safety checks.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "code-review"
     ]
@@ -626,6 +881,11 @@
     "path": "skills/python-project/SKILL.md",
     "description": "Modern Python project architecture guide for 2025. Use when creating Python projects (APIs, CLI, data pipelines). Covers uv, Ruff, Pydantic, FastAPI, and async patterns.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "python"
@@ -638,6 +898,11 @@
     "path": "skills/react-best-practices/SKILL.md",
     "description": "React and Next.js performance playbook distilled from Vercel Engineering guidance. Use when building, reviewing, or refactoring React/Next.js code for waterfalls, bundle size, rendering cost, and client/server data flow.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "javascript",
       "performance",
@@ -651,6 +916,11 @@
     "path": "skills/react-hooks-best-practices/SKILL.md",
     "description": "Provides React patterns for hooks, effects, refs, and component design. Covers escape hatches, anti-patterns, and correct effect usage. Use when reading or writing React components with hooks or effects.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "react"
     ]
@@ -662,6 +932,11 @@
     "path": "skills/rust-best-practices/SKILL.md",
     "description": "Use when writing, modifying, or reviewing Rust code. ALWAYS invoke before Rust edits; covers Microsoft Pragmatic Rust guidance for error handling, API design, performance, and idiomatic patterns.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "backend",
       "performance",
@@ -675,6 +950,11 @@
     "path": "skills/rust-project/SKILL.md",
     "description": "Modern Rust project architecture guide for 2025. Use when creating Rust projects (CLI, web services, libraries). Covers workspace structure, error handling, async patterns, and idiomatic Rust best practices.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "rust"
@@ -687,6 +967,11 @@
     "path": "skills/rustdesk-doctor/SKILL.md",
     "description": "诊断 RustDesk 连接问题。当用户说 RustDesk 连不上、无法远程、ID 不显示、注册失败时使用",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "debugging",
       "system"
@@ -699,6 +984,11 @@
     "path": "skills/server-deploy/SKILL.md",
     "description": "通用项目部署到远程服务器。自动识别项目类型（Node.js/Python/Rust/Go/静态站），SSH 配置、环境安装、项目上传、进程管理、Nginx 反向代理、Cloudflare SSL、安全加固。当用户需要部署项目、上线服务、配置域名时使用",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "deploy",
       "go",
@@ -714,6 +1004,11 @@
     "path": "skills/server-security/SKILL.md",
     "description": "服务器安全审计与加固。扫描 SSH、防火墙、端口暴露、文件权限、暴力破解等安全问题，生成报告并提供一键修复。当用户说服务器安全、安全审计、安全检查、安全加固时使用",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "security"
     ]
@@ -725,6 +1020,11 @@
     "path": "skills/skill-audit/SKILL.md",
     "description": "Audit, design, categorize, distribute, and measure agent skills using lessons from Anthropic's Lessons from building Claude Code: How we use skills. Use when reviewing an existing skill, deciding whether a workflow deserves a skill, planning a skill library, turning team knowledge into skills, choosing skill categories, writing trigger descriptions, designing progressive disclosure, or planning skill marketplace and usage measurement.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "agent",
       "documentation",
@@ -738,6 +1038,11 @@
     "path": "skills/skill-creator/SKILL.md",
     "description": "Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, update or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "performance"
     ]
@@ -749,6 +1054,11 @@
     "path": "skills/slides/SKILL.md",
     "description": "生成口播视频背景 PPT 幻灯片（16:9 横版 PNG 序列）。当用户需要做 PPT、生成幻灯片、做演示背景图时使用",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "content"
     ]
@@ -760,6 +1070,11 @@
     "path": "skills/strategic-compact/SKILL.md",
     "description": "当用户需要在长会话的逻辑边界手动压缩上下文、保留关键决策和约束、丢弃中间探索过程时使用。",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "agent",
       "prompt"
@@ -772,6 +1087,11 @@
     "path": "skills/structured-logging/SKILL.md",
     "description": "Comprehensive logging system design guide. Use when designing log architecture, establishing logging standards, adding observability, or debugging production issues. Covers centralized configuration, field standards, and distributed tracing.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "observability"
@@ -784,6 +1104,11 @@
     "path": "skills/structured-logging-lite/SKILL.md",
     "description": "Logging system design guide covering centralized architecture, field standards, and distributed tracing. Use when designing log systems, establishing standards, or debugging production issues.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "observability"
@@ -796,6 +1121,11 @@
     "path": "skills/system-doctor/SKILL.md",
     "description": "系统性能诊断。当用户说电脑卡、系统慢、查看进程、CPU占用高、内存不够等性能问题时使用",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "system"
     ]
@@ -807,6 +1137,11 @@
     "path": "skills/systematic-debugging/SKILL.md",
     "description": "Four-phase debugging framework for any technical issue. Use when encountering bugs, errors, or unexpected behavior. Prevents random fix attempts.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "debugging"
     ]
@@ -818,6 +1153,11 @@
     "path": "skills/technical-spec/SKILL.md",
     "description": "Technical specification and design document expert. Use when writing design docs, RFCs, ADRs, or evaluating technology choices. Covers C4 model, system design, and architecture documentation.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "documentation"
@@ -830,6 +1170,11 @@
     "path": "skills/test-driven-development.SKILL.md",
     "description": "Enforces TDD discipline with RED-GREEN-REFACTOR cycle. Use when writing new features, fixing bugs, or refactoring code. Ensures tests genuinely verify behavior.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "refactoring",
       "testing"
@@ -842,6 +1187,11 @@
     "path": "skills/threads/SKILL.md",
     "description": "Use when the user explicitly asks for $threads, Codex-native subagents, 开几个子 agent, or a GitHub issue/PR queue needing parallel lanes, worktrees, review/merge gates, and closure audit. Do not use for OS/language threads, chat/email/forum threads, or Assistants product threads unless Codex workflow orchestration is explicit.",
     "language": "mixed",
+    "compatibility": {
+      "runtimes": [
+        "codex"
+      ]
+    },
     "tags": [
       "agent",
       "code-review"
@@ -854,6 +1204,11 @@
     "path": "skills/trip-planner/SKILL.md",
     "description": "Use when the user wants detailed travel itineraries with activities, logistics, day-by-day schedules, vacation planning, trip organization, or travel documentation.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "content"
     ]
@@ -865,6 +1220,11 @@
     "path": "skills/typescript-project/SKILL.md",
     "description": "Modern TypeScript project architecture guide for 2025. Use when creating new TS projects, setting up configurations, or designing project structure. Covers tech stack selection, layered architecture, and best practices.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "typescript"
@@ -877,6 +1237,11 @@
     "path": "skills/ui-design-system/SKILL.md",
     "description": "Use when creating or maintaining UI design systems, design tokens, component documentation, responsive calculations, quality checks, or design-dev handoff materials.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "frontend"
     ]
@@ -888,6 +1253,11 @@
     "path": "skills/ui-designer/SKILL.md",
     "description": "Extract design systems from reference UI images and generate implementation-ready UI design prompts. Use when users provide UI screenshots/mockups and want to create consistent designs, generate design systems, or build MVP UIs matching reference aesthetics.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "frontend"
     ]
@@ -899,6 +1269,11 @@
     "path": "skills/ui-ux-pro-max/SKILL.md",
     "description": "Use when planning, building, designing, code review, refactor, fixing, improving, optimizing, enhancing, or checking UI/UX work. Covers product patterns, landing pages, chart choices, visual styles, palettes, typography, UX rules, and 9 stacks (React, Next.js, Vue, Svelte, SwiftUI, React Native, Flutter, Tailwind, shadcn/ui). Projects: website, landing page, dashboard, admin panel, e-commerce, SaaS, portfolio, blog, mobile app, .html, .tsx, .vue, .svelte. Elements: button, modal, navbar, sidebar, card, table, form, chart. Topics: color palette, accessibility, animation, layout, typography, font pairing, spacing, hover, shadow, gradient.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "code-review",
       "frontend",
@@ -917,6 +1292,11 @@
     "path": "skills/vibeguard/SKILL.md",
     "description": "Lightweight anti-hallucination workflow for task kickoff, review prioritization, and regression retrospectives. Use when the user asks for guardrails, task contracts, risk scoring, or review templates.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "code-review"
     ]
@@ -928,6 +1308,11 @@
     "path": "skills/vscode-doctor/SKILL.md",
     "description": "Diagnose slow or freezing VS Code-compatible editors with evidence-first, zero-hardcoded-assumption workflow. Use when the user reports editor lag, typing delay, UI freezes, extension host stalls, file watcher noise, high editor CPU/RSS, uses VS Code/Cursor as a file browser over a large folder, or wants a safe editor performance audit.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "browser",
       "debugging",
@@ -943,6 +1328,11 @@
     "path": "skills/web-artifacts-builder/SKILL.md",
     "description": "Use when creating elaborate, multi-component claude.ai HTML artifacts with React, Tailwind CSS, shadcn/ui, state management, routing, or complex frontend structure; not for simple single-file HTML/JSX artifacts.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "frontend",
       "react"
@@ -955,6 +1345,11 @@
     "path": "skills/web-asset-generator/SKILL.md",
     "description": "Generate web assets including favicons, app icons (PWA), and social media meta images (Open Graph) for Facebook, Twitter, WhatsApp, and LinkedIn. Use when users need icons, favicons, social sharing images, or Open Graph images from logos or text slogans. Handles image resizing, text-to-image generation, and provides proper HTML meta tags.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "frontend"
     ]
@@ -966,6 +1361,11 @@
     "path": "skills/weekly.SKILL.md",
     "description": "当用户要求生成 om-generator 指定日期范围周报时使用；整合 Git 提交、Claude Code 会话、Codex 会话和可选本机记忆记录。",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "content",
       "documentation"
@@ -978,6 +1378,11 @@
     "path": "skills/xiaohongshu/SKILL.md",
     "description": "生成小红书文案和配图。当用户需要写小红书、生成社交媒体文案、小红书运营内容时使用",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "content"
     ]
@@ -989,6 +1394,11 @@
     "path": "skills/xiaohongshu-netfeel-guardian/SKILL.md",
     "description": "当用户用 Claude 写小红书、公众号、视频脚本等内容时，输出出现翻译腔、英文思考、西式框架，导致“像外国人假装写中文”时使用。 典型触发语句： - “Claude写小红书翻译腔太重”“英文思考输出灾难” - “帮我把这个笔记改成纯中文网感”“去除Claude翻译腔” - “公众号文章中途变英文了”“50 Skills内容生成翻车” - “强制Claude用中文思考写笔记”“小红书情绪化表达润色” 始终保护用户原有的 CLAUDE.md / AGENTS.md 中的人设与语气要求，只做最小必要干预。优先与 xiaohongshu 技能组合使用。",
     "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "content"
     ]
@@ -1000,6 +1410,11 @@
     "path": "skills/zig-project/SKILL.md",
     "description": "Modern Zig project architecture guide. Use when creating Zig projects (systems programming, CLI tools, game dev, high-performance services). Covers explicit allocators, comptime, error handling, and build system.",
     "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
     "tags": [
       "architecture",
       "performance",
