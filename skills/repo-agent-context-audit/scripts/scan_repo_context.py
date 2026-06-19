@@ -79,6 +79,14 @@ def text_stats(path: Path) -> dict[str, int]:
     }
 
 
+def is_skill_file(relative: str) -> bool:
+    return (
+        re.match(r"^\.agents/skills/[^/]+/SKILL\.md$", relative) is not None
+        or re.match(r"^skills/[^/]+/SKILL\.md$", relative) is not None
+        or re.match(r"^skills/[^/]+\.SKILL\.md$", relative) is not None
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", nargs="?", default=".", help="repository root to scan")
@@ -100,10 +108,7 @@ def main() -> int:
             high_context.append(path)
         elif path.name == "README.md":
             supporting_docs.append(path)
-        if (
-            relative.startswith(".agents/skills/")
-            or re.match(r"^skills/[^/]+/SKILL\.md$", relative)
-        ) and path.name == "SKILL.md":
+        if is_skill_file(relative):
             skills.append(path)
         if "/specs/" in f"/{relative}" and path.name in SPEC_NAMES:
             specs.append(path)

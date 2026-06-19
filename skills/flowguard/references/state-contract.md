@@ -66,7 +66,7 @@ Required fields for compaction safety: `modified_files`, `constraint_set_or_spec
 
 1. Re-read applicable `AGENTS.md` before editing.
 2. Read the handoff or prior checkpoint.
-3. Run `scripts/workflow_state_snapshot.sh .`.
+3. Run the installed Flowguard snapshot script with an explicit target repo path, for example `/path/to/installed/flowguard/scripts/workflow_state_snapshot.sh /path/to/target/repo`.
 4. Compare cwd, repo root, branch, head, dirty files, and artifacts against the handoff.
 5. Treat memory as a hint until verified against current files, git, runtime, or remote truth.
 6. Reconcile any newer user instruction before continuing older work.
