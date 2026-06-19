@@ -22,6 +22,7 @@ from skill_artifact_checks import (
     skill_markdown_body,
     unresolved_placeholder_tokens,
 )
+from skill_dependency_checks import validate_script_dependencies
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -492,6 +493,15 @@ def validate_entries(entries: list[SkillEntry]) -> list[str]:
                 messages.append(error(f"{entry.path} references unsafe support path {ref.ref}: {ref.unsafe_reason}"))
             elif not ref.target.exists():
                 messages.append(error(f"{entry.path} references missing support file: {ref.ref}"))
+
+        messages.extend(
+            validate_script_dependencies(
+                root=ROOT,
+                entry_path=entry.path,
+                entry_format=entry.format,
+                error=error,
+            )
+        )
 
         line_count = len(path.read_text(encoding="utf-8").splitlines())
         if line_count > 500:
