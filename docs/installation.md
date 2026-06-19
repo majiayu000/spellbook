@@ -29,9 +29,12 @@ Codex user-level skills follow the current OpenAI-documented path,
 `$HOME/.agents/skills`. Older Spellbook releases used `~/.codex/skills`; run
 the current installer again to refresh symlinks into the supported location.
 
-## Installing Plugins
+## Installing Claude Code Plugins
 
-Plugins are currently Claude Code-specific because they use the `.claude-plugin` manifest format.
+Plugins are currently Claude Code-specific because they use the `.claude-plugin`
+manifest format. Codex plugin packaging is not supported by this repository
+today; install Codex skills directly with `install.sh --target codex` or into
+`$HOME/.agents/skills`.
 
 ### Method 1: Via Plugin Marketplace (Recommended)
 
@@ -60,7 +63,10 @@ git clone https://github.com/majiayu000/spellbook.git
 
 ### Skills
 
-For repository-local installation, prefer `install.sh --skills <skill-name>` because it supports both source layouts and both runtime targets:
+For repository-local installation, prefer
+`install.sh --target <target> --skills <skill-name>` because it supports both
+source layouts and both runtime targets. This is the Codex distribution path for
+Spellbook skills today: direct skill install, not plugin manifest packaging.
 
 - Directory skills: `skills/<skill-name>/SKILL.md`
 - File skills: `skills/<skill-name>.SKILL.md`
@@ -122,13 +128,13 @@ curl -o ./CLAUDE.md \
 After installation, verify components are loaded:
 
 ```bash
-# Check installed plugins
+# Check installed Claude Code plugins
 /plugin list
 
 # Ask Claude about available skills
 "What skills do you have available?"
 
-# Codex
+# Codex direct skill install
 # Restart Codex so it reloads ~/.agents/skills.
 ```
 
