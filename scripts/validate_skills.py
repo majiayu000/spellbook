@@ -106,6 +106,7 @@ CATEGORY_BY_NAME = {
     "multi-ai-research": "AI & Agent Workflow",
     "multi-model-orchestrator": "AI & Agent Workflow",
     "personal-arsenal-lifecycle-doctor": "AI & Agent Workflow",
+    "repo-agent-context-audit": "AI & Agent Workflow",
     "skill-creator": "AI & Agent Workflow",
     "skill-audit": "AI & Agent Workflow",
     "strategic-compact": "AI & Agent Workflow",

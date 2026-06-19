@@ -1,13 +1,13 @@
 {
-  "total_skills": 84,
+  "total_skills": 85,
   "total_tags": 35,
   "tag_counts": {
-    "agent": 8,
+    "agent": 9,
     "architecture": 15,
     "auth": 3,
     "backend": 10,
     "browser": 4,
-    "code-review": 12,
+    "code-review": 13,
     "content": 7,
     "database": 2,
     "debugging": 6,
@@ -45,6 +45,7 @@
       "fixflow",
       "flowguard",
       "multi-model-orchestrator",
+      "repo-agent-context-audit",
       "skill-audit",
       "strategic-compact",
       "threads"
@@ -99,6 +100,7 @@
       "plan-flow",
       "project-health-auditor",
       "push-all",
+      "repo-agent-context-audit",
       "threads",
       "ui-ux-pro-max",
       "vibeguard"
