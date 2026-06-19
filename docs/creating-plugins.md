@@ -147,6 +147,7 @@ Agent behavior and instructions...
    /plugin install my-plugin
    ```
 
-For Codex users, publish the skill source and document direct installation into
-the current Codex skill target, `$HOME/.agents/skills`. Do not document a Codex
-plugin manifest for this repository until one is actually supported.
+For Codex users, direct installation into `$HOME/.agents/skills` is only a
+local raw-catalog workaround for testing or internal use. Do not present it as
+the Codex publishing path. Document Codex plugin publishing only after this
+repository adds a supported Codex plugin package and manifest.
