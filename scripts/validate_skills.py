@@ -22,6 +22,7 @@ from skill_artifact_checks import (
     skill_markdown_body,
     unresolved_placeholder_tokens,
 )
+from runtime_compatibility import compatibility_object, validate_compatibility
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,7 +40,6 @@ ALLOWED_FRONTMATTER_KEYS = {
     "metadata",
     "compatibility",
 }
-
 CATEGORY_BY_NAME = {
     # Development architecture
     "typescript-project": "Development Architecture",
@@ -300,6 +300,7 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
     frontmatter: dict[str, object] = {}
     messages: list[str] = []
     current_key: str | None = None
+    current_nested_key: str | None = None
     quoted_key: str | None = None
     quote_char: str | None = None
     quoted_parts: list[str] = []
@@ -334,6 +335,7 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
         key_match = re.match(r"^([A-Za-z0-9_-]+):(?:\s*(.*))?$", line)
         if key_match:
             current_key = key_match.group(1)
+            current_nested_key = None
             raw_value = key_match.group(2) or ""
             stripped_value = raw_value.strip()
 
@@ -343,8 +345,50 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
                 quoted_parts = [stripped_value[1:]]
                 continue
 
+            if current_key == "compatibility" and stripped_value.startswith("{runtimes: [") and stripped_value.endswith("]}"):
+                raw_runtimes = stripped_value.removeprefix("{runtimes: [").removesuffix("]}")
+                frontmatter[current_key] = {"runtimes": [strip_quotes(item) for item in raw_runtimes.split(",") if item.strip()]}
+                continue
+
             frontmatter[current_key] = normalize_scalar(strip_quotes(stripped_value)) if stripped_value else {}
             continue
+
+        if current_key == "compatibility" and line.startswith("  "):
+            compatibility = frontmatter.get("compatibility")
+            if not isinstance(compatibility, dict):
+                compatibility = {}
+                frontmatter["compatibility"] = compatibility
+
+            nested_key_match = re.match(r"^  ([A-Za-z0-9_-]+):(?:\s*(.*))?$", line)
+            if nested_key_match:
+                current_nested_key = nested_key_match.group(1)
+                stripped_nested = (nested_key_match.group(2) or "").strip()
+                if current_nested_key == "runtimes":
+                    if stripped_nested == "[]":
+                        compatibility[current_nested_key] = []
+                    elif stripped_nested.startswith("[") and stripped_nested.endswith("]"):
+                        raw_runtimes = stripped_nested.removeprefix("[").removesuffix("]")
+                        compatibility[current_nested_key] = [
+                            strip_quotes(item.strip()) for item in raw_runtimes.split(",") if item.strip()
+                        ]
+                    else:
+                        compatibility[current_nested_key] = (
+                            normalize_scalar(strip_quotes(stripped_nested)) if stripped_nested else []
+                        )
+                else:
+                    compatibility[current_nested_key] = (
+                        normalize_scalar(strip_quotes(stripped_nested)) if stripped_nested else {}
+                    )
+                continue
+
+            list_match = re.match(r"^    -\s*(.*)$", line)
+            if list_match and current_nested_key:
+                value = compatibility.get(current_nested_key)
+                if not isinstance(value, list):
+                    value = []
+                    compatibility[current_nested_key] = value
+                value.append(strip_quotes(list_match.group(1).strip()))
+                continue
 
         if current_key and line.startswith("- "):
             value = frontmatter.get(current_key)
@@ -451,6 +495,7 @@ def validate_entries(entries: list[SkillEntry]) -> list[str]:
                     f"{entry.path} has unsupported frontmatter keys: {', '.join(sorted(unexpected))}"
                 )
             )
+        messages.extend(validate_compatibility(frontmatter, entry.path, error))
 
         name = frontmatter.get("name")
         description = frontmatter.get("description")
@@ -514,6 +559,7 @@ def registry_payload(entries: list[SkillEntry]) -> list[dict[str, object]]:
                 "path": entry.path,
                 "description": description,
                 "language": language,
+                "compatibility": compatibility_object(entry.frontmatter),
                 "tags": tags,
             }
         )
@@ -560,12 +606,13 @@ def render_registry_doc(entries: list[SkillEntry]) -> str:
         "",
         f"Total installable skills: {len(payload)}",
         "",
-        "| Name | Category | Format | Lang | Tags | Path | Description |",
-        "|---|---|---|---|---|---|---|",
+        "| Name | Category | Format | Lang | Runtime | Tags | Path | Description |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for item in payload:
         path = escape_table_cell(item["path"])
         tags = ", ".join(item.get("tags", []) or [])
+        runtimes = ", ".join(item["compatibility"]["runtimes"])
         lines.append(
             "| "
             + " | ".join(
@@ -574,6 +621,7 @@ def render_registry_doc(entries: list[SkillEntry]) -> str:
                     escape_table_cell(item["category"]),
                     escape_table_cell(item["format"]),
                     escape_table_cell(item.get("language", "en")),
+                    escape_table_cell(runtimes),
                     escape_table_cell(tags),
                     f"[{path}](../{path})",
                     escape_table_cell(item["description"]),
