@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flowguard"
+  short_description: "Guard long agent tasks from drift"
+  default_prompt: "Use $flowguard to run this task with preflight, checkpoints, fresh verification, and a handoff."

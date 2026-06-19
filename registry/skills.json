@@ -335,6 +335,17 @@
     ]
   },
   {
+    "name": "flowguard",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/flowguard/SKILL.md",
+    "description": "Guard long, ambiguous, or stateful AI-agent work from drift. Use when the user asks to run or continue a multi-step task, autonomous loop, bug fix, repo change, PR readiness check, compaction handoff, resume from previous context, cost-control checkpoint, or any task likely to span many tool calls, files, sessions, agents, or verification gates.",
+    "language": "en",
+    "tags": [
+      "agent"
+    ]
+  },
+  {
     "name": "frontend-design",
     "category": "UI/UX & Frontend",
     "format": "directory",
@@ -653,6 +664,18 @@
     "language": "en",
     "tags": [
       "react"
+    ]
+  },
+  {
+    "name": "repo-agent-context-audit",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/repo-agent-context-audit/SKILL.md",
+    "description": "Audit and standardize a repository's agent-readable context, including AGENTS.md, CLAUDE.md, WARP.md, CONTRIBUTING.md, .agents/skills, and specs/ PRODUCT.md and TECH.md contracts. Use when asked to review, design, create, scaffold, or improve repo instructions, agent onboarding, spec workflows, or cross-repo agent-context conventions.",
+    "language": "en",
+    "tags": [
+      "agent",
+      "code-review"
     ]
   },
   {

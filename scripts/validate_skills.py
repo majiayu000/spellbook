@@ -97,6 +97,7 @@ CATEGORY_BY_NAME = {
     "web-artifacts-builder": "UI/UX & Frontend",
     # AI and agent workflows
     "ask-opencli": "AI & Agent Workflow",
+    "flowguard": "AI & Agent Workflow",
     "brainstorming": "AI & Agent Workflow",
     "codex": "AI & Agent Workflow",
     "codex-agent": "AI & Agent Workflow",
@@ -105,6 +106,7 @@ CATEGORY_BY_NAME = {
     "multi-ai-research": "AI & Agent Workflow",
     "multi-model-orchestrator": "AI & Agent Workflow",
     "personal-arsenal-lifecycle-doctor": "AI & Agent Workflow",
+    "repo-agent-context-audit": "AI & Agent Workflow",
     "skill-creator": "AI & Agent Workflow",
     "skill-audit": "AI & Agent Workflow",
     "strategic-compact": "AI & Agent Workflow",
