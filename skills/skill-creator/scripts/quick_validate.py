@@ -9,6 +9,36 @@ import re
 import yaml
 from pathlib import Path
 
+COMPATIBILITY_KEYS = {'runtimes'}
+RUNTIME_IDS = {'claude_code', 'codex', 'portable'}
+UNSPECIFIED_RUNTIME = 'unspecified'
+
+def validate_compatibility(frontmatter):
+    """Validate optional runtime compatibility metadata."""
+    if 'compatibility' not in frontmatter:
+        return None
+    compatibility = frontmatter['compatibility']
+    if not isinstance(compatibility, dict):
+        return f"Compatibility must be a YAML mapping, got {type(compatibility).__name__}"
+    unexpected_keys = {str(key) for key in compatibility if key not in COMPATIBILITY_KEYS}
+    if unexpected_keys:
+        return f"Unexpected compatibility key(s): {', '.join(sorted(unexpected_keys))}"
+    runtimes = compatibility.get('runtimes')
+    if not isinstance(runtimes, list) or not runtimes:
+        return "Compatibility runtimes must be a non-empty list"
+    seen = set()
+    for runtime in runtimes:
+        if not isinstance(runtime, str) or runtime != runtime.strip() or not runtime:
+            return "Compatibility runtimes must contain only non-empty strings"
+        if runtime == UNSPECIFIED_RUNTIME:
+            return "Compatibility must not declare unspecified; omit compatibility metadata instead"
+        if runtime not in RUNTIME_IDS:
+            return f"Unsupported compatibility runtime '{runtime}'. Allowed runtimes: {', '.join(sorted(RUNTIME_IDS))}"
+        if runtime in seen:
+            return f"Duplicate compatibility runtime '{runtime}'"
+        seen.add(runtime)
+    return None
+
 def validate_skill(skill_path):
     """Basic validation of a skill"""
     skill_path = Path(skill_path)
@@ -84,12 +114,9 @@ def validate_skill(skill_path):
             return False, f"Description is too long ({len(description)} characters). Maximum is 1024 characters."
 
     # Validate compatibility field if present (optional)
-    compatibility = frontmatter.get('compatibility', '')
-    if compatibility:
-        if not isinstance(compatibility, str):
-            return False, f"Compatibility must be a string, got {type(compatibility).__name__}"
-        if len(compatibility) > 500:
-            return False, f"Compatibility is too long ({len(compatibility)} characters). Maximum is 500 characters."
+    compatibility_error = validate_compatibility(frontmatter)
+    if compatibility_error:
+        return False, compatibility_error
 
     return True, "Skill is valid!"
 
