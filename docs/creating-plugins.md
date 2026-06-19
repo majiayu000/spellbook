@@ -62,7 +62,11 @@ For the top-level Spellbook catalog installed by `install.sh`, see [Skill Format
 
 Codex does not use a plugin package from this repository today. Codex skills are
 installed directly from the catalog source into `$HOME/.agents/skills`, either
-through `install.sh --target codex` or a manual copy/download of `SKILL.md`.
+through `install.sh --target codex` or a manual catalog install. For directory
+skills, copy or symlink the whole `skills/<name>/` directory so companion
+`references/`, `scripts/`, `assets/`, and other support files stay available.
+For file skills, install `skills/<name>.SKILL.md` as
+`$HOME/.agents/skills/<name>/SKILL.md`.
 
 Plugin skill files use this frontmatter:
 
