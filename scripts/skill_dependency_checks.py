@@ -21,6 +21,24 @@ LOCAL_SCRIPT_IMPORT_ROOTS = {
     "scripts",
 }
 
+BARE_URL_REQUIREMENT_PREFIXES = (
+    "git+",
+    "hg+",
+    "svn+",
+    "bzr+",
+    "http://",
+    "https://",
+    "file://",
+)
+
+BEAUTIFULSOUP_PARSER_REQUIREMENTS = {
+    "lxml": "lxml",
+    "lxml-xml": "lxml",
+    "xml": "lxml",
+    "html5": "html5lib",
+    "html5lib": "html5lib",
+}
+
 
 def _normalize_package_name(name: str) -> str:
     return name.lower().replace("_", "-")
@@ -44,7 +62,7 @@ def python_import_roots(path: Path) -> set[str]:
                 root = alias.name.split(".", 1)[0]
                 if root:
                     imports.add(root)
-        elif isinstance(node, ast.ImportFrom) and node.module:
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
             root = node.module.split(".", 1)[0]
             if root:
                 imports.add(root)
@@ -144,6 +162,21 @@ def _editable_requirement_value(line: str) -> str | None:
     return None
 
 
+def _bare_url_requirement_name(line: str) -> str | None:
+    if not line.startswith(BARE_URL_REQUIREMENT_PREFIXES):
+        return None
+
+    fragment = line.split("#", 1)[1] if "#" in line else ""
+    for part in fragment.split("&"):
+        if not part.startswith("egg="):
+            continue
+        name = re.split(r"\s|<|>|=|!|~|\[", part.split("=", 1)[1].strip(), maxsplit=1)[0]
+        if name:
+            return _normalize_package_name(name)
+        break
+    raise RequirementParseError(f"bare URL requirements must include #egg=<package>: {line}")
+
+
 def declared_requirements(
     requirements_path: Path,
     seen: set[Path] | None = None,
@@ -192,15 +225,31 @@ def declared_requirements(
             # not prove the package will be available at runtime.
             continue
 
+        url_requirement_name = _bare_url_requirement_name(stripped)
+        if url_requirement_name is not None:
+            packages.add(url_requirement_name)
+            continue
+
         name = re.split(r"\s|<|>|=|!|~|\[", stripped, maxsplit=1)[0]
         if name:
             packages.add(_normalize_package_name(name))
     return packages
 
 
-def _is_beautifulsoup_call(node: ast.Call) -> bool:
+def _beautifulsoup_call_names(tree: ast.AST) -> set[str]:
+    names = {"BeautifulSoup"}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ImportFrom) or node.level != 0 or node.module != "bs4":
+            continue
+        for alias in node.names:
+            if alias.name == "BeautifulSoup":
+                names.add(alias.asname or alias.name)
+    return names
+
+
+def _is_beautifulsoup_call(node: ast.Call, call_names: set[str]) -> bool:
     if isinstance(node.func, ast.Name):
-        return node.func.id == "BeautifulSoup"
+        return node.func.id in call_names
     if isinstance(node.func, ast.Attribute):
         return node.func.attr == "BeautifulSoup"
     return False
@@ -224,51 +273,56 @@ def _assigned_expressions(tree: ast.AST) -> dict[str, list[ast.AST]]:
     return assignments
 
 
-def _string_literal_requires_lxml(
+def _string_literal_parser_dependencies(
     node: ast.AST,
     assignments: dict[str, list[ast.AST]],
     seen_names: set[str] | None = None,
-) -> bool:
+) -> set[str]:
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return node.value in {"lxml", "lxml-xml", "xml"}
+        requirement = BEAUTIFULSOUP_PARSER_REQUIREMENTS.get(node.value)
+        return {requirement} if requirement else set()
     if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
-        return any(
-            _string_literal_requires_lxml(item, assignments, seen_names) for item in node.elts
-        )
+        requirements: set[str] = set()
+        for item in node.elts:
+            requirements.update(_string_literal_parser_dependencies(item, assignments, seen_names))
+        return requirements
     if isinstance(node, ast.Name):
         seen_names = seen_names or set()
         if node.id in seen_names:
-            return False
-        return any(
-            _string_literal_requires_lxml(value, assignments, seen_names | {node.id})
-            for value in assignments.get(node.id, [])
-        )
+            return set()
+        requirements = set()
+        for value in assignments.get(node.id, []):
+            requirements.update(
+                _string_literal_parser_dependencies(value, assignments, seen_names | {node.id})
+            )
+        return requirements
     if isinstance(node, ast.IfExp):
-        return _string_literal_requires_lxml(
-            node.body, assignments, seen_names
-        ) or _string_literal_requires_lxml(node.orelse, assignments, seen_names)
-    return False
+        return _string_literal_parser_dependencies(
+            node.body,
+            assignments,
+            seen_names,
+        ) | _string_literal_parser_dependencies(node.orelse, assignments, seen_names)
+    return set()
 
 
-def beautifulsoup_lxml_dependencies(path: Path) -> set[str]:
+def beautifulsoup_parser_dependencies(path: Path) -> set[str]:
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except SyntaxError:
         return set()
 
     assignments = _assigned_expressions(tree)
+    call_names = _beautifulsoup_call_names(tree)
+    dependencies: set[str] = set()
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Call) or not _is_beautifulsoup_call(node):
+        if not isinstance(node, ast.Call) or not _is_beautifulsoup_call(node, call_names):
             continue
-        if any(_string_literal_requires_lxml(arg, assignments) for arg in node.args[1:]):
-            return {"lxml"}
+        for arg in node.args[1:]:
+            dependencies.update(_string_literal_parser_dependencies(arg, assignments))
         for keyword in node.keywords:
-            if keyword.arg in {"features", "builder"} and _string_literal_requires_lxml(
-                keyword.value,
-                assignments,
-            ):
-                return {"lxml"}
-    return set()
+            if keyword.arg in {"features", "builder"}:
+                dependencies.update(_string_literal_parser_dependencies(keyword.value, assignments))
+    return dependencies
 
 
 def required_script_dependencies(skill_dir: Path) -> set[str]:
@@ -285,7 +339,7 @@ def required_script_dependencies(skill_dir: Path) -> set[str]:
             requirement = IMPORT_TO_REQUIREMENT.get(import_root)
             if requirement:
                 requirements.add(requirement)
-        requirements.update(beautifulsoup_lxml_dependencies(script))
+        requirements.update(beautifulsoup_parser_dependencies(script))
     return requirements
 
 

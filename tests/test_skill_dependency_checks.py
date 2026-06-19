@@ -85,12 +85,33 @@ class SkillDependencyChecksTests(unittest.TestCase):
 
             self.assertEqual(self.validate_demo_skill(root), [])
 
+    def test_relative_imports_are_ignored(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.write_demo_skill(root, "from .requests import helper\nfrom . import utils\n")
+
+            self.assertEqual(self.validate_demo_skill(root), [])
+
     def test_lxml_parser_usage_requires_lxml_declaration(self):
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             self.write_demo_skill(
                 root,
                 "from bs4 import BeautifulSoup\nsoup = BeautifulSoup(requests.get(url).text, \"lxml\")\n",
+                "beautifulsoup4\n",
+            )
+
+            messages = self.validate_demo_skill(root)
+
+            self.assertEqual(len(messages), 1)
+            self.assertIn("missing script package declaration(s): lxml", messages[0])
+
+    def test_beautifulsoup_alias_lxml_parser_usage_requires_lxml_declaration(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.write_demo_skill(
+                root,
+                "from bs4 import BeautifulSoup as BS\nsoup = BS(html, \"lxml\")\n",
                 "beautifulsoup4\n",
             )
 
@@ -123,6 +144,21 @@ class SkillDependencyChecksTests(unittest.TestCase):
 
             self.assertEqual(len(messages), 1)
             self.assertIn("missing script package declaration(s): lxml", messages[0])
+
+    def test_html5_parser_usage_requires_html5lib_declaration(self):
+        for parser in ("html5lib", "html5"):
+            with self.subTest(parser=parser), TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                self.write_demo_skill(
+                    root,
+                    f"from bs4 import BeautifulSoup\nsoup = BeautifulSoup(data, features={parser!r})\n",
+                    "beautifulsoup4\n",
+                )
+
+                messages = self.validate_demo_skill(root)
+
+                self.assertEqual(len(messages), 1)
+                self.assertIn("missing script package declaration(s): html5lib", messages[0])
 
     def test_requirements_include_file_satisfies_dependency(self):
         with TemporaryDirectory() as temp_dir:
@@ -182,6 +218,28 @@ class SkillDependencyChecksTests(unittest.TestCase):
             self.assertEqual(len(messages), 1)
             self.assertIn("invalid requirements include", messages[0])
             self.assertIn("editable requirements are not supported", messages[0])
+
+    def test_bare_vcs_requirement_with_egg_satisfies_dependency(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.write_demo_skill(
+                root,
+                "import requests\n",
+                "git+https://github.com/psf/requests.git#egg=requests\n",
+            )
+
+            self.assertEqual(self.validate_demo_skill(root), [])
+
+    def test_bare_vcs_requirement_without_egg_reports_validation_error(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.write_demo_skill(root, "import requests\n", "git+https://github.com/psf/requests.git\n")
+
+            messages = self.validate_demo_skill(root)
+
+            self.assertEqual(len(messages), 1)
+            self.assertIn("invalid requirements include", messages[0])
+            self.assertIn("bare URL requirements must include #egg=<package>", messages[0])
 
     def test_marker_gated_requirement_does_not_satisfy_unconditional_import(self):
         with TemporaryDirectory() as temp_dir:
