@@ -108,6 +108,22 @@ class RuntimeCompatibilityTests(unittest.TestCase):
             self.assertFalse(errors, errors)
             self.assertEqual(frontmatter["compatibility"], {"runtimes": ["codex", "portable"]})
 
+    def test_fallback_parser_strips_runtime_inline_comments_without_pyyaml(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            skill_dir, entry = write_skill(
+                root,
+                compatibility="compatibility:\n  runtimes:\n    - codex # Codex-only",
+            )
+
+            with patched_root(root), patched_yaml(None):
+                frontmatter, parse_messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
+                messages = validate_skills.validate_entries([entry])
+
+            errors = [message for message in messages + parse_messages if message.startswith("ERROR:")]
+            self.assertFalse(errors, errors)
+            self.assertEqual(frontmatter["compatibility"], {"runtimes": ["codex"]})
+
     def test_absent_metadata_exports_unspecified_runtime(self):
         entry = validate_skills.SkillEntry(
             "fixture-skill",

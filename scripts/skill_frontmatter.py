@@ -25,6 +25,33 @@ def strip_quotes(value: str) -> str:
     return value
 
 
+def strip_inline_comment(line: str) -> str:
+    in_single_quote = False
+    in_double_quote = False
+    escaped = False
+    for index, char in enumerate(line):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if char == "'" and not in_double_quote:
+            in_single_quote = not in_single_quote
+            continue
+        if char == '"' and not in_single_quote:
+            in_double_quote = not in_double_quote
+            continue
+        if (
+            char == "#"
+            and not in_single_quote
+            and not in_double_quote
+            and (index == 0 or line[index - 1].isspace())
+        ):
+            return line[:index].rstrip()
+    return line
+
+
 def normalize_scalar(value: object) -> object:
     if not isinstance(value, str):
         return value
@@ -48,7 +75,8 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
         quote_char = None
         quoted_parts = []
 
-    for line in frontmatter_text.splitlines():
+    for raw_line in frontmatter_text.splitlines():
+        line = raw_line.rstrip()
         if quoted_key is not None:
             stripped = line.strip()
             if stripped == quote_char:
@@ -64,6 +92,7 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
             quoted_parts.append(stripped)
             continue
 
+        line = strip_inline_comment(line).rstrip()
         if not line.strip() or line.lstrip().startswith("#"):
             continue
 
