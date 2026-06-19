@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Report non-blocking quality signals for Claude Arsenal skills."""
+"""Report non-blocking quality signals for Spellbook skills."""
 
 from __future__ import annotations
 
