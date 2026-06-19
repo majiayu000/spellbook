@@ -35,11 +35,14 @@ Do not hide ambiguity inside assumptions. If a wrong assumption would cause larg
 
 1. Search first for existing files, skills, plans, or prior artifacts that may already cover the task.
 2. Load every applicable `AGENTS.md` for files that may be edited.
-3. Run the state snapshot when working in a repo or resuming:
+3. Run the state snapshot when working in a repo or resuming. Resolve it from the installed Flowguard skill directory, not from the target repo:
 
 ```bash
-skills/flowguard/scripts/workflow_state_snapshot.sh .
+# From the installed flowguard skill directory, the directory containing this SKILL.md:
+scripts/workflow_state_snapshot.sh /path/to/target/repo
 ```
+
+When already in the target repo, pass `.` as the target to the installed script, for example `/path/to/installed/flowguard/scripts/workflow_state_snapshot.sh .`.
 
 4. If the task continues previous work, treat memory and summaries as hints only. Verify cwd, git branch, dirty files, relevant artifacts, and runtime state before relying on them.
 5. Capture the four task elements: goal, context, constraints, and done-when. If one is missing and risky, clarify.
