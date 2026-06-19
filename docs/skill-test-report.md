@@ -1,5 +1,8 @@
 # TypeScript Project Skill 测试报告
 
+> 历史归档说明：本报告记录 2025-12-17 的一次测试运行，
+> 仅供历史参考，不代表当前 Spellbook 的验证结果。
+
 **测试日期**: 2025-12-17
 **测试 Skill**: `typescript-project`
 **测试环境**: macOS Darwin 25.1.0, Bun 1.3.3
