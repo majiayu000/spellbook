@@ -1,5 +1,9 @@
 # Claude Code Agents & Orchestration Analysis Report
 
+> Historical archive note: This report is a December 2025 snapshot kept for
+> research context. It does not describe current Spellbook operational guidance,
+> registry contents, or recommended skill/agent choices.
+
 A comprehensive analysis and rating of Claude Code agent collections and multi-agent orchestration systems.
 
 ---

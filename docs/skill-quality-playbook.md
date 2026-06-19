@@ -1,6 +1,6 @@
 # Skill Quality Playbook
 
-This playbook captures practical quality rules for Claude Arsenal skills. It is
+This playbook captures practical quality rules for Spellbook skills. It is
 intended to complement [Skill Format Policy](./skill-format-policy.md): format
 policy says where files live, while this playbook says what makes a skill useful
 after the model discovers it.

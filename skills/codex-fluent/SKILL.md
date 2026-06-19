@@ -88,7 +88,7 @@ Run diagnosis again and compare before/after sizes and feel.
 
 Generate a safe, report-only weekly reminder prompt that never applies changes automatically.
 
-## Integration with Other Arsenal Skills
+## Integration with Other Spellbook Skills
 
 - After running `codex-retrospective`, if Codex complains about "having to re-read huge context every time" or repeated state loss, this skill is the natural follow-up.
 - Use `strategic-compact` thinking when designing handoff documents — they should be the ultimate compact representation of a thread.
