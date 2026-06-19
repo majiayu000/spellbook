@@ -3,8 +3,9 @@
 Spellbook plugin packaging currently targets Claude Code. Plugins in this
 repository use `.claude-plugin/plugin.json`; this repository does not define a
 Codex plugin manifest. For Codex, distribute skills through direct skill install
-with `install.sh --target codex` or by placing `SKILL.md` under
-`$HOME/.agents/skills/<skill-name>/`.
+with `install.sh --target codex` or a manual catalog install that preserves the
+source layout: copy or symlink directory skills as whole directories, and place
+file skills under `$HOME/.agents/skills/<skill-name>/SKILL.md`.
 
 ## Claude Code Plugin Structure
 
