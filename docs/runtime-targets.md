@@ -4,13 +4,19 @@ Spellbook is a source library for reusable agent skills. The same skill source c
 
 ## Supported Targets
 
-| Target | Skills | Agents | Notes |
-|--------|--------|--------|-------|
-| Claude Code | `~/.claude/skills` | `~/.claude/agents` | Full existing support, including Claude Code plugins |
-| Codex | `~/.agents/skills` | Not installed | Skills are installed as `SKILL.md`; restart Codex after install |
+| Target | Skills | Agents | Plugin Packaging | Notes |
+|--------|--------|--------|------------------|-------|
+| Claude Code | `~/.claude/skills` | `~/.claude/agents` | `.claude-plugin` | Full existing support, including Claude Code plugins |
+| Codex | `~/.agents/skills` | Not installed | Not supported in this repository | Skills are installed directly as `SKILL.md`; restart Codex after install |
 
 Older Spellbook releases installed Codex skills under `~/.codex/skills`. New
 installs use the current Codex user-level skill path, `$HOME/.agents/skills`.
+
+## Plugin Packaging
+
+Claude Code plugins in this repository use `.claude-plugin` manifests. Codex
+distribution is direct skill install to the current Codex skill target for now;
+there is no Codex plugin manifest format implemented in this repository.
 
 ## Install Examples
 

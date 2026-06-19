@@ -1,6 +1,12 @@
 # Creating Plugins Guide
 
-## Plugin Structure
+Spellbook plugin packaging currently targets Claude Code. Plugins in this
+repository use `.claude-plugin/plugin.json`; this repository does not define a
+Codex plugin manifest. For Codex, distribute skills through direct skill install
+with `install.sh --target codex` or by placing `SKILL.md` under
+`$HOME/.agents/skills/<skill-name>/`.
+
+## Claude Code Plugin Structure
 
 ```
 my-plugin/
@@ -12,7 +18,7 @@ my-plugin/
 └── hooks/               # Optional: Hook configurations
 ```
 
-## plugin.json Format
+## Claude Code plugin.json Format
 
 ```json
 {
@@ -48,10 +54,15 @@ my-plugin/
 
 ## Creating Skills
 
-Plugin packages in this repository currently use file skills under `skills/*.SKILL.md`.
-Use this layout for plugin marketplace compatibility unless the plugin runtime you target documents directory skill support.
+Claude Code plugin packages in this repository currently use file skills under
+`skills/*.SKILL.md`. Use this layout for plugin marketplace compatibility
+unless the plugin runtime you target documents directory skill support.
 
 For the top-level Spellbook catalog installed by `install.sh`, see [Skill Format Policy](./skill-format-policy.md). New catalog skills should generally use the directory layout when they need progressive disclosure, templates, scripts, evals, or other companion files.
+
+Codex does not use a plugin package from this repository today. Codex skills are
+installed directly from the catalog source into `$HOME/.agents/skills`, either
+through `install.sh --target codex` or a manual copy/download of `SKILL.md`.
 
 Plugin skill files use this frontmatter:
 
@@ -106,7 +117,7 @@ tools: ["Read", "Grep", "Glob"]
 Agent behavior and instructions...
 ```
 
-## Testing Locally
+## Testing Claude Code Plugins Locally
 
 ```bash
 # Add your plugin as a local marketplace
@@ -122,7 +133,7 @@ Agent behavior and instructions...
 /plugin uninstall my-plugin
 ```
 
-## Publishing
+## Publishing Claude Code Plugins
 
 1. Push to GitHub
 2. Share the installation command:
@@ -130,3 +141,7 @@ Agent behavior and instructions...
    /plugin marketplace add https://github.com/username/repo
    /plugin install my-plugin
    ```
+
+For Codex users, publish the skill source and document direct installation into
+the current Codex skill target, `$HOME/.agents/skills`. Do not document a Codex
+plugin manifest for this repository until one is actually supported.
