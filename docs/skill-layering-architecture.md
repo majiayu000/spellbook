@@ -223,7 +223,7 @@ safe update and uninstall.
   ],
   "artifacts": [
     {
-      "path": "~/.codex/skills/threads/SKILL.md",
+      "path": "~/.agents/skills/threads/SKILL.md",
       "source": ".spellbook/generated/codex/skills/threads/SKILL.md",
       "owner": "spellbook",
       "target": "skills/threads/SKILL.md",
