@@ -2,6 +2,12 @@
 
 **Window:** Last 18 days, focused on the new Go service work.
 
+## Evidence Inventory
+
+- Scope: new Go service work, last 18 days.
+- Sources checked: current AGENTS.md, service-specific skills, local session summaries, and three Codex session files.
+- Evidence handles: sessions from May 4, May 9, May 12, and May 15; AGENTS.md "Core Implementation Principles"; service money-movement skill.
+
 ## Retrospective Summary
 
 - Repeatedly started implementation before fully clarifying the exact failure modes the user cared about most (happened in at least 3 sessions).
