@@ -17,6 +17,16 @@ Use this section for notable changes after the latest dated snapshot.
 
 ### Added
 
+<!-- none yet -->
+
+### Changed
+
+<!-- none yet -->
+
+## [2026-06-19]
+
+### Added
+
 - Added the `skill-audit` skill based on Anthropic's Claude Code skills
   lessons, covering skill taxonomy, trigger descriptions, progressive
   disclosure, setup, memory, scripts, hooks, distribution, and measurement.
