@@ -40,7 +40,20 @@ You specify the time window or focus area:
 - "The three big auth + payments threads from last month"
 - "All sessions involving the new Go service"
 
-### 2. History Analysis (The Skill Guides Codex)
+### 2. Evidence Collection Preflight
+
+Before proposing any AGENTS.md update or tiny skill, Codex must build a small
+evidence inventory:
+
+- Scope: repo/project, time window, and focus area.
+- Sources checked: current AGENTS.md, relevant existing skills, repo docs, Memories/Chronicle, and local Codex session files when available.
+- Evidence handles: session IDs, memory IDs, file paths, PR/issue numbers, or dated incidents that can be checked later.
+- Runtime availability: distinguish "skill exists in source" from "skill is installed and triggerable in the active runtime" when that matters.
+- No-change path: if evidence is weak, stop with a concise "no high-confidence change" result instead of manufacturing proposals.
+
+Every proposed update must map back to at least one concrete evidence handle.
+
+### 3. History Analysis (The Skill Guides Codex)
 
 Codex is instructed to look for:
 - Recurring mistakes or inefficient patterns
@@ -49,17 +62,18 @@ Codex is instructed to look for:
 - Successful patterns worth encoding so they happen by default
 - Opportunities to extract tiny, reusable skills
 
-### 3. Output — Strict Format
+### 4. Output — Strict Format
 
 The skill forces Codex to produce output in this order:
 
+0. **Evidence Inventory** (scope, sources checked, and concrete handles)
 1. **Retrospective Summary** (short, evidence-based)
 2. **Proposed AGENTS.md Updates** (exact diff or append text only)
 3. **New or Refined Minimal Skills** (at most 1-2 tiny ones, full SKILL.md with frontmatter)
 4. **Rationale + Evidence** (which sessions/patterns drove each proposal)
 5. **Application Plan** (how to safely apply the changes)
 
-### 4. Human Gate + Application
+### 5. Human Gate + Application
 
 You review. The skill then helps you apply the minimal changes cleanly (never blindly overwriting large sections of AGENTS.md).
 
@@ -80,6 +94,7 @@ A good monthly ritual for serious users:
 - Never propose large rewrites of AGENTS.md.
 - Never create big new skills. Tiny, focused, high-ROI only.
 - Every proposal must reference concrete history ("In the payment retry thread on May 3rd and the similar incident on May 18th...").
+- Do not propose changes until the evidence inventory exists and each proposal maps to a concrete handle.
 - If nothing high-confidence was found, say so clearly instead of manufacturing improvements.
 
 ## Gotchas
