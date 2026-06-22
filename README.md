@@ -134,6 +134,21 @@ python3 scripts/audit_skill_quality.py
 python3 scripts/audit_skill_quality.py skill-creator
 ```
 
+### AI & Agent Workflow
+
+Skills for orchestrating, guarding, and maintaining AI agent workflows — the core of Spellbook's cross-runtime mission.
+
+| Skill | Description |
+|-------|-------------|
+| [`multi-model-orchestrator`](./skills/multi-model-orchestrator/) | Coordinate multi-agent tasks via a centralized handoff document |
+| [`flowguard`](./skills/flowguard/) | Guard long, ambiguous, or stateful agent tasks from drift |
+| [`skill-audit`](./skills/skill-audit/) | Audit, design, categorize, and measure agent skills |
+| [`threads`](./skills/threads/) | Codex-native subagents and parallel GitHub queue lanes |
+| [`codex-fluent`](./skills/codex-fluent/) | Codex session hygiene, archive strategy, and handoff discipline |
+| [`codex-retrospective`](./skills/codex-retrospective/) | Codex self-review of recent history to improve behavior |
+| [`brainstorming`](./skills/brainstorming/) | Socratic dialogue for design refinement and architecture exploration |
+| [`personal-arsenal-lifecycle-doctor`](./skills/personal-arsenal-lifecycle-doctor/) | Diagnose the health of personal `~/.claude/skills` |
+
 ### Development Architecture
 
 Build production-ready projects with language-specific best practices.
@@ -146,6 +161,7 @@ Build production-ready projects with language-specific best practices.
 | [`golang-web`](./skills/golang-web/) | Go | Chi/Echo, sqlc, structured logging |
 | [`zig-project`](./skills/zig-project/) | Zig | Build system, memory management |
 | [`architecture-foundation`](./skills/architecture-foundation/) | Cross-language | Runtime, state ownership, adapters, and convergence specs |
+| [`elegant-architecture`](./skills/elegant-architecture/) | Cross-language | Clean architecture with strict 200-line file limits |
 
 ### Product Lifecycle
 
@@ -159,6 +175,7 @@ End-to-end product development from discovery to deployment.
 | [`product-analytics`](./skills/product-analytics/) | Growth | Event tracking, A/B testing, AARRR |
 | [`devops-excellence`](./skills/devops-excellence/) | Deployment | CI/CD, Docker, Kubernetes, GitOps |
 | [`observability-sre`](./skills/observability-sre/) | Operations | Monitoring, logging, tracing, SLO/SLI |
+| [`product-manager-toolkit`](./skills/product-manager-toolkit/) | Definition | RICE, customer interviews, PRD templates, discovery frameworks |
 
 ### API & Backend
 
@@ -168,6 +185,8 @@ End-to-end product development from discovery to deployment.
 | [`auth-security`](./skills/auth-security/) | OAuth 2.1, JWT, security best practices |
 | [`database-patterns`](./skills/database-patterns/) | PostgreSQL, Redis, migrations, optimization |
 | [`codebase-audit`](./skills/codebase-audit/) | Deep adaptive repository audit with severity-ranked findings and repair roadmap |
+| [`structured-logging`](./skills/structured-logging/) | Log architecture, standards, observability, and tracing |
+| [`structured-logging-lite`](./skills/structured-logging-lite/) | Centralized logging, field standards, and distributed tracing |
 
 ### Development Practices
 
@@ -178,6 +197,19 @@ End-to-end product development from discovery to deployment.
 | [`strategic-compact`](./skills/strategic-compact/) | Compress context at logical boundaries while preserving decisions and constraints | Custom |
 | [`skill-creator`](./skills/skill-creator/) | Create, improve, and benchmark reusable skills | Custom |
 | [`humanizer`](./skills/humanizer/) | Remove obvious AI writing patterns from user-facing text | External guide + custom adaptation |
+
+### Delivery Workflow
+
+Disciplined end-to-end delivery: testing, commits, health checks, and contribution flow.
+
+| Skill | Description |
+|-------|-------------|
+| [`test-driven-development`](./skills/test-driven-development/) | Enforce RED-GREEN-REFACTOR TDD discipline |
+| [`comprehensive-testing`](./skills/comprehensive-testing/) | Test pyramid, unit/integration/E2E/property testing, framework best practices |
+| [`git-commit-smart`](./skills/git-commit-smart/) | Generate meaningful conventional commit messages from diff |
+| [`push-all`](./skills/push-all/) | Stage, commit, and push all changes after safety checks |
+| [`project-health-auditor`](./skills/project-health-auditor/) | Codebase health, tech debt, dependency, and project risk analysis |
+| [`contribution-architect`](./skills/contribution-architect/) | Move from bug fixes to architectural improvements and debt discovery |
 
 ### Cross-Tool Interop
 
@@ -204,6 +236,9 @@ Skills for using multiple coding agents and CLI tools together.
 | [`react-hooks-best-practices`](./skills/react-hooks-best-practices/) | React hooks, effects, refs, and component design patterns |
 | [`slides`](./skills/slides/) | Speech-friendly slide deck and background slide generation |
 | [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | Compact UI/UX tables for product patterns, landing pages, charts, and 9 stacks |
+| [`figma-to-code`](./skills/figma-to-code/) | Figma designs to production React/Next.js with TypeScript and Tailwind |
+| [`css-debug`](./skills/css-debug/) | Diagnose CSS/layout issues, Tailwind conflicts, z-index stacking |
+| [`playwright-automation`](./skills/playwright-automation/) | Browser automation and testing with Playwright |
 
 ### Tooling & Automation
 
@@ -226,12 +261,26 @@ Skills for using multiple coding agents and CLI tools together.
 | [`cliproxy-deploy`](./skills/cliproxy-deploy/) | Deploy router-for-me/CLIProxyAPI on a Linux VPS, exposing Codex/Claude/Gemini OAuth subscription accounts as an OpenAI-compatible API |
 | [`cliproxy-newapi-stack`](./skills/cliproxy-newapi-stack/) | Layer NewAPI metering on top of CLIProxyAPI: Docker deploy, ratio-based pricing, quota top-up, dual-path verification, and OAuth account hot-swap |
 
+### Operations & Deploy
+
+Deploy models and diagnose local and remote environments.
+
+| Skill | Description |
+|-------|-------------|
+| [`gemma4-local-deploy`](./skills/gemma4-local-deploy/) | Deploy Gemma 4 12B locally on Mac/Apple Silicon via llama.cpp or Ollama |
+| [`gpu-use`](./skills/gpu-use/) | Inspect remote server GPU usage (per-card VRAM, processes, containers) |
+| [`openclaw-deploy`](./skills/openclaw-deploy/) | One-click OpenClaw deployment on a remote server |
+| [`rustdesk-doctor`](./skills/rustdesk-doctor/) | Diagnose RustDesk connection issues |
+| [`vscode-doctor`](./skills/vscode-doctor/) | Diagnose slow or freezing VS Code-compatible editors |
+
 ### Content & Social Media
 
 | Skill | Description |
 |-------|-------------|
 | [`xiaohongshu`](./skills/xiaohongshu/) | Xiaohongshu content creation & publishing |
 | [`trip-planner`](./skills/trip-planner/) | Travel itinerary planning |
+| [`weekly`](./skills/weekly/) | Weekly report from Git, Claude Code, and Codex sessions |
+| [`xiaohongshu-netfeel-guardian`](./skills/xiaohongshu-netfeel-guardian/) | Remove translation-tone from Claude's Chinese content for native readability |
 
 ### Mobile & Cross-Platform
 

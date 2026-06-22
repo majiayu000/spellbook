@@ -134,6 +134,21 @@ python3 scripts/audit_skill_quality.py
 python3 scripts/audit_skill_quality.py skill-creator
 ```
 
+### AI 与 Agent 工作流
+
+编排、守护与维护 AI agent 工作流的 skills —— Spellbook 跨 Runtime 使命的核心。
+
+| 技能 | 描述 |
+|------|------|
+| [`multi-model-orchestrator`](./skills/multi-model-orchestrator/) | 通过中心化交接文档协调多 agent 任务 |
+| [`flowguard`](./skills/flowguard/) | 守护长链路、模糊或有状态的 agent 任务，防止漂移 |
+| [`skill-audit`](./skills/skill-audit/) | 审计、设计、分类并度量 agent skills |
+| [`threads`](./skills/threads/) | Codex 原生子 agent 与并行 GitHub 队列通道 |
+| [`codex-fluent`](./skills/codex-fluent/) | Codex session 清理、归档策略与交接纪律 |
+| [`codex-retrospective`](./skills/codex-retrospective/) | 让 Codex 复盘近期历史以改进行为 |
+| [`brainstorming`](./skills/brainstorming/) | 通过苏格拉底式对话打磨设计与架构 |
+| [`personal-arsenal-lifecycle-doctor`](./skills/personal-arsenal-lifecycle-doctor/) | 诊断个人 `~/.claude/skills` 的技能健康状态 |
+
 ### 开发架构
 
 使用语言特定的最佳实践构建生产级项目。
@@ -146,6 +161,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`golang-web`](./skills/golang-web/) | Go | Chi/Echo、sqlc、结构化日志 |
 | [`zig-project`](./skills/zig-project/) | Zig | 构建系统、内存管理 |
 | [`architecture-foundation`](./skills/architecture-foundation/) | 跨语言 | Runtime、状态所有权、适配器与收敛 spec |
+| [`elegant-architecture`](./skills/elegant-architecture/) | 跨语言 | 整洁架构，严格的 200 行文件上限 |
 
 ### 产品全生命周期
 
@@ -159,6 +175,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`product-analytics`](./skills/product-analytics/) | 增长 | 事件追踪、A/B 测试、AARRR |
 | [`devops-excellence`](./skills/devops-excellence/) | 部署 | CI/CD、Docker、Kubernetes、GitOps |
 | [`observability-sre`](./skills/observability-sre/) | 运维 | 监控、日志、追踪、SLO/SLI |
+| [`product-manager-toolkit`](./skills/product-manager-toolkit/) | 定义 | RICE、用户访谈、PRD 模板、发现框架 |
 
 ### API 与后端
 
@@ -168,6 +185,8 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`auth-security`](./skills/auth-security/) | OAuth 2.1、JWT、安全最佳实践 |
 | [`database-patterns`](./skills/database-patterns/) | PostgreSQL、Redis、迁移、优化 |
 | [`codebase-audit`](./skills/codebase-audit/) | 自适应深度代码库审计，输出按严重度排序的问题与修复路线图 |
+| [`structured-logging`](./skills/structured-logging/) | 日志架构、标准、可观测性与链路追踪 |
+| [`structured-logging-lite`](./skills/structured-logging-lite/) | 集中式日志、字段标准与分布式追踪 |
 
 ### 开发实践
 
@@ -178,6 +197,19 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`strategic-compact`](./skills/strategic-compact/) | 在逻辑边界压缩上下文，保留关键决策与约束 | 自研 |
 | [`skill-creator`](./skills/skill-creator/) | 创建、优化并评估可复用 skill | 自研 |
 | [`humanizer`](./skills/humanizer/) | 消除明显 AI 痕迹，让文本更自然可读 | 外部指南 + 自研整理 |
+
+### 交付工作流
+
+端到端交付纪律：测试、提交、健康检查与贡献流程。
+
+| 技能 | 描述 |
+|------|------|
+| [`test-driven-development`](./skills/test-driven-development/) | 强制 RED-GREEN-REFACTOR 的 TDD 纪律 |
+| [`comprehensive-testing`](./skills/comprehensive-testing/) | 测试金字塔、单元/集成/E2E/属性测试与框架最佳实践 |
+| [`git-commit-smart`](./skills/git-commit-smart/) | 基于 diff 自动生成规范的 conventional commit |
+| [`push-all`](./skills/push-all/) | 安全检查后暂存、提交并推送全部改动 |
+| [`project-health-auditor`](./skills/project-health-auditor/) | 代码库健康、技术债、依赖与项目风险分析 |
+| [`contribution-architect`](./skills/contribution-architect/) | 从修 bug 进阶到架构改进与技术债挖掘 |
 
 ### 跨工具互操作
 
@@ -204,6 +236,9 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`react-hooks-best-practices`](./skills/react-hooks-best-practices/) | React hooks、effects、refs 与组件设计模式 |
 | [`slides`](./skills/slides/) | 口播视频背景和演示用幻灯片生成 |
 | [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | 产品模式、落地页、图表与 9 个技术栈的紧凑 UI/UX 表 |
+| [`figma-to-code`](./skills/figma-to-code/) | 把 Figma 设计转成生产级 React/Next.js + TypeScript + Tailwind |
+| [`css-debug`](./skills/css-debug/) | 诊断 CSS/布局问题、Tailwind 冲突、z-index 层叠 |
+| [`playwright-automation`](./skills/playwright-automation/) | 用 Playwright 做浏览器自动化与测试 |
 
 ### 工具与自动化
 
@@ -223,6 +258,20 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`system-doctor`](./skills/system-doctor/) | 诊断 CPU、内存和进程级系统卡顿问题 |
 | [`server-deploy`](./skills/server-deploy/) | 将 Node、Python、Rust、Go 或静态站部署到远程服务器 |
 | [`server-security`](./skills/server-security/) | 审计并加固 Linux 服务器的 SSH、防火墙与暴露服务 |
+| [`cliproxy-deploy`](./skills/cliproxy-deploy/) | 在 Linux VPS 上部署 router-for-me/CLIProxyAPI，把 Codex/Claude/Gemini OAuth 订阅账号暴露为 OpenAI 兼容 API |
+| [`cliproxy-newapi-stack`](./skills/cliproxy-newapi-stack/) | 在 CLIProxyAPI 之上叠加 NewAPI 计量：Docker 部署、按比例计费、配额充值、双路径验证与 OAuth 账号热切换 |
+
+### 运维与部署
+
+部署模型并诊断本地与远程环境。
+
+| 技能 | 描述 |
+|------|------|
+| [`gemma4-local-deploy`](./skills/gemma4-local-deploy/) | 在 Mac/Apple Silicon 上用 llama.cpp 或 Ollama 本地部署 Gemma 4 12B |
+| [`gpu-use`](./skills/gpu-use/) | 查看远程服务器 GPU 用量（每张卡显存、进程、容器） |
+| [`openclaw-deploy`](./skills/openclaw-deploy/) | 在远程服务器上一键部署 OpenClaw |
+| [`rustdesk-doctor`](./skills/rustdesk-doctor/) | 诊断 RustDesk 连接问题 |
+| [`vscode-doctor`](./skills/vscode-doctor/) | 诊断 VS Code 兼容编辑器卡顿与冻结 |
 
 ### 内容与社交媒体
 
@@ -230,6 +279,8 @@ python3 scripts/audit_skill_quality.py skill-creator
 |------|------|
 | [`xiaohongshu`](./skills/xiaohongshu/) | 小红书内容创作与发布 |
 | [`trip-planner`](./skills/trip-planner/) | 旅行行程规划 |
+| [`weekly`](./skills/weekly/) | 整合 Git、Claude Code、Codex session 生成周报 |
+| [`xiaohongshu-netfeel-guardian`](./skills/xiaohongshu-netfeel-guardian/) | 去除 Claude 中文内容的翻译腔，恢复母语网感 |
 
 ### 移动端与跨平台
 
