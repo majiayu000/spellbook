@@ -31,11 +31,17 @@ See `references/add-auth-to-api.yaml` for a complete real-world example.
 
 ```
 .
-├── SKILL.md                           # Full documentation
+├── SKILL.md                           # Entry point: trigger, core concepts, loop
 ├── README.md                          # This file
 ├── templates/
 │   └── handoff-template.yaml         # Copy this for your task
 ├── references/
+│   ├── quick-start.md                # Full 5-step walkthrough with templates
+│   ├── handoff-structure.md          # Handoff YAML field reference
+│   ├── workflow-patterns.md          # Parallel / sequential / sync-point layouts
+│   ├── best-practices.md             # High-signal subtask authoring
+│   ├── advanced-sync.md              # Optional handoff automation
+│   ├── faq.md                        # Common questions
 │   └── add-auth-to-api.yaml          # Complete example: JWT auth for REST API
 └── LICENSE
 ```
