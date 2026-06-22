@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>85 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>86 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-85-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-86-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -256,6 +256,7 @@ Skills for using multiple coding agents and CLI tools together.
 | [`optimize-network`](./skills/optimize-network/) | Safe local network speed, latency, DNS, Wi-Fi, and bufferbloat diagnostics with VPN/proxy guardrails |
 | [`disk-cleaner`](./skills/disk-cleaner/) | Scan and reclaim disk space with interactive cleanup guidance |
 | [`system-doctor`](./skills/system-doctor/) | Diagnose CPU, memory, and process-level system slowdowns |
+| [`codex-log-guard`](./skills/codex-log-guard/) | Diagnose and mitigate excessive Codex local SQLite diagnostic log writes |
 | [`server-deploy`](./skills/server-deploy/) | Deploy Node, Python, Rust, Go, or static projects to remote servers |
 | [`server-security`](./skills/server-security/) | Audit and harden Linux server SSH, firewall, and exposed services |
 | [`cliproxy-deploy`](./skills/cliproxy-deploy/) | Deploy router-for-me/CLIProxyAPI on a Linux VPS, exposing Codex/Claude/Gemini OAuth subscription accounts as an OpenAI-compatible API |

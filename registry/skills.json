@@ -262,6 +262,24 @@
     "tags": []
   },
   {
+    "name": "codex-log-guard",
+    "category": "Operations & Deploy",
+    "format": "directory",
+    "path": "skills/codex-log-guard/SKILL.md",
+    "description": "Automatically diagnose excessive Codex local SQLite diagnostic log writes and give a concrete fix plan. Use when a user asks whether Codex is writing too much to disk, mentions logs_2.sqlite, logs_2.sqlite-wal, block_log_inserts, SSD/TBW wear from Codex logs, or wants Codex log write issues checked, explained, stopped, cleaned up, verified, or restored.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "database",
+      "debugging",
+      "system"
+    ]
+  },
+  {
     "name": "codex-retrospective",
     "category": "AI & Agent Workflow",
     "format": "directory",

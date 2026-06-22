@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Log Guard"
+  short_description: "Auto-diagnose Codex SQLite log write issues"
+  default_prompt: "Use $codex-log-guard to automatically diagnose Codex local SQLite log writes and recommend the safest fix."

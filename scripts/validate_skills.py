@@ -98,6 +98,7 @@ CATEGORY_BY_NAME = {
     "codex": "AI & Agent Workflow",
     "codex-agent": "AI & Agent Workflow",
     "codex-fluent": "AI & Agent Workflow",
+    "codex-log-guard": "Operations & Deploy",
     "codex-retrospective": "AI & Agent Workflow",
     "multi-ai-research": "AI & Agent Workflow",
     "multi-model-orchestrator": "AI & Agent Workflow",
