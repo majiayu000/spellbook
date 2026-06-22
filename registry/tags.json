@@ -1,5 +1,5 @@
 {
-  "total_skills": 85,
+  "total_skills": 86,
   "total_tags": 35,
   "tag_counts": {
     "agent": 9,
@@ -9,8 +9,8 @@
     "browser": 4,
     "code-review": 13,
     "content": 7,
-    "database": 2,
-    "debugging": 6,
+    "database": 3,
+    "debugging": 7,
     "deploy": 6,
     "design-system": 2,
     "devops": 2,
@@ -31,7 +31,7 @@
     "research": 1,
     "rust": 5,
     "security": 3,
-    "system": 5,
+    "system": 6,
     "testing": 6,
     "typescript": 4,
     "ux": 3,
@@ -116,9 +116,11 @@
     ],
     "database": [
       "cliproxy-newapi-stack",
+      "codex-log-guard",
       "database-patterns"
     ],
     "debugging": [
+      "codex-log-guard",
       "css-debug",
       "fixflow",
       "optimize-network",
@@ -259,6 +261,7 @@
       "server-security"
     ],
     "system": [
+      "codex-log-guard",
       "disk-cleaner",
       "gpu-use",
       "rustdesk-doctor",

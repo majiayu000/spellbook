@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>85 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>86 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-85-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-86-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -256,6 +256,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`optimize-network`](./skills/optimize-network/) | 带 VPN/代理保护的本地网络速度、延迟、DNS、Wi-Fi 与 bufferbloat 安全诊断 |
 | [`disk-cleaner`](./skills/disk-cleaner/) | 扫描磁盘占用并交互式清理可安全删除的内容 |
 | [`system-doctor`](./skills/system-doctor/) | 诊断 CPU、内存和进程级系统卡顿问题 |
+| [`codex-log-guard`](./skills/codex-log-guard/) | 诊断并缓解 Codex 本地 SQLite 诊断日志过量写入 |
 | [`server-deploy`](./skills/server-deploy/) | 将 Node、Python、Rust、Go 或静态站部署到远程服务器 |
 | [`server-security`](./skills/server-security/) | 审计并加固 Linux 服务器的 SSH、防火墙与暴露服务 |
 | [`cliproxy-deploy`](./skills/cliproxy-deploy/) | 在 Linux VPS 上部署 router-for-me/CLIProxyAPI，把 Codex/Claude/Gemini OAuth 订阅账号暴露为 OpenAI 兼容 API |
