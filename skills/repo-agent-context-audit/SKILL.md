@@ -1,6 +1,6 @@
 ---
 name: repo-agent-context-audit
-description: Audit and standardize a repository's agent-readable context, including AGENTS.md, CLAUDE.md, WARP.md, CONTRIBUTING.md, .agents/skills, and specs/ PRODUCT.md and TECH.md contracts. Use when asked to review, design, create, scaffold, or improve repo instructions, agent onboarding, spec workflows, or cross-repo agent-context conventions.
+description: Audit, design, and scaffold a repository's agent-readable context, including root and scoped AGENTS.md files, CLAUDE.md, WARP.md, CONTRIBUTING.md, .agents/skills, and specs/ PRODUCT.md and TECH.md contracts. Use when asked to review, generate, create, standardize, or improve repo instructions, agent onboarding, scoped AGENTS.md rules, spec workflows, or cross-repo agent-context conventions.
 ---
 
 # Repo Agent Context Audit
@@ -28,6 +28,12 @@ Run the read-only scanner when possible:
 ```bash
 # From this skill directory:
 python3 scripts/scan_repo_context.py <repo-root>
+```
+
+Use `--json` when you need structured signals for scaffold planning:
+
+```bash
+python3 scripts/scan_repo_context.py <repo-root> --json
 ```
 
 Then inspect the important files directly. Always search before creating:
@@ -73,7 +79,26 @@ Lead with the smallest useful change. Good recommendations usually look like:
 - Add `specs/<id>/PRODUCT.md` and `TECH.md` templates only if the repo ships substantial features.
 - Remove or rewrite stale instructions only after citing the conflict.
 
-### 5. Scaffold Only On Request
+### 5. Plan Scoped AGENTS.md Files
+
+When the user asks to create or generate AGENTS instructions, read
+`references/scaffold-agents.md` and produce a candidate map before editing:
+
+- root `AGENTS.md` only when the repo lacks a short top-level router or the
+  existing equivalent needs a thin cross-runtime pointer
+- nested `AGENTS.md` only where directory rules genuinely differ from the root
+- no scoped file for directories that only need ordinary README context
+- no bulk normalization across unrelated repos until 2-3 examples have been
+  manually validated
+
+For every candidate, name:
+
+- path to create or update
+- repo evidence that justifies it
+- rules that belong there instead of root
+- validation command that proves edits in that scope
+
+### 6. Scaffold Only On Request
 
 When the user explicitly asks to create files, read `references/templates.md` and adapt the templates to the repo. Before editing:
 
@@ -82,6 +107,7 @@ When the user explicitly asks to create files, read `references/templates.md` an
 - keep generated docs small
 - include actual repo commands, paths, and test gates
 - leave placeholders only when the repo truly lacks the fact
+- preserve existing high-context files unless the user asked for a rewrite
 
 ## Decision Gates
 
@@ -91,6 +117,7 @@ When the user explicitly asks to create files, read `references/templates.md` an
 | Repeated feature work with review churn | Add PRODUCT/TECH spec workflow |
 | Existing `CLAUDE.md` or `WARP.md` is good | Link it from `AGENTS.md` or leave it as the repo-equivalent |
 | Multiple teams or nested packages | Use scoped nested `AGENTS.md` only where rules genuinely differ |
+| Skill library, registry, generated docs, or scripts have distinct rules | Add scoped `AGENTS.md` for those directories |
 | High-context file over 200 lines | Split into top-level router plus referenced skills/docs |
 | User asks for bulk normalization | Audit first; do not batch edit until 2-3 repos have been manually validated |
 
@@ -99,6 +126,7 @@ When the user explicitly asks to create files, read `references/templates.md` an
 Direct actions:
 - Run read-only discovery, scoring, and scanner commands.
 - Produce an audit report with cited files and smallest useful changes.
+- Produce a scoped AGENTS.md candidate map with evidence and validation commands.
 - Draft exact scaffold content when the user asks for proposed text.
 
 Escalate before:
@@ -148,4 +176,6 @@ Return concise findings:
 
 - `scripts/scan_repo_context.py`: read-only repo scanner for high-context files, skills, and specs.
 - `references/standards.md`: scoring rubric and design rules. Read for audits.
+- `references/scaffold-agents.md`: decision rules for generating root and scoped AGENTS.md files. Read for AGENTS scaffold work.
 - `references/templates.md`: minimal `AGENTS.md`, `PRODUCT.md`, and `TECH.md` templates. Read only when scaffolding or proposing exact file contents.
+- `evals/evals.json`: lightweight prompts for AGENTS scaffold behavior. Use when testing future changes to this skill.

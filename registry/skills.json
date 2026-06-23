@@ -964,7 +964,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/repo-agent-context-audit/SKILL.md",
-    "description": "Audit and standardize a repository's agent-readable context, including AGENTS.md, CLAUDE.md, WARP.md, CONTRIBUTING.md, .agents/skills, and specs/ PRODUCT.md and TECH.md contracts. Use when asked to review, design, create, scaffold, or improve repo instructions, agent onboarding, spec workflows, or cross-repo agent-context conventions.",
+    "description": "Audit, design, and scaffold a repository's agent-readable context, including root and scoped AGENTS.md files, CLAUDE.md, WARP.md, CONTRIBUTING.md, .agents/skills, and specs/ PRODUCT.md and TECH.md contracts. Use when asked to review, generate, create, standardize, or improve repo instructions, agent onboarding, scoped AGENTS.md rules, spec workflows, or cross-repo agent-context conventions.",
     "language": "en",
     "compatibility": {
       "runtimes": [
