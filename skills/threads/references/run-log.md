@@ -1,6 +1,6 @@
 # Threads Run Log
 
-Use this reference when the user asks to collect problems encountered by the `threads` skill, or when a non-trivial run should leave a compact diagnostic trail. Durable JSONL logging is opt-in through `data_collection: local_jsonl`, an explicit user request, or an explicitly enabled debug run.
+Use this reference when the user asks to collect problems encountered by the `threads` skill, or when a non-trivial run should leave a compact diagnostic trail. Durable JSONL logging defaults to `data_collection: local_jsonl` for GitHub queues, multi-lane runs, or runs that may push/comment/merge. Use final-report-only for tiny read-only/single-agent runs or explicit user opt-out, and record `no_log_reason`.
 
 ## Purpose
 
@@ -111,6 +111,10 @@ Recommended fields:
   "recorded_at_utc": "auto-filled by script",
   "skill": "threads",
   "skill_source": "local|spellbook|unknown",
+  "active_skill_source": {
+    "path": "/Users/example/.spellbook/skills/threads",
+    "source_sha": "abc123"
+  },
   "mode": "single_agent|plan_only|execute_direct|review_only|research_spec|clarify_first",
   "repo": "/absolute/repo/path",
   "base_ref": "origin/main",
@@ -186,6 +190,12 @@ Recommended fields:
     "open_issues": 0,
     "unresolved_review_threads": 0
   },
+  "connector_review": {
+    "expected": false,
+    "status": "completed|no_connector_expected|pending|unknown",
+    "head_sha": "abc123",
+    "evidence": "short current-head connector evidence"
+  },
   "remote_truth": {
     "open_prs": 0,
     "open_issues": 0,
@@ -208,6 +218,11 @@ Recommended fields:
   "review_loop": {
     "cycles": 0,
     "outcome": "resolved|review_loop|not_applicable"
+  },
+  "run_log": {
+    "path": "<git-dir>/codex/threads/run-log.jsonl",
+    "write_status": "written|not_written|not_applicable",
+    "no_log_reason": ""
   },
   "exclusive_verification": {
     "serialized_commands": [],
@@ -247,16 +262,20 @@ Use stable codes so later analysis can aggregate them:
 
 - `trigger_too_broad`: skill activated for a task that did not need threads.
 - `missing_intent_contract`: goal, non-goals, done-when, or merge policy was unclear.
+- `durable_log_skipped`: a queue, multi-lane, push/comment, or merge-capable run did not write a durable log and lacked explicit opt-out.
 - `truth_level_too_low`: requested action required a higher remote truth level.
 - `source_drift`: local installed skill and Spellbook/source version differed.
+- `active_skill_source_unknown`: active skill path or source revision could not be established for a major run.
 - `stale_remote_state`: PR, issue, branch, or CI state was not freshly fetched.
 - `stale_base`: `origin/main` advanced under a lane and may invalidate its base.
 - `duplicate_work_missed`: existing PR/issue/branch already covered the task.
+- `contributor_pr_replaced_unnecessarily`: a maintainer replacement PR was opened instead of updating a writable contributor PR.
 - `role_drift`: planner/reviewer/worker acted outside its lane role.
 - `write_scope_violation`: worker touched unassigned or forbidden files.
 - `vague_lane_output`: lane returned claims without commands, files, or evidence.
 - `verification_gap`: completion was claimed without fresh command output.
 - `review_thread_missed`: inline review thread/comment state was not checked.
+- `connector_review_incomplete`: a requested or expected GitHub/Codex connector review was not complete on the current head.
 - `review_loop`: repeated review-thread fix cycles hit the configured limit.
 - `native_thread_not_spawned`: explicit threads run did not spawn a native subagent and did not record a valid fallback.
 - `waiting_ci`: only remote CI remained and the wait budget was exhausted.

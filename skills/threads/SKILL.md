@@ -91,6 +91,7 @@ intent_contract:
   queue_ledger: required_for_queue | optional | none
   ci_truth_source: discovered_workflow | user_supplied | language_default | none
   data_collection: final_report | local_jsonl | none
+  active_skill_source: path | source_sha | unknown
   queue_bounds:
     max_items:
     time_budget:
@@ -108,7 +109,8 @@ intent_contract:
 Defaults:
 
 - `merge_policy` is `no_merge` unless the user explicitly authorizes merging in the current conversation.
-- `data_collection` is `final_report` unless the user requests durable logging, debug data collection, or an issue/PR queue run explicitly sets `local_jsonl`.
+- `data_collection` is `local_jsonl` for GitHub issue/PR queues, multi-lane runs, or any run that may push/comment/merge; use `final_report` only for tiny read-only/single-agent runs or explicit user opt-out.
+- Record the active skill path and source revision when discoverable; record `unknown` rather than guessing.
 - If merge permission is ambiguous, stop after merge review and report the exact recommendation or merge command instead of merging.
 
 Direct actions: inspect repo instructions, fetch remote state, map lanes, apply the Explicit Thread Dispatch Gate, spawn required bounded native subagents, integrate results, verify, and report closure.
@@ -199,6 +201,7 @@ Rules:
 - `MERGEABLE` or `CLEAN` is never sufficient by itself. A PR is `merge_ready` only when the current head SHA, check rollup, merge state, and GraphQL review-thread state are all fresh and clean.
 - Query review threads with a thread-aware source such as GraphQL `reviewThreads { isResolved isOutdated }`; flat PR comments are not sufficient.
 - Map open issues to existing PRs before opening new implementation lanes. Prefer fixing, reviewing, or merging an existing covering PR over opening a competing PR.
+- If an existing covering contributor PR has `maintainerCanModify: true`, update that PR before opening a maintainer replacement unless the branch is unsafe, unwritable, or the user approves replacement.
 - For review-gated queues, work one blocker or bounded tranche to closure unless writable file ownership is clearly disjoint and the PRs are not stacked.
 - Keep remote truth separate from local stale or dirty worktree state.
 
@@ -392,7 +395,7 @@ Do not merge from worker output alone. Merge only after:
 - Current merge state is clean. `MERGEABLE`, `CLEAN`, or a green check alone is not sufficient without the matching current head SHA, full check rollup, merge state, and GraphQL review-thread state.
 - GitHub review-thread state is checked with a thread-aware source such as GraphQL `reviewThreads { isResolved isOutdated }`; flat PR comments are not sufficient.
 - The PR has no unresolved actionable review threads, and any fixed review feedback has an explicit reply or resolved thread unless the user forbids GitHub writes.
-- Check review threads after PR creation/update, after CI completes, and immediately before merge. If auto-review can arrive after marking a draft ready or after CI finishes, wait 60-120 seconds and re-check once.
+- Check review threads after PR creation/update, after CI completes, and immediately before merge. If a GitHub/Codex review connector was requested or is expected, do not merge until current-head connector completion is proven or `no_connector_expected` is recorded; an empty `reviewThreads` result while the connector may still be running is not clean.
 - Stop with `REVIEW_LOOP` after two repeated fix/review cycles on the same class of review-thread finding unless the hypothesis changes.
 - Use a bounded CI wait. After one complete CI cycle or the configured wait budget, stop with `WAITING_CI` when there is no actionable local failure. Report PR number, head SHA, pending checks, last observed status, and the exact resume query.
 - Run a final remote refresh before merge review. If `origin/main` advanced and overlaps the PR scope, stop with `stale_remote_state` until the branch is rebased or recreated.
@@ -402,7 +405,7 @@ If the user asked for “review then merge,” the merge reviewer should be a se
 
 ## Run Log
 
-For non-trivial runs, include a compact `threads_run_log` block in the final report. Append the same JSON object locally with `scripts/append_run_log.py` only when `data_collection: local_jsonl`, the user requests durable logging, or debug collection is explicitly enabled. Read [run-log.md](references/run-log.md) before writing durable logs.
+For non-trivial runs, include a compact `threads_run_log` block in the final report. For GitHub queues, multi-lane runs, or any run that may push/comment/merge, append the same JSON object locally with `scripts/append_run_log.py` unless the user opts out; record `no_log_reason` when final-report-only is used. Read [run-log.md](references/run-log.md) before writing durable logs.
 
 Run logs are observational. Do not record secrets, credentials, full prompts, or private user data. Prefer short summaries, file paths, PR/issue numbers, command names, failure codes, and verification outcomes.
 
@@ -435,6 +438,10 @@ remote_truth:
 - stale_base:
 - remote_refreshes:
 
+active_skill_source:
+- path:
+- source_sha:
+
 local_state:
 - dirty_worktree:
 - stale_worktree:
@@ -458,7 +465,10 @@ threads_run_log:
     fresh:
 - remote_closure:
     checked:
-- log_path:
+- run_log:
+    path:
+    write_status:
+    no_log_reason:
 ```
 
 Separate remote truth from local machine state in all GitHub queue final reports. State when a branch is merged remotely but local main is stale, dirty, diverged, or a worktree branch is no longer tied to an open remote branch.

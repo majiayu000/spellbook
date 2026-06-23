@@ -21,7 +21,10 @@ Use this section for notable changes after the latest dated snapshot.
 
 ### Changed
 
-<!-- none yet -->
+- Tightened the `threads` skill so GitHub queue and merge-capable runs default
+  to durable local JSONL evidence, report active skill source, require
+  connector/review-thread completion before merge, and prefer writable
+  contributor PRs over replacement PRs.
 
 ## [2026-06-19]
 
