@@ -1,6 +1,6 @@
 ---
 name: repo-agent-context-audit
-description: Audit and standardize a repository's agent-readable context, including AGENTS.md, CLAUDE.md, WARP.md, CONTRIBUTING.md, .agents/skills, and specs/ PRODUCT.md and TECH.md contracts. Use when asked to review, design, create, scaffold, or improve repo instructions, agent onboarding, spec workflows, or cross-repo agent-context conventions.
+description: Audit and recommend improvements for a repository's agent-readable context, including AGENTS.md, CLAUDE.md, WARP.md, CONTRIBUTING.md, .agents/skills, and specs/ PRODUCT.md and TECH.md contracts. Use when asked to review, score, assess, or standardize repo instructions, agent onboarding, spec workflows, or cross-repo agent-context conventions. Use agentsmd-scaffold instead when the user wants to generate or apply root/scoped AGENTS.md files.
 ---
 
 # Repo Agent Context Audit
@@ -8,6 +8,10 @@ description: Audit and standardize a repository's agent-readable context, includ
 ## Overview
 
 Assess whether a repository has a small, usable agent context stack: a short top-level instruction file, task-specific skills, and behavior/implementation specs for substantial work. Default to a read-only audit and minimal recommendations; create or edit high-context files only when the user explicitly asks.
+
+If the user asks to generate, split, or apply root/scoped `AGENTS.md` files,
+handoff to `agentsmd-scaffold`. This skill may identify that scaffold as the
+smallest useful change, but should not duplicate the generation workflow.
 
 ## Default Standard
 
@@ -73,9 +77,14 @@ Lead with the smallest useful change. Good recommendations usually look like:
 - Add `specs/<id>/PRODUCT.md` and `TECH.md` templates only if the repo ships substantial features.
 - Remove or rewrite stale instructions only after citing the conflict.
 
-### 5. Scaffold Only On Request
+### 5. Handoff Or Scaffold Only On Request
 
-When the user explicitly asks to create files, read `references/templates.md` and adapt the templates to the repo. Before editing:
+When the user explicitly asks to generate, split, or apply root/scoped
+`AGENTS.md` files, use `agentsmd-scaffold` instead of duplicating that workflow.
+
+When the user asks for exact PRODUCT/TECH spec templates or non-AGENTS context
+scaffolding, read `references/templates.md` and adapt the templates to the repo.
+Before editing:
 
 - identify every `AGENTS.md` or equivalent whose scope covers the target path
 - preserve existing high-context files unless the user asked for a rewrite
@@ -89,6 +98,7 @@ When the user explicitly asks to create files, read `references/templates.md` an
 |---|---|
 | Small bugfix repo with README and clear tests | No spec system; maybe add a short `AGENTS.md` router |
 | Repeated feature work with review churn | Add PRODUCT/TECH spec workflow |
+| User asks to generate or apply root/scoped `AGENTS.md` files | Use `agentsmd-scaffold` |
 | Existing `CLAUDE.md` or `WARP.md` is good | Link it from `AGENTS.md` or leave it as the repo-equivalent |
 | Multiple teams or nested packages | Use scoped nested `AGENTS.md` only where rules genuinely differ |
 | High-context file over 200 lines | Split into top-level router plus referenced skills/docs |
@@ -99,7 +109,8 @@ When the user explicitly asks to create files, read `references/templates.md` an
 Direct actions:
 - Run read-only discovery, scoring, and scanner commands.
 - Produce an audit report with cited files and smallest useful changes.
-- Draft exact scaffold content when the user asks for proposed text.
+- Draft exact non-AGENTS scaffold content when the user asks for proposed text.
+- Handoff AGENTS.md generation or application to `agentsmd-scaffold`.
 
 Escalate before:
 - Creating or editing `AGENTS.md`, `CLAUDE.md`, `WARP.md`, hooks, settings, or generated docs.

@@ -1,0 +1,23 @@
+{
+  "skill_name": "agentsmd-scaffold",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm in a repo that has README.md, package.json, scripts/, tests/, and generated OpenAPI clients under src/generated. Design the AGENTS.md setup you would add. Don't write files yet; give me the scoped plan and validation commands.",
+      "expected_output": "Produces a scoped AGENTS plan with root, scripts, tests, and generated-client candidates; cites evidence to inspect; avoids writing files without approval.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "This Rust workspace has a giant CLAUDE.md at the root and crates/api, crates/cli, migrations, and .github/workflows. Help me split the agent instructions into something Codex can actually follow.",
+      "expected_output": "Recommends a short root router plus only justified scoped files; preserves or links existing CLAUDE.md; includes Rust and migration validation gates.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "We maintain a skill library with skills/, registry/, scripts/, and generated docs. Generate the AGENTS.md files that make sense for this repo and explain why this is not just a specs workflow.",
+      "expected_output": "Explains that agentsmd-scaffold owns AGENTS generation while repo-agent-context-audit is for broader audit/recommendation; proposes root and scoped AGENTS files for skills, registry, and scripts with concrete validation.",
+      "files": []
+    }
+  ]
+}
