@@ -41,6 +41,30 @@ ALLOWED_MODES = {
 }
 ALLOWED_TRUTH_LEVELS = {"A", "B", "C", "D"}
 ALLOWED_FALLBACK_MODES = {"none", "single_agent", "prompt_pack_only"}
+ALLOWED_NATIVE_SUBAGENTS = {"available", "unavailable"}
+ALLOWED_SPAWN_REQUIREMENTS = {"required", "optional", "unavailable"}
+ALLOWED_DATA_COLLECTION = {"final_report", "local_jsonl", "none"}
+ALLOWED_OUTCOMES = {"success", "partial", "blocked", "failed"}
+ALLOWED_REMOTE_REFRESH_OWNERS = {"coordinator", "verification_owner"}
+ALLOWED_REMOTE_REFRESH_POLICIES = {"continue", "rebase", "required_stop"}
+ALLOWED_PR_CLASSIFICATIONS = {
+    "merge_ready",
+    "review_thread_blocked",
+    "ci_failed",
+    "conflict_blocked",
+    "stale_or_superseded",
+    "needs_human_decision",
+}
+ALLOWED_LANE_ROLES = {
+    "planner",
+    "worker",
+    "reviewer",
+    "merge_reviewer",
+    "researcher",
+    "fix_worker",
+    "closure_auditor",
+}
+ALLOWED_VERIFICATION_SCOPES = {"inspection_only", "targeted", "full_local", "ci_only"}
 ALLOWED_NATIVE_SPAWN_TOOLS = {"multi_agent_v1.spawn_agent"}
 INVALID_AGENT_IDS = {"", "none", "n/a", "na", "null", "main", "main_thread", "coordinator"}
 ALLOWED_SINGLE_AGENT_REASONS = {
@@ -75,6 +99,7 @@ ALLOWED_TOP_LEVEL_FIELDS = {
     "single_agent_justification",
     "capability_gate",
     "thread_dispatch_gate",
+    "queue_gate",
     "queue_bounds",
     "remote_refresh",
     "queue_ledger",
@@ -95,6 +120,36 @@ ALLOWED_TOP_LEVEL_FIELDS = {
     "outcome",
     "notes",
 }
+ALLOWED_FAILURE_CODES = {
+    "trigger_too_broad",
+    "missing_intent_contract",
+    "durable_log_skipped",
+    "truth_level_too_low",
+    "source_drift",
+    "active_skill_source_unknown",
+    "stale_remote_state",
+    "stale_base",
+    "duplicate_work_missed",
+    "contributor_pr_replaced_unnecessarily",
+    "role_drift",
+    "write_scope_violation",
+    "vague_lane_output",
+    "verification_gap",
+    "review_thread_missed",
+    "connector_review_incomplete",
+    "review_loop",
+    "native_thread_not_spawned",
+    "waiting_ci",
+    "merge_gate_bypass",
+    "tool_unavailable",
+    "environment_mismatch",
+    "context_loss",
+    "user_interrupt",
+}
+SENSITIVE_ENV_ASSIGNMENT_PATTERN = re.compile(
+    r"(?i)\b([A-Z0-9_]*(?:API[_-]?KEY|TOKEN|SECRET|PASSWORD)[A-Z0-9_]*)"
+    r"\s*=\s*([^\s,;]+)"
+)
 
 SENSITIVE_PATTERNS = (
     re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----", re.DOTALL),
@@ -148,7 +203,7 @@ def default_log_path() -> Path:
 
 
 def redact_string(value: str) -> str:
-    redacted = value
+    redacted = SENSITIVE_ENV_ASSIGNMENT_PATTERN.sub(r"\1=[REDACTED]", value)
     for pattern in SENSITIVE_PATTERNS:
         redacted = pattern.sub("[REDACTED]", redacted)
     if len(redacted) > MAX_STRING_LENGTH:
@@ -185,11 +240,131 @@ def normalize_record(raw: Any, allow_extra: bool = False) -> dict[str, Any]:
     truth_level = record.get("truth_level")
     if truth_level is not None and truth_level not in ALLOWED_TRUTH_LEVELS:
         raise ValueError(f"unknown truth_level: {truth_level}")
+    validate_enum_fields(record)
     validate_native_thread_evidence(record)
 
     record.setdefault("schema_version", 1)
     record["recorded_at_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     return record
+
+
+def validate_enum(value: Any, allowed: set[str], field: str) -> None:
+    if value is not None and value not in allowed:
+        raise ValueError(f"unknown {field}: {value}")
+
+
+def validate_failure_codes(record: dict[str, Any]) -> None:
+    failure_codes = record.get("failure_codes")
+    if failure_codes is None:
+        return
+    if not isinstance(failure_codes, list):
+        raise ValueError("failure_codes must be a list")
+    unknown = sorted(
+        code
+        for code in failure_codes
+        if not isinstance(code, str) or code not in ALLOWED_FAILURE_CODES
+    )
+    if unknown:
+        raise ValueError("unknown failure_codes: " + ", ".join(map(str, unknown)))
+
+
+def validate_lanes(record: dict[str, Any]) -> None:
+    lanes = record.get("lanes")
+    if lanes is None:
+        return
+    if not isinstance(lanes, list):
+        raise ValueError("lanes must be a list")
+    for lane in lanes:
+        if not isinstance(lane, dict):
+            raise ValueError("lanes entries must be objects")
+        validate_enum(lane.get("role"), ALLOWED_LANE_ROLES, "lanes.role")
+        validate_enum(
+            lane.get("verification_scope"),
+            ALLOWED_VERIFICATION_SCOPES,
+            "lanes.verification_scope",
+        )
+
+
+def validate_enum_fields(record: dict[str, Any]) -> None:
+    validate_enum(nested_get(record, "native_subagents"), ALLOWED_NATIVE_SUBAGENTS, "native_subagents")
+    validate_enum(
+        nested_get(record, "spawn_requirement"),
+        ALLOWED_SPAWN_REQUIREMENTS,
+        "spawn_requirement",
+    )
+    validate_enum(record.get("data_collection"), ALLOWED_DATA_COLLECTION, "data_collection")
+    intent_contract = record.get("intent_contract")
+    if isinstance(intent_contract, dict):
+        validate_enum(
+            intent_contract.get("data_collection"),
+            ALLOWED_DATA_COLLECTION,
+            "intent_contract.data_collection",
+        )
+    validate_enum(record.get("outcome"), ALLOWED_OUTCOMES, "outcome")
+    validate_queue_gate(record)
+    validate_failure_codes(record)
+    validate_lanes(record)
+
+
+def remote_refresh_contract(record: dict[str, Any]) -> dict[str, Any] | None:
+    remote_refresh = record.get("remote_refresh")
+    if isinstance(remote_refresh, dict):
+        return remote_refresh
+    queue_gate = record.get("queue_gate")
+    if isinstance(queue_gate, dict):
+        nested = queue_gate.get("remote_refresh")
+        if isinstance(nested, dict):
+            return nested
+    return None
+
+
+def validate_queue_gate(record: dict[str, Any]) -> None:
+    queue_gate = record.get("queue_gate")
+    if queue_gate is None:
+        return
+    if not isinstance(queue_gate, dict):
+        raise ValueError("queue_gate must be an object")
+
+    queue_truth_level = queue_gate.get("truth_level")
+    validate_enum(queue_truth_level, ALLOWED_TRUTH_LEVELS, "queue_gate.truth_level")
+    top_truth_level = record.get("truth_level")
+    if (
+        top_truth_level is not None
+        and queue_truth_level is not None
+        and top_truth_level != queue_truth_level
+    ):
+        raise ValueError("conflicting truth_level values across top-level and queue_gate")
+
+    remote_refresh = remote_refresh_contract(record)
+    if remote_refresh is None:
+        raise ValueError("remote_refresh is required when queue_gate is present")
+    for field in ("owner_lane", "policy", "origin_main_sha", "local_base_sha", "stale_base"):
+        if field not in remote_refresh:
+            raise ValueError(f"remote_refresh.{field} is required when queue_gate is present")
+    validate_enum(
+        remote_refresh.get("owner_lane"),
+        ALLOWED_REMOTE_REFRESH_OWNERS,
+        "remote_refresh.owner_lane",
+    )
+    validate_enum(
+        remote_refresh.get("policy"),
+        ALLOWED_REMOTE_REFRESH_POLICIES,
+        "remote_refresh.policy",
+    )
+
+    pr_classification = queue_gate.get("pr_classification", [])
+    if pr_classification is None:
+        return
+    if not isinstance(pr_classification, list):
+        raise ValueError("queue_gate.pr_classification must be a list")
+    for item in pr_classification:
+        if not isinstance(item, dict):
+            raise ValueError("queue_gate.pr_classification entries must be objects")
+        validate_enum(
+            item.get("classification"),
+            ALLOWED_PR_CLASSIFICATIONS,
+            "queue_gate.pr_classification.classification",
+        )
 
 
 def truthy(value: Any) -> bool:
@@ -423,6 +598,7 @@ def validate_native_thread_evidence(record: dict[str, Any]) -> None:
 def append_record(record: dict[str, Any], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    os.chmod(path, 0o600)
     with os.fdopen(fd, "a", encoding="utf-8") as handle:
         if fcntl is not None:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
@@ -456,18 +632,34 @@ def main() -> int:
         action="store_true",
         help="Allow unknown top-level fields after redaction. Defaults to rejecting them.",
     )
+    parser.add_argument(
+        "--print-path",
+        action="store_true",
+        help="Print the resolved JSONL path and exit without reading stdin.",
+    )
+    parser.add_argument(
+        "--validate-only",
+        action="store_true",
+        help="Validate and redact stdin JSON without appending a log record.",
+    )
     args = parser.parse_args()
 
     try:
-        raw = load_input()
-        record = normalize_record(raw, allow_extra=args.allow_extra)
         path = args.path.expanduser() if args.path is not None else default_log_path()
-        append_record(record, path)
+        if args.print_path:
+            output_path = path
+        else:
+            raw = load_input()
+            record = normalize_record(raw, allow_extra=args.allow_extra)
+            if args.validate_only:
+                return 0
+            append_record(record, path)
+            output_path = path
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         print(f"append_run_log.py: {exc}", file=sys.stderr)
         return 1
 
-    print(str(path))
+    sys.stdout.write(str(output_path) + "\n")
     return 0
 
 
