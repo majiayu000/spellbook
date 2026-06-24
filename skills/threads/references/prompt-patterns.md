@@ -44,7 +44,7 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 - 每个 PR merge 前必须有独立 thread review。
 - 当 native_subagents=available 时，merge 前的独立 review 必须来自 spawned native thread，并在 `native_thread_evidence` 记录 agent/thread ID、wait evidence、close evidence。
 - merge 前必须 truth_level=A，并用 thread-aware GitHub 数据检查 reviewThreads.isResolved；open PR/issue 为空不等于评论闭环完成。
-- 如果请求或预期有 GitHub/Codex review connector，merge 前必须有当前 head 的 connector 完成证据，或记录 `no_connector_expected`；connector 可能仍在运行时，空 reviewThreads 不等于 clean。
+- 如果请求或预期有 GitHub/Codex review connector，merge 前必须有当前 head 的 connector 完成证据；只有确认当前 head 没有请求或预期 connector 时才允许记录 `no_connector_expected`。
 - CI wait 必须有预算；无本地可行动失败时用 WAITING_CI 停止并给 resume 查询。
 - review-thread fix/recheck 同类循环超过 2 次，用 REVIEW_LOOP 停止并报告 blocker。
 - 输出 capability_gate、thread_dispatch_gate、native_thread_evidence、queue_gate、queue_ledger、issue_to_pr_map、lane_map、依赖图、执行顺序、验证命令、stop_conditions、threads_run_log。
@@ -231,7 +231,7 @@ Remote refresh:
 5. diff 是否只包含声明范围
 6. review findings 是否已解决
 7. GraphQL reviewThreads 是否无 unresolved actionable thread；不要只看普通 PR comments
-8. 如果请求或预期有 GitHub/Codex review connector，是否已有当前 head 的 connector 完成证据，或已记录 `no_connector_expected`
+8. 如果请求或预期有 GitHub/Codex review connector，是否已有当前 head 的 connector 完成证据；若记录了 `no_connector_expected`，是否已确认当前 head 没有请求或预期 connector
 9. 已修复的 review feedback 是否有对应回复或已 resolve thread
 10. 是否存在 high-context file、test weakening、silent fallback、ownership 冲突
 11. git fetch --prune 后 origin/main 是否前进；若 stale_base 且影响 PR 范围，不允许 merge
