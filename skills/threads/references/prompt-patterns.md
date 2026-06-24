@@ -231,12 +231,13 @@ Remote refresh:
 5. diff 是否只包含声明范围
 6. review findings 是否已解决
 7. GraphQL reviewThreads 是否无 unresolved actionable thread；不要只看普通 PR comments
-8. 已修复的 review feedback 是否有对应回复或已 resolve thread
-9. 是否存在 high-context file、test weakening、silent fallback、ownership 冲突
-10. git fetch --prune 后 origin/main 是否前进；若 stale_base 且影响 PR 范围，不允许 merge
-11. CI wait 是否在预算内；若只剩远端等待，返回 WAITING_CI 和 resume 查询
-12. review-thread 同类修复循环是否超过 2 次；若超过，返回 REVIEW_LOOP
-13. threads_run_log 是否记录了失败码、验证状态、truth_level、remote_refresh 和 closure 状态
+8. 如果请求或预期有 GitHub/Codex review connector，是否已有当前 head 的 connector 完成证据，或已记录 `no_connector_expected`
+9. 已修复的 review feedback 是否有对应回复或已 resolve thread
+10. 是否存在 high-context file、test weakening、silent fallback、ownership 冲突
+11. git fetch --prune 后 origin/main 是否前进；若 stale_base 且影响 PR 范围，不允许 merge
+12. CI wait 是否在预算内；若只剩远端等待，返回 WAITING_CI 和 resume 查询
+13. review-thread 同类修复循环是否超过 2 次；若超过，返回 REVIEW_LOOP
+14. threads_run_log 是否记录了失败码、验证状态、truth_level、remote_refresh 和 closure 状态
 
 如果无 blocking issue，返回：
 No findings; safe to merge.
