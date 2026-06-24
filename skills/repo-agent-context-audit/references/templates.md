@@ -1,9 +1,6 @@
 # Minimal Templates
 
-Use these only when the user asks to scaffold or wants exact proposed contents.
-Adapt every command and path to the target repo. For multiple root and nested
-`AGENTS.md` files, read `scaffold-agents.md` first and use the templates here
-only as a starting point.
+Use these only when the user asks to scaffold or wants exact proposed contents. Adapt every command and path to the target repo.
 
 ## AGENTS.md
 

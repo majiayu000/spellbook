@@ -1,5 +1,5 @@
 {
-  "skill_name": "repo-agent-context-audit",
+  "skill_name": "agentsmd-scaffold",
   "evals": [
     {
       "id": 1,
@@ -16,7 +16,7 @@
     {
       "id": 3,
       "prompt": "We maintain a skill library with skills/, registry/, scripts/, and generated docs. Generate the AGENTS.md files that make sense for this repo and explain why this is not just a specs workflow.",
-      "expected_output": "Explains that repo-agent-context-audit covers AGENTS/CLAUDE/WARP/skills/specs; proposes root and scoped AGENTS files for skills, registry, and scripts with concrete validation.",
+      "expected_output": "Explains that agentsmd-scaffold owns AGENTS generation while repo-agent-context-audit is for broader audit/recommendation; proposes root and scoped AGENTS files for skills, registry, and scripts with concrete validation.",
       "files": []
     }
   ]

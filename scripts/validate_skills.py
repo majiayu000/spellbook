@@ -92,6 +92,7 @@ CATEGORY_BY_NAME = {
     "web-asset-generator": "UI/UX & Frontend",
     "web-artifacts-builder": "UI/UX & Frontend",
     # AI and agent workflows
+    "agentsmd-scaffold": "AI & Agent Workflow",
     "ask-opencli": "AI & Agent Workflow",
     "flowguard": "AI & Agent Workflow",
     "brainstorming": "AI & Agent Workflow",

@@ -1,8 +1,8 @@
 {
-  "total_skills": 86,
+  "total_skills": 87,
   "total_tags": 35,
   "tag_counts": {
-    "agent": 9,
+    "agent": 10,
     "architecture": 15,
     "auth": 3,
     "backend": 10,
@@ -40,6 +40,7 @@
   },
   "index": {
     "agent": [
+      "agentsmd-scaffold",
       "auto-optimize",
       "codex-agent",
       "fixflow",
