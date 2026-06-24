@@ -64,6 +64,7 @@ CATEGORY_BY_NAME = {
     "structured-logging-lite": "API & Backend",
     # Delivery workflow
     "auto-optimize": "Delivery Workflow",
+    "app-user-story-qa": "Delivery Workflow",
     "codebase-audit": "Delivery Workflow",
     "contribution-architect": "Delivery Workflow",
     "contributor": "Delivery Workflow",
