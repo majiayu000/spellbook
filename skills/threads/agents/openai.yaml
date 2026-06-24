@@ -1,4 +1,4 @@
 interface:
   display_name: "Threads"
   short_description: "Coordinate native Codex threads with evidence gates and run logs"
-  default_prompt: "Use $threads only for explicit Codex-native subagent orchestration or repo queues with independent lanes. When the user explicitly asks for threads and native subagents are available, spawn at least one bounded native subagent or record a structured no_spawn_reason before implementation. Require intent contracts, ownership, native_thread_evidence, review gates, merge permission, truth levels, and evidence-backed closure."
+  default_prompt: "Use $threads only for explicit Codex-native subagent orchestration or repo queues with independent lanes. When the user explicitly asks for threads and native subagents are available, spawn at least one bounded native subagent or record a structured no_spawn_reason before implementation. For GitHub queues or runs that may push/comment/merge, default to local_jsonl run logs, record active skill source, prefer writable contributor PRs over replacements, and require connector/review-thread completion evidence before merge."
