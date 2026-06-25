@@ -1,0 +1,4 @@
+interface:
+  display_name: "Performance Capacity"
+  short_description: "Set budgets, load tests, and capacity"
+  default_prompt: "Use $performance-capacity to define performance budgets, load tests, bottleneck analysis, capacity, and caching strategy."

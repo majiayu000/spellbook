@@ -329,6 +329,23 @@
     ]
   },
   {
+    "name": "config-secrets-environments",
+    "category": "Operations & Deploy",
+    "format": "directory",
+    "path": "skills/config-secrets-environments/SKILL.md",
+    "description": "Design, audit, and verify configuration, environment separation, secrets, BYOK flows, key rotation, config schema validation, and drift checks across local, dev, staging, and production. Use when adding env vars, changing runtime config, handling API keys or user-provided keys, diagnosing config drift, or preparing deploy/release configuration.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "backend",
+      "deploy"
+    ]
+  },
+  {
     "name": "contribution-architect",
     "category": "Delivery Workflow",
     "format": "directory",
@@ -381,6 +398,23 @@
     ]
   },
   {
+    "name": "data-contract-migrations",
+    "category": "API & Backend",
+    "format": "directory",
+    "path": "skills/data-contract-migrations/SKILL.md",
+    "description": "Design and verify data contracts, schema changes, migrations, rollbacks, backfills, compatibility windows, tenant isolation, and API-to-database field mapping. Use when changing database schema, event payloads, persisted documents, analytics tables, multi-tenant data boundaries, or any user-visible data contract where silent fallback or undeclared fields would be dangerous.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "backend",
+      "database"
+    ]
+  },
+  {
     "name": "database-patterns",
     "category": "API & Backend",
     "format": "directory",
@@ -394,6 +428,27 @@
     },
     "tags": [
       "database"
+    ]
+  },
+  {
+    "name": "dev-architecture-playbook",
+    "category": "Development Architecture",
+    "format": "directory",
+    "path": "skills/dev-architecture-playbook/SKILL.md",
+    "description": "Route full software-development architecture work from product intent through design, implementation, testing, release, and operations. Use when the user asks for a complete development architecture, wants to know which Spellbook skills to combine, needs an execution path across PRD/spec/API/data/security/performance/release/SRE, or asks to turn an idea or repo into a production-ready engineering plan.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "architecture",
+      "backend",
+      "documentation",
+      "performance",
+      "security",
+      "testing"
     ]
   },
   {
@@ -657,6 +712,20 @@
     ]
   },
   {
+    "name": "incident-slo-runbook",
+    "category": "Operations & Deploy",
+    "format": "directory",
+    "path": "skills/incident-slo-runbook/SKILL.md",
+    "description": "Create or audit SLOs, SLIs, alert rules, incident response steps, escalation paths, postmortems, operational runbooks, and customer-impact communication. Use when defining production reliability, preparing launch readiness, responding to an outage, writing a runbook, tuning alerts, or closing the loop after an incident.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": []
+  },
+  {
     "name": "multi-ai-research",
     "category": "AI & Agent Workflow",
     "format": "directory",
@@ -755,6 +824,24 @@
       "debugging",
       "performance",
       "proxy"
+    ]
+  },
+  {
+    "name": "performance-capacity",
+    "category": "Operations & Deploy",
+    "format": "directory",
+    "path": "skills/performance-capacity/SKILL.md",
+    "description": "Plan, diagnose, and verify performance budgets, latency targets, load tests, capacity estimates, bottleneck analysis, caching strategy, query efficiency, queue throughput, and regression gates. Use when a feature may be slow, a system must scale, a performance regression is suspected, or release readiness depends on throughput, cost, memory, CPU, or response time.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "debugging",
+      "performance",
+      "system"
     ]
   },
   {
@@ -976,6 +1063,24 @@
     ]
   },
   {
+    "name": "release-engineering",
+    "category": "Operations & Deploy",
+    "format": "directory",
+    "path": "skills/release-engineering/SKILL.md",
+    "description": "Plan and verify software releases with versioning, changelogs, release branches, feature flags, canaries, migration gates, rollback, deployment checks, and release readiness. Use when preparing a release, shipping a risky PR, coordinating app/backend/database rollout, recovering from a bad deploy, or defining release policy for a repo.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "backend",
+      "database",
+      "deploy"
+    ]
+  },
+  {
     "name": "repo-agent-context-audit",
     "category": "AI & Agent Workflow",
     "format": "directory",
@@ -990,6 +1095,22 @@
     "tags": [
       "agent",
       "code-review"
+    ]
+  },
+  {
+    "name": "repo-scaffold",
+    "category": "Delivery Workflow",
+    "format": "directory",
+    "path": "skills/repo-scaffold/SKILL.md",
+    "description": "Scaffold or standardize a production-ready repository structure with specs, source layout, tests, CI, agent context, config examples, release notes, and operational docs. Use when starting a new repo, turning a prototype into a maintainable project, adding missing repository foundations, or creating a repo skeleton before implementation. For AGENTS.md-only context scaffolding, use agentsmd-scaffold.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "agent"
     ]
   },
   {
@@ -1042,6 +1163,23 @@
     "tags": [
       "debugging",
       "system"
+    ]
+  },
+  {
+    "name": "security-threat-model",
+    "category": "Delivery Workflow",
+    "format": "directory",
+    "path": "skills/security-threat-model/SKILL.md",
+    "description": "Threat-model product features, APIs, data flows, secrets, permissions, supply-chain changes, auth boundaries, and risky code paths before or during implementation. Use when touching authentication, authorization, payments, secrets, user data, uploads, webhooks, admin tools, innerHTML/eval/exec, dependency upgrades, or cross-tenant access.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "auth",
+      "security"
     ]
   },
   {
@@ -1113,6 +1251,20 @@
     "tags": [
       "performance"
     ]
+  },
+  {
+    "name": "skill-usage-stats",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/skill-usage-stats/SKILL.md",
+    "description": "扫描本机 Claude Code 和 Codex 的会话日志，统计哪些 skill 有本地调用证据、哪些在本机无证据（已安装但日志无痕迹，不等于从未使用）、调用排行、月度趋势、项目分布，输出终端表格和 Markdown 报告，可导出 CSV/JSON。Use when the user asks to 统计 skill 使用, 看 skill usage, find zombie skills, 僵尸 skill, which skills are installed but never used, skill 调用排行, skill usage report, skill 使用健康度, audit personal skill arsenal, or manage which skills to keep or remove.",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": []
   },
   {
     "name": "slides",

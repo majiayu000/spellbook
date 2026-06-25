@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repo Scaffold"
+  short_description: "Create standard repo structure and gates"
+  default_prompt: "Use $repo-scaffold to scaffold a production-ready repository structure with specs, tests, CI, and agent context."

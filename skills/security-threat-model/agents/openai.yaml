@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Threat Model"
+  short_description: "Model threats and secure risky changes"
+  default_prompt: "Use $security-threat-model to threat-model a feature, secrets flow, permissions boundary, or supply-chain change."

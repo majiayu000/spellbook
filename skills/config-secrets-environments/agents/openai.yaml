@@ -1,0 +1,4 @@
+interface:
+  display_name: "Config Secrets Environments"
+  short_description: "Govern env config and secret flows"
+  default_prompt: "Use $config-secrets-environments to design local/dev/staging/prod config, secret rotation, BYOK, and drift checks."

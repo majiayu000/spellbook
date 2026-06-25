@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release Engineering"
+  short_description: "Plan releases, gates, canaries, rollback"
+  default_prompt: "Use $release-engineering to plan versioning, changelog, release gates, canary rollout, and rollback."
