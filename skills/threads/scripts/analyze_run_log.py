@@ -10,7 +10,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from append_run_log import default_log_path
+from append_run_log import default_log_path, nested_get, valid_spawned_agents
 
 
 JSONValue = None | bool | int | float | str | list["JSONValue"] | dict[str, "JSONValue"]
@@ -66,23 +66,15 @@ def _native_evidence(record: JSONObject) -> JSONObject:
 
 
 def _spawned_agents(record: JSONObject) -> list[JSONObject]:
-    agents = _as_list(_native_evidence(record).get("spawned_agents"))
-    return [agent for agent in agents if isinstance(agent, dict)]
+    return valid_spawned_agents(record)
 
 
 def _explicit_thread_request(record: JSONObject) -> bool:
-    if _truthy(record.get("explicit_thread_request")):
-        return True
-    gate = _as_object(record.get("thread_dispatch_gate"))
-    return _truthy(gate.get("explicit_thread_request"))
+    return _truthy(nested_get(record, "explicit_thread_request"))
 
 
 def _fallback_mode(record: JSONObject) -> str | None:
-    fallback = _string(record.get("fallback_mode"))
-    if fallback:
-        return fallback
-    gate = _as_object(record.get("thread_dispatch_gate"))
-    return _string(gate.get("fallback_mode"))
+    return _string(nested_get(record, "fallback_mode"))
 
 
 def _stale_base(record: JSONObject) -> bool:
@@ -90,11 +82,13 @@ def _stale_base(record: JSONObject) -> bool:
     remote_truth = _as_object(record.get("remote_truth"))
     queue_gate = _as_object(record.get("queue_gate"))
     queue_remote_refresh = _as_object(queue_gate.get("remote_refresh"))
+    queue_ledger = _as_object(record.get("queue_ledger"))
     failure_codes = [code for code in _as_list(record.get("failure_codes")) if isinstance(code, str)]
     return (
         _truthy(remote_refresh.get("stale_base"))
         or _truthy(remote_truth.get("stale_base"))
         or _truthy(queue_remote_refresh.get("stale_base"))
+        or _truthy(queue_ledger.get("stale_base"))
         or "stale_base" in failure_codes
     )
 
@@ -103,11 +97,12 @@ def _durable_log_gap(record: JSONObject) -> bool:
     run_log = _as_object(record.get("run_log"))
     write_status = _string(run_log.get("write_status"))
     no_log_reason = _string(run_log.get("no_log_reason"))
-    if write_status and write_status != "written":
+    failure_codes = [code for code in _as_list(record.get("failure_codes")) if isinstance(code, str)]
+    if "durable_log_skipped" in failure_codes:
         return True
-    if no_log_reason:
+    if write_status in {"failed", "error", "skipped"}:
         return True
-    return "durable_log_skipped" in [code for code in _as_list(record.get("failure_codes")) if isinstance(code, str)]
+    return write_status == "not_written" and no_log_reason is None
 
 
 def _read_records(path: Path) -> tuple[list[JSONObject], int]:

@@ -55,6 +55,9 @@ class ThreadsAnalyzeRunLogTests(unittest.TestCase):
                                 "lane_id": "review-pr",
                                 "spawn_tool": "multi_agent_v1.spawn_agent",
                                 "agent_id_or_thread_id": "agent-123",
+                                "result_collected": True,
+                                "wait_evidence": "wait_agent completed",
+                                "close_evidence": "close_agent completed",
                             }
                         ]
                     },
@@ -90,6 +93,43 @@ class ThreadsAnalyzeRunLogTests(unittest.TestCase):
             self.assertIn("runs_with_spawned_agents: 1", result.stdout)
             self.assertIn("spawned_agents_total: 1", result.stdout)
             self.assertIn("single_agent_fallbacks: 1", result.stdout)
+
+    def test_matches_writer_spawn_and_gate_semantics(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "run-log.jsonl"
+            records = [
+                {
+                    "skill": "threads",
+                    "mode": "review_only",
+                    "capability_gate": {"explicit_thread_request": True},
+                    "native_thread_evidence": {
+                        "spawned_agents": [
+                            {
+                                "lane_id": "placeholder",
+                                "spawn_tool": "manual",
+                                "agent_id_or_thread_id": "none",
+                                "result_collected": False,
+                            }
+                        ]
+                    },
+                },
+                {
+                    "skill": "threads",
+                    "mode": "execute_direct",
+                    "queue_ledger": {"stale_base": True},
+                    "run_log": {"write_status": "not_applicable"},
+                },
+            ]
+            log_path.write_text("\n".join(json.dumps(record) for record in records) + "\n", encoding="utf-8")
+
+            result = self.run_script(log_path)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("explicit_thread_requests: 1", result.stdout)
+            self.assertIn("runs_with_spawned_agents: 0", result.stdout)
+            self.assertIn("spawned_agents_total: 0", result.stdout)
+            self.assertIn("stale_base_events: 1", result.stdout)
+            self.assertIn("durable_log_gaps: 0", result.stdout)
 
     def test_json_output_is_structured_and_private(self):
         with TemporaryDirectory() as temp_dir:
