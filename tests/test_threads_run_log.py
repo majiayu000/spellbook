@@ -297,6 +297,29 @@ class ThreadsRunLogTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue(log_path.exists())
 
+    def test_allows_documented_queue_ledger_list_record(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "ledger-list.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "execute_direct",
+                    "queue_ledger": [
+                        {
+                            "item": "#117",
+                            "type": "issue",
+                            "remote_state": "open",
+                        }
+                    ],
+                },
+                log_path,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(record["queue_ledger"][0]["item"], "#117")
+
     def test_rejects_invalid_issue_to_pr_map_shape(self):
         payload = self.nested_payload()
         payload["queue_gate"]["issue_to_pr_map"] = [
@@ -310,6 +333,12 @@ class ThreadsRunLogTests(unittest.TestCase):
         payload["queue_ledger"]["items_total"] = -1
 
         self.assert_rejects_payload(payload, "queue_ledger.items_total")
+
+    def test_rejects_invalid_queue_ledger_list_entry_shape(self):
+        payload = self.nested_payload()
+        payload["queue_ledger"] = ["#117"]
+
+        self.assert_rejects_payload(payload, "queue_ledger entries")
 
     def test_rejects_invalid_remote_closure_shape(self):
         payload = self.nested_payload()

@@ -387,6 +387,10 @@ def validate_queue_ledger(record: dict[str, Any]) -> None:
     queue_ledger = record.get("queue_ledger")
     if queue_ledger is None:
         return
+    if isinstance(queue_ledger, list):
+        for item in queue_ledger:
+            require_object(item, "queue_ledger entries")
+        return
     ledger = require_object(queue_ledger, "queue_ledger")
     for field in ("items_total", "items_closed", "items_deferred"):
         validate_non_negative_int(ledger.get(field), f"queue_ledger.{field}")
