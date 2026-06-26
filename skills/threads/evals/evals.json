@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "name": "explicit-codex-native-subagents",
+    "should_trigger": true,
+    "expected_mode": "execute_direct",
+    "expected_output": "Uses the threads skill, records capability and dispatch gates, creates a lane map with disjoint writable files, and does not route to tmux or OS-level threads.",
+    "category": "positive-native-dispatch",
+    "files": [],
+    "query": "Use threads to split this repository cleanup into independent Codex subagents with separate file ownership and review gates."
+  },
+  {
+    "id": 2,
+    "name": "github-queue-sweep",
+    "should_trigger": true,
+    "expected_mode": "execute_direct",
+    "expected_output": "Starts with live queue gate requirements, maps issues to PRs, requires GraphQL reviewThreads, and bounds the queue tranche before implementation.",
+    "category": "positive-github-queue",
+    "files": [],
+    "query": "Use threads to process this repo's open GitHub issues and PRs, including review-thread blockers and merge readiness."
+  },
+  {
+    "id": 3,
+    "name": "review-only-pr",
+    "should_trigger": true,
+    "expected_mode": "review_only",
+    "expected_output": "Plans a read-only reviewer or merge-reviewer lane, checks current head, CI, merge state, and thread-aware review-thread state, and does not edit files.",
+    "category": "positive-review-only",
+    "files": [],
+    "query": "Open a read-only threads review for PR #42 and tell me whether it is safe to merge."
+  },
+  {
+    "id": 4,
+    "name": "research-spec-lanes",
+    "should_trigger": true,
+    "expected_mode": "research_spec",
+    "expected_output": "Splits read-only research lanes by angle, records evidence expectations, and synthesizes without assigning overlapping writable workers.",
+    "category": "positive-research-spec",
+    "files": [],
+    "query": "Use threads to research this agent workflow from product, engineering, and security angles, then synthesize a spec."
+  },
+  {
+    "id": 5,
+    "name": "chinese-subagent-request",
+    "should_trigger": true,
+    "expected_mode": "review_only",
+    "expected_output": "Recognizes the explicit subagent request, uses native Codex threads when available, and assigns read-only reviewer lanes with merge-gate evidence.",
+    "category": "positive-native-dispatch",
+    "files": [],
+    "query": "开几个子 agent 分别看这个 PR 的测试、架构和安全问题，最后汇总能不能合并。"
+  },
+  {
+    "id": 6,
+    "name": "os-threading-question",
+    "should_trigger": false,
+    "expected_mode": "single_agent",
+    "expected_output": "Answers as an ordinary programming/concurrency question without loading the threads workflow orchestration skill.",
+    "category": "negative-language-concurrency",
+    "files": [],
+    "query": "Explain how Python threads differ from multiprocessing for CPU-bound code."
+  },
+  {
+    "id": 7,
+    "name": "rust-thread-bug",
+    "should_trigger": false,
+    "expected_mode": "single_agent",
+    "expected_output": "Treats this as a Rust concurrency debugging task and does not create Codex lane maps or GitHub queue gates unless separately requested.",
+    "category": "negative-language-concurrency",
+    "files": [],
+    "query": "My Rust worker threads deadlock when two mutexes are acquired in opposite order. Help me debug the code."
+  },
+  {
+    "id": 8,
+    "name": "forum-thread-summary",
+    "should_trigger": false,
+    "expected_mode": "single_agent",
+    "expected_output": "Treats thread as a discussion artifact, not Codex subagent orchestration.",
+    "category": "negative-discussion-thread",
+    "files": [],
+    "query": "Summarize this long forum thread and extract the main arguments."
+  },
+  {
+    "id": 9,
+    "name": "email-thread-reply",
+    "should_trigger": false,
+    "expected_mode": "single_agent",
+    "expected_output": "Handles email writing directly without capability gates, queue gates, or native subagent dispatch.",
+    "category": "negative-discussion-thread",
+    "files": [],
+    "query": "Draft a concise reply to this email thread and keep the tone professional."
+  },
+  {
+    "id": 10,
+    "name": "assistants-api-thread",
+    "should_trigger": false,
+    "expected_mode": "single_agent",
+    "expected_output": "Routes to OpenAI API documentation/help rather than Codex workflow orchestration.",
+    "category": "negative-product-api-thread",
+    "files": [],
+    "query": "How do I create and retrieve threads in the OpenAI Assistants API?"
+  },
+  {
+    "id": 11,
+    "name": "ambiguous-one-file-task",
+    "should_trigger": false,
+    "expected_mode": "single_agent",
+    "expected_output": "Uses a simple single-agent edit path because the user explicitly rejects agent dispatch and the task is tiny.",
+    "category": "negative-simple-task",
+    "files": [],
+    "query": "Fix this one typo in README.md; no agents needed."
+  },
+  {
+    "id": 12,
+    "name": "github-queue-plan-only",
+    "should_trigger": true,
+    "expected_mode": "plan_only",
+    "expected_output": "Runs queue gate and lane planning only, classifies PRs and issues, and stops before edits, comments, pushes, or merges.",
+    "category": "positive-plan-only",
+    "files": [],
+    "query": "Use threads to map all open PRs and issues, but do not edit or merge anything yet."
+  }
+]
