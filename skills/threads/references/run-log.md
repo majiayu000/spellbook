@@ -41,10 +41,14 @@ Do not use a global log file by default; different repositories should not
 share durable threads telemetry unless the user explicitly sets
 `CODEX_THREADS_RUN_LOG`.
 
-Append one JSON object per run:
+Append one JSON object per run. In the Spellbook source checkout the script is
+available at `skills/threads/scripts/append_run_log.py`. In an installed skill,
+resolve the script relative to the loaded `threads` skill directory; do not
+assume the target repository contains a `skills/threads` path.
 
 ```bash
-python3 skills/threads/scripts/append_run_log.py <<'JSON'
+THREADS_SKILL_DIR=${THREADS_SKILL_DIR:-skills/threads}
+python3 "$THREADS_SKILL_DIR/scripts/append_run_log.py" <<'JSON'
 {
   "skill": "threads",
   "mode": "execute_direct",
@@ -155,6 +159,7 @@ Recommended fields:
     "queue_tranche": "first blocker"
   },
   "remote_refresh": {
+    "owner_lane": "coordinator",
     "cadence": "queue_start|before_lane|before_push|before_merge|after_ci_wait",
     "origin_main_sha": "abc123",
     "local_base_sha": "def456",
@@ -167,6 +172,13 @@ Recommended fields:
     "items_closed": 0,
     "items_deferred": 0,
     "superseded_items": []
+  },
+  "queue_gate": {
+    "fetched_remote": true,
+    "truth_level": "A",
+    "pr_classification": [],
+    "open_prs": [],
+    "open_issues": []
   },
   "lanes_total": 0,
   "lanes": [
@@ -254,7 +266,13 @@ Safety limits:
 - maximum nesting depth: 8
 - maximum array items retained: 100
 - new log files are created with `0600` permissions
+- existing log files are tightened to `0600` before append
 - append uses a POSIX file lock when available
+
+When `queue_gate` is present, include a `remote_refresh` contract with
+`owner_lane`, `origin_main_sha`, `local_base_sha`, `stale_base`, and `policy`.
+Allowed owners are `coordinator` and `verification_owner`; read-only lanes should
+consume this snapshot unless they are explicitly isolated.
 
 ## Failure Codes
 
@@ -290,9 +308,10 @@ Use stable codes so later analysis can aggregate them:
 Common local checks:
 
 ```bash
-jq -r '.failure_codes[]?' "$(git rev-parse --git-dir)/codex/threads/run-log.jsonl" | sort | uniq -c | sort -nr
-jq -r 'select(.outcome!="success") | [.recorded_at_utc,.repo,.mode,.failure_codes|join(",")] | @tsv' "$(git rev-parse --git-dir)/codex/threads/run-log.jsonl"
-jq -r 'select(.verification.fresh==false) | [.recorded_at_utc,.repo,.goal] | @tsv' "$(git rev-parse --git-dir)/codex/threads/run-log.jsonl"
+LOG="$(git rev-parse --git-dir)/codex/threads/run-log.jsonl"
+test -f "$LOG" && jq -r '.failure_codes[]?' "$LOG" | sort | uniq -c | sort -nr
+test -f "$LOG" && jq -r 'select(.outcome!="success") | [.recorded_at_utc,.repo,.mode,((.failure_codes // [])|join(","))] | @tsv' "$LOG"
+test -f "$LOG" && jq -r 'select(.verification.fresh==false) | [.recorded_at_utc,.repo,.goal] | @tsv' "$LOG"
 ```
 
 ## Privacy

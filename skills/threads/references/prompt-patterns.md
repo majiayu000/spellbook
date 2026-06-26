@@ -23,7 +23,8 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 - 记录 active_skill_source：实际加载的 skill 路径和可发现的 source SHA；发现不了就写 unknown，不要猜。
 - queue_gate 必须包含每个 open PR 的分类：merge_ready / review_thread_blocked / ci_failed / conflict_blocked / stale_or_superseded / needs_human_decision。
 - queue_gate 必须包含 truth_level：A=GitHub API/GraphQL/head/check/reviewThreads 全新鲜；B=GraphQL 不可用但 REST 可用，禁止 merge；C=仅 local git，禁止 remote closure/merge；D=remote 不可靠，仅 plan/prompt pack。
-- queue_gate 必须包含 remote_refresh：origin/main 当前 SHA、lane base SHA、是否 stale_base、处理策略。
+- queue_gate 必须包含 remote_refresh：origin/main 当前 SHA、lane base SHA、是否 stale_base、处理策略、`owner_lane=coordinator|verification_owner`。
+- `git fetch --prune origin` 默认由 root orchestrator / verification_owner 串行执行，并把 remote snapshot 传给只读 lanes；只读 lane 只有在隔离 worktree 且 lane_map 明确允许时才自己 fetch。
 - 输出 queue_ledger，并在每个 queue item 上记录 owner_lane、head_sha、ci_status、review_thread_state、acceptance_evidence、remote_checked_at。
 - lane_map 每个 spawned lane 必须记录 `native_thread_id`；coordinator-only lane 必须写 `native_thread_id: none` 和需要时的 `no_spawn_reason`。
 - issue_to_pr_map 必须先判断 open issue 是否已有覆盖 PR；优先收敛已有 PR，不要开竞争 PR。
@@ -62,7 +63,7 @@ Target queue: {{queue_scope}}
 请读取 repo 指令，并用当前 session 的 live remote state 完成队列门。
 
 必须检查：
-1. git fetch --prune 后的当前 branch、dirty files、unpushed commits、worktrees。
+1. 使用 coordinator 提供的 fresh remote snapshot；如果被明确授权在隔离 worktree 内 fetch，再记录 git fetch --prune 后的当前 branch、dirty files、unpushed commits、worktrees。
 2. 可用 remote truth level：A/B/C/D，并说明缺失的工具或权限。
 3. origin/main 当前 SHA、每个候选 lane 的 base_ref 是否 stale、是否需要 rebase/recreate/stop。
 4. open PRs 和 open issues。
@@ -90,7 +91,7 @@ Target queue: {{queue_scope}}
 规则：
 - MERGEABLE/CLEAN 不足以判定 merge_ready；必须同时有当前 head SHA、check rollup、merge state、GraphQL review-thread state。
 - review-gated queue 默认一次收敛一个 blocker，除非 writable_files 明确不重叠且 PR 不 stacked。
-- remote_refresh 只能 fetch 和比较；不要在 queue gate 自动 rebase/merge。
+- remote_refresh 默认由 coordinator 串行执行；queue gate thread 不要在共享 worktree 内 fetch、rebase 或 merge。
 - GraphQL 不可用时最多 truth_level=B，允许 review/实现，不允许 merge。
 - contributor PR 可维护修改时，不要默认开替代 PR。
 ```
@@ -331,7 +332,7 @@ No findings; safe to merge.
 - gh issue list
 - GraphQL reviewThreads.isResolved for touched PRs
 - PR conversation comments, review comments, and whether fixed feedback has replies/resolution
-- git fetch --prune
+- coordinator-provided git fetch --prune snapshot；只有隔离 worktree 才由本 lane 自行 fetch
 - git status --short --branch
 - git log origin/main..HEAD
 - git diff --stat origin/main...HEAD

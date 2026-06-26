@@ -152,6 +152,112 @@ class ThreadsRunLogTests(unittest.TestCase):
             self.assertEqual(record["remote_truth"]["origin_main_sha"], "abc123")
             self.assertFalse(record["local_state"]["dirty_worktree"])
 
+    def test_allows_queue_gate_from_skill_contract(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "queue-gate.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "plan_only",
+                    "queue_gate": {
+                        "fetched_remote": True,
+                        "truth_level": "A",
+                        "open_prs": [],
+                        "open_issues": [],
+                    },
+                    "remote_refresh": {
+                        "owner_lane": "coordinator",
+                        "origin_main_sha": "abc123",
+                        "local_base_sha": "abc123",
+                        "stale_base": False,
+                        "policy": "continue",
+                    },
+                },
+                log_path,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertTrue(record["queue_gate"]["fetched_remote"])
+
+    def test_rejects_queue_gate_without_remote_refresh_owner(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "queue-missing-owner.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "plan_only",
+                    "queue_gate": {"truth_level": "A"},
+                    "remote_refresh": {
+                        "origin_main_sha": "abc123",
+                        "local_base_sha": "abc123",
+                        "stale_base": False,
+                        "policy": "continue",
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("remote_refresh.owner_lane", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_rejects_queue_gate_unknown_pr_classification(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "queue-pr-classification.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "plan_only",
+                    "queue_gate": {
+                        "truth_level": "A",
+                        "pr_classification": [
+                            {"PR": 1, "classification": "looks_good"},
+                        ],
+                    },
+                    "remote_refresh": {
+                        "owner_lane": "coordinator",
+                        "origin_main_sha": "abc123",
+                        "local_base_sha": "abc123",
+                        "stale_base": False,
+                        "policy": "continue",
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("queue_gate.pr_classification.classification", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_rejects_conflicting_top_level_and_queue_gate_truth_level(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "queue-truth-conflict.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "plan_only",
+                    "truth_level": "A",
+                    "queue_gate": {"truth_level": "B"},
+                    "remote_refresh": {
+                        "owner_lane": "coordinator",
+                        "origin_main_sha": "abc123",
+                        "local_base_sha": "abc123",
+                        "stale_base": False,
+                        "policy": "continue",
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("conflicting truth_level", result.stderr)
+            self.assertFalse(log_path.exists())
+
     def test_accepts_clarify_first_mode(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "clarify.jsonl"
@@ -655,6 +761,74 @@ class ThreadsRunLogTests(unittest.TestCase):
             self.assertIn("unknown truth_level", result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_rejects_unknown_native_subagents_value(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "native-enum.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "plan_only",
+                    "native_subagents": "maybe",
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("unknown native_subagents", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_rejects_unknown_spawn_requirement_value(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "spawn-enum.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "plan_only",
+                    "spawn_requirement": "mandatory",
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("unknown spawn_requirement", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_rejects_unknown_failure_code(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "failure-code.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "plan_only",
+                    "failure_codes": ["made_up_failure"],
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("unknown failure_codes", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_rejects_unknown_lane_role(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "lane-role.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "plan_only",
+                    "lanes": [{"id": "x", "role": "boss"}],
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("unknown lanes.role", result.stderr)
+            self.assertFalse(log_path.exists())
+
     def test_allow_extra_preserves_redacted_unknown_top_level_fields(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "extra.jsonl"
@@ -677,6 +851,24 @@ class ThreadsRunLogTests(unittest.TestCase):
             record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
             self.assertEqual(record["extra"]["token"], "[REDACTED]")
 
+    def test_redacts_env_assignment_tokens_in_strings(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "env-token.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "plan_only",
+                    "notes": "ran API_TOKEN=super-secret-token command",
+                },
+                log_path,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertNotIn("super-secret-token", record["notes"])
+            self.assertIn("API_TOKEN=[REDACTED]", record["notes"])
+
     def test_new_log_file_is_private(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "private.jsonl"
@@ -692,6 +884,55 @@ class ThreadsRunLogTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             mode = stat.S_IMODE(log_path.stat().st_mode)
             self.assertEqual(mode, 0o600)
+
+    def test_existing_log_file_permissions_are_tightened(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "existing.jsonl"
+            log_path.write_text("", encoding="utf-8")
+            log_path.chmod(0o644)
+
+            result = self.run_script({"skill": "threads", "mode": "plan_only"}, log_path)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            mode = stat.S_IMODE(log_path.stat().st_mode)
+            self.assertEqual(mode, 0o600)
+
+    def test_print_path_does_not_require_stdin(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "print-path.jsonl"
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--path", str(log_path), "--print-path"],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), str(log_path))
+            self.assertFalse(log_path.exists())
+
+    def test_validate_only_does_not_append(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "validate-only.jsonl"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--path",
+                    str(log_path),
+                    "--validate-only",
+                ],
+                input=json.dumps({"skill": "threads", "mode": "plan_only"}),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, "")
+            self.assertFalse(log_path.exists())
 
 
 if __name__ == "__main__":

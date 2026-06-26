@@ -10,6 +10,17 @@ Use this skill to turn a broad request into controlled Codex-native subthreads w
 
 Native Codex threads are short-lived parallel work lines inside the Codex workflow. They are not the same as OMX/tmux workers. If native subagent tools are not visible, discover them with tool search. If no native subagent capability is available, produce the thread prompt pack and execution plan instead of pretending threads were launched.
 
+## Quick Path
+
+1. Classify the request: `single_agent`, `plan_only`, `execute_direct`, `review_only`, `research_spec`, or `clarify_first`.
+2. If the user explicitly asked for threads, record `thread_dispatch_gate` and spawn required native lanes before implementation.
+3. For GitHub queues, fetch remote state in the coordinator lane, then write `queue_gate`, `queue_ledger`, and `issue_to_pr_map`.
+4. Write a lane map with file ownership, verification owner, and stop conditions.
+5. Dispatch only bounded native lanes with disjoint writable scopes or read-only roles.
+6. Collect, wait, and close spawned agents; do not count the coordinator as a spawned thread.
+7. Run fresh verification tied to the current head or artifact.
+8. End with a compact final report and `threads_run_log`; write durable JSONL for queue, multi-lane, push, comment, or merge-capable runs.
+
 ## Do Not Use For
 
 Do not use this skill for generic uses of "thread" unless the user explicitly means Codex workflow orchestration:
@@ -160,6 +171,7 @@ queue_gate:
 - truth_level:
 - remote_refresh:
     base_ref:
+    owner_lane:
     origin_main_sha:
     local_base_sha:
     stale_base:
