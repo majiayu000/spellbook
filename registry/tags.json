@@ -1,5 +1,5 @@
 {
-  "total_skills": 87,
+  "total_skills": 88,
   "total_tags": 35,
   "tag_counts": {
     "agent": 10,
@@ -14,7 +14,7 @@
     "deploy": 6,
     "design-system": 2,
     "devops": 2,
-    "documentation": 9,
+    "documentation": 10,
     "frontend": 14,
     "go": 5,
     "harmonyos": 1,
@@ -32,9 +32,9 @@
     "rust": 5,
     "security": 3,
     "system": 6,
-    "testing": 6,
+    "testing": 7,
     "typescript": 4,
-    "ux": 3,
+    "ux": 4,
     "writing": 2,
     "zig": 1
   },
@@ -146,6 +146,7 @@
       "devops-excellence"
     ],
     "documentation": [
+      "app-user-story-qa",
       "auth-security",
       "git-commit-smart",
       "multi-model-orchestrator",
@@ -270,6 +271,7 @@
       "vscode-doctor"
     ],
     "testing": [
+      "app-user-story-qa",
       "comprehensive-testing",
       "elegant-architecture",
       "fixflow",
@@ -285,6 +287,7 @@
     ],
     "ux": [
       "app-ui-design",
+      "app-user-story-qa",
       "product-ux-expert",
       "ui-ux-pro-max"
     ],
