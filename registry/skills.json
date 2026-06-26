@@ -171,6 +171,23 @@
     ]
   },
   {
+    "name": "claude-code-reverse",
+    "category": "Uncategorized",
+    "format": "directory",
+    "path": "skills/claude-code-reverse/SKILL.md",
+    "description": "静态逆向本机 Claude Code 原生二进制，提取字符串、UI 文案、prompt、计费/额度逻辑与功能实现。当用户要 扒/逆向/拆解/看看 Claude Code 内部真实代码或字符串、验证某条关于 CC 行为的说法、对比两个 CC 版本、或搞清某功能（Fable credits、@claude、Slack connector、tool_reference 等）到底如何实现时使用。只读，不改二进制。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "frontend",
+      "prompt"
+    ]
+  },
+  {
     "name": "cliproxy-deploy",
     "category": "Operations & Deploy",
     "format": "directory",
