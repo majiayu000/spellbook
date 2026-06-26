@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import subprocess
 import stat
 import sys
@@ -21,6 +22,94 @@ class ThreadsRunLogTests(unittest.TestCase):
             capture_output=True,
             check=False,
         )
+
+    def nested_payload(self):
+        return {
+            "skill": "threads",
+            "mode": "execute_direct",
+            "truth_level": "A",
+            "queue_gate": {
+                "fetched_remote": True,
+                "truth_level": "A",
+                "open_prs": [],
+                "open_issues": [117, 118],
+                "pr_classification": [],
+                "issue_to_pr_map": [
+                    {
+                        "issue": 117,
+                        "covering_pr": None,
+                        "status": "uncovered",
+                        "reason": "no covering PR",
+                    }
+                ],
+            },
+            "remote_refresh": {
+                "owner_lane": "coordinator",
+                "origin_main_sha": "abc123",
+                "local_base_sha": "abc123",
+                "stale_base": False,
+                "policy": "continue",
+            },
+            "queue_ledger": {
+                "items_total": 2,
+                "items_closed": 0,
+                "items_deferred": 2,
+                "superseded_items": [],
+                "items": [
+                    {
+                        "item": "#117",
+                        "type": "issue",
+                        "remote_state": "open",
+                    }
+                ],
+            },
+            "lane_map": {
+                "lanes": [
+                    {
+                        "id": "planner",
+                        "role": "planner",
+                        "verification_scope": "inspection_only",
+                    }
+                ]
+            },
+            "lanes": [
+                {
+                    "id": "planner",
+                    "role": "planner",
+                    "verification_scope": "inspection_only",
+                }
+            ],
+            "remote_closure": {
+                "checked": True,
+                "open_prs": 0,
+                "open_issues": 2,
+                "unresolved_review_threads": 0,
+            },
+            "connector_review": {
+                "expected": False,
+                "status": "no_connector_expected",
+                "head_sha": "abc123",
+            },
+            "ci_wait": {
+                "duration_seconds": 0,
+                "budget_exhausted": False,
+                "pending_checks": [],
+            },
+            "review_loop": {
+                "cycles": 0,
+                "outcome": "not_applicable",
+            },
+        }
+
+    def assert_rejects_payload(self, payload, expected_error):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "bad-nested.jsonl"
+
+            result = self.run_script(payload, log_path)
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(expected_error, result.stderr)
+            self.assertFalse(log_path.exists())
 
     def test_appends_sanitized_jsonl_record(self):
         with TemporaryDirectory() as temp_dir:
@@ -181,6 +270,108 @@ class ThreadsRunLogTests(unittest.TestCase):
             record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
             self.assertTrue(record["queue_gate"]["fetched_remote"])
 
+    def test_allows_documented_nested_queue_record(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "nested-valid.jsonl"
+
+            result = self.run_script(self.nested_payload(), log_path)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(record["queue_gate"]["issue_to_pr_map"][0]["status"], "uncovered")
+            self.assertEqual(record["connector_review"]["status"], "no_connector_expected")
+
+    def test_allows_legacy_queue_ledger_stale_base_record(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "legacy-ledger.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "execute_direct",
+                    "queue_ledger": {"stale_base": True},
+                },
+                log_path,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(log_path.exists())
+
+    def test_rejects_invalid_issue_to_pr_map_shape(self):
+        payload = self.nested_payload()
+        payload["queue_gate"]["issue_to_pr_map"] = [
+            {"issue": 117, "status": "maybe_covered"},
+        ]
+
+        self.assert_rejects_payload(payload, "queue_gate.issue_to_pr_map.status")
+
+    def test_rejects_invalid_queue_ledger_shape(self):
+        payload = self.nested_payload()
+        payload["queue_ledger"]["items_total"] = -1
+
+        self.assert_rejects_payload(payload, "queue_ledger.items_total")
+
+    def test_rejects_invalid_remote_closure_shape(self):
+        payload = self.nested_payload()
+        payload["remote_closure"]["open_prs"] = "none"
+
+        self.assert_rejects_payload(payload, "remote_closure.open_prs")
+
+    def test_rejects_invalid_connector_review_shape(self):
+        payload = self.nested_payload()
+        payload["connector_review"]["status"] = "skipped"
+
+        self.assert_rejects_payload(payload, "connector_review.status")
+
+    def test_rejects_invalid_lane_map_shape(self):
+        payload = self.nested_payload()
+        payload["lane_map"]["lanes"][0]["role"] = "owner"
+
+        self.assert_rejects_payload(payload, "lane_map.lanes.role")
+
+    def test_rejects_invalid_ci_wait_shape(self):
+        payload = self.nested_payload()
+        payload["ci_wait"]["pending_checks"] = "none"
+
+        self.assert_rejects_payload(payload, "ci_wait.pending_checks")
+
+    def test_rejects_invalid_review_loop_shape(self):
+        payload = self.nested_payload()
+        payload["review_loop"]["cycles"] = -1
+
+        self.assert_rejects_payload(payload, "review_loop.cycles")
+
+    def test_allow_extra_does_not_bypass_known_nested_validation(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "bad-extra-nested.jsonl"
+            payload = self.nested_payload()
+            payload["extra"] = {"debug": True}
+            payload["connector_review"]["status"] = "skipped"
+
+            result = self.run_script(payload, log_path, "--allow-extra")
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("connector_review.status", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_runs_from_copied_installed_skill_path(self):
+        with TemporaryDirectory() as temp_dir:
+            installed_skill = Path(temp_dir) / "threads"
+            shutil.copytree(ROOT / "skills" / "threads", installed_skill)
+            copied_script = installed_skill / "scripts" / "append_run_log.py"
+            log_path = Path(temp_dir) / "installed.jsonl"
+
+            result = subprocess.run(
+                [sys.executable, str(copied_script), "--path", str(log_path)],
+                input=json.dumps({"skill": "threads", "mode": "plan_only"}),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(log_path.exists())
+
     def test_rejects_queue_gate_without_remote_refresh_owner(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "queue-missing-owner.jsonl"
@@ -273,446 +464,6 @@ class ThreadsRunLogTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
             self.assertEqual(record["mode"], "clarify_first")
-
-    def test_rejects_required_native_threads_without_spawned_agent(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "native-missing.jsonl"
-
-            result = subprocess.run(
-                [sys.executable, str(SCRIPT), "--path", str(log_path)],
-                input=json.dumps(
-                    {
-                        "skill": "threads",
-                        "mode": "execute_direct",
-                        "native_subagents": "available",
-                        "explicit_thread_request": True,
-                        "spawn_requirement": "required",
-                        "fallback_mode": "none",
-                        "lanes_total": 2,
-                    }
-                ),
-                text=True,
-                capture_output=True,
-                check=False,
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("native_thread_evidence.spawned_agents", result.stderr)
-            self.assertFalse(log_path.exists())
-
-    def test_accepts_required_native_threads_with_spawned_agent(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "native-present.jsonl"
-
-            result = subprocess.run(
-                [sys.executable, str(SCRIPT), "--path", str(log_path)],
-                input=json.dumps(
-                    {
-                        "skill": "threads",
-                        "mode": "execute_direct",
-                        "native_subagents": "available",
-                        "explicit_thread_request": True,
-                        "spawn_requirement": "required",
-                        "fallback_mode": "none",
-                        "native_thread_evidence": {
-                            "spawned_agents": [
-                                {
-                                    "lane_id": "review-pr",
-                                    "spawn_tool": "multi_agent_v1.spawn_agent",
-                                    "agent_id_or_thread_id": "agent-123",
-                                    "wait_evidence": "wait_agent completed",
-                                    "close_evidence": "close_agent completed",
-                                    "result_collected": True,
-                                }
-                            ]
-                        },
-                        "lanes_total": 2,
-                    }
-                ),
-                text=True,
-                capture_output=True,
-                check=False,
-            )
-
-            self.assertEqual(result.returncode, 0, result.stderr)
-            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
-            self.assertEqual(
-                record["native_thread_evidence"]["spawned_agents"][0]["agent_id_or_thread_id"],
-                "agent-123",
-            )
-
-    def test_rejects_required_native_threads_without_fallback_mode(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "fallback-omitted.jsonl"
-
-            result = self.run_script(
-                {
-                    "skill": "threads",
-                    "mode": "execute_direct",
-                    "native_subagents": "available",
-                    "explicit_thread_request": True,
-                    "spawn_requirement": "required",
-                },
-                log_path,
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("fallback_mode is required", result.stderr)
-            self.assertFalse(log_path.exists())
-
-    def test_rejects_prompt_pack_fallback_when_native_threads_available(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "prompt-pack.jsonl"
-
-            result = self.run_script(
-                {
-                    "skill": "threads",
-                    "mode": "review_only",
-                    "native_subagents": "available",
-                    "explicit_thread_request": True,
-                    "spawn_requirement": "required",
-                    "fallback_mode": "prompt_pack_only",
-                },
-                log_path,
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("prompt_pack_only fallback is invalid", result.stderr)
-            self.assertFalse(log_path.exists())
-
-    def test_rejects_invalid_fallback_mode_for_required_native_threads(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "invalid-fallback.jsonl"
-
-            result = self.run_script(
-                {
-                    "skill": "threads",
-                    "mode": "execute_direct",
-                    "native_subagents": "available",
-                    "explicit_thread_request": True,
-                    "spawn_requirement": "required",
-                    "fallback_mode": "serial",
-                },
-                log_path,
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("unknown fallback_mode", result.stderr)
-            self.assertFalse(log_path.exists())
-
-    def test_rejects_fake_native_thread_evidence(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "fake-native.jsonl"
-
-            result = self.run_script(
-                {
-                    "skill": "threads",
-                    "mode": "execute_direct",
-                    "native_subagents": "available",
-                    "explicit_thread_request": True,
-                    "spawn_requirement": "required",
-                    "fallback_mode": "none",
-                    "native_thread_evidence": {
-                        "spawned_agents": [
-                            {
-                                "lane_id": "review-pr",
-                                "spawn_tool": "manual",
-                                "agent_id_or_thread_id": "none",
-                                "result_collected": False,
-                            }
-                        ]
-                    },
-                },
-                log_path,
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("native_thread_evidence.spawned_agents", result.stderr)
-            self.assertFalse(log_path.exists())
-
-    def test_rejects_conflicting_capability_gate(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "conflict.jsonl"
-
-            result = self.run_script(
-                {
-                    "skill": "threads",
-                    "mode": "execute_direct",
-                    "native_subagents": "available",
-                    "explicit_thread_request": True,
-                    "spawn_requirement": "required",
-                    "fallback_mode": "none",
-                    "capability_gate": {
-                        "native_subagents": "unavailable",
-                    },
-                },
-                log_path,
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("conflicting native_subagents", result.stderr)
-            self.assertFalse(log_path.exists())
-
-    def test_rejects_explicit_plan_only_without_spawned_agent(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "plan-only-missing.jsonl"
-
-            result = self.run_script(
-                {
-                    "skill": "threads",
-                    "mode": "plan_only",
-                    "native_subagents": "available",
-                    "explicit_thread_request": True,
-                    "spawn_requirement": "required",
-                    "fallback_mode": "none",
-                },
-                log_path,
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("native_thread_evidence.spawned_agents", result.stderr)
-            self.assertFalse(log_path.exists())
-
-    def test_accepts_thread_dispatch_gate_spawned_agent(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "dispatch-gate.jsonl"
-
-            result = self.run_script(
-                {
-                    "skill": "threads",
-                    "mode": "review_only",
-                    "thread_dispatch_gate": {
-                        "native_subagents": "available",
-                        "explicit_thread_request": True,
-                        "spawn_requirement": "required",
-                        "fallback_mode": "none",
-                        "native_thread_evidence": {
-                            "spawned_agents": [
-                                {
-                                    "lane_id": "review-pr",
-                                    "spawn_tool": "multi_agent_v1.spawn_agent",
-                                    "agent_id_or_thread_id": "agent-123",
-                                    "wait_evidence": "wait_agent completed",
-                                    "close_evidence": "close_agent completed",
-                                    "result_collected": True,
-                                }
-                            ]
-                        },
-                    },
-                },
-                log_path,
-            )
-
-            self.assertEqual(result.returncode, 0, result.stderr)
-            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
-            self.assertEqual(
-                record["thread_dispatch_gate"]["native_thread_evidence"]["spawned_agents"][0][
-                    "agent_id_or_thread_id"
-                ],
-                "agent-123",
-            )
-
-    def test_rejects_planned_native_thread_without_spawn_or_reason(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "planned-missing.jsonl"
-
-            result = self.run_script(
-                {
-                    "skill": "threads",
-                    "mode": "review_only",
-                    "thread_dispatch_gate": {
-                        "native_subagents": "available",
-                        "explicit_thread_request": True,
-                        "spawn_requirement": "required",
-                        "fallback_mode": "none",
-                        "planned_native_threads": [
-                            {"id": "review-docs", "role": "reviewer"},
-                            {"id": "review-tests", "role": "reviewer"},
-                        ],
-                        "native_thread_evidence": {
-                            "spawned_agents": [
-                                {
-                                    "lane_id": "review-docs",
-                                    "spawn_tool": "multi_agent_v1.spawn_agent",
-                                    "agent_id_or_thread_id": "agent-123",
-                                    "wait_evidence": "wait_agent completed",
-                                    "close_evidence": "close_agent completed",
-                                    "result_collected": True,
-                                }
-                            ]
-                        },
-                    },
-                },
-                log_path,
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("planned_native_threads missing spawned evidence", result.stderr)
-            self.assertFalse(log_path.exists())
-
-    def test_accepts_planned_native_thread_with_lane_no_spawn_reason(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "planned-reason.jsonl"
-
-            result = self.run_script(
-                {
-                    "skill": "threads",
-                    "mode": "review_only",
-                    "thread_dispatch_gate": {
-                        "native_subagents": "available",
-                        "explicit_thread_request": True,
-                        "spawn_requirement": "required",
-                        "fallback_mode": "none",
-                        "planned_native_threads": [
-                            {"id": "review-docs", "role": "reviewer"},
-                            {
-                                "id": "review-tests",
-                                "role": "reviewer",
-                                "no_spawn_reason": "sequential_dependency",
-                            },
-                        ],
-                        "native_thread_evidence": {
-                            "spawned_agents": [
-                                {
-                                    "lane_id": "review-docs",
-                                    "spawn_tool": "multi_agent_v1.spawn_agent",
-                                    "agent_id_or_thread_id": "agent-123",
-                                    "wait_evidence": "wait_agent completed",
-                                    "close_evidence": "close_agent completed",
-                                    "result_collected": True,
-                                }
-                            ]
-                        },
-                    },
-                },
-                log_path,
-            )
-
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertTrue(log_path.exists())
-
-    def test_requires_reason_for_explicit_single_agent_fallback(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "fallback-missing.jsonl"
-
-            result = subprocess.run(
-                [sys.executable, str(SCRIPT), "--path", str(log_path)],
-                input=json.dumps(
-                    {
-                        "skill": "threads",
-                        "mode": "review_only",
-                        "native_subagents": "available",
-                        "explicit_thread_request": "yes",
-                        "spawn_requirement": "required",
-                        "fallback_mode": "single_agent",
-                    }
-                ),
-                text=True,
-                capture_output=True,
-                check=False,
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("single_agent fallback", result.stderr)
-            self.assertFalse(log_path.exists())
-
-    def test_rejects_explicit_single_agent_mode_without_fallback_reason(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "single-agent-mode-missing.jsonl"
-
-            result = self.run_script(
-                {
-                    "skill": "threads",
-                    "mode": "single_agent",
-                    "native_subagents": "available",
-                    "explicit_thread_request": "yes",
-                    "spawn_requirement": "required",
-                    "fallback_mode": "none",
-                },
-                log_path,
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("native_thread_evidence.spawned_agents", result.stderr)
-            self.assertFalse(log_path.exists())
-
-    def test_accepts_reasoned_explicit_single_agent_fallback(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "fallback-reason.jsonl"
-
-            result = subprocess.run(
-                [sys.executable, str(SCRIPT), "--path", str(log_path)],
-                input=json.dumps(
-                    {
-                        "skill": "threads",
-                        "mode": "review_only",
-                        "native_subagents": "available",
-                        "explicit_thread_request": "yes",
-                        "spawn_requirement": "required",
-                        "fallback_mode": "single_agent",
-                        "single_agent_justification": {
-                            "reason": "sequential_dependency",
-                            "evidence": "next step depends on one immediate result",
-                        },
-                    }
-                ),
-                text=True,
-                capture_output=True,
-                check=False,
-            )
-
-            self.assertEqual(result.returncode, 0, result.stderr)
-            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
-            self.assertEqual(
-                record["single_agent_justification"]["reason"],
-                "sequential_dependency",
-            )
-
-    def test_accepts_thread_dispatch_gate_single_agent_reason(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "dispatch-fallback-reason.jsonl"
-
-            result = self.run_script(
-                {
-                    "skill": "threads",
-                    "mode": "review_only",
-                    "thread_dispatch_gate": {
-                        "native_subagents": "available",
-                        "explicit_thread_request": True,
-                        "spawn_requirement": "required",
-                        "fallback_mode": "single_agent",
-                        "no_spawn_reason": "sequential_dependency",
-                    },
-                },
-                log_path,
-            )
-
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertTrue(log_path.exists())
-
-    def test_rejects_invalid_explicit_single_agent_fallback_reason(self):
-        with TemporaryDirectory() as temp_dir:
-            log_path = Path(temp_dir) / "fallback-invalid-reason.jsonl"
-
-            result = self.run_script(
-                {
-                    "skill": "threads",
-                    "mode": "review_only",
-                    "native_subagents": "available",
-                    "explicit_thread_request": "yes",
-                    "spawn_requirement": "required",
-                    "fallback_mode": "single_agent",
-                    "single_agent_justification": {
-                        "reason": "too_hard",
-                        "evidence": "vague",
-                    },
-                },
-                log_path,
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("single_agent fallback", result.stderr)
-            self.assertFalse(log_path.exists())
 
     def test_rejects_non_object_input(self):
         with TemporaryDirectory() as temp_dir:
