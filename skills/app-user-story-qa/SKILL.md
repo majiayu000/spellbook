@@ -16,7 +16,7 @@ Use `plan_first` for most runs. Switch to `clarify_first` only when the app boun
 Before editing:
 
 1. Run a repo state snapshot: current path, branch, latest remote, dirty files, open PRs when relevant.
-2. If the checkout is dirty or user work is present, create an isolated worktree from the requested base before making changes.
+2. If the checkout is dirty or user work is present, first decide which state the user asked to test. Preserve current user work in the isolated test worktree when the request targets the working tree; use a clean base only when the user asked for the base branch.
 3. Read applicable repo instructions such as `AGENTS.md`, `README`, architecture docs, and feature entrypoints.
 4. Search for existing QA trackers before creating a new one.
 5. Define the app boundary by user-facing surfaces, not internal helper functions.
@@ -70,11 +70,13 @@ Use a small, consistent status set:
 - `Passed`
 - `Failed - Product`
 - `Failed - UX`
+- `Failed - Logistical`
 - `Failed - Test Infra`
 - `Blocked - Env`
 - `Fixed`
 - `Passed after fix`
 
+Use `Failed - Logistical` for repo-owned setup, script, port, packaging, or local workflow defects that block a valid user path.
 Use `Blocked - Env` for local machine issues such as missing credentials, occupied services outside the repo, stale PATH binaries, or unavailable optional runtimes. Do not "fix" the user's environment unless they explicitly ask.
 
 ## Defect Taxonomy
@@ -125,7 +127,8 @@ Record the command, route, or manual steps in the tracker. Fresh output from the
 
 Before editing, state the exact defect and files being changed. Keep fixes narrow:
 
-- For product and UX defects, fix production code and add or update focused coverage.
+- For UX defects, fix production code and add or update focused coverage.
+- For product defects, record the evidence and escalate unless the user's request explicitly authorizes product behavior fixes.
 - For logistical defects, improve scripts, defaults, setup checks, or error messages.
 - For test-infra defects, preserve the behavior contract and fix the fixture or race.
 - Do not weaken assertions to make the suite pass.
