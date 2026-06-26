@@ -89,5 +89,5 @@ Codex 口径（两个模式数字可能差很多）：
 - Codex 是路径正则启发式（约 95%）：非 skill 的 sed/cat 读到 `SKILL.md` 会被计入；Codex 原生 skill 调用（若存在）不可见。Claude 精确。
 - **证据局限**：Codex 数字只是 implicit 证据（sed/cat 读 SKILL.md）。本机上 `$skill` mention 和 skill 脚本运行约为 0。这不是权威调用计数——Codex 的 `skill_invocation` analytics 直接 POST 后端、不存本机。所以"无本地证据"只表示本机没痕迹，**不等于"从未使用"**。
 - 首次全量扫 Codex（十几 GB）可能要几十秒；用 `--since` 收窄到近月。
-- 已装集合默认 `~/.claude/skills` + `~/.agents/skills`（当前 Codex）+ `~/.codex/skills`（旧 Codex）；`--installed-dirs` 可改。
+- 已装集合默认跟随启用的 runtime：Claude 用 `~/.claude/skills`，Codex 用 `~/.agents/skills`（当前 Codex）+ `~/.codex/skills`（旧 Codex）；`--installed-dirs` 可改。
 - 本工具只读，绝不修改日志、skill 或配置。僵尸清单不等于删除指令，删前请逐个确认。

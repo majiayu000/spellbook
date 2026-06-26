@@ -141,6 +141,18 @@ class CodexParseTests(unittest.TestCase):
         hits = sur._parse_codex_hits(codex_multi_skill_call("a", "b"), Path(CODEX_FNAME))
         self.assertEqual([hit.skill for hit in hits], ["a", "b"])
 
+    def test_ignores_non_exec_command_function_call(self):
+        args = _dumps({"cmd": "cat /Users/u/.codex/skills/x/SKILL.md"})
+        line = _dumps({"timestamp": "2026-05-16T12:00:00Z", "type": "response_item",
+                       "payload": {"type": "function_call", "name": "apply_patch", "arguments": args}})
+        self.assertEqual(sur._parse_codex_hits(line, Path(CODEX_FNAME)), [])
+
+    def test_ignores_non_read_exec_command(self):
+        args = _dumps({"cmd": "python3 -c 'print(\"/Users/u/.codex/skills/x/SKILL.md\")'"})
+        line = _dumps({"timestamp": "2026-05-16T12:00:00Z", "type": "response_item",
+                       "payload": {"type": "function_call", "name": "exec_command", "arguments": args}})
+        self.assertEqual(sur._parse_codex_hits(line, Path(CODEX_FNAME)), [])
+
     def test_filename_uuid_regex_rejects_greedy_collision(self):
         m = sur.CODEX_FNAME_UUID_RE.search(Path(CODEX_FNAME).name)
         self.assertIsNotNone(m)
@@ -190,6 +202,15 @@ class CollectTests(unittest.TestCase):
             self.assertEqual(len(hits), 2)
             self.assertEqual(sorted(h.skill for h in hits), ["code-review", "x-post"])
 
+    def test_collect_codex_session_mode_falls_back_to_file_path(self):
+        with TemporaryDirectory() as t:
+            sessions = Path(t) / ".codex" / "sessions"
+            sessions.mkdir(parents=True)
+            (sessions / "copy-a.jsonl").write_text(codex_func_call("x") + "\n", encoding="utf-8")
+            (sessions / "copy-b.jsonl").write_text(codex_func_call("x") + "\n", encoding="utf-8")
+            hits, _, _ = sur.collect_codex(Path(t) / ".codex", dedup_mode="session")
+            self.assertEqual(len(hits), 2)
+
     def test_collect_codex_ignores_mention_and_keeps_zero_failures(self):
         with TemporaryDirectory() as t:
             sessions = Path(t) / ".codex" / "sessions"
@@ -208,6 +229,20 @@ class CollectTests(unittest.TestCase):
     def test_default_installed_dirs_include_current_codex_target(self):
         suffixes = {path.relative_to(Path.home()).as_posix() for path in sur.INSTALLED_DIRS_DEFAULT}
         self.assertEqual(suffixes, {".claude/skills", ".agents/skills", ".codex/skills"})
+
+    def test_default_installed_dirs_follow_enabled_runtimes(self):
+        suffixes = lambda paths: {path.relative_to(Path.home()).as_posix() for path in paths}
+        self.assertEqual(suffixes(sur.default_installed_dirs(True, False)), {".claude/skills"})
+        self.assertEqual(suffixes(sur.default_installed_dirs(False, True)), {".agents/skills", ".codex/skills"})
+
+    def test_discover_installed_skills_requires_skill_md(self):
+        with TemporaryDirectory() as t:
+            root = Path(t)
+            (root / "good").mkdir()
+            (root / "good" / "SKILL.md").write_text("---\nname: good\n---\n", encoding="utf-8")
+            (root / "backup").mkdir()
+            (root / "backup" / "README.md").write_text("not a skill", encoding="utf-8")
+            self.assertEqual(sur.discover_installed_skills([root]), {"good"})
 
 
 class AggregateTests(unittest.TestCase):

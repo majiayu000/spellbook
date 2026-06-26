@@ -39,16 +39,21 @@ from typing import Iterator
 
 CLAUDE_DIR_DEFAULT = Path.home() / ".claude"
 CODEX_DIR_DEFAULT = Path.home() / ".codex"
-INSTALLED_DIRS_DEFAULT = [
-    Path.home() / ".claude" / "skills",
+CLAUDE_INSTALLED_DIR_DEFAULT = Path.home() / ".claude" / "skills"
+CODEX_INSTALLED_DIR_DEFAULTS = [
     Path.home() / ".agents" / "skills",
     Path.home() / ".codex" / "skills",
+]
+INSTALLED_DIRS_DEFAULT = [
+    CLAUDE_INSTALLED_DIR_DEFAULT,
+    *CODEX_INSTALLED_DIR_DEFAULTS,
 ]
 
 CLAUDE_PRE_GREP = '"name":"Skill"'
 CODEX_GREP_PATTERN = r"skills/[a-z0-9_-]+/SKILL\.md"
 CODEX_SKILL_RE = re.compile(r"skills/([a-z0-9_-]+)/SKILL\.md")
 CODEX_FUNC_MARKER = '"type":"function_call"'
+CODEX_READ_COMMANDS = {"cat", "head", "less", "more", "nl", "sed", "tail"}
 CODEX_FNAME_UUID_RE = re.compile(
     r"rollout-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-"
     r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.jsonl$",
@@ -97,8 +102,9 @@ LABELS: dict[str, dict[str, str]] = {
         "caveat_mode_session": "- Codex numbers reflect SKILL.md reads. In `session` mode each "
                                "(skill, session) pair counts once, so a skill loaded repeatedly in one "
                                "session is not inflated.",
-        "caveat_installed": "- Installed skill set defaults to `~/.claude/skills`, "
-                            "`~/.agents/skills` (current Codex), and `~/.codex/skills` (legacy Codex).",
+        "caveat_installed": "- Installed skill set defaults to the enabled runtime dirs: "
+                            "`~/.claude/skills` for Claude, and `~/.agents/skills` "
+                            "(current Codex) plus `~/.codex/skills` (legacy Codex) for Codex.",
         "caveat_readonly": "- 'No local evidence' means no local trace, NOT 'never used'. This tool is "
                            "read-only and never modifies logs, skills, or config.",
         "parse_failures_h": "## Parse Failures (samples)",
@@ -134,8 +140,9 @@ LABELS: dict[str, dict[str, str]] = {
                             "同一会话内反复读取会抬高计数。",
         "caveat_mode_session": "- Codex 数字反映 SKILL.md 的读取。`session` 口径下每个 "
                                "(skill, 会话) 只计一次，同一会话内反复加载不重复计数。",
-        "caveat_installed": "- 已安装 skill 集合默认取 `~/.claude/skills`、`~/.agents/skills`"
-                            "（当前 Codex）与 `~/.codex/skills`（旧 Codex）。",
+        "caveat_installed": "- 已安装 skill 集合默认取已启用 runtime 的安装目录：Claude 使用 "
+                            "`~/.claude/skills`；Codex 使用 `~/.agents/skills`（当前 Codex）"
+                            "与 `~/.codex/skills`（旧 Codex）。",
         "caveat_readonly": "- “无本地证据”只表示本机没有痕迹，**不等同“从未使用”**。本工具只读，"
                            "绝不修改日志、skill 或配置。",
         "parse_failures_h": "## 解析失败（样本）",
@@ -232,15 +239,36 @@ def _parse_claude_line(text: str) -> list[ClaudeHit]:
     return hits
 
 
-def _codex_workdir(payload: dict, meta_fallback: dict | None) -> str:
+def _codex_args(payload: dict) -> dict | None:
     args_raw = payload.get("arguments")
     if isinstance(args_raw, str):
         try:
-            args = json.loads(args_raw)
+            parsed = json.loads(args_raw)
         except (json.JSONDecodeError, ValueError):
-            args = None
-        if isinstance(args, dict) and isinstance(args.get("workdir"), str):
-            return args["workdir"]
+            return None
+        return parsed if isinstance(parsed, dict) else None
+    return None
+
+
+def _codex_read_command(payload: dict) -> str:
+    if payload.get("name") != "exec_command":
+        return ""
+    args = _codex_args(payload)
+    if not isinstance(args, dict) or not isinstance(args.get("cmd"), str):
+        return ""
+    cmd = args["cmd"].strip()
+    if not cmd:
+        return ""
+    first_token = cmd.split(maxsplit=1)[0]
+    if Path(first_token).name not in CODEX_READ_COMMANDS:
+        return ""
+    return cmd
+
+
+def _codex_workdir(payload: dict, meta_fallback: dict | None) -> str:
+    args = _codex_args(payload)
+    if isinstance(args, dict) and isinstance(args.get("workdir"), str):
+        return args["workdir"]
     if isinstance(meta_fallback, dict) and isinstance(meta_fallback.get("cwd"), str):
         return meta_fallback["cwd"]
     return ""
@@ -265,12 +293,15 @@ def _parse_codex_hits(text: str, file_path: Path, meta_fallback: dict | None = N
     payload = d.get("payload")
     if not isinstance(payload, dict) or payload.get("type") != "function_call":
         return []
+    cmd = _codex_read_command(payload)
+    if not cmd:
+        return []
     cwd = _codex_workdir(payload, meta_fallback)
     session_id = _codex_session_id(payload, meta_fallback, file_path)
     ts = d.get("timestamp") or ""
     return [
         CodexHit(skill=match.group(1), ts=ts, cwd=cwd, session_id=session_id)
-        for match in CODEX_SKILL_RE.finditer(text)
+        for match in CODEX_SKILL_RE.finditer(cmd)
     ]
 
 
@@ -344,13 +375,17 @@ def _load_codex_session_meta(path: Path) -> dict | None:
     return None
 
 
+def default_installed_dirs(include_claude: bool = True, include_codex: bool = True) -> list[Path]:
+    return ([CLAUDE_INSTALLED_DIR_DEFAULT] if include_claude else []) + (CODEX_INSTALLED_DIR_DEFAULTS if include_codex else [])
+
+
 def discover_installed_skills(dirs: list[Path]) -> set[str]:
     names: set[str] = set()
     for directory in dirs:
         if not directory.is_dir():
             continue
         for child in directory.iterdir():
-            if child.is_dir() and not child.name.startswith("."):
+            if child.is_dir() and not child.name.startswith(".") and (child / "SKILL.md").is_file():
                 names.add(child.name)
     return names
 
@@ -418,7 +453,7 @@ def collect_codex(
             if parsed_hits:
                 for hit in parsed_hits:
                     if dedup_mode == "session":
-                        key = (hit.skill, hit.session_id)
+                        key = (hit.skill, hit.session_id or str(path))
                         if key in seen:
                             continue
                         seen.add(key)
@@ -681,13 +716,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-claude", action="store_true")
     parser.add_argument("--no-codex", action="store_true")
     parser.add_argument("--codex-mode", choices=["call", "session"], default="session")
-    parser.add_argument("--installed-dirs", nargs="+", type=Path, default=INSTALLED_DIRS_DEFAULT)
+    parser.add_argument("--installed-dirs", nargs="+", type=Path)
     parser.add_argument("--lang", choices=["zh", "en"], default="zh", help="Output language for the report")
     parser.add_argument("--no-rg", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args(argv)
 
-    installed = discover_installed_skills(args.installed_dirs)
+    installed_dirs = args.installed_dirs or default_installed_dirs(not args.no_claude, not args.no_codex)
+    installed = discover_installed_skills(installed_dirs)
     claude_hits: list[ClaudeHit] = []
     codex_hits: list[CodexHit] = []
     failures = 0
