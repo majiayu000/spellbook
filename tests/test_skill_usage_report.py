@@ -46,6 +46,23 @@ def codex_func_call(skill, ts="2026-05-16T12:18:00.000Z", workdir="/p/proj1"):
     })
 
 
+def codex_func_call_without_workdir(skill, ts="2026-05-16T12:18:00.000Z"):
+    args = _dumps({"cmd": f"sed -n '1,220p' /Users/u/.codex/skills/{skill}/SKILL.md"})
+    return _dumps({
+        "timestamp": ts, "type": "response_item",
+        "payload": {"type": "function_call", "name": "exec_command", "arguments": args, "call_id": "c1"},
+    })
+
+
+def codex_multi_skill_call(*skills, ts="2026-05-16T12:18:00.000Z", workdir="/p/proj1"):
+    paths = " ".join(f"/Users/u/.codex/skills/{skill}/SKILL.md" for skill in skills)
+    args = _dumps({"cmd": f"cat {paths}", "workdir": workdir})
+    return _dumps({
+        "timestamp": ts, "type": "response_item",
+        "payload": {"type": "function_call", "name": "exec_command", "arguments": args, "call_id": "c1"},
+    })
+
+
 def codex_mention(skill):
     return _dumps({
         "timestamp": "2026-05-16T12:19:00.000Z", "type": "response_item",
@@ -60,6 +77,10 @@ def write_codex_rollout(parent_sessions_dir, body):
     path = day_dir / CODEX_FNAME
     path.write_text(body, encoding="utf-8")
     return path
+
+
+def session_meta(cwd="/meta/cwd", session_id=CODEX_SESSION_ID):
+    return _dumps({"type": "session_meta", "payload": {"cwd": cwd, "id": session_id}})
 
 
 class ClaudeParseTests(unittest.TestCase):
@@ -116,6 +137,10 @@ class CodexParseTests(unittest.TestCase):
                                     meta_fallback={"id": "meta-id", "cwd": "/p"})
         self.assertEqual(hit.session_id, "meta-id")
 
+    def test_extracts_all_skills_from_one_function_call(self):
+        hits = sur._parse_codex_hits(codex_multi_skill_call("a", "b"), Path(CODEX_FNAME))
+        self.assertEqual([hit.skill for hit in hits], ["a", "b"])
+
     def test_filename_uuid_regex_rejects_greedy_collision(self):
         m = sur.CODEX_FNAME_UUID_RE.search(Path(CODEX_FNAME).name)
         self.assertIsNotNone(m)
@@ -140,6 +165,21 @@ class CollectTests(unittest.TestCase):
                 codex_func_call("code-review") + "\n" + codex_func_call("code-review") + "\n" + codex_func_call("x-post") + "\n")
             hits, _, _ = sur.collect_codex(Path(t) / ".codex", dedup_mode="call")
             self.assertEqual(len(hits), 3)
+
+    def test_collect_codex_counts_multiple_skill_paths_in_one_command(self):
+        with TemporaryDirectory() as t:
+            sessions = Path(t) / ".codex" / "sessions"
+            write_codex_rollout(sessions, codex_multi_skill_call("a", "b") + "\n")
+            hits, _, _ = sur.collect_codex(Path(t) / ".codex", dedup_mode="call")
+            self.assertEqual([h.skill for h in hits], ["a", "b"])
+
+    def test_collect_codex_uses_session_meta_when_workdir_is_omitted(self):
+        with TemporaryDirectory() as t:
+            sessions = Path(t) / ".codex" / "sessions"
+            write_codex_rollout(sessions, session_meta(cwd="/project/from-meta") + "\n" + codex_func_call_without_workdir("x") + "\n")
+            hits, _, _ = sur.collect_codex(Path(t) / ".codex", dedup_mode="call")
+            self.assertEqual(len(hits), 1)
+            self.assertEqual(hits[0].cwd, "/project/from-meta")
 
     def test_collect_codex_session_mode_dedups_per_session(self):
         with TemporaryDirectory() as t:
@@ -233,6 +273,15 @@ class RenderTests(unittest.TestCase):
     def test_json_round_trips(self):
         payload = json.loads(sur.render_json(self._agg()))
         self.assertEqual(payload["installed_count"], 2)
+
+    def test_markdown_summary_counts_only_installed_skills_with_evidence(self):
+        agg = sur.aggregate(
+            [sur.ClaudeHit("used", "2026-05-01T00:00:00Z", "/p", "s")],
+            [sur.CodexHit("uninstalled", "2026-05-01T00:00:00Z", "/p", "s2")],
+            installed={"used"},
+        )
+        md = sur.render_markdown(agg, 10, "en")
+        self.assertIn("Installed: 1 | With evidence: 1 | No local evidence: 0", md)
 
 
 class SinceFilterTests(unittest.TestCase):

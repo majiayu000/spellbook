@@ -253,27 +253,30 @@ def _codex_session_id(payload: dict, meta_fallback: dict | None, file_path: Path
     return match.group(1) if match else ""
 
 
-def _parse_codex_line(text: str, file_path: Path, meta_fallback: dict | None = None) -> CodexHit | None:
+def _parse_codex_hits(text: str, file_path: Path, meta_fallback: dict | None = None) -> list[CodexHit]:
     if not _is_func_call_line(text):
-        return None
+        return []
     try:
         d = json.loads(text)
     except (json.JSONDecodeError, ValueError):
-        return None
+        return []
     if not isinstance(d, dict):
-        return None
+        return []
     payload = d.get("payload")
     if not isinstance(payload, dict) or payload.get("type") != "function_call":
-        return None
-    match = CODEX_SKILL_RE.search(text)
-    if not match:
-        return None
-    return CodexHit(
-        skill=match.group(1),
-        ts=d.get("timestamp") or "",
-        cwd=_codex_workdir(payload, meta_fallback),
-        session_id=_codex_session_id(payload, meta_fallback, file_path),
-    )
+        return []
+    cwd = _codex_workdir(payload, meta_fallback)
+    session_id = _codex_session_id(payload, meta_fallback, file_path)
+    ts = d.get("timestamp") or ""
+    return [
+        CodexHit(skill=match.group(1), ts=ts, cwd=cwd, session_id=session_id)
+        for match in CODEX_SKILL_RE.finditer(text)
+    ]
+
+
+def _parse_codex_line(text: str, file_path: Path, meta_fallback: dict | None = None) -> CodexHit | None:
+    hits = _parse_codex_hits(text, file_path, meta_fallback)
+    return hits[0] if hits else None
 
 
 def _python_fallback(pattern: str, root: Path) -> Iterator[tuple[Path, str]]:
@@ -320,6 +323,25 @@ def _count_scanned_files(root: Path) -> int:
     if not root.exists():
         return 0
     return sum(1 for _ in root.rglob("*.jsonl"))
+
+
+def _load_codex_session_meta(path: Path) -> dict | None:
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as handle:
+            for line in handle:
+                if '"type":"session_meta"' not in line and '"session_meta"' not in line:
+                    continue
+                try:
+                    event = json.loads(line)
+                except (json.JSONDecodeError, ValueError):
+                    continue
+                if not isinstance(event, dict) or event.get("type") != "session_meta":
+                    continue
+                payload = event.get("payload")
+                return payload if isinstance(payload, dict) else None
+    except OSError:
+        return None
+    return None
 
 
 def discover_installed_skills(dirs: list[Path]) -> set[str]:
@@ -387,16 +409,20 @@ def collect_codex(
     if not sessions.is_dir():
         return hits, failures, samples
     seen: set[tuple[str, str]] = set()
+    session_meta_by_path: dict[Path, dict | None] = {}
     for root in _codex_roots_for_since(sessions, since):
         for path, text in _run_rg(CODEX_GREP_PATTERN, root, no_rg=no_rg):
-            hit = _parse_codex_line(text, path)
-            if hit is not None:
-                if dedup_mode == "session":
-                    key = (hit.skill, hit.session_id)
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                hits.append(hit)
+            if path not in session_meta_by_path:
+                session_meta_by_path[path] = _load_codex_session_meta(path)
+            parsed_hits = _parse_codex_hits(text, path, session_meta_by_path[path])
+            if parsed_hits:
+                for hit in parsed_hits:
+                    if dedup_mode == "session":
+                        key = (hit.skill, hit.session_id)
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                    hits.append(hit)
             elif _is_func_call_line(text):
                 failures += 1
                 _record_sample(samples, text)
@@ -519,6 +545,7 @@ def _range_str(agg: AggResult) -> str:
 def render_markdown(agg: AggResult, top: int, lang: str = "zh") -> str:
     L = LABELS[lang]
     distinct = len(agg.stats)
+    installed_with_evidence = len(agg.installed & set(agg.stats))
     no_evidence = sorted(agg.installed - set(agg.stats))
     total_claude = sum(s.claude_calls for s in agg.stats.values())
     total_codex = sum(s.codex_calls for s in agg.stats.values())
@@ -529,7 +556,7 @@ def render_markdown(agg: AggResult, top: int, lang: str = "zh") -> str:
         L["generated_range"].format(gen=agg.generated_at, rng=_range_str(agg)),
         L["sources"].format(cdir=CLAUDE_DIR_DEFAULT, cf=agg.claude_files_scanned,
                             xdir=CODEX_DIR_DEFAULT, xf=agg.codex_files_scanned),
-        L["summary"].format(inst=len(agg.installed), used=distinct, none=len(no_evidence)),
+        L["summary"].format(inst=len(agg.installed), used=installed_with_evidence, none=len(no_evidence)),
         L["codex_mode_line"].format(mode=agg.codex_mode, fail=agg.parse_failures),
         "",
         L["overview"], "",
