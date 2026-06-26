@@ -39,7 +39,11 @@ from typing import Iterator
 
 CLAUDE_DIR_DEFAULT = Path.home() / ".claude"
 CODEX_DIR_DEFAULT = Path.home() / ".codex"
-INSTALLED_DIRS_DEFAULT = [Path.home() / ".claude" / "skills", Path.home() / ".codex" / "skills"]
+INSTALLED_DIRS_DEFAULT = [
+    Path.home() / ".claude" / "skills",
+    Path.home() / ".agents" / "skills",
+    Path.home() / ".codex" / "skills",
+]
 
 CLAUDE_PRE_GREP = '"name":"Skill"'
 CODEX_GREP_PATTERN = r"skills/[a-z0-9_-]+/SKILL\.md"
@@ -93,7 +97,8 @@ LABELS: dict[str, dict[str, str]] = {
         "caveat_mode_session": "- Codex numbers reflect SKILL.md reads. In `session` mode each "
                                "(skill, session) pair counts once, so a skill loaded repeatedly in one "
                                "session is not inflated.",
-        "caveat_installed": "- Installed skill set defaults to `~/.claude/skills` and `~/.codex/skills`.",
+        "caveat_installed": "- Installed skill set defaults to `~/.claude/skills`, "
+                            "`~/.agents/skills` (current Codex), and `~/.codex/skills` (legacy Codex).",
         "caveat_readonly": "- 'No local evidence' means no local trace, NOT 'never used'. This tool is "
                            "read-only and never modifies logs, skills, or config.",
         "parse_failures_h": "## Parse Failures (samples)",
@@ -129,7 +134,8 @@ LABELS: dict[str, dict[str, str]] = {
                             "同一会话内反复读取会抬高计数。",
         "caveat_mode_session": "- Codex 数字反映 SKILL.md 的读取。`session` 口径下每个 "
                                "(skill, 会话) 只计一次，同一会话内反复加载不重复计数。",
-        "caveat_installed": "- 已安装 skill 集合默认取 `~/.claude/skills` 与 `~/.codex/skills`。",
+        "caveat_installed": "- 已安装 skill 集合默认取 `~/.claude/skills`、`~/.agents/skills`"
+                            "（当前 Codex）与 `~/.codex/skills`（旧 Codex）。",
         "caveat_readonly": "- “无本地证据”只表示本机没有痕迹，**不等同“从未使用”**。本工具只读，"
                            "绝不修改日志、skill 或配置。",
         "parse_failures_h": "## 解析失败（样本）",

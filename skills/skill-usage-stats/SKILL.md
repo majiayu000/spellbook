@@ -36,23 +36,23 @@ description: >-
 
 ## 如何运行
 
-脚本位于 `~/.claude/skills/skill-usage-stats/scripts/skill_usage_report.py`（按用户语言带上 `--lang`）：
+脚本随 skill 安装位置运行。优先使用当前 runtime 的安装路径：Codex 通常是 `~/.agents/skills/skill-usage-stats/scripts/skill_usage_report.py`，Claude Code 通常是 `~/.claude/skills/skill-usage-stats/scripts/skill_usage_report.py`，仓库开发时也可用 `skills/skill-usage-stats/scripts/skill_usage_report.py`。按用户语言带上 `--lang`：
 
 ```bash
 # 默认：扫 Claude + Codex，top 20，Codex 按会话去重，中文报告
-python3 ~/.claude/skills/skill-usage-stats/scripts/skill_usage_report.py --lang zh
+python3 ~/.agents/skills/skill-usage-stats/scripts/skill_usage_report.py --lang zh
 
 # 近几个月（同时收窄 Codex 的 sessions/YYYY/MM 扫描范围，提速）
-python3 ~/.claude/skills/skill-usage-stats/scripts/skill_usage_report.py --lang zh --since 2026-06 --top 30
+python3 ~/.agents/skills/skill-usage-stats/scripts/skill_usage_report.py --lang zh --since 2026-06 --top 30
 
 # Codex 每次 sed 读取都算（默认按会话去重）
-python3 ~/.claude/skills/skill-usage-stats/scripts/skill_usage_report.py --codex-mode call
+python3 ~/.agents/skills/skill-usage-stats/scripts/skill_usage_report.py --codex-mode call
 
 # 导出 CSV / JSON
-python3 ~/.claude/skills/skill-usage-stats/scripts/skill_usage_report.py --csv ~/skill-usage.csv --json ~/skill-usage.json
+python3 ~/.agents/skills/skill-usage-stats/scripts/skill_usage_report.py --csv ~/skill-usage.csv --json ~/skill-usage.json
 
 # 英文报告
-python3 ~/.claude/skills/skill-usage-stats/scripts/skill_usage_report.py --lang en
+python3 ~/.agents/skills/skill-usage-stats/scripts/skill_usage_report.py --lang en
 ```
 
 参数：`--lang {zh,en}`（默认 zh）、`--top N`、`--since YYYY-MM`、`--out PATH`（`-` 为 stdout）、`--csv PATH`、`--json PATH`、`--codex-mode {call,session}`（默认 session）、`--no-claude`、`--no-codex`、`--installed-dirs`、`--no-rg`、`--quiet`。
@@ -77,7 +77,7 @@ python3 ~/.claude/skills/skill-usage-stats/scripts/skill_usage_report.py --lang 
 | PROJECTS | 涉及的不同项目数 |
 | RUNTIME | claude / codex / both |
 
-**无本地证据的 skill** = 已安装（在 `~/.claude/skills` 或 `~/.codex/skills`）但本机日志无任何调用痕迹。注意：这只是"本机无证据"，**不等于从未使用**——Codex 的权威调用记录（`skill_invocation` analytics）POST 到后端、不存本机。
+**无本地证据的 skill** = 已安装（在 `~/.claude/skills`、`~/.agents/skills` 或旧 Codex 路径 `~/.codex/skills`）但本机日志无任何调用痕迹。注意：这只是"本机无证据"，**不等于从未使用**——Codex 的权威调用记录（`skill_invocation` analytics）POST 到后端、不存本机。
 
 Codex 口径（两个模式数字可能差很多）：
 
@@ -89,5 +89,5 @@ Codex 口径（两个模式数字可能差很多）：
 - Codex 是路径正则启发式（约 95%）：非 skill 的 sed/cat 读到 `SKILL.md` 会被计入；Codex 原生 skill 调用（若存在）不可见。Claude 精确。
 - **证据局限**：Codex 数字只是 implicit 证据（sed/cat 读 SKILL.md）。本机上 `$skill` mention 和 skill 脚本运行约为 0。这不是权威调用计数——Codex 的 `skill_invocation` analytics 直接 POST 后端、不存本机。所以"无本地证据"只表示本机没痕迹，**不等于"从未使用"**。
 - 首次全量扫 Codex（十几 GB）可能要几十秒；用 `--since` 收窄到近月。
-- 已装集合默认 `~/.claude/skills` + `~/.codex/skills`；`--installed-dirs` 可改。
+- 已装集合默认 `~/.claude/skills` + `~/.agents/skills`（当前 Codex）+ `~/.codex/skills`（旧 Codex）；`--installed-dirs` 可改。
 - 本工具只读，绝不修改日志、skill 或配置。僵尸清单不等于删除指令，删前请逐个确认。

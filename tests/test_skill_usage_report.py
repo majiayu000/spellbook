@@ -165,6 +165,10 @@ class CollectTests(unittest.TestCase):
             (proj / "s.jsonl").write_text(claude_line("a") + "\n", encoding="utf-8")
             self.assertEqual(len(list(sur._python_fallback(sur.CLAUDE_PRE_GREP, Path(t)))), 1)
 
+    def test_default_installed_dirs_include_current_codex_target(self):
+        suffixes = {path.relative_to(Path.home()).as_posix() for path in sur.INSTALLED_DIRS_DEFAULT}
+        self.assertEqual(suffixes, {".claude/skills", ".agents/skills", ".codex/skills"})
+
 
 class AggregateTests(unittest.TestCase):
     def test_zombie_detection(self):
