@@ -171,6 +171,7 @@ queue_gate:
 - truth_level:
 - remote_refresh:
     base_ref:
+    owner_lane:
     origin_main_sha:
     local_base_sha:
     stale_base:
