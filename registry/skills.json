@@ -49,6 +49,24 @@
     ]
   },
   {
+    "name": "app-user-story-qa",
+    "category": "Delivery Workflow",
+    "format": "directory",
+    "path": "skills/app-user-story-qa/SKILL.md",
+    "description": "End-to-end app feature inventory and user-story testing workflow. Use when the user asks to audit every feature, create user stories or expected behavior from code, maintain a single canonical spreadsheet/tracker, test each user behavior, document errors, fix logistical or UX issues, and retest after fixes.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "documentation",
+      "testing",
+      "ux"
+    ]
+  },
+  {
     "name": "architecture-foundation",
     "category": "Development Architecture",
     "format": "directory",

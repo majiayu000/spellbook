@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>96 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>97 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-96-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-97-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -204,6 +204,7 @@ Disciplined end-to-end delivery: testing, commits, health checks, and contributi
 
 | Skill | Description |
 |-------|-------------|
+| [`app-user-story-qa`](./skills/app-user-story-qa/) | End-to-end app feature inventory, canonical tracker, user-story testing, fixes, and retest loop |
 | [`test-driven-development`](./skills/test-driven-development/) | Enforce RED-GREEN-REFACTOR TDD discipline |
 | [`comprehensive-testing`](./skills/comprehensive-testing/) | Test pyramid, unit/integration/E2E/property testing, framework best practices |
 | [`git-commit-smart`](./skills/git-commit-smart/) | Generate meaningful conventional commit messages from diff |

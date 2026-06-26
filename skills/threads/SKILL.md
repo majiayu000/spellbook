@@ -495,3 +495,4 @@ remote_closure:
 - Classify failures as specification/system design, inter-agent misalignment, or verification/termination before retrying.
 - If long-running remote state changes underneath a lane, record `stale_remote_state` and refresh/rebase only through an explicit gate; do not silently continue on a stale base.
 - If no native subagent capability is available, return the lane map and exact prompts so the user can launch them manually.
+- Trigger boundary fixtures live in `evals/evals.json`; use them when changing the skill description, dispatch modes, or near-boundary "thread" wording.
