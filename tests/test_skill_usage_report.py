@@ -153,6 +153,12 @@ class CodexParseTests(unittest.TestCase):
                        "payload": {"type": "function_call", "name": "exec_command", "arguments": args}})
         self.assertEqual(sur._parse_codex_hits(line, Path(CODEX_FNAME)), [])
 
+    def test_ignores_write_form_cat_command(self):
+        args = _dumps({"cmd": "cat > /tmp/doc <<'EOF'\n/Users/u/.codex/skills/x/SKILL.md\nEOF"})
+        line = _dumps({"timestamp": "2026-05-16T12:00:00Z", "type": "response_item",
+                       "payload": {"type": "function_call", "name": "exec_command", "arguments": args}})
+        self.assertEqual(sur._parse_codex_hits(line, Path(CODEX_FNAME)), [])
+
     def test_filename_uuid_regex_rejects_greedy_collision(self):
         m = sur.CODEX_FNAME_UUID_RE.search(Path(CODEX_FNAME).name)
         self.assertIsNotNone(m)
@@ -210,6 +216,23 @@ class CollectTests(unittest.TestCase):
             (sessions / "copy-b.jsonl").write_text(codex_func_call("x") + "\n", encoding="utf-8")
             hits, _, _ = sur.collect_codex(Path(t) / ".codex", dedup_mode="session")
             self.assertEqual(len(hits), 2)
+
+    def test_collect_codex_since_filters_hit_timestamps(self):
+        with TemporaryDirectory() as t:
+            sessions = Path(t) / ".codex" / "sessions"
+            write_codex_rollout(sessions,
+                codex_func_call("old", ts="2026-05-31T23:59:00Z") + "\n" + codex_func_call("new", ts="2026-06-01T00:01:00Z") + "\n")
+            hits, _, _ = sur.collect_codex(Path(t) / ".codex", since="2026-06", dedup_mode="call")
+            self.assertEqual([hit.skill for hit in hits], ["new"])
+
+    def test_collect_codex_redacts_parse_failure_samples(self):
+        with TemporaryDirectory() as t:
+            sessions = Path(t) / ".codex" / "sessions"
+            args = _dumps({"cmd": "API_KEY=supersecret cat /Users/u/.codex/skills/x/SKILL.md"})
+            write_codex_rollout(sessions, _dumps({"type": "response_item", "payload": {"type": "function_call", "name": "exec_command", "arguments": args}}) + "\n")
+            _, failures, samples = sur.collect_codex(Path(t) / ".codex", dedup_mode="call")
+            self.assertEqual(failures, 1)
+            self.assertEqual(samples, ["[redacted codex function_call parse failure]"])
 
     def test_collect_codex_ignores_mention_and_keeps_zero_failures(self):
         with TemporaryDirectory() as t:
@@ -325,7 +348,7 @@ class SinceFilterTests(unittest.TestCase):
             sessions = Path(t) / "sessions"
             for ym in ["2026/04", "2026/05", "2026/06"]:
                 (sessions / ym).mkdir(parents=True)
-            self.assertEqual(len(sur._codex_roots_for_since(sessions, "2026-05")), 2)
+            self.assertEqual(sur._codex_roots_for_since(sessions, "2026-05"), [sessions])
 
     def test_collect_claude_since_filters_old_hits(self):
         with TemporaryDirectory() as t:

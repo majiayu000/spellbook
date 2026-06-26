@@ -260,6 +260,8 @@ def _codex_read_command(payload: dict) -> str:
     if not cmd:
         return ""
     first_token = cmd.split(maxsplit=1)[0]
+    if Path(first_token).name == "cat" and re.search(r"(^|\s)(>>?|<<)", cmd):
+        return ""
     if Path(first_token).name not in CODEX_READ_COMMANDS:
         return ""
     return cmd
@@ -415,19 +417,7 @@ def collect_claude(
 
 
 def _codex_roots_for_since(sessions: Path, since: str | None) -> list[Path]:
-    if not since:
-        return [sessions]
-    roots: list[Path] = []
-    for year_dir in sorted(sessions.iterdir()):
-        if not year_dir.is_dir() or not year_dir.name.isdigit():
-            continue
-        for month_dir in sorted(year_dir.iterdir()):
-            if not month_dir.is_dir() or not month_dir.name.isdigit():
-                continue
-            ym = f"{year_dir.name}-{int(month_dir.name):02d}"
-            if ym >= since:
-                roots.append(month_dir)
-    return roots
+    return [sessions]
 
 
 def collect_codex(
@@ -452,6 +442,7 @@ def collect_codex(
             parsed_hits = _parse_codex_hits(text, path, session_meta_by_path[path])
             if parsed_hits:
                 for hit in parsed_hits:
+                    if since and hit.ts[:7] < since: continue
                     if dedup_mode == "session":
                         key = (hit.skill, hit.session_id or str(path))
                         if key in seen:
@@ -460,7 +451,7 @@ def collect_codex(
                     hits.append(hit)
             elif _is_func_call_line(text):
                 failures += 1
-                _record_sample(samples, text)
+                _record_sample(samples, "[redacted codex function_call parse failure]")
     return hits, failures, samples
 
 
