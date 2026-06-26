@@ -1,0 +1,4 @@
+interface:
+  display_name: "Data Contract Migrations"
+  short_description: "Plan schemas, migrations, and backfills"
+  default_prompt: "Use $data-contract-migrations to design schema changes, migrations, backfills, rollback, and data compatibility gates."

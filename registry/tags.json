@@ -1,27 +1,27 @@
 {
-  "total_skills": 88,
+  "total_skills": 97,
   "total_tags": 35,
   "tag_counts": {
-    "agent": 10,
-    "architecture": 15,
-    "auth": 3,
-    "backend": 10,
+    "agent": 11,
+    "architecture": 16,
+    "auth": 4,
+    "backend": 14,
     "browser": 4,
     "code-review": 13,
     "content": 7,
-    "database": 3,
-    "debugging": 7,
-    "deploy": 6,
+    "database": 5,
+    "debugging": 8,
+    "deploy": 8,
     "design-system": 2,
     "devops": 2,
-    "documentation": 10,
+    "documentation": 11,
     "frontend": 14,
     "go": 5,
     "harmonyos": 1,
     "javascript": 5,
     "multi-ai": 6,
     "observability": 3,
-    "performance": 7,
+    "performance": 9,
     "product-management": 4,
     "prompt": 2,
     "proxy": 3,
@@ -30,9 +30,9 @@
     "refactoring": 4,
     "research": 1,
     "rust": 5,
-    "security": 3,
-    "system": 6,
-    "testing": 7,
+    "security": 5,
+    "system": 7,
+    "testing": 8,
     "typescript": 4,
     "ux": 4,
     "writing": 2,
@@ -47,6 +47,7 @@
       "flowguard",
       "multi-model-orchestrator",
       "repo-agent-context-audit",
+      "repo-scaffold",
       "skill-audit",
       "strategic-compact",
       "threads"
@@ -56,6 +57,7 @@
       "brainstorming",
       "codebase-audit",
       "contribution-architect",
+      "dev-architecture-playbook",
       "elegant-architecture",
       "golang-web",
       "plan-flow",
@@ -71,7 +73,8 @@
     "auth": [
       "auth-security",
       "cliproxy-deploy",
-      "cliproxy-newapi-stack"
+      "cliproxy-newapi-stack",
+      "security-threat-model"
     ],
     "backend": [
       "api-design",
@@ -81,8 +84,12 @@
       "cliproxy-deploy",
       "cliproxy-newapi-stack",
       "codebase-audit",
+      "config-secrets-environments",
+      "data-contract-migrations",
+      "dev-architecture-playbook",
       "gemma4-local-deploy",
       "harmonyos-app",
+      "release-engineering",
       "rust-best-practices"
     ],
     "browser": [
@@ -118,13 +125,16 @@
     "database": [
       "cliproxy-newapi-stack",
       "codex-log-guard",
-      "database-patterns"
+      "data-contract-migrations",
+      "database-patterns",
+      "release-engineering"
     ],
     "debugging": [
       "codex-log-guard",
       "css-debug",
       "fixflow",
       "optimize-network",
+      "performance-capacity",
       "rustdesk-doctor",
       "systematic-debugging",
       "vscode-doctor"
@@ -132,9 +142,11 @@
     "deploy": [
       "cliproxy-deploy",
       "cliproxy-newapi-stack",
+      "config-secrets-environments",
       "gemma4-local-deploy",
       "gpu-use",
       "openclaw-deploy",
+      "release-engineering",
       "server-deploy"
     ],
     "design-system": [
@@ -148,6 +160,7 @@
     "documentation": [
       "app-user-story-qa",
       "auth-security",
+      "dev-architecture-playbook",
       "git-commit-smart",
       "multi-model-orchestrator",
       "prd-master",
@@ -204,8 +217,10 @@
       "structured-logging-lite"
     ],
     "performance": [
+      "dev-architecture-playbook",
       "optflow",
       "optimize-network",
+      "performance-capacity",
       "react-best-practices",
       "rust-best-practices",
       "skill-creator",
@@ -259,13 +274,16 @@
     ],
     "security": [
       "auth-security",
+      "dev-architecture-playbook",
       "optflow",
+      "security-threat-model",
       "server-security"
     ],
     "system": [
       "codex-log-guard",
       "disk-cleaner",
       "gpu-use",
+      "performance-capacity",
       "rustdesk-doctor",
       "system-doctor",
       "vscode-doctor"
@@ -273,6 +291,7 @@
     "testing": [
       "app-user-story-qa",
       "comprehensive-testing",
+      "dev-architecture-playbook",
       "elegant-architecture",
       "fixflow",
       "optflow",

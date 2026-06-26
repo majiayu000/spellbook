@@ -1,0 +1,4 @@
+interface:
+  display_name: "Incident SLO Runbook"
+  short_description: "Create SLOs, alerts, incidents, runbooks"
+  default_prompt: "Use $incident-slo-runbook to design SLOs, alerts, incident response, runbooks, and postmortems."

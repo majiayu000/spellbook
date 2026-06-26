@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dev Architecture Playbook"
+  short_description: "Route product-to-ops architecture work"
+  default_prompt: "Use $dev-architecture-playbook to choose the right skills and gates for a full development lifecycle."
