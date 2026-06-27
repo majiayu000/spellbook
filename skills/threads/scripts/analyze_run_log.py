@@ -10,7 +10,8 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from append_run_log import default_log_path, nested_get, valid_spawned_agents
+from append_run_log import default_log_path
+from run_log_schema import nested_get, valid_spawned_agents
 
 
 JSONValue = None | bool | int | float | str | list["JSONValue"] | dict[str, "JSONValue"]
