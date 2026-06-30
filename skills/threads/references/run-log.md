@@ -82,12 +82,29 @@ python3 "$THREADS_SKILL_DIR/scripts/append_run_log.py" <<'JSON'
     "time_budget": "30m",
     "queue_tranche": "first merge-ready blocker"
   },
+  "context_budget": {
+    "window_tokens": 258400,
+    "soft_stop_ratio": 0.5,
+    "hard_stop_ratio": 0.65,
+    "critical_stop_ratio": 0.75,
+    "current_usage_signal": "below_soft_stop"
+  },
+  "output_firewall": {
+    "raw_log_policy": "file_only",
+    "max_parent_stdout_lines": 150,
+    "max_subagent_final_lines": 150,
+    "artifact_root": "artifacts/logs/tranche-001",
+    "evidence_paths": ["artifacts/logs/tranche-001/cargo-test.log"]
+  },
   "lanes_total": 4,
   "failure_codes": ["review_thread_missed"],
   "remote_refresh": {
+    "owner_lane": "coordinator",
     "origin_main_sha": "abc123",
+    "local_base_sha": "abc123",
     "stale_base": false,
-    "refreshes": 3
+    "refreshes": 3,
+    "policy": "continue"
   },
   "remote_truth": {
     "open_prs": 0,
@@ -157,6 +174,21 @@ Recommended fields:
     "max_items": 1,
     "time_budget": "30m",
     "queue_tranche": "first blocker"
+  },
+  "context_budget": {
+    "window_tokens": 258400,
+    "soft_stop_ratio": 0.5,
+    "hard_stop_ratio": 0.65,
+    "critical_stop_ratio": 0.75,
+    "current_usage_signal": "below_soft_stop",
+    "override_reason": ""
+  },
+  "output_firewall": {
+    "raw_log_policy": "file_only",
+    "max_parent_stdout_lines": 150,
+    "max_subagent_final_lines": 150,
+    "artifact_root": "artifacts/logs/tranche-001",
+    "evidence_paths": []
   },
   "remote_refresh": {
     "owner_lane": "coordinator",
@@ -292,6 +324,8 @@ Use stable codes so later analysis can aggregate them:
 - `write_scope_violation`: worker touched unassigned or forbidden files.
 - `vague_lane_output`: lane returned claims without commands, files, or evidence.
 - `verification_gap`: completion was claimed without fresh command output.
+- `raw_output_blocked`: raw logs, long command output, broad search output, or session JSONL attempted to enter the parent instead of an artifact.
+- `parent_context_hard_stop`: parent context budget hit the hard or critical stop and the run had to checkpoint or hand off.
 - `review_thread_missed`: inline review thread/comment state was not checked.
 - `connector_review_incomplete`: a requested or expected GitHub/Codex connector review was not complete on the current head.
 - `review_loop`: repeated review-thread fix cycles hit the configured limit.
@@ -316,4 +350,4 @@ test -f "$LOG" && jq -r 'select(.verification.fresh==false) | [.recorded_at_utc,
 
 ## Privacy
 
-Do not log secrets, tokens, cookies, private messages, raw prompts, or full command output. Log concise summaries and stable evidence identifiers instead: file paths, command names, PR/issue numbers, head SHAs, and failure codes. Unknown top-level fields are rejected unless `--allow-extra` is supplied.
+Do not log secrets, tokens, cookies, private messages, raw prompts, raw session JSONL, or full command output. Log concise summaries and stable evidence identifiers instead: file paths, command names, PR/issue numbers, head SHAs, artifact paths, and failure codes. Unknown top-level fields are rejected unless `--allow-extra` is supplied.

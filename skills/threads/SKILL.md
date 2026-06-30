@@ -15,11 +15,12 @@ Native Codex threads are short-lived parallel work lines inside the Codex workfl
 1. Classify the request: `single_agent`, `plan_only`, `execute_direct`, `review_only`, `research_spec`, or `clarify_first`.
 2. If the user explicitly asked for threads, record `thread_dispatch_gate` and spawn required native lanes before implementation.
 3. For GitHub queues, fetch remote state in the coordinator lane, then write `queue_gate`, `queue_ledger`, and `issue_to_pr_map`.
-4. Write a lane map with file ownership, verification owner, and stop conditions.
-5. Dispatch only bounded native lanes with disjoint writable scopes or read-only roles.
-6. Collect, wait, and close spawned agents; do not count the coordinator as a spawned thread.
-7. Run fresh verification tied to the current head or artifact.
-8. End with a compact final report and `threads_run_log`; write durable JSONL for queue, multi-lane, push, comment, or merge-capable runs.
+4. Write a lane map with file ownership, verification owner, stop conditions, context budget, and output firewall.
+5. Route large command output to artifacts before dispatch; the parent reads only summaries, short tails, targeted greps, and evidence paths.
+6. Dispatch only bounded native lanes with disjoint writable scopes or read-only roles.
+7. Collect, wait, and close spawned agents; do not count the coordinator as a spawned thread.
+8. Run fresh verification tied to the current head or artifact.
+9. End with a compact final report and `threads_run_log`; write durable JSONL for queue, multi-lane, push, comment, or merge-capable runs.
 
 ## Do Not Use For
 
@@ -107,6 +108,17 @@ intent_contract:
     max_items:
     time_budget:
     queue_tranche:
+  context_budget:
+    window_tokens:
+    soft_stop_ratio:
+    hard_stop_ratio:
+    critical_stop_ratio:
+    current_usage_signal:
+  output_firewall:
+    raw_log_policy: file_only | summary_only | not_applicable
+    max_parent_stdout_lines:
+    max_subagent_final_lines:
+    artifact_root:
   remote_refresh:
     cadence:
     last_fetch:
@@ -135,6 +147,53 @@ Feedback loop: record notable failures in `threads_run_log`, classify the failur
 If the user asks for issue/PR queue handling, `remote_truth_required` is `yes` and `queue_ledger` is `required_for_queue`.
 
 Broad queue requests such as "all issues and PRs" are bounded by default. If the user did not give an explicit long-run budget, choose one smallest mergeable tranche, record `max_items` / `time_budget` / `queue_tranche`, and leave the remaining queue for the next run with exact next actions.
+
+## Parent Context Budget
+
+For long queues, multi-lane runs, CI polling, or any run likely to carry large logs, record a parent context budget before dispatch:
+
+```text
+context_budget:
+- window_tokens:
+- soft_stop_ratio: 0.50
+- hard_stop_ratio: 0.65
+- critical_stop_ratio: 0.75
+- current_usage_signal:
+- override_reason:
+```
+
+Defaults are guidance, not universal limits. Override them when the model window, task size, or user budget requires it, but record the override.
+
+Rules:
+
+- At `soft_stop`, do not spawn new lanes, broaden queue scope, or run broad discovery. Finish the current bounded lane and use targeted reads only.
+- At `hard_stop`, stop expanding work, collect current lane evidence, write or update the queue ledger/run log, and hand off to a fresh parent thread.
+- At `critical_stop`, do not read large files, raw logs, broad search results, or historical transcripts. Write the minimum handoff/resume prompt and stop.
+- Do not treat old parent transcripts, raw Codex session JSONL, or compaction summaries as live queue state. Use current repo/GitHub truth plus durable ledgers or artifacts.
+- For long issue/PR queues, a fresh parent per bounded tranche is the default recovery path, not a failure.
+
+## Output Firewall
+
+Large-output commands are allowed only when raw stdout/stderr are written to artifact files outside the parent transcript:
+
+```text
+output_firewall:
+- raw_log_policy: file_only
+- max_parent_stdout_lines: 150
+- max_subagent_final_lines: 150
+- artifact_root:
+- evidence_paths:
+```
+
+Parent-visible output should be limited to exit code, command name, short tail, targeted grep result, failure summary, and artifact path.
+
+Rules:
+
+- Do not paste raw `gh run view --log`, full workspace test output, broad `rg`/`git grep` results, long diffs, copied source files, or session JSONL into the parent.
+- Redirect large commands such as full local test suites, CI logs, or wide searches to files under the run's artifact root, then read only the bounded summary needed for the next decision.
+- Bound searches by path and exclude `.codex`, `.claude`, `target`, `node_modules`, session JSONL, and log files unless the user explicitly asks for forensic analysis.
+- Worker and reviewer lanes must return findings and evidence paths, not raw logs.
+- If raw output enters the parent and materially increases context risk, record `raw_output_blocked` or `parent_context_hard_stop` in `threads_run_log` and hand off if needed.
 
 ## Capability Gate
 
@@ -366,7 +425,7 @@ Use native subagents when available. If the multi-agent tool is not loaded, sear
 
 When `multi_agent_v1` tools are available, use `spawn_agent` for required bounded sidecar lanes, `wait_agent` only when the next critical-path step needs that result, and `close_agent` after collecting completed output. Keep immediate blockers in the main thread, but do not count the main thread as a spawned native thread.
 
-Close completed subagents as soon as their evidence has been collected. For long issue/PR queues, finish a bounded tranche, record the ledger and resume query, and consider starting a fresh parent thread instead of carrying oversized context forward.
+Close completed subagents as soon as their evidence has been collected. For long issue/PR queues, finish a bounded tranche, record the ledger and resume query, and start a fresh parent thread when the context budget is near or past the hard stop instead of carrying oversized context forward.
 
 Use these lane types:
 
@@ -389,10 +448,14 @@ files_read:
 files_changed:
 unauthorized_or_unassigned_changes:
 commands_run:
+output_summary:
+evidence_paths:
 head_sha_or_artifact:
 native_thread_id:
 blockers:
 ```
+
+Lane outputs must not include raw logs, long diffs, copied source files, broad search dumps, or full command output. If the lane produced large evidence, it must return the artifact path plus the smallest useful summary.
 
 ## Merge Gate
 
@@ -472,6 +535,13 @@ threads_run_log:
 - queue_items_total:
 - queue_bounds:
     queue_tranche:
+- context_budget:
+    soft_stop_ratio:
+    hard_stop_ratio:
+    critical_stop_ratio:
+- output_firewall:
+    raw_log_policy:
+    artifact_root:
 - failure_codes:
 - verification:
     fresh:

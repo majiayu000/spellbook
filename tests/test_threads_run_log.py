@@ -281,6 +281,83 @@ class ThreadsRunLogTests(unittest.TestCase):
             self.assertEqual(record["queue_gate"]["issue_to_pr_map"][0]["status"], "uncovered")
             self.assertEqual(record["connector_review"]["status"], "no_connector_expected")
 
+    def test_allows_context_budget_and_output_firewall_fields(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "context-firewall.jsonl"
+
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "execute_direct",
+                    "context_budget": {
+                        "window_tokens": 258400,
+                        "soft_stop_ratio": 0.5,
+                        "hard_stop_ratio": 0.65,
+                        "critical_stop_ratio": 0.75,
+                        "current_usage_signal": "below_soft_stop",
+                    },
+                    "output_firewall": {
+                        "raw_log_policy": "file_only",
+                        "max_parent_stdout_lines": 150,
+                        "max_subagent_final_lines": 150,
+                        "artifact_root": "artifacts/logs/t01",
+                        "evidence_paths": ["artifacts/logs/t01/cargo-test.log"],
+                    },
+                    "failure_codes": ["raw_output_blocked", "parent_context_hard_stop"],
+                },
+                log_path,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(record["output_firewall"]["raw_log_policy"], "file_only")
+            self.assertEqual(record["context_budget"]["hard_stop_ratio"], 0.65)
+
+    def test_rejects_context_budget_ratios_out_of_order(self):
+        payload = self.nested_payload()
+        payload["context_budget"] = {
+            "window_tokens": 258400,
+            "soft_stop_ratio": 0.7,
+            "hard_stop_ratio": 0.65,
+            "critical_stop_ratio": 0.75,
+        }
+
+        self.assert_rejects_payload(payload, "context_budget ratios")
+
+    def test_rejects_partial_context_budget(self):
+        payload = self.nested_payload()
+        payload["context_budget"] = {
+            "soft_stop_ratio": 0.5,
+            "hard_stop_ratio": 0.65,
+            "critical_stop_ratio": 0.75,
+        }
+
+        self.assert_rejects_payload(payload, "context_budget.window_tokens")
+
+    def test_rejects_unknown_output_firewall_policy(self):
+        payload = self.nested_payload()
+        payload["output_firewall"] = {"raw_log_policy": "paste_raw_logs"}
+
+        self.assert_rejects_payload(payload, "output_firewall.raw_log_policy")
+
+    def test_rejects_file_only_output_firewall_without_artifact_root(self):
+        payload = self.nested_payload()
+        payload["output_firewall"] = {
+            "raw_log_policy": "file_only",
+        }
+
+        self.assert_rejects_payload(payload, "output_firewall.artifact_root")
+
+    def test_rejects_non_string_output_firewall_evidence_path(self):
+        payload = self.nested_payload()
+        payload["output_firewall"] = {
+            "raw_log_policy": "file_only",
+            "artifact_root": "artifacts/logs/t01",
+            "evidence_paths": ["artifacts/logs/t01/cargo-test.log", 123],
+        }
+
+        self.assert_rejects_payload(payload, "output_firewall.evidence_paths")
+
     def test_allows_legacy_queue_ledger_stale_base_record(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "legacy-ledger.jsonl"
