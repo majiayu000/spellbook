@@ -276,11 +276,10 @@ def validate_string_list(value: Any, field: str) -> None:
             raise ValueError(f"{field} entries must be non-empty strings")
 
 
-def validate_context_budget(record: dict[str, Any]) -> None:
-    context_budget = record.get("context_budget")
+def validate_context_budget_object(context_budget: Any, field_prefix: str) -> None:
     if context_budget is None:
         return
-    budget = require_object(context_budget, "context_budget")
+    budget = require_object(context_budget, field_prefix)
     for field in (
         "window_tokens",
         "soft_stop_ratio",
@@ -288,38 +287,57 @@ def validate_context_budget(record: dict[str, Any]) -> None:
         "critical_stop_ratio",
     ):
         if field not in budget:
-            raise ValueError(f"context_budget.{field} is required when context_budget is present")
-    validate_positive_int(budget.get("window_tokens"), "context_budget.window_tokens")
+            raise ValueError(f"{field_prefix}.{field} is required when {field_prefix} is present")
+    validate_positive_int(budget.get("window_tokens"), f"{field_prefix}.window_tokens")
     for field in ("soft_stop_ratio", "hard_stop_ratio", "critical_stop_ratio"):
-        validate_ratio(budget[field], f"context_budget.{field}")
+        validate_ratio(budget[field], f"{field_prefix}.{field}")
     soft = budget["soft_stop_ratio"]
     hard = budget["hard_stop_ratio"]
     critical = budget["critical_stop_ratio"]
     if not soft < hard < critical:
         raise ValueError(
-            "context_budget ratios must satisfy soft_stop_ratio < "
+            f"{field_prefix} ratios must satisfy soft_stop_ratio < "
             "hard_stop_ratio < critical_stop_ratio"
         )
 
 
-def validate_output_firewall(record: dict[str, Any]) -> None:
-    output_firewall = record.get("output_firewall")
+def validate_context_budget(record: dict[str, Any]) -> None:
+    validate_context_budget_object(record.get("context_budget"), "context_budget")
+    intent_contract = record.get("intent_contract")
+    if isinstance(intent_contract, dict):
+        validate_context_budget_object(
+            intent_contract.get("context_budget"),
+            "intent_contract.context_budget",
+        )
+
+
+def validate_output_firewall_object(output_firewall: Any, field_prefix: str) -> None:
     if output_firewall is None:
         return
-    firewall = require_object(output_firewall, "output_firewall")
+    firewall = require_object(output_firewall, field_prefix)
     if "raw_log_policy" not in firewall:
-        raise ValueError("output_firewall.raw_log_policy is required when output_firewall is present")
+        raise ValueError(f"{field_prefix}.raw_log_policy is required when {field_prefix} is present")
     validate_enum(
         firewall.get("raw_log_policy"),
         ALLOWED_RAW_LOG_POLICIES,
-        "output_firewall.raw_log_policy",
+        f"{field_prefix}.raw_log_policy",
     )
     for field in ("max_parent_stdout_lines", "max_subagent_final_lines"):
-        validate_non_negative_int(firewall.get(field), f"output_firewall.{field}")
+        validate_non_negative_int(firewall.get(field), f"{field_prefix}.{field}")
     if firewall.get("raw_log_policy") == "file_only":
-        validate_non_empty_string(firewall.get("artifact_root"), "output_firewall.artifact_root")
+        validate_non_empty_string(firewall.get("artifact_root"), f"{field_prefix}.artifact_root")
     if "evidence_paths" in firewall:
-        validate_string_list(firewall["evidence_paths"], "output_firewall.evidence_paths")
+        validate_string_list(firewall["evidence_paths"], f"{field_prefix}.evidence_paths")
+
+
+def validate_output_firewall(record: dict[str, Any]) -> None:
+    validate_output_firewall_object(record.get("output_firewall"), "output_firewall")
+    intent_contract = record.get("intent_contract")
+    if isinstance(intent_contract, dict):
+        validate_output_firewall_object(
+            intent_contract.get("output_firewall"),
+            "intent_contract.output_firewall",
+        )
 
 
 def validate_failure_codes(record: dict[str, Any]) -> None:

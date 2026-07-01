@@ -358,6 +358,29 @@ class ThreadsRunLogTests(unittest.TestCase):
 
         self.assert_rejects_payload(payload, "output_firewall.evidence_paths")
 
+    def test_rejects_intent_contract_context_budget_ratios_out_of_order(self):
+        payload = self.nested_payload()
+        payload["intent_contract"] = {
+            "context_budget": {
+                "window_tokens": 258400,
+                "soft_stop_ratio": 0.7,
+                "hard_stop_ratio": 0.65,
+                "critical_stop_ratio": 0.75,
+            }
+        }
+
+        self.assert_rejects_payload(payload, "intent_contract.context_budget ratios")
+
+    def test_rejects_intent_contract_output_firewall_policy(self):
+        payload = self.nested_payload()
+        payload["intent_contract"] = {
+            "output_firewall": {
+                "raw_log_policy": "paste_raw_logs",
+            }
+        }
+
+        self.assert_rejects_payload(payload, "intent_contract.output_firewall.raw_log_policy")
+
     def test_allows_legacy_queue_ledger_stale_base_record(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "legacy-ledger.jsonl"
