@@ -28,6 +28,19 @@ short: path-scoped `AGENTS.md` files carry directory-specific rules.
   blocker.
 - Never commit secrets, tokens, private keys, or credential material.
 
+## Threads Long-Run Guardrails
+
+- Generic context-budget and output-firewall policy for Codex subagent
+  orchestration belongs in `skills/threads/`; repository-specific queue policy
+  belongs in the consumer workflow pack.
+- For long queues or multi-lane runs, keep parent context thin: raw logs, broad
+  searches, CI output, and session JSONL must go to artifacts or stay out of
+  parent context.
+- `threads` run-log schema, `SKILL.md`, and `references/run-log.md` must stay in
+  sync when adding fields, failure codes, or lane contracts.
+- Installed copies under `~/.agents/skills/threads` and `~/.spellbook/skills/threads`
+  should be synced and hash-checked when local runtime behavior matters.
+
 ## Validation
 
 - Skill, registry, install, or README count changes:

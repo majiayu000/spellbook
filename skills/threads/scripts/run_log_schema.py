@@ -16,6 +16,7 @@ SENSITIVE_KEY_PARTS = (
     "api_key",
     "apikey",
 )
+SAFE_TOKEN_FIELD_NAMES = {"window_tokens"}
 MAX_STRING_LENGTH = 4000
 MAX_INPUT_BYTES = 64 * 1024
 MAX_DEPTH = 8
@@ -68,6 +69,7 @@ ALLOWED_CONNECTOR_REVIEW_STATUSES = {
     "unknown",
 }
 ALLOWED_REVIEW_LOOP_OUTCOMES = {"resolved", "review_loop", "not_applicable"}
+ALLOWED_RAW_LOG_POLICIES = {"file_only", "summary_only", "not_applicable"}
 INVALID_AGENT_IDS = {"", "none", "n/a", "na", "null", "main", "main_thread", "coordinator"}
 ALLOWED_SINGLE_AGENT_REASONS = {
     "no_independent_lanes",
@@ -103,6 +105,8 @@ ALLOWED_TOP_LEVEL_FIELDS = {
     "thread_dispatch_gate",
     "queue_gate",
     "queue_bounds",
+    "context_budget",
+    "output_firewall",
     "remote_refresh",
     "queue_ledger",
     "lane_map",
@@ -137,6 +141,8 @@ ALLOWED_FAILURE_CODES = {
     "write_scope_violation",
     "vague_lane_output",
     "verification_gap",
+    "raw_output_blocked",
+    "parent_context_hard_stop",
     "review_thread_missed",
     "connector_review_incomplete",
     "review_loop",
@@ -177,7 +183,10 @@ def redact(value: Any, key_hint: str = "", depth: int = 0) -> Any:
     if depth > MAX_DEPTH:
         return "[TRUNCATED_DEPTH]"
     lower_key = key_hint.lower()
-    if any(part in lower_key for part in SENSITIVE_KEY_PARTS):
+    if (
+        lower_key not in SAFE_TOKEN_FIELD_NAMES
+        and any(part in lower_key for part in SENSITIVE_KEY_PARTS)
+    ):
         return "[REDACTED]"
     if isinstance(value, dict):
         return {str(key): redact(item, str(key), depth + 1) for key, item in value.items()}
@@ -237,11 +246,98 @@ def validate_non_negative_int(value: Any, field: str) -> None:
         raise ValueError(f"{field} must be a non-negative integer")
 
 
+def validate_positive_int(value: Any, field: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ValueError(f"{field} must be a positive integer")
+
+
 def validate_non_negative_number(value: Any, field: str) -> None:
     if value is None:
         return
     if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
         raise ValueError(f"{field} must be a non-negative number")
+
+
+def validate_ratio(value: Any, field: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{field} must be a number")
+    if value <= 0 or value >= 1:
+        raise ValueError(f"{field} must be between 0 and 1")
+
+
+def validate_non_empty_string(value: Any, field: str) -> None:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field} must be a non-empty string")
+
+
+def validate_string_list(value: Any, field: str) -> None:
+    for item in require_list(value, field):
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError(f"{field} entries must be non-empty strings")
+
+
+def validate_context_budget_object(context_budget: Any, field_prefix: str) -> None:
+    if context_budget is None:
+        return
+    budget = require_object(context_budget, field_prefix)
+    for field in (
+        "window_tokens",
+        "soft_stop_ratio",
+        "hard_stop_ratio",
+        "critical_stop_ratio",
+    ):
+        if field not in budget:
+            raise ValueError(f"{field_prefix}.{field} is required when {field_prefix} is present")
+    validate_positive_int(budget.get("window_tokens"), f"{field_prefix}.window_tokens")
+    for field in ("soft_stop_ratio", "hard_stop_ratio", "critical_stop_ratio"):
+        validate_ratio(budget[field], f"{field_prefix}.{field}")
+    soft = budget["soft_stop_ratio"]
+    hard = budget["hard_stop_ratio"]
+    critical = budget["critical_stop_ratio"]
+    if not soft < hard < critical:
+        raise ValueError(
+            f"{field_prefix} ratios must satisfy soft_stop_ratio < "
+            "hard_stop_ratio < critical_stop_ratio"
+        )
+
+
+def validate_context_budget(record: dict[str, Any]) -> None:
+    validate_context_budget_object(record.get("context_budget"), "context_budget")
+    intent_contract = record.get("intent_contract")
+    if isinstance(intent_contract, dict):
+        validate_context_budget_object(
+            intent_contract.get("context_budget"),
+            "intent_contract.context_budget",
+        )
+
+
+def validate_output_firewall_object(output_firewall: Any, field_prefix: str) -> None:
+    if output_firewall is None:
+        return
+    firewall = require_object(output_firewall, field_prefix)
+    if "raw_log_policy" not in firewall:
+        raise ValueError(f"{field_prefix}.raw_log_policy is required when {field_prefix} is present")
+    validate_enum(
+        firewall.get("raw_log_policy"),
+        ALLOWED_RAW_LOG_POLICIES,
+        f"{field_prefix}.raw_log_policy",
+    )
+    for field in ("max_parent_stdout_lines", "max_subagent_final_lines"):
+        validate_non_negative_int(firewall.get(field), f"{field_prefix}.{field}")
+    if firewall.get("raw_log_policy") == "file_only":
+        validate_non_empty_string(firewall.get("artifact_root"), f"{field_prefix}.artifact_root")
+    if "evidence_paths" in firewall:
+        validate_string_list(firewall["evidence_paths"], f"{field_prefix}.evidence_paths")
+
+
+def validate_output_firewall(record: dict[str, Any]) -> None:
+    validate_output_firewall_object(record.get("output_firewall"), "output_firewall")
+    intent_contract = record.get("intent_contract")
+    if isinstance(intent_contract, dict):
+        validate_output_firewall_object(
+            intent_contract.get("output_firewall"),
+            "intent_contract.output_firewall",
+        )
 
 
 def validate_failure_codes(record: dict[str, Any]) -> None:
@@ -298,6 +394,8 @@ def validate_enum_fields(record: dict[str, Any]) -> None:
     validate_connector_review(record)
     validate_ci_wait(record)
     validate_review_loop(record)
+    validate_context_budget(record)
+    validate_output_firewall(record)
     validate_failure_codes(record)
     validate_lanes(record)
 
