@@ -1,5 +1,21 @@
 [
   {
+    "name": "agentsmd-optimize",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/agentsmd-optimize/SKILL.md",
+    "description": "Audit AND optimize a CLAUDE.md / AGENTS.md instruction file — score it against the five high-leverage patterns, flag anti-patterns, then apply approved fixes in place. Use when the user says 优化 CLAUDE.md / 优化 AGENTS.md / optimize my agent doc / 帮我改 claudemd, or after an audit when they want the fixes applied (not just reported).",
+    "language": "mixed",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "agent"
+    ]
+  },
+  {
     "name": "agentsmd-scaffold",
     "category": "AI & Agent Workflow",
     "format": "directory",
