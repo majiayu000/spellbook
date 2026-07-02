@@ -386,6 +386,25 @@ Contributions welcome! Please read our [Contributing Guide](./CONTRIBUTING.md) f
 
 ---
 
+## The Agent Infra Stack
+
+This project is one layer of an open-source stack for running coding agents (Claude Code, Codex) as serious infrastructure. Every piece works standalone; together they close the loop:
+
+`spellbook` sits in the **Extend** layer — the authoring side of the skill story: write once, run on Claude Code and Codex. Discovery and distribution live in `claude-skill-registry`.
+
+| Layer | Project | What it does |
+|---|---|---|
+| Extend | [claude-skill-registry](https://github.com/majiayu000/claude-skill-registry) | Discover and search community Claude Code skills |
+| Extend | [spellbook](https://github.com/majiayu000/spellbook) **◀ you are here** | Cross-runtime skills for Claude Code, Codex, and multi-agent workflows |
+| Trust | [argus](https://github.com/majiayu000/argus) | Static install-time scanner for supply-chain attacks (npm / PyPI / crates.io) |
+| Trust | [vibeguard](https://github.com/majiayu000/vibeguard) | Rules, hooks, and guards against hallucinated or unverified agent changes |
+| Remember | [remem](https://github.com/majiayu000/remem) | Local-first persistent memory for Claude Code and Codex sessions |
+| Orchestrate | [harness](https://github.com/majiayu000/harness) | Rust agent orchestration platform — rules, skills, GC, observability |
+| Route | [litellm-rs](https://github.com/majiayu000/litellm-rs) | High-performance Rust AI gateway — 100+ LLM APIs via OpenAI format |
+| Keep | [keepline](https://github.com/majiayu000/keepline) | Session command center — monitor, recover, never lose agent work |
+
+---
+
 ## License
 
 [MIT License](./LICENSE) - Use freely in your projects.
