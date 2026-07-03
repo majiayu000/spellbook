@@ -1,0 +1,4 @@
+app_name: sectionsvc
+cache_ttl: 3600
+log_level: info
+default_locale: en

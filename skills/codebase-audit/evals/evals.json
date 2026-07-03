@@ -1,22 +1,29 @@
 {
   "skill_name": "codebase-audit",
+  "notes": "Fixture-based recall evals. Ground truth: evals/expected-findings.json. Score by file+category match; pass = >=8/10 must_detect. Clean fixture/.audit and audit-report-*.md after each run.",
   "evals": [
     {
       "id": 1,
-      "prompt": "帮我全面审查一下当前仓库这个项目的设计问题",
-      "expected_output": "按检测到的技术栈启动对应数量的并行 agent（全栈 5 / 后端 4 / 前端 3），agent 类型全部来自真实注册表；Critical/High 发现经 Phase 1.5 复核后输出 Critical/High/Medium/Low 分级统一报告（含 evidence_type/confidence/验证状态列）+ 修复路线图",
+      "prompt": "/codebase-audit <skill_dir>/evals/fixture --dims=tests,concurrency",
+      "expected_output": "Full-mode audit: backend-only stack detected, 4 finder agents + tests + concurrency dims, structured findings, Critical/High adversarially verified. Report written to fixture/audit-report-<date>.md, ledger created at fixture/.audit/findings.json (all findings 'new'). Recall >= 8/10 must_detect findings.",
       "files": []
     },
     {
       "id": 2,
-      "prompt": "/codebase-audit .",
-      "expected_output": "同 eval 1，通过 slash command 触发；agent 数量与检测到的栈类型匹配",
+      "prompt": "对 <skill_dir>/evals/fixture 做个 quick 快速体检",
+      "expected_output": "Quick mode: 2 agents (Silent Degradation & Security; Data Integrity & Registry), no verify pass, findings labeled unverified. Must still catch: registry mismatch (#1), except-pass (#2), warning+fallback (#3), hardcoded key (#5).",
       "files": []
     },
     {
       "id": 3,
-      "prompt": "这个代码库有哪些隐藏问题？前后端类型对不对得上？有没有静默降级？",
-      "expected_output": "自然语言触发审计；全栈项目应启动 5 个 agent（含 Frontend-Backend Contract 维度），报告正文为中文，发现按 事实/推断/建议 分层并带置信度",
+      "prompt": "这个代码库有哪些隐藏问题？有没有静默降级和注册表对不齐的地方？(target: <skill_dir>/evals/fixture)",
+      "expected_output": "Natural-language trigger routes to the skill. Full-mode audit, severity-sorted report with repair roadmap and ledger.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Second consecutive audit of <skill_dir>/evals/fixture (run eval 1 first, keep the ledger, then re-run)",
+      "expected_output": "Ledger diff exercised: previously found items classified 'still-open' (ids and first_seen preserved), no false 'resolved' entries. Report contains a 'Delta vs Previous Audit' section.",
       "files": []
     }
   ]
