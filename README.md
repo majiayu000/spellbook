@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>98 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>99 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-98-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-99-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 

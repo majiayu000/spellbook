@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>98 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>99 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-98-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-99-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
