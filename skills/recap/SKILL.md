@@ -19,13 +19,17 @@ description: 回顾最近 N 天的 Claude Code 使用记录——扫描原始会
 
 ## Step 1: 提取数据（确定性部分，用脚本）
 
+脚本随本 skill 分发（`scripts/extract_sessions.py`）。Claude 安装位于 `~/.claude/skills/recap`，Codex 安装位于 `~/.agents/skills/recap`，先解析实际位置再运行：
+
 ```bash
-python3 ~/.claude/skills/recap/scripts/extract_sessions.py --days 2
+SKILL_DIR=$(ls -d ~/.claude/skills/recap ~/.agents/skills/recap 2>/dev/null | head -1)
+python3 "$SKILL_DIR/scripts/extract_sessions.py" --days 2
 ```
 
 - `--days N` 调整回看窗口（默认 2；周回顾用 7）
 - `--json` 输出结构化数据供进一步处理
-- 输出：每个主会话的项目、起止时间、用户消息数、工具调用数、子 agent 数、体积、前 3 条用户消息
+- 输出：每个主会话的项目、窗口内起止时间、用户消息数、工具调用数、子 agent 数、体积、前 3 条用户消息
+- 统计只计入窗口内的消息；跨窗口 resume 的老会话会标 `resumed`，其窗口前的历史不会混入本次回顾
 
 如果用户提到 Codex，补充检查 `~/.codex/sessions`（如存在）并说明覆盖范围。
 

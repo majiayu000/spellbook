@@ -2,6 +2,11 @@
 """Extract recent Claude Code session summaries from ~/.claude/projects.
 
 Usage: python3 extract_sessions.py [--days N] [--json] [--max-msgs M]
+
+Sessions are selected by file mtime, but message counts, tool-call counts
+and sampled user messages only include events whose timestamp falls inside
+the requested window. A session that started before the window (resumed
+recently) is flagged as "resumed" so old prompts don't pollute the recap.
 """
 import argparse
 import datetime
@@ -11,12 +16,18 @@ import os
 import sys
 
 
-def first_user_texts(path, limit):
-    """Return (start_ts, end_ts, n_user_msgs, first_texts, n_tool_calls)."""
+def parse_session(path, limit, cutoff_iso):
+    """Return session stats restricted to events at or after cutoff_iso.
+
+    Returns (full_start, window_start, window_end, n_user, texts, n_tools).
+    full_start is the first timestamp in the transcript regardless of window.
+    """
     n_user = 0
     n_tools = 0
     texts = []
-    start = end = None
+    full_start = None
+    win_start = win_end = None
+    last_ts = None
     with open(path) as fh:
         for line in fh:
             try:
@@ -25,9 +36,16 @@ def first_user_texts(path, limit):
                 continue
             ts = d.get("timestamp")
             if ts:
-                end = ts
-                if not start:
-                    start = ts
+                last_ts = ts
+                if not full_start:
+                    full_start = ts
+            # events without their own timestamp inherit the last seen one
+            if last_ts is None or last_ts < cutoff_iso:
+                continue
+            if ts:
+                win_end = ts
+                if not win_start:
+                    win_start = ts
             if d.get("type") == "assistant":
                 c = d.get("message", {}).get("content")
                 if isinstance(c, list):
@@ -46,7 +64,7 @@ def first_user_texts(path, limit):
                     n_user += 1
                     if len(texts) < limit:
                         texts.append(" ".join(txt.split())[:200])
-    return start, end, n_user, texts, n_tools
+    return full_start, win_start, win_end, n_user, texts, n_tools
 
 
 def main():
@@ -56,29 +74,39 @@ def main():
     ap.add_argument("--max-msgs", type=int, default=3)
     args = ap.parse_args()
 
-    cutoff = datetime.datetime.now().timestamp() - args.days * 86400
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cutoff_dt = now - datetime.timedelta(days=args.days)
+    cutoff_epoch = cutoff_dt.timestamp()
+    # transcript timestamps are ISO-8601 UTC ("...Z"); compare lexicographically
+    cutoff_iso = cutoff_dt.strftime("%Y-%m-%dT%H:%M:%S")
+
     root = os.path.expanduser("~/.claude/projects")
     files = [
         f for f in glob.glob(os.path.join(root, "*", "*.jsonl"))
-        if "/subagents/" not in f and os.path.getmtime(f) > cutoff
+        if "/subagents/" not in f and os.path.getmtime(f) > cutoff_epoch
     ]
 
     sessions = []
     for f in sorted(files, key=os.path.getmtime):
         proj = os.path.basename(os.path.dirname(f))
-        # strip common home-path prefix noise for readability
-        for prefix in ("-Users-apple-Desktop-code-", "-Users-apple-"):
+        home_slug = os.path.expanduser("~").replace("/", "-")
+        for prefix in (home_slug + "-Desktop-code-", home_slug + "-"):
             if proj.startswith(prefix):
                 proj = proj[len(prefix):]
                 break
-        start, end, n_user, texts, n_tools = first_user_texts(f, args.max_msgs)
+        full_start, win_start, win_end, n_user, texts, n_tools = parse_session(
+            f, args.max_msgs, cutoff_iso)
+        if not win_start and n_user == 0 and n_tools == 0:
+            continue  # mtime bumped but no in-window activity
         sub_dir = f[:-6] + "/subagents"
         n_sub = len(glob.glob(sub_dir + "/*.jsonl")) if os.path.isdir(sub_dir) else 0
         sessions.append({
             "project": proj,
             "session": os.path.basename(f)[:8],
-            "start": start,
-            "end": end,
+            "start": win_start,
+            "end": win_end,
+            "resumed": bool(full_start and full_start < cutoff_iso),
+            "full_start": full_start,
             "user_msgs": n_user,
             "tool_calls": n_tools,
             "subagents": n_sub,
@@ -90,12 +118,13 @@ def main():
         json.dump(sessions, sys.stdout, ensure_ascii=False, indent=1)
         return
 
-    print(f"# {len(sessions)} sessions in last {args.days:g} days, "
+    print(f"# {len(sessions)} sessions with activity in last {args.days:g} days, "
           f"{len({s['project'] for s in sessions})} projects\n")
     for s in sessions:
         t0 = (s["start"] or "?")[:16]
         t1 = (s["end"] or "?")[11:16]
-        print(f"### {s['project']} | {s['session']} | {t0} → {t1} | "
+        tag = f" [resumed, started {s['full_start'][:10]}]" if s["resumed"] else ""
+        print(f"### {s['project']} | {s['session']} | {t0} → {t1}{tag} | "
               f"user:{s['user_msgs']} tools:{s['tool_calls']} sub:{s['subagents']} {s['size_mb']}MB")
         for m in s["first_messages"]:
             print(f"   - {m}")
