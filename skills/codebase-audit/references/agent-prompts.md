@@ -285,7 +285,9 @@ Tech stack: {STACK_INFO}
 
 ## Backend-Only Configuration (4 agents)
 
-Use Agents 2, 3, 4, 5 from the full-stack config. Replace Agent 1 with:
+Use Agents 3, 4, 5 from the full-stack config. Replace Agent 1 with the merged prompt below
+(it absorbs full-stack Agent 2's scope — do NOT also dispatch Agent 2, that duplicates the
+data-flow/registry coverage and produces conflicting findings).
 
 ### Agent 1: API Contract & Data Integrity
 
@@ -296,10 +298,39 @@ Tech stack: {STACK_INFO}
 
 Combines: API schema consistency, serialization boundaries, data flow tracing, declaration-execution gaps.
 
+### API Contract & Serialization
 1. API response models vs internal domain models — field mismatches?
-2. Serialization models (Pydantic/serde/Zod) — do they silently drop fields?
-3. Data pipeline tracing (same as full-stack Agent 2)
-4. Declaration-execution gaps + registry coverage alignment (same as full-stack Agent 2)
+2. Serialization models (Pydantic/serde/Zod) — do they silently drop unknown fields?
+   (Pydantic extra="ignore", serde's default ignore-unknown, Zod's DEFAULT strip mode —
+   note Zod .strict() THROWS on unknown keys, it does not drop)
+3. Is the model on a cache/LLM/API hot path where field dropping causes user-visible issues?
+
+### Data Flow Tracing
+Trace data from input to output through every transformation layer:
+1. Input → extraction/validation — where do fields first get filtered?
+   Field resolvers that only pass declared fields; schema validators that strip unknown fields.
+2. Extraction → context building — what gets injected vs what gets lost?
+   Two parallel injection mechanisms? Fields injected by orchestrator but not declared in config?
+3. Context → builder/generator — does the builder get all the data it needs?
+   Cross-reference context.get("field") calls against what's actually in the context.
+4. Builder → serialization — what disappears during model_dump?
+   exclude_none=True dropping fields; by_alias=True with wrong aliases.
+5. Serialization → cache — cache key completeness (code/prompt version?), deserialization
+   wrapped in try/except or crash on schema change?
+
+### Declaration-Execution Integrity
+1. Registered handlers/builders without corresponding implementation
+2. Enum values without config entries, config entries without code
+3. Declared but never-called methods (persist/save/restore that no startup code invokes)
+
+### Registry Coverage Alignment (critical — easy to miss)
+Find all module-level dicts/maps/registries keyed by the same type; compare key sets pairwise;
+flag any registry with fewer keys than the source-of-truth registry.
+For each registry-pair finding, evidence must include: registry A file:line + key count,
+registry B file:line + key count, the missing keys, and what happens for a key in A but not B.
+
+For each data-flow finding: evidence must include the full path
+(source file:line → transform file:line → destination file:line).
 ```
 
 ---
@@ -360,7 +391,13 @@ Quick mode skips the verify pass; label every finding `unverified` in the report
 
 ## Fallback Agent Types (Agent tool path only)
 
-When orchestrating via the Agent tool instead of Workflow, use these `subagent_type` values (these exist in the registry — there is NO `reviewer` type):
+Agent type availability is ENVIRONMENT-SPECIFIC: check the subagent registry visible in the
+current session before launching, and only use type names that actually appear there. Never
+invent aliases (there is no generic `reviewer` type). If no specialized type matches, use
+`general-purpose` (or the environment's default catch-all agent) for every dimension — the
+prompts are self-contained and do not rely on a specialized agent's system prompt.
+
+Example mapping when the common Claude Code review agents are installed:
 
 | Dimension | subagent_type |
 |-----------|---------------|

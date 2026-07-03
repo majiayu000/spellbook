@@ -78,7 +78,11 @@ const results = await pipeline(
   args.dimensions,
   d => agent(d.prompt, { label: 'find:' + d.key, phase: 'Find', schema: FINDINGS_SCHEMA }),
   (res, d) => {
-    const findings = (res && res.findings) || []
+    if (!res) {
+      log('dim ' + d.key + ': finder FAILED — dimension incomplete')
+      return { dim: d.key, failed: true, findings: [] }
+    }
+    const findings = res.findings || []
     const toVerify = findings.filter(f => f.severity === 'critical' || f.severity === 'high')
     const mediums = findings.filter(f => f.severity === 'medium')
     log('dim ' + d.key + ': ' + findings.length + ' findings, verifying ' + toVerify.length)
@@ -90,9 +94,13 @@ const results = await pipeline(
       }).then(v => Object.assign({}, f, {
         verified: v ? v.confirmed : null,
         verify_reason: v ? v.reason : 'verifier unavailable',
+      })).catch(() => Object.assign({}, f, {
+        verified: null,
+        verify_reason: 'verifier failed — kept unverified',
       }))
     )).then(verified => ({
       dim: d.key,
+      failed: false,
       findings: verified.filter(Boolean).concat(
         mediums.map(f => Object.assign({}, f, { verified: null, verify_reason: 'medium — not verified' }))
       ),
@@ -105,9 +113,10 @@ return { dims: results.filter(Boolean) }
 
 Notes:
 - `pipeline` (not `parallel`) between Find and Verify: dimension A's findings verify while dimension B is still scanning.
-- A finder that dies returns `null` and its dimension is dropped by `filter(Boolean)` — say so in the report ("dimension X did not complete") instead of silently presenting partial coverage as full.
+- A finder that dies returns `null`; stage 2 converts it into `{ dim, failed: true, findings: [] }` so the failure survives into the result. The report MUST list every `failed: true` dimension as "dimension X did not complete" — never present it as zero findings / clean coverage.
+- Each verifier thunk carries a `.catch` that maps the finding to `verified: null` — a flaky verifier keeps its finding as `unverified` instead of dropping it (matches the SKILL.md Phase 3 rule).
 - Quick mode: pass only the 2 quick dimensions and replace the second pipeline stage with
-  `(res, d) => ({ dim: d.key, findings: ((res && res.findings) || []).map(f => Object.assign({}, f, { verified: null, verify_reason: 'quick mode — not verified' })) })`.
+  `(res, d) => res ? { dim: d.key, failed: false, findings: (res.findings || []).map(f => Object.assign({}, f, { verified: null, verify_reason: 'quick mode — not verified' })) } : { dim: d.key, failed: true, findings: [] }`.
 
 ## Fallback verify prompt (Agent tool path)
 

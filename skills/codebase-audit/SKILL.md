@@ -70,11 +70,11 @@ Pick the configuration by detected stack. Full prompt templates in `references/a
 | 4 | Architecture & Code Quality | Layer violations, god objects, duplication/drift, extension cost, registry cross-reference. |
 | 5 | Config & Persistence | Config completeness, cache key/integrity, DB schema, temp files, state persistence. |
 
-**Backend-Only (4 agents)**: replace #1 with "API Contract & Data Integrity"; keep #2–#5.
+**Backend-Only (4 agents)**: replace #1 with "API Contract & Data Integrity" (which absorbs #2's data-flow/registry scope — do NOT also dispatch #2); keep #3–#5.
 **Frontend-Only (3 agents)**: Component Architecture & Rendering; Error Handling & Code Quality; Config & Build.
 **Quick mode (2 agents)**: Silent Degradation & Security (= #3); Data Integrity & Registry (= #2 core).
 
-Fallback-path agent types (when using the Agent tool instead of Workflow): use only types that exist — `general-purpose`, `code-reviewer`, `security-reviewer`, `architect`, `database-reviewer`. There is no `reviewer` type. If the available subagent registry is visible, verify the chosen types before launching; do not substitute invented aliases.
+Fallback-path agent types (when using the Agent tool instead of Workflow): agent availability is environment-specific — check the subagent registry visible in the current session and use only type names that appear there. Never invent aliases (there is no generic `reviewer` type). If no specialized type matches, use `general-purpose` (or the environment's default catch-all) for every dimension; the prompts are self-contained. See the example mapping in `references/agent-prompts.md`.
 
 ### Phase 2: Orchestrate
 
