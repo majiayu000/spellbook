@@ -1,39 +1,27 @@
 # Agent Prompt Templates
 
-**Model policy: see SKILL.md Core Principles #1** (highest-tier model for every audit agent).
+**Model**: omit the `model` param — agents inherit the session model. Only override upward if the session model is clearly weak for cross-file reasoning. Never hardcode a model name.
 
-Replace `{TARGET_DIR}` and `{STACK_INFO}` based on detected stack. Adapt technology-specific sections accordingly. Every template MUST be sent self-contained — sub-agents cannot see SKILL.md or this file's other sections, so always append the Unified Output Contract below to every prompt.
-
----
-
-## Unified Output Contract (append to EVERY agent prompt)
+**Every prompt MUST begin with this preamble** (replace nothing):
 
 ```
-Every agent MUST end its report with findings in this exact Markdown table, one row per finding:
-
-| severity | title | files | evidence | evidence_type | confidence | impact | fix |
-|---|---|---|---|---|---|---|---|
-
-- severity: Critical / High / Medium / Low — use this rubric:
-  - Critical: data loss, rendering failure, security vulnerability, complete feature breakage affecting users NOW
-  - High: silent degradation (user sees wrong/incomplete output), type mismatch causing truncation, missing config causing empty output, architectural violations blocking development
-  - Medium: code duplication, inconsistent patterns, suboptimal error handling, tech debt that slows development
-  - Low: informational / style-level findings
-- files: every involved `path:line`, comma-separated (this is the dedup key — mandatory)
-- evidence: code snippet ≤3 lines
-- Table cells must stay parseable: replace newlines inside cells with `<br>` and escape literal pipe characters as `\|` in every cell, especially `evidence`.
-- evidence_type: `observed` (directly visible in code) / `inferred` (cross-file reasoning)
-- confidence: high / medium / low (inference chains >2 steps MUST be ≤ medium)
-- Max 25 findings. If zero findings, write `NO_FINDINGS` and list the patterns you searched.
-- Write all finding descriptions in Chinese; keep code identifiers, paths, and error messages as-is.
-- No prose summaries outside the table.
+READ-ONLY AUDIT — you must not create, modify, or delete any file. Your only output is findings.
+Exclude from analysis: node_modules/, vendor/, target/, dist/, build/, .git/, lockfiles, and generated code.
+Output ONLY a JSON object: {"findings": [{"category": str, "severity": "critical"|"high"|"medium",
+"file": str, "line": int, "summary": str, "evidence": str (quote the actual code),
+"evidence_type": "observed"|"inferred", "confidence": "high"|"medium"|"low",
+"fix_suggestion": str}]}.
+Critical requires direct observed evidence. Inference chains longer than two steps must be confidence <= medium.
+No prose outside the JSON. (When launched via Workflow with a schema, the harness enforces this shape.)
 ```
+
+Replace `{TARGET_DIR}` and `{STACK_INFO}` based on the detected stack. Adapt technology-specific sections accordingly.
 
 ---
 
 ## Full-Stack Configuration (5 agents)
 
-### Agent 1: Frontend-Backend Contract (senior-code-reviewer)
+### Agent 1: Frontend-Backend Contract
 
 ```
 Deep audit of {TARGET_DIR} for frontend-backend contract consistency.
@@ -60,15 +48,14 @@ For each data type the backend can produce:
 
 ### Serialization Boundaries
 For each model that participates in serialization/deserialization:
-1. Does it silently drop unknown fields? (Pydantic extra="ignore", serde default, Zod strict)
+1. Does it silently drop unknown fields? (Pydantic extra="ignore", serde's default ignore-unknown
+   behavior, Zod's DEFAULT strip mode — note Zod .strict() THROWS on unknown keys, it does not drop)
 2. Is it on a cache/LLM/API hot path where field dropping causes user-visible issues?
 
-For every finding, `files` must include BOTH sides (frontend AND backend path:line).
-
-[Unified Output Contract]
+For each finding: include BOTH file:line references (frontend AND backend).
 ```
 
-### Agent 2: Data Integrity & Flow (senior-code-reviewer)
+### Agent 2: Data Integrity & Flow
 
 ```
 Deep audit of {TARGET_DIR} for data pipeline integrity.
@@ -104,9 +91,9 @@ Trace data from input to output through every transformation layer:
 1. Registered handlers/builders that don't have corresponding implementation
 2. Enum values without config entries, config entries without code
 3. Generation mode declarations (e.g., "deterministic" vs "llm") that contradict code behavior
-4. Registered but never-called methods (persist/save/restore that no startup code invokes)
+4. Declared but never-called methods (persist/save/restore that no startup code invokes)
 
-### Registry Coverage Alignment (critical — easy to miss; you are the SOLE owner of this check)
+### Registry Coverage Alignment (critical — easy to miss)
 This is the hardest class of bug to find: two dicts/maps/registries that SHOULD have the same key set but DON'T. The system works for the keys that overlap but silently does nothing for the missing ones.
 
 Pattern to search for:
@@ -119,28 +106,12 @@ Examples of what this catches:
 - SectionType enum has 25 values but fieldConfig only has 20 → 5 sections get empty data from FieldResolver
 - DETERMINISTIC_SECTION_BUILDERS has 18 entries but ROUTABLE_SECTION_BUILDERS has 14 → 4 sections can't route
 
-For each pair of registries that share a key type, the finding must list:
-- Registry A: file:line, N keys / Registry B: file:line, M keys
-- Missing in B: [list of keys]
-- Impact: what happens when a key is in A but not B
+For each registry-pair finding, the evidence field must include: registry A file:line + key count, registry B file:line + key count, the missing keys, and what happens when a key is in A but not B.
 
-### Concurrency & Async Hygiene (only when Phase 0 detected an async runtime)
-Only report statically provable items with file:line evidence. NO speculative performance guesses.
-1. Lock guards held across .await (std::sync::Mutex/RwLock guard crossing an await point)
-2. tokio::spawn with discarded JoinHandle / no panic propagation
-3. unbounded_channel and unbounded queues on hot paths
-4. Arc<Mutex<HashMap>> hot write contention
-5. Go: goroutines with no exit path; concurrent map writes
-6. Blocking calls inside async context: std::fs, reqwest::blocking, thread::sleep
-7. Per-item DB/HTTP calls inside loops (N+1)
-8. Grow-only caches/collections (insert with no eviction)
-
-For data-flow findings, `files` must include the full path (source → transform → destination).
-
-[Unified Output Contract]
+For each data-flow finding: evidence must include the full path (source file:line → transform file:line → destination file:line).
 ```
 
-### Agent 3: Error Handling & Security (security-auditor)
+### Agent 3: Error Handling & Security
 
 ```
 Deep audit of {TARGET_DIR} for exception handling and security issues.
@@ -176,15 +147,13 @@ The most dangerous pattern: errors that produce WRONG output instead of failing.
 
 ### Dependency Audit Classification (when Phase 0 output is provided)
 Classify the attached dependency-audit tool output:
-- Critical = RCE-grade CVE with PoC on a reachable path
-- High = known vuln on a reachable path
-- Medium = known vuln, reachability unclear
-Mark these findings evidence_type = observed (tool output is evidence).
-
-[Unified Output Contract]
+- critical = RCE-grade CVE with PoC on a reachable path
+- high = known vulnerability on a reachable path
+- medium = known vulnerability with unclear reachability
+Mark dependency-audit findings as evidence_type = observed; the tool output is evidence.
 ```
 
-### Agent 4: Architecture & Code Quality (code-archaeologist)
+### Agent 4: Architecture & Code Quality
 
 ```
 Deep audit of {TARGET_DIR} for architectural issues and technical debt.
@@ -211,26 +180,17 @@ Tech stack: {STACK_INFO}
 
 ### Extension Cost Analysis
 Calculate: how many files must change to add a new [type/variant/feature]?
-List the exact files for the most common extension operation.
+Report as ONE finding (category "extension-cost", severity medium) whose evidence lists the exact files for the most common extension operation.
 
-Note: Registry key-set alignment is owned by the Data Integrity agent — do not re-check it.
-
-### Test Quality
-1. Business-logic modules with no matching test file / #[cfg(test)] block — list them
-2. Weakened assertions: assertTrue wrapping, containment instead of exact match
-3. Skip markers without justification: pytest.mark.skip, test.skip, #[ignore]
-4. Test-stale: tests referencing signatures that no longer match the code under test
+### Registry Cross-Reference
+Find all module-level dicts/maps that act as registries for the same key type. Compare their key sets. This catches "works for 10 items but silently skips 14" bugs — the hardest to find because no error is thrown.
 
 ### DI & Pattern Consistency
 1. Multiple dependency injection patterns in use? (global state, factory, constructor mixed)
 2. Inconsistent error handling patterns across modules
-
-If useful, include an "Extension Cost" table before the final findings table. The report must still end with the Unified Output Contract findings table; do not place any extra table or prose after it.
-
-[Unified Output Contract]
 ```
 
-### Agent 5: Config & Persistence (code-archaeologist)
+### Agent 5: Config & Persistence
 
 ```
 Deep audit of {TARGET_DIR} for configuration and persistence issues.
@@ -261,126 +221,154 @@ Tech stack: {STACK_INFO}
 3. Temp file cleanup — is there a finally block in error paths?
 4. File paths — hardcoded relative paths that depend on cwd?
 5. TTL cleanup — consistent semantics across all stores?
+```
 
-[Unified Output Contract]
+---
+
+## Optional Dimensions (full mode, on request)
+
+### Agent 6: Test Quality (`tests`)
+
+```
+Deep audit of {TARGET_DIR} for test quality and trustworthiness.
+
+Tech stack: {STACK_INFO}
+
+### Assertion Strength
+1. Vacuous assertions: assert True, assertTrue(x is not None) as the ONLY check, expect(fn).not.toThrow() alone
+2. Weakened assertions: exact match downgraded to containment, assertEqual → assertTrue
+3. Tests that exercise code but assert nothing about the result
+
+### Skips & Dead Tests
+1. Skip markers (pytest.mark.skip/skipif, test.skip, #[ignore]) — is each reason still valid?
+2. Tests that can never run (unreachable parametrize, always-false skipif)
+3. Commented-out test bodies
+
+### Coverage of Critical Paths
+1. Error paths: are except/fallback branches tested, or only happy paths?
+2. The modules with the most findings from other dimensions — do they have tests at all?
+3. Test doubles that stub away the exact behavior under test (stub substitution)
+
+### Test Infrastructure
+1. conftest/setup that swallows failures or auto-retries
+2. Snapshot tests auto-updated without review markers
+```
+
+### Agent 7: Concurrency (`concurrency`)
+
+```
+Deep audit of {TARGET_DIR} for concurrency and async correctness.
+
+Tech stack: {STACK_INFO}
+
+### Blocking in Async Contexts
+1. time.sleep / requests / sync file IO / sync DB calls inside async def (Python)
+2. Sync XHR or heavy sync loops on the main thread (JS)
+3. std::thread::sleep or blocking IO inside async fn (Rust)
+
+### Shared Mutable State
+1. Module-level dicts/lists/counters mutated from multiple tasks/threads/goroutines without a lock
+2. Check-then-act races (if key not in dict: dict[key] = ...)
+3. Global singletons initialized lazily from concurrent paths
+
+### Task/Resource Leaks
+1. Fire-and-forget tasks (asyncio.create_task without reference/error handling, go func() without WaitGroup/errgroup)
+2. Goroutines blocked forever on channels nobody reads
+3. Unbounded queues or worker pools
+
+### Cancellation & Timeouts
+1. External calls (HTTP, DB, LLM) without timeouts
+2. Cleanup paths that don't run on cancellation (missing finally/defer/Drop)
 ```
 
 ---
 
 ## Backend-Only Configuration (4 agents)
 
-Use Agent 3, 4, 5 from the full-stack config unchanged. Agent 1 below replaces both full-stack Agent 1 and Agent 2 — its content is fully inlined so the prompt works with zero external context:
+Use Agents 2, 3, 4, 5 from the full-stack config. Replace Agent 1 with:
 
-### Agent 1: API Contract & Data Integrity (senior-code-reviewer)
+### Agent 1: API Contract & Data Integrity
 
 ```
 Deep audit of {TARGET_DIR} for API contract and data integrity.
 
 Tech stack: {STACK_INFO}
 
-### API Contract
+Combines: API schema consistency, serialization boundaries, data flow tracing, declaration-execution gaps.
+
 1. API response models vs internal domain models — field mismatches?
 2. Serialization models (Pydantic/serde/Zod) — do they silently drop fields?
-   (Pydantic extra="ignore", serde missing deny_unknown_fields, struct tags missing)
-3. Enum/union values — all variants handled at every consumption site?
-
-### Data Flow Tracing
-Trace data from input to output through every transformation layer:
-1. Input → extraction/validation — where do fields first get filtered?
-   Field resolvers that only pass declared fields; schema validators that strip unknown fields.
-2. Extraction → context building — fields injected by orchestrator but not declared in
-   config get silently dropped by resolvers; watch for TWO parallel injection mechanisms.
-3. Context → builder/generator — search for context.get("field_name") calls and
-   cross-reference with what's actually in the context at that point.
-4. Builder → serialization — model_dump(exclude_none=True) drops None fields;
-   are all by_alias names correct?
-5. Serialization → cache — cache key completeness (code version? prompt version?);
-   cache deserialization wrapped in try/except or crashes on schema change?
-
-### Declaration-Execution Integrity
-1. Registered handlers/builders without corresponding implementation
-2. Enum values without config entries, config entries without code
-3. Generation mode declarations contradicting code behavior
-4. Registered but never-called methods (persist/save/restore that no startup code invokes)
-
-### Registry Coverage Alignment (you are the SOLE owner of this check)
-Find all module-level dicts/maps/match statements sharing a key type; compare key sets
-pairwise; flag any registry with fewer keys than the source-of-truth registry. For each
-pair, list both file:line locations, the missing keys, and the runtime impact.
-
-### Concurrency & Async Hygiene (only when Phase 0 detected an async runtime)
-Only report statically provable items. NO speculative performance guesses.
-1. Lock guards held across .await
-2. tokio::spawn with discarded JoinHandle
-3. unbounded channels/queues on hot paths
-4. Go: goroutines with no exit path; concurrent map writes
-5. Blocking calls inside async context (std::fs, reqwest::blocking, thread::sleep)
-6. Per-item DB/HTTP calls inside loops (N+1)
-7. Grow-only caches/collections
-
-For data-flow findings, `files` must include the full path (source → transform → destination).
-
-[Unified Output Contract]
+3. Data pipeline tracing (same as full-stack Agent 2)
+4. Declaration-execution gaps + registry coverage alignment (same as full-stack Agent 2)
 ```
 
 ---
 
 ## Frontend-Only Configuration (3 agents)
 
-### Agent 1: Component Architecture & Rendering (senior-code-reviewer)
+### Agent 1: Component Architecture & Rendering
 
 ```
-Deep audit of {TARGET_DIR} for component architecture and rendering integrity.
+Deep audit of {TARGET_DIR} for component architecture.
 
 Tech stack: {STACK_INFO}
 
-1. Type routing completeness — all possible types have renderers? What happens with
-   unknown types: crash, blank, or graceful fallback?
+1. Type routing completeness — all possible types have renderers?
 2. Component registration — dead components, missing registrations?
-   Check switch(type)/if-else routing chains for exhaustiveness.
 3. Props consumed but never provided? Props provided but never consumed?
 4. State management — inconsistent patterns, prop drilling, stale state?
 5. API consumption — error handling for API calls, loading states, empty states?
-6. Minimal accessibility pass: images without alt, form controls without labels,
-   interactive elements unreachable by keyboard.
-
-[Unified Output Contract]
 ```
 
-### Agent 2: Error Handling & Code Quality (senior-code-reviewer)
+### Agent 2: Error Handling & Code Quality
 
 ```
 Deep audit of {TARGET_DIR} for error handling and code quality.
 
 Tech stack: {STACK_INFO}
 
-1. Unhandled promise rejections — search: .then( without .catch, async functions
-   without try/catch at call sites
-2. Empty catch blocks — search: catch(e) {}, .catch(() => {}), catch (_)
-3. Error boundaries — list route-level components without an ErrorBoundary wrapper
-4. God components (>300 lines) — list each with line count
-5. Code duplication — parallel components doing the same job
-6. Test quality — components with logic but no test file; weakened assertions;
-   test.skip without justification
-7. Dependency audit classification (when Phase 0 npm audit output is provided):
-   Critical = RCE-grade CVE on a reachable path; High = known vuln on a reachable path
-
-[Unified Output Contract]
+1. Unhandled promise rejections, empty catch blocks
+2. Error boundaries coverage
+3. God components (>300 lines), code duplication
+4. Accessibility issues
+5. Dependency audit classification when Phase 0 `npm audit` output is provided:
+   critical = RCE-grade CVE on a reachable path; high = known vulnerability on a reachable path; medium = reachability unclear.
 ```
 
-### Agent 3: Config & Build (code-archaeologist)
+### Agent 3: Config & Build
 
 ```
-Deep audit of {TARGET_DIR} for build configuration and dependency hygiene.
+Deep audit of {TARGET_DIR} for build and configuration issues.
 
 Tech stack: {STACK_INFO}
 
-1. Build config consistency — conflicting settings across tsconfig/vite/webpack configs
-2. Dead dependencies — packages in package.json never imported
-3. Environment variable management — env vars referenced in code but missing from
-   .env.example; secrets committed in env files
-4. Bundle size issues — large imports (full lodash/moment), tree-shaking failures,
-   missing code splitting on routes
-
-[Unified Output Contract]
+1. Build config consistency, dead dependencies
+2. Environment variable management
+3. Bundle size issues (large imports, tree-shaking failures)
 ```
+
+---
+
+## Quick Mode Configuration (2 agents)
+
+- **Agent Q1: Silent Degradation & Security** — use full-stack Agent 3 verbatim.
+- **Agent Q2: Data Integrity & Registry** — use full-stack Agent 2, keeping only the "Data Flow Tracing" (steps 1, 4, 5) and "Registry Coverage Alignment" sections.
+
+Quick mode skips the verify pass; label every finding `unverified` in the report.
+
+---
+
+## Fallback Agent Types (Agent tool path only)
+
+When orchestrating via the Agent tool instead of Workflow, use these `subagent_type` values (these exist in the registry — there is NO `reviewer` type):
+
+| Dimension | subagent_type |
+|-----------|---------------|
+| Frontend-Backend Contract / Component Architecture | `general-purpose` |
+| Data Integrity & Flow / API Contract | `code-reviewer` |
+| Error Handling & Security | `security-reviewer` |
+| Architecture & Code Quality | `architect` |
+| Config & Persistence | `database-reviewer` |
+| Test Quality / Concurrency / Config & Build | `code-reviewer` |
+
+Note: several of these agent types carry Write/Edit/Bash tools — the READ-ONLY preamble is what prevents modification. Never omit it.

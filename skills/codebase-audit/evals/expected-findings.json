@@ -1,0 +1,92 @@
+{
+  "fixture": "evals/fixture",
+  "scoring": "Match by file + category (line numbers may drift). Pass threshold: >= 8 of the 10 must_detect findings reported. Bonus findings raise confidence but are not required.",
+  "planted_findings": [
+    {
+      "id": 1,
+      "must_detect": true,
+      "category": "registry-coverage",
+      "file": "app/registry.py",
+      "description": "SECTION_BUILDERS has 5 keys but SECTION_META has 3 — render_section returns None for faq/testimonials, which build_page silently drops"
+    },
+    {
+      "id": 2,
+      "must_detect": true,
+      "category": "silent-degradation",
+      "file": "app/handlers.py",
+      "description": "sync_metrics: except Exception: pass — failed metric events silently discarded"
+    },
+    {
+      "id": 3,
+      "must_detect": true,
+      "category": "silent-degradation",
+      "file": "app/handlers.py",
+      "description": "load_section: except Exception -> logger.warning + return DEFAULT_SECTION — user-visible fallback content at warning level, callers treat it as success"
+    },
+    {
+      "id": 4,
+      "must_detect": true,
+      "category": "cache-integrity",
+      "file": "app/pipeline.py",
+      "description": "cache_key only includes section_name + payload — no code/schema/prompt version dimension, stale entries survive logic changes"
+    },
+    {
+      "id": 5,
+      "must_detect": true,
+      "category": "security",
+      "file": "app/config.py",
+      "description": "API_KEY hardcoded as a string literal"
+    },
+    {
+      "id": 6,
+      "must_detect": true,
+      "category": "serialization",
+      "file": "app/pipeline.py",
+      "description": "SectionPayload extra=\"ignore\" silently drops unknown fields, and serialize() uses model_dump(exclude_none=True) on the cache write path"
+    },
+    {
+      "id": 7,
+      "must_detect": true,
+      "category": "declaration-execution",
+      "file": "app/config.py",
+      "description": "Settings class declared but never instantiated anywhere — main.py loads yaml directly and uses os.getenv"
+    },
+    {
+      "id": 8,
+      "must_detect": true,
+      "category": "config-completeness",
+      "file": "app/main.py",
+      "description": "_cfg.get(\"retry_limit\", 3) — retry_limit is used in code but absent from config.yaml, silently defaults"
+    },
+    {
+      "id": 9,
+      "must_detect": true,
+      "category": "test-quality",
+      "file": "tests/test_pipeline.py",
+      "description": "test_serialize_roundtrip has vacuous assertions (is not None + assert True); the only meaningful test is @pytest.mark.skip'd",
+      "note": "requires tests dimension (Agent 6) enabled; when scoring a run without it, replace with bonus finding 11 in the must set"
+    },
+    {
+      "id": 10,
+      "must_detect": true,
+      "category": "concurrency",
+      "file": "app/tasks.py",
+      "description": "run_job is async def but calls time.sleep (blocks the event loop); _job_counter incremented without a lock",
+      "note": "requires concurrency dimension (Agent 7) enabled; when scoring a run without it, replace with bonus finding 12 in the must set"
+    },
+    {
+      "id": 11,
+      "must_detect": false,
+      "category": "declaration-execution",
+      "file": "app/storage.py",
+      "description": "JobStore.persist/restore never called by any startup or shutdown path — jobs lost on restart"
+    },
+    {
+      "id": 12,
+      "must_detect": false,
+      "category": "resource-cleanup",
+      "file": "app/storage.py",
+      "description": "export_report: temp file not removed if upload() raises (no try/finally); also uses insecure tempfile.mktemp"
+    }
+  ]
+}
