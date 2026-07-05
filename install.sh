@@ -30,7 +30,7 @@ print_banner() {
     echo "╔═══════════════════════════════════════════════════════════╗"
     echo "║                                                           ║"
     echo "║                  Spellbook Installer                      ║"
-    echo "║     99 Skills | 7 Agents | Claude + Codex Ready           ║"
+    echo "║     101 Skills | 7 Agents | Claude + Codex Ready          ║"
     echo "║                                                           ║"
     echo "╚═══════════════════════════════════════════════════════════╝"
     echo -e "${NC}"

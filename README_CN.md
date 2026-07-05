@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>99 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>101 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-99-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-101-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -142,12 +142,16 @@ python3 scripts/audit_skill_quality.py skill-creator
 |------|------|
 | [`multi-model-orchestrator`](./skills/multi-model-orchestrator/) | 通过中心化交接文档协调多 agent 任务 |
 | [`flowguard`](./skills/flowguard/) | 守护长链路、模糊或有状态的 agent 任务，防止漂移 |
+| [`skill-lifeguard`](./skills/skill-lifeguard/) | 为高价值 skill 增加可靠性契约、检查点、烟测钩子与漂移信号 |
+| [`review-gate`](./skills/review-gate/) | 在 agent 变更落地前产出 review pack 并要求人工批准 |
 | [`skill-audit`](./skills/skill-audit/) | 审计、设计、分类并度量 agent skills |
 | [`threads`](./skills/threads/) | Codex 原生子 agent 与并行 GitHub 队列通道 |
 | [`codex-fluent`](./skills/codex-fluent/) | Codex session 清理、归档策略与交接纪律 |
 | [`codex-retrospective`](./skills/codex-retrospective/) | 让 Codex 复盘近期历史以改进行为 |
 | [`brainstorming`](./skills/brainstorming/) | 通过苏格拉底式对话打磨设计与架构 |
 | [`personal-arsenal-lifecycle-doctor`](./skills/personal-arsenal-lifecycle-doctor/) | 诊断个人 `~/.claude/skills` 的技能健康状态 |
+
+参见 [`docs/agent-reliability-trio.md`](./docs/agent-reliability-trio.md) 了解 Reliable Skill + Context Engineering + Review Gate 组合流程。
 
 ### 开发架构
 

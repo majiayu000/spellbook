@@ -14,6 +14,13 @@ out_of_scope:
 verification_commands:
 stop_conditions:
 handoff_location:
+objective_restatement:
+plan_5_steps_or_less:
+context_audit:
+  keep:
+  externalize:
+  discard:
+  stale_or_conflicting:
 ```
 
 Use `clarify_first` when missing data would cause destructive, expensive, security-sensitive, or large-scope work.
@@ -27,6 +34,8 @@ modified_files:
 commands_run:
 fresh_evidence:
 decisions:
+context_audit:
+review_gate_decision:
 blockers:
 next_step:
 scope_change:
@@ -49,8 +58,16 @@ constraint_set_or_spec:
 l1_l7_summary:
 key_decisions:
 current_priority:
+objective_restatement:
+plan_5_steps_or_less:
+context_audit:
+  keep:
+  externalize:
+  discard:
+  stale_or_conflicting:
 verification_commands:
 fresh_verification_evidence:
+review_gate_decision:
 blockers:
 next_action:
 stop_conditions:
@@ -62,6 +79,11 @@ staleness_checks:
 
 Required fields for compaction safety: `modified_files`, `constraint_set_or_spec`, `verification_commands`, `key_decisions`, `current_priority`, and `l1_l7_summary` when VibeGuard applies.
 
+Context audit fields are required when the handoff follows a long loop,
+multi-agent run, compaction, or queue. Externalize raw logs, broad search
+results, stale plans, and large tool output into artifacts or durable notes
+instead of carrying them in active context.
+
 ## Resume Checklist
 
 1. Re-read applicable `AGENTS.md` before editing.
@@ -71,6 +93,7 @@ Required fields for compaction safety: `modified_files`, `constraint_set_or_spec
 5. Treat memory as a hint until verified against current files, git, runtime, or remote truth.
 6. Reconcile any newer user instruction before continuing older work.
 7. Re-establish the current route: `execute_direct`, `plan_first`, or `clarify_first`.
+8. Re-state the current objective and a plan of no more than five steps before editing.
 
 If the handoff and local truth disagree, update the plan before editing. If the disagreement changes goal, scope, safety, or done-when, stop and ask.
 
@@ -110,6 +133,8 @@ Read-only automation candidates:
 - handoff draft
 - verification summary
 - failed-log digest
+- review-pack drafts
+- context-audit summaries
 
 Require explicit user confirmation or a separate trusted contract for:
 

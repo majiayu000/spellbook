@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>99 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>101 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-99-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-101-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -142,12 +142,16 @@ Skills for orchestrating, guarding, and maintaining AI agent workflows — the c
 |-------|-------------|
 | [`multi-model-orchestrator`](./skills/multi-model-orchestrator/) | Coordinate multi-agent tasks via a centralized handoff document |
 | [`flowguard`](./skills/flowguard/) | Guard long, ambiguous, or stateful agent tasks from drift |
+| [`skill-lifeguard`](./skills/skill-lifeguard/) | Add reliable-skill contracts, checkpoints, smoke hooks, and drift signals |
+| [`review-gate`](./skills/review-gate/) | Produce review packs and require human approval before landing agent changes |
 | [`skill-audit`](./skills/skill-audit/) | Audit, design, categorize, and measure agent skills |
 | [`threads`](./skills/threads/) | Codex-native subagents and parallel GitHub queue lanes |
 | [`codex-fluent`](./skills/codex-fluent/) | Codex session hygiene, archive strategy, and handoff discipline |
 | [`codex-retrospective`](./skills/codex-retrospective/) | Codex self-review of recent history to improve behavior |
 | [`brainstorming`](./skills/brainstorming/) | Socratic dialogue for design refinement and architecture exploration |
 | [`personal-arsenal-lifecycle-doctor`](./skills/personal-arsenal-lifecycle-doctor/) | Diagnose the health of personal `~/.claude/skills` |
+
+See [`docs/agent-reliability-trio.md`](./docs/agent-reliability-trio.md) for the Reliable Skill + Context Engineering + Review Gate workflow.
 
 ### Development Architecture
 

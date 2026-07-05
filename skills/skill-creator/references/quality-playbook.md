@@ -29,6 +29,9 @@ that points to narrower references.
   signals, risky defaults, and recovery checks.
 - **Verification**: For objective workflows, include scripts, assertions, smoke
   tests, browser checks, health checks, or explicit done-when proof.
+- **Reliable Skill Contract**: For high-value workflow skills, include negative
+  examples, phase checkpoints, machine-checkable done conditions, replay or
+  smoke hooks, and drift signals.
 - **Support files**: Use `references/`, `scripts/`, `assets/`, `templates/`, and
   `evals/` when detail would otherwise bloat `SKILL.md`.
 - **Setup**: If the skill needs user or environment context, describe a config
@@ -48,6 +51,8 @@ Before calling a skill good, ask:
 4. Does `SKILL.md` point clearly to every support directory it expects to use?
 5. Is there a concrete verification path for objective work?
 6. Are risky or destructive actions guarded by confirmation or checks?
+7. Does a high-value workflow skill include the five Reliable Skill Contract
+   elements or record why a specific element is deferred?
 
 Run the repository-level audit when available:
 
