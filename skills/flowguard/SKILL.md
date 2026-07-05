@@ -17,7 +17,9 @@ This skill coordinates other skills; it does not replace them. Use task-specific
 - Do not treat memory, summaries, or handoffs as current truth until repo, git, files, runtime, or remote state is verified.
 - Do not claim completion without fresh verification evidence from the current session.
 - Do not expand scope, touch destructive surfaces, or cross file-ownership lanes without stopping to re-route.
+- Re-state the primary objective and a plan of no more than five steps before major phase changes.
 - Prefer one controlling checkpoint over many specialized workflow fragments when the task risk is context loss, drift, or compounding errors.
+- Before commit, push, PR, merge, or applying agent-generated changes outside the already-approved scope, call `review-gate` or produce the same review pack and wait for explicit human approval.
 
 ## Route First
 
@@ -61,6 +63,8 @@ out_of_scope:
 verification_commands:
 stop_conditions:
 handoff_location:
+objective_restatement:
+plan_5_steps_or_less:
 ```
 
 For short direct tasks, this can be one concise paragraph. For long tasks, make it explicit and keep it available for compaction or resume.
@@ -70,10 +74,11 @@ For short direct tasks, this can be one concise paragraph. For long tasks, make 
 Use a step-test-update loop:
 
 1. Select one current step with owned files and an expected check.
-2. Announce the edit boundary before changing files.
-3. Make the smallest useful change.
-4. Run focused verification for that step when feasible.
-5. Record a checkpoint with changed files, command results, decisions, blockers, and next step.
+2. Re-state how the step supports the primary objective.
+3. Announce the edit boundary before changing files.
+4. Make the smallest useful change.
+5. Run focused verification for that step when feasible.
+6. Record a checkpoint with changed files, command results, decisions, blockers, context audit, and next step.
 
 Stop and re-evaluate when any condition occurs:
 
@@ -108,6 +113,14 @@ Pick checks from the repo, `AGENTS.md`, and changed surface. Common defaults:
 
 If a check cannot run, say why and name the nearest useful fallback that did run.
 
+## Review Gate
+
+Before landing agent-generated changes, produce a concise review pack or use the
+`review-gate` skill. The pack must include intent, diff summary, changed files,
+risks, verification, open questions, and the exact action needing approval.
+Human approval for one action does not automatically authorize a different
+action such as merge.
+
 ## Handoff And Resume
 
 Read `references/state-contract.md` when asked to create a handoff, resume after compaction, continue a previous task, or prepare automation.
@@ -120,6 +133,8 @@ Required handoff fields:
 - key decisions
 - current priority
 - L1-L7 rule summary when VibeGuard applies
+- context audit: keep, externalize, discard, and stale/conflicting inputs
+- review gate decision when changes are ready to land
 - blockers and next action
 
 Resume must start by comparing the handoff with current local truth. If cwd, branch, files, tests, or user priority changed, update the plan before editing.
@@ -146,3 +161,4 @@ Skill workflows are manual first. Automate only after the workflow has been manu
 
 - `scripts/workflow_state_snapshot.sh <path>`: read-only snapshot for cwd, git state, nearby agent instructions, dirty files, and likely verification commands.
 - `references/state-contract.md`: templates for preflight, checkpoints, handoff, resume, loop guards, and automation readiness.
+- `review-gate`: review pack and explicit human approval before landing agent-generated diffs.

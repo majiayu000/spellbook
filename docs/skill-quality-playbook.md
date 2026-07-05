@@ -61,6 +61,22 @@ Every new or materially changed skill should satisfy these checks:
 - **Hooks**: Use on-demand hooks only for cases where temporary guardrails are
   valuable, such as production operations or frozen edit scopes.
 
+## Reliable Skill Contract
+
+High-value workflow skills should pass the `skill-lifeguard` contract before
+they are treated as mature:
+
+| Element | What To Look For |
+|---|---|
+| Explicit negative examples | Forbidden behaviors paired with safer alternatives. |
+| Verification checkpoints | Pass/fail checks after important phases. |
+| Machine-checkable done conditions | Fresh commands, assertions, artifacts, or state queries. |
+| Replay or smoke hooks | A small way to rerun the workflow and feed logs back into patches. |
+| Drift signal detection | Signs of undertriggering, overtriggering, stale commands, or false success. |
+
+Manual workflows may document deferred elements, but they should not be promoted
+to automation until the manual version has passed on real tasks.
+
 For library-level behavior rules, see
 [Spellbook Operating Contract](./spellbook-operating-contract.md).
 

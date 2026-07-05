@@ -1,13 +1,13 @@
 {
-  "total_skills": 99,
+  "total_skills": 101,
   "total_tags": 35,
   "tag_counts": {
-    "agent": 12,
+    "agent": 13,
     "architecture": 16,
     "auth": 4,
     "backend": 14,
     "browser": 4,
-    "code-review": 13,
+    "code-review": 14,
     "content": 7,
     "database": 5,
     "debugging": 8,
@@ -49,6 +49,7 @@
       "multi-model-orchestrator",
       "repo-agent-context-audit",
       "repo-scaffold",
+      "review-gate",
       "skill-audit",
       "strategic-compact",
       "threads"
@@ -110,6 +111,7 @@
       "project-health-auditor",
       "push-all",
       "repo-agent-context-audit",
+      "review-gate",
       "threads",
       "ui-ux-pro-max",
       "vibeguard"

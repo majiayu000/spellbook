@@ -61,6 +61,11 @@ Check available MCPs - if useful for research (searching docs, finding similar s
 
 For new or materially changed skills, read `references/quality-playbook.md` before drafting. Use it to choose one primary skill type, decide whether the skill needs gotchas, scripts, setup state, hooks, or verification, and avoid bloating `SKILL.md` with details that belong in support files.
 
+For agent-workflow, delivery, automation, PR, or high-impact skills, also apply
+the Reliable Skill Contract from `skill-lifeguard`: negative examples,
+verification checkpoints, machine-checkable done conditions, replay or smoke
+hooks with a log-to-patch loop, and drift signal detection.
+
 ### Write the SKILL.md
 
 Based on the user interview, fill in these components:
@@ -75,6 +80,8 @@ Based on the user interview, fill in these components:
   ```
   Put required tools, dependencies, and setup notes in `allowed-tools`, `metadata`, or the skill body instead of free-form `compatibility` text.
 - **the rest of the skill :)**
+- **Reliable Skill Contract** for high-value workflow skills: forbidden
+  behaviors, checkpoints, done conditions, smoke hooks, and drift signals.
 
 ### Skill Writing Guide
 

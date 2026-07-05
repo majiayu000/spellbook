@@ -1162,6 +1162,23 @@
     ]
   },
   {
+    "name": "review-gate",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/review-gate/SKILL.md",
+    "description": "Use before an agent-produced diff is committed, pushed, opened as a PR, merged, landed, or applied to user files when explicit implementation approval is missing. Trigger for review gate, review pack, approve before landing, diff first then land, human approval, merge gate, commit gate, push gate, or PR readiness. Produces a concise review pack, records risks and verification, and blocks landing until a human explicitly approves or approves with required fixes.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "agent",
+      "code-review"
+    ]
+  },
+  {
     "name": "rust-best-practices",
     "category": "Development Architecture",
     "format": "directory",
@@ -1301,6 +1318,20 @@
     ]
   },
   {
+    "name": "skill-lifeguard",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/skill-lifeguard/SKILL.md",
+    "description": "Use when a skill is brittle, drifting, repeatedly failing, or needs a Reliable Skill Contract. Trigger for phrases like skill lifeguard, reliable skill, self-maintaining skill, negative examples, verification checkpoints, drift signals, replay hooks, or failure log to skill patch. Audits or patches skills so high-value workflows include explicit forbidden behaviors, checkpoints, machine-checkable done conditions, replay or smoke hooks, and drift detection.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": []
+  },
+  {
     "name": "skill-usage-stats",
     "category": "AI & Agent Workflow",
     "format": "directory",
@@ -1335,7 +1366,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/strategic-compact/SKILL.md",
-    "description": "当用户需要在长会话的逻辑边界手动压缩上下文、保留关键决策和约束、丢弃中间探索过程时使用。",
+    "description": "当用户需要在长会话的逻辑边界手动压缩上下文、做 context engineering、目标复述、上下文审计、外部 scratchpad、handoff 或 compaction policy 时使用。",
     "language": "zh",
     "compatibility": {
       "runtimes": [

@@ -66,6 +66,7 @@ Use `assets/skill-brief-template.md` for the output. Fill it with:
 - Progressive disclosure map: SKILL.md vs references vs scripts vs assets
 - Setup requirements or config questions
 - Verification strategy
+- Reliable Skill Contract coverage for high-value workflow skills
 - Distribution path
 - Measurement plan
 
@@ -100,6 +101,21 @@ it to implement the files, generate realistic test prompts, and run validation.
 If editing an existing skill, include the exact file paths and the smallest
 content changes needed. Do not rewrite unrelated skill behavior.
 
+### 7. Check The Reliable Skill Contract
+
+For agent-workflow, delivery, PR, automation, or high-impact skills, use
+`skill-lifeguard` or apply the same five-element score:
+
+- explicit negative examples
+- verification checkpoints
+- machine-checkable done conditions
+- replay or smoke hooks with a log-to-patch loop
+- drift signal detection
+
+Report each element as `present`, `partial`, `missing`, or `deferred`. A missing
+element is not always a blocker, but it must be visible in the brief and patch
+plan.
+
 ## Output Format
 
 For advisory requests, answer with:
@@ -108,7 +124,8 @@ For advisory requests, answer with:
 2. Category: one primary taxonomy category
 3. Skill brief: filled from the template
 4. Implementation notes: files to create/edit and validation commands
-5. Risks: overbreadth, obviousness, missing setup, missing verification, or weak
+5. Reliable Skill Contract score, when applicable
+6. Risks: overbreadth, obviousness, missing setup, missing verification, or weak
    trigger description
 
 For repository work, actually create or update the files, then run the repo's
@@ -128,3 +145,5 @@ skill validation command.
   validation commands, example prompts, expected artifacts, or usage metrics.
 - Do not encode vague autonomy such as "be proactive." Name the direct actions,
   escalation boundaries, and end-state checks that should change behavior.
+- Do not call a brittle skill "reliable" without negative examples,
+  checkpoints, done conditions, replay or smoke hooks, and drift signals.

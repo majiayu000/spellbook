@@ -19,6 +19,20 @@ general model behavior:
 If the content only says "be careful" or repeats general best practices, it does
 not belong in a skill yet.
 
+## Agent Reliability Trio
+
+For long-running, high-impact, multi-agent, or merge-capable workflows, use the
+three reliability homes together:
+
+- `skill-lifeguard` for the Reliable Skill Contract and drift repair loop.
+- `flowguard` plus `strategic-compact` for objective re-verify, context audit,
+  compaction policy, and external scratchpads.
+- `review-gate` for review packs and explicit human approval before landing
+  agent-generated diffs.
+
+See [Agent Reliability Trio](./agent-reliability-trio.md) for the end-to-end
+pattern and failure-log-to-patch examples.
+
 ## Autonomy Boundary
 
 A skill should say which actions the agent may take directly and which actions
@@ -31,6 +45,7 @@ require escalation. Prefer concrete boundary lists over vague caution.
 | Publishing, billing, credential, permission, or remote production changes | Escalate before acting unless the user already gave explicit approval. |
 | Destructive local changes such as deleting files or rewriting history | Escalate before acting and name the reversible alternative. |
 | Missing required data or unsupported runtime capability | Fail loud with the blocker; do not invent fields, APIs, or fallback output. |
+| Commit, push, PR, merge, or landing an agent-generated diff | Produce a review pack and wait for explicit human approval unless the current request already grants that exact action. |
 
 ## Evidence-Backed Pushback
 

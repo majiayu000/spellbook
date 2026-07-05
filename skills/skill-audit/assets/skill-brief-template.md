@@ -57,6 +57,15 @@ that should trigger the skill.
 - Expected artifacts:
 - Failure signals:
 
+## Reliable Skill Contract
+
+- Negative examples:
+- Verification checkpoints:
+- Machine-checkable done conditions:
+- Replay or smoke hooks:
+- Log-to-patch loop:
+- Drift signals:
+
 ## Distribution
 
 - Repo-local / shared plugin / marketplace / experimental:
