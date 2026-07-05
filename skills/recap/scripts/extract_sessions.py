@@ -13,6 +13,7 @@ import datetime
 import glob
 import json
 import os
+import re
 import sys
 
 
@@ -67,11 +68,42 @@ def parse_session(path, limit, cutoff_iso):
     return full_start, win_start, win_end, n_user, texts, n_tools
 
 
+def clean_project_name(slug):
+    """Strip the flattened home-dir prefix from a project dir name.
+
+    Works for any user's home (local or synced remote), e.g.
+    "-Users-lifcc-Desktop-code-AI-foo" -> "AI-foo".
+    """
+    m = re.match(r"^-(?:Users|home)-[^-]+-(?:Desktop-code-)?", slug)
+    return slug[m.end():] if m else slug
+
+
+def discover_roots(extra_roots):
+    """Return [(host_label, projects_dir)] to scan.
+
+    Always includes the local ~/.claude/projects, then any synced remote
+    hosts under ~/.claude/remote-sessions/<host>/projects, then explicit
+    --extra-root values ("label=path" or bare path).
+    """
+    roots = [("local", os.path.expanduser("~/.claude/projects"))]
+    for d in sorted(glob.glob(os.path.expanduser("~/.claude/remote-sessions/*/projects"))):
+        roots.append((os.path.basename(os.path.dirname(d)), d))
+    for spec in extra_roots:
+        label, _, path = spec.rpartition("=")
+        path = os.path.expanduser(path)
+        if not os.path.isdir(path):
+            raise SystemExit(f"--extra-root path does not exist or is not a directory: {path}")
+        roots.append((label or os.path.basename(path.rstrip("/")), path))
+    return [(label, d) for label, d in roots if os.path.isdir(d)]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=float, default=2)
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--max-msgs", type=int, default=3)
+    ap.add_argument("--extra-root", action="append", default=[],
+                    help="extra projects dir to scan, as 'label=path' or bare path; repeatable")
     args = ap.parse_args()
 
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -80,20 +112,17 @@ def main():
     # transcript timestamps are ISO-8601 UTC ("...Z"); compare lexicographically
     cutoff_iso = cutoff_dt.strftime("%Y-%m-%dT%H:%M:%S")
 
-    root = os.path.expanduser("~/.claude/projects")
-    files = [
-        f for f in glob.glob(os.path.join(root, "*", "*.jsonl"))
-        if "/subagents/" not in f and os.path.getmtime(f) > cutoff_epoch
-    ]
+    roots = discover_roots(args.extra_root)
+    files = []
+    for host, root in roots:
+        files.extend(
+            (host, f) for f in glob.glob(os.path.join(root, "*", "*.jsonl"))
+            if "/subagents/" not in f and os.path.getmtime(f) > cutoff_epoch
+        )
 
     sessions = []
-    for f in sorted(files, key=os.path.getmtime):
-        proj = os.path.basename(os.path.dirname(f))
-        home_slug = os.path.expanduser("~").replace("/", "-")
-        for prefix in (home_slug + "-Desktop-code-", home_slug + "-"):
-            if proj.startswith(prefix):
-                proj = proj[len(prefix):]
-                break
+    for host, f in sorted(files, key=lambda p: os.path.getmtime(p[1])):
+        proj = clean_project_name(os.path.basename(os.path.dirname(f)))
         full_start, win_start, win_end, n_user, texts, n_tools = parse_session(
             f, args.max_msgs, cutoff_iso)
         if not win_start and n_user == 0 and n_tools == 0:
@@ -101,6 +130,7 @@ def main():
         sub_dir = f[:-6] + "/subagents"
         n_sub = len(glob.glob(sub_dir + "/*.jsonl")) if os.path.isdir(sub_dir) else 0
         sessions.append({
+            "host": host,
             "project": proj,
             "session": os.path.basename(f)[:8],
             "start": win_start,
@@ -118,13 +148,15 @@ def main():
         json.dump(sessions, sys.stdout, ensure_ascii=False, indent=1)
         return
 
+    hosts = ", ".join(label for label, _ in roots)
     print(f"# {len(sessions)} sessions with activity in last {args.days:g} days, "
-          f"{len({s['project'] for s in sessions})} projects\n")
+          f"{len({s['project'] for s in sessions})} projects, hosts: {hosts}\n")
     for s in sessions:
         t0 = (s["start"] or "?")[:16]
         t1 = (s["end"] or "?")[11:16]
         tag = f" [resumed, started {s['full_start'][:10]}]" if s["resumed"] else ""
-        print(f"### {s['project']} | {s['session']} | {t0} → {t1}{tag} | "
+        where = "" if s["host"] == "local" else f" @{s['host']}"
+        print(f"### {s['project']}{where} | {s['session']} | {t0} → {t1}{tag} | "
               f"user:{s['user_msgs']} tools:{s['tool_calls']} sub:{s['subagents']} {s['size_mb']}MB")
         for m in s["first_messages"]:
             print(f"   - {m}")

@@ -28,8 +28,20 @@ python3 "$SKILL_DIR/scripts/extract_sessions.py" --days 2
 
 - `--days N` 调整回看窗口（默认 2；周回顾用 7）
 - `--json` 输出结构化数据供进一步处理
-- 输出：每个主会话的项目、窗口内起止时间、用户消息数、工具调用数、子 agent 数、体积、前 3 条用户消息
+- 输出：每个主会话的机器、项目、窗口内起止时间、用户消息数、工具调用数、子 agent 数、体积、前 3 条用户消息
 - 统计只计入窗口内的消息；跨窗口 resume 的老会话会标 `resumed`，其窗口前的历史不会混入本次回顾
+
+### 跨机器汇聚（可选）
+
+`scripts/sync_remote_sessions.sh` 把远程机器的 `~/.claude/projects` rsync 到本机 `~/.claude/remote-sessions/<host>/projects`，extract 脚本会自动发现这些目录并一并扫描（会话标 `@<host>`）：
+
+```bash
+"$SKILL_DIR/scripts/sync_remote_sessions.sh" starlight    # 或 RECAP_SYNC_HOSTS="host1 host2"
+```
+
+- 前提：目标机器已配置 SSH 免密（`~/.ssh/config` 里的 host 别名）
+- 建议挂 cron 每日同步；某台机器同步失败会返回失败状态，避免误以为数据完整
+- 其他目录可用 `--extra-root label=path` 显式加入扫描；显式路径不存在时应先修正路径再继续
 
 如果用户提到 Codex，补充检查 `~/.codex/sessions`（如存在）并说明覆盖范围。
 
