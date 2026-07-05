@@ -40,8 +40,8 @@ python3 "$SKILL_DIR/scripts/extract_sessions.py" --days 2
 ```
 
 - 前提：目标机器已配置 SSH 免密（`~/.ssh/config` 里的 host 别名）
-- 建议挂 cron 每日同步；某台机器同步失败只影响它的新鲜度，不阻塞本机回顾
-- 其他目录可用 `--extra-root label=path` 显式加入扫描
+- 建议挂 cron 每日同步；某台机器同步失败会返回失败状态，避免误以为数据完整
+- 其他目录可用 `--extra-root label=path` 显式加入扫描；显式路径不存在时应先修正路径再继续
 
 如果用户提到 Codex，补充检查 `~/.codex/sessions`（如存在）并说明覆盖范围。
 

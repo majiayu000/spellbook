@@ -21,7 +21,6 @@ for h in "${hosts[@]}"; do
   dest="$dest_base/$h/projects"
   mkdir -p "$dest"
   if rsync -az --timeout=30 \
-      --exclude='subagents/' \
       --include='*/' --include='*.jsonl' --exclude='*' \
       --prune-empty-dirs \
       "$h:.claude/projects/" "$dest/"; then

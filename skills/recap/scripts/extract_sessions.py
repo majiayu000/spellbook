@@ -91,6 +91,8 @@ def discover_roots(extra_roots):
     for spec in extra_roots:
         label, _, path = spec.rpartition("=")
         path = os.path.expanduser(path)
+        if not os.path.isdir(path):
+            raise SystemExit(f"--extra-root path does not exist or is not a directory: {path}")
         roots.append((label or os.path.basename(path.rstrip("/")), path))
     return [(label, d) for label, d in roots if os.path.isdir(d)]
 
