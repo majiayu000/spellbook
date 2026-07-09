@@ -171,6 +171,24 @@
     ]
   },
   {
+    "name": "capability-distill",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/capability-distill/SKILL.md",
+    "description": "能力蒸馏工作流——把强模型（限时窗口的新模型）或高质量轨迹中的判断力，蒸馏成弱模型/日常模型可加载的判断层 skill。当用户说\"蒸馏\"、\"把 X 模型的能力写成 skill\"、\"新模型窗口要关了帮我留点东西\"、\"这次任务做得好把方法固化下来\"时使用。产出的是判断手册（怎么想、何时停），不是操作规程。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "agent",
+      "documentation",
+      "prompt"
+    ]
+  },
+  {
     "name": "clash-doctor",
     "category": "Operations & Deploy",
     "format": "directory",
