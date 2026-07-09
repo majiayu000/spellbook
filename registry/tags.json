@@ -1,5 +1,5 @@
 {
-  "total_skills": 101,
+  "total_skills": 102,
   "total_tags": 35,
   "tag_counts": {
     "agent": 13,
@@ -19,18 +19,18 @@
     "go": 5,
     "harmonyos": 1,
     "javascript": 5,
-    "multi-ai": 6,
+    "multi-ai": 7,
     "observability": 3,
     "performance": 9,
     "product-management": 4,
     "prompt": 2,
-    "proxy": 3,
+    "proxy": 4,
     "python": 3,
     "react": 7,
     "refactoring": 4,
     "research": 1,
     "rust": 5,
-    "security": 5,
+    "security": 6,
     "system": 7,
     "testing": 8,
     "typescript": 4,
@@ -135,7 +135,7 @@
     "debugging": [
       "codex-log-guard",
       "css-debug",
-      "fixflow",
+      "ip-check",
       "optimize-network",
       "performance-capacity",
       "rustdesk-doctor",
@@ -212,6 +212,7 @@
       "cliproxy-newapi-stack",
       "codex",
       "gemma4-local-deploy",
+      "ip-check",
       "multi-ai-research"
     ],
     "observability": [
@@ -243,6 +244,7 @@
     "proxy": [
       "clash-doctor",
       "clash-routes",
+      "ip-check",
       "optimize-network"
     ],
     "python": [
@@ -278,6 +280,7 @@
     "security": [
       "auth-security",
       "dev-architecture-playbook",
+      "ip-check",
       "optflow",
       "security-threat-model",
       "server-security"
@@ -296,7 +299,7 @@
       "comprehensive-testing",
       "dev-architecture-playbook",
       "elegant-architecture",
-      "fixflow",
+      "ip-check",
       "optflow",
       "playwright-automation",
       "test-driven-development"

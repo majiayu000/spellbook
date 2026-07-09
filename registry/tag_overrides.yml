@@ -23,6 +23,12 @@ contribution-architect:
 
 fixflow:
   - agent
+
+ip-check:
+  - proxy
+  - security
+  - debugging
+
   - testing
   - debugging
 
