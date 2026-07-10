@@ -1336,14 +1336,17 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/skill-usage-stats/SKILL.md",
-    "description": "扫描本机 Claude Code 和 Codex 的会话日志，统计哪些 skill 有本地调用证据、哪些在本机无证据（已安装但日志无痕迹，不等于从未使用）、调用排行、月度趋势、项目分布，输出终端表格和 Markdown 报告，可导出 CSV/JSON。Use when the user asks to 统计 skill 使用, 看 skill usage, find zombie skills, 僵尸 skill, which skills are installed but never used, skill 调用排行, skill usage report, skill 使用健康度, audit personal skill arsenal, or manage which skills to keep or remove.",
+    "description": "跨工具(Claude Code + Codex)的 agent 健康体检 + skill 用量统计。两大能力:(1)体检——安装/版本、settings/config.toml 解析、agent 定义、hook 耗时、被拒只读命令、CLAUDE.md/AGENTS.md 体积、上下文占用、MCP/插件,并在用户确认后执行写操作(设 auto mode、加只读放行规则、禁用僵尸 skill/插件、claude/codex 更新、改 config.toml);(2)用量——哪些 skill 有调用证据、僵尸清单、排行、趋势。Use when the user asks 体检/doctor/健康检查/health check/诊断配置, 统计 skill 使用/skill usage/僵尸 skill/zombie skill, audit my skills/config, 看看配置有没有问题, Claude 或 Codex 配置体检, or manage which skills to keep or remove.",
     "language": "zh",
     "compatibility": {
       "runtimes": [
         "unspecified"
       ]
     },
-    "tags": []
+    "tags": [
+      "agent",
+      "mcp"
+    ]
   },
   {
     "name": "slides",
