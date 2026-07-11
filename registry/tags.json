@@ -10,7 +10,7 @@
     "code-review": 14,
     "content": 7,
     "database": 5,
-    "debugging": 8,
+    "debugging": 9,
     "deploy": 8,
     "design-system": 2,
     "devops": 2,
@@ -135,6 +135,7 @@
     "debugging": [
       "codex-log-guard",
       "css-debug",
+      "fixflow",
       "ip-check",
       "optimize-network",
       "performance-capacity",
@@ -299,7 +300,7 @@
       "comprehensive-testing",
       "dev-architecture-playbook",
       "elegant-architecture",
-      "ip-check",
+      "fixflow",
       "optflow",
       "playwright-automation",
       "test-driven-development"

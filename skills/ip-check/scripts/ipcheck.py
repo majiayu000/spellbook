@@ -10,6 +10,10 @@
   python3 ipcheck.py <IP> --proxy socks5://user:pass@host:port  # IP 和代理分开
   环境变量 IPQS_KEY / ABUSEIPDB_KEY 存在时自动启用对应检测
 """
+import argparse
+import gzip
+import http.client
+import ipaddress
 import json
 import os
 import re
@@ -19,7 +23,9 @@ import struct
 import subprocess
 import sys
 import time
+import urllib.parse
 import urllib.request
+import zlib
 
 TIMEOUT = 12
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
@@ -69,84 +75,167 @@ def _get(url, proxy=None, host_header=None):
         return None, f"__err__:{e}"
 
 
+def _recv_exact(sock, size):
+    """Read exactly ``size`` bytes or fail on a truncated SOCKS frame."""
+    data = bytearray()
+    while len(data) < size:
+        chunk = sock.recv(size - len(data))
+        if not chunk:
+            raise OSError(f"socks5 响应截断: 需要 {size} 字节, 只收到 {len(data)}")
+        data.extend(chunk)
+    return bytes(data)
+
+
 def _socks5_connect(sock, host, port, user, pw):
     """在已连接 sock 上完成 socks5 握手，连到 host:port。"""
     if user:
         sock.sendall(b"\x05\x02\x00\x02")
     else:
         sock.sendall(b"\x05\x01\x00")
-    resp = sock.recv(2)
-    if len(resp) < 2 or resp[0] != 5:
+    resp = _recv_exact(sock, 2)
+    if resp[0] != 5:
         raise OSError("socks5 握手失败")
     if resp[1] == 2:  # 需要认证
+        if user is None or pw is None:
+            raise OSError("socks5 服务端要求用户名密码")
         u = user.encode(); p = pw.encode()
+        if len(u) > 255 or len(p) > 255:
+            raise ValueError("socks5 用户名或密码超过 255 字节")
         sock.sendall(b"\x01" + bytes([len(u)]) + u + bytes([len(p)]) + p)
-        a = sock.recv(2)
-        if len(a) < 2 or a[1] != 0:
+        a = _recv_exact(sock, 2)
+        if a[1] != 0:
             raise OSError("socks5 认证失败")
     elif resp[1] != 0:
         raise OSError(f"socks5 不支持的认证方法 {resp[1]}")
-    h = host.encode()
+    h = host.encode("idna")
+    if len(h) > 255:
+        raise ValueError("socks5 目标主机名超过 255 字节")
     sock.sendall(b"\x05\x01\x00\x03" + bytes([len(h)]) + h + struct.pack(">H", port))
-    rep = sock.recv(4)
-    if len(rep) < 2 or rep[1] != 0:
-        raise OSError(f"socks5 连接目标失败 rep={rep[1] if len(rep)>1 else '?'}")
+    rep = _recv_exact(sock, 4)
+    if rep[0] != 5 or rep[1] != 0:
+        raise OSError(f"socks5 连接目标失败 rep={rep[1]}")
     # 读掉 BND.ADDR + PORT
-    atyp = rep[3] if len(rep) >= 4 else 1
+    atyp = rep[3]
     if atyp == 1:
-        sock.recv(6)
+        _recv_exact(sock, 6)
     elif atyp == 3:
-        ln = sock.recv(1)[0]; sock.recv(ln + 2)
+        ln = _recv_exact(sock, 1)[0]
+        _recv_exact(sock, ln + 2)
     elif atyp == 4:
-        sock.recv(18)
+        _recv_exact(sock, 18)
+    else:
+        raise OSError(f"socks5 返回未知地址类型 {atyp}")
+
+
+def _read_http_response(sock):
+    """Parse one HTTP response, including chunked framing and compression."""
+    response = http.client.HTTPResponse(sock, method="GET")
+    response.begin()
+    status = response.status
+    body = response.read(65537)
+    if len(body) > 65536:
+        raise ValueError("HTTP 响应超过 64 KiB 上限")
+    encoding = (response.getheader("Content-Encoding") or "").lower()
+    if encoding == "gzip":
+        body = gzip.decompress(body)
+    elif encoding == "deflate":
+        body = zlib.decompress(body)
+    elif encoding not in {"", "identity"}:
+        raise ValueError(f"不支持的 HTTP Content-Encoding: {encoding}")
+    content_type = response.getheader("Content-Type") or ""
+    charset_match = re.search(r"charset=([^;\s]+)", content_type, re.I)
+    charset = charset_match.group(1).strip('"\'') if charset_match else "utf-8"
+    return status, body.decode(charset, "replace")
 
 
 def _get_via_socks5(url, proxy, host_header=None):
     host, port, user, pw = proxy
-    m = re.match(r"https?://([^/]+)(/.*)?$", url)
-    thost = m.group(1); path = m.group(2) or "/"
-    tport = 443 if url.startswith("https") else 80
+    target = urllib.parse.urlsplit(url)
+    if target.scheme not in {"http", "https"} or not target.hostname:
+        return None, "__err__:无效 HTTP(S) URL"
+    thost = target.hostname
+    tport = target.port or (443 if target.scheme == "https" else 80)
+    path = urllib.parse.urlunsplit(("", "", target.path or "/", target.query, ""))
+    default_port = 443 if target.scheme == "https" else 80
+    if host_header:
+        request_host = host_header
+    elif ":" in thost:
+        request_host = f"[{thost}]" + (f":{tport}" if tport != default_port else "")
+    else:
+        request_host = thost + (f":{tport}" if tport != default_port else "")
+    raw = None
+    sock = None
     try:
         raw = socket.create_connection((host, port), timeout=TIMEOUT)
         _socks5_connect(raw, thost, tport, user, pw)
         if tport == 443:
             ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            s = ctx.wrap_socket(raw, server_hostname=thost)
+            ctx.set_alpn_protocols(["http/1.1"])
+            sock = ctx.wrap_socket(raw, server_hostname=thost)
         else:
-            s = raw
-        req = (f"GET {path} HTTP/1.1\r\nHost: {thost}\r\n"
+            sock = raw
+        req = (f"GET {path} HTTP/1.1\r\nHost: {request_host}\r\n"
                f"User-Agent: {UA}\r\nAccept: */*\r\nConnection: close\r\n\r\n")
-        s.sendall(req.encode())
-        buf = b""
-        while len(buf) < 65536:
-            try:
-                chunk = s.recv(4096)
-            except Exception:
-                break
-            if not chunk:
-                break
-            buf += chunk
-        s.close()
-        text = buf.decode("utf-8", "replace")
-        status = None
-        mm = re.match(r"HTTP/[\d.]+ (\d+)", text)
-        if mm:
-            status = int(mm.group(1))
-        body = text.split("\r\n\r\n", 1)[1] if "\r\n\r\n" in text else text
-        return status, body
+        sock.sendall(req.encode())
+        return _read_http_response(sock)
     except Exception as e:
         return None, f"__err__:{e}"
+    finally:
+        if sock is not None:
+            sock.close()
+        elif raw is not None:
+            raw.close()
+
+
+def _parse_proxy(arg):
+    """Parse one complete socks5 URL without ever echoing credentials."""
+    try:
+        parsed = urllib.parse.urlsplit(arg)
+        port = parsed.port
+    except ValueError as exc:
+        raise ValueError("无效 socks5 代理地址") from exc
+    if parsed.scheme not in {"socks5", "socks5h"}:
+        raise ValueError("代理必须使用 socks5:// 或 socks5h://")
+    if not parsed.hostname or port is None or not 1 <= port <= 65535:
+        raise ValueError("socks5 代理必须包含有效 host:port")
+    if parsed.path not in {"", "/"} or parsed.query or parsed.fragment:
+        raise ValueError("socks5 代理地址不能包含 path、query 或 fragment")
+    if (parsed.username is None) != (parsed.password is None):
+        raise ValueError("socks5 用户名和密码必须同时提供")
+    user = urllib.parse.unquote(parsed.username) if parsed.username is not None else None
+    pw = urllib.parse.unquote(parsed.password) if parsed.password is not None else None
+    return parsed.hostname, port, user, pw
 
 
 def parse_target(arg):
-    """解析 IP 或 socks5://user:pass@host:port，返回 (ip_or_host, proxy_tuple_or_None)。"""
-    m = re.match(r"socks5h?://(?:([^:]+):([^@]+)@)?([^:]+):(\d+)", arg)
-    if m:
-        user, pw, host, port = m.group(1), m.group(2), m.group(3), int(m.group(4))
-        return host, (host, port, user, pw)
+    """解析 IP 或完整 socks5 URL，返回 (ip_or_host, proxy_tuple_or_None)。"""
+    if "://" in arg:
+        proxy = _parse_proxy(arg)
+        return proxy[0], proxy
     return arg, None
+
+
+def _validated_ip(value):
+    try:
+        return str(ipaddress.ip_address(value))
+    except ValueError as exc:
+        raise ValueError("检测目标必须是有效 IP 地址") from exc
+
+
+def _discover_exit_ip(proxy):
+    status, body = _get("https://ipinfo.io/json", proxy=proxy)
+    if status != 200 or not body or body.startswith("__err__"):
+        raise RuntimeError("无法通过代理确认出口 IP")
+    try:
+        value = json.loads(body).get("ip")
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("代理出口 IP 响应不是有效 JSON") from exc
+    if not value:
+        raise RuntimeError("代理出口 IP 响应缺少 ip 字段")
+    try:
+        return str(ipaddress.ip_address(value))
+    except ValueError as exc:
+        raise RuntimeError("代理出口 IP 响应包含无效地址") from exc
 
 
 # ---------- 第 1 层：RDAP 注册库 ----------
@@ -275,6 +364,24 @@ def layer_reputation(ip):
 
 
 # ---------- 第 5 层：DNSBL 黑名单 ----------
+def _dns_lookup(query):
+    """Return answer/not_found/error so outages cannot look like clean DNSBLs."""
+    not_found_codes = {socket.EAI_NONAME}
+    if hasattr(socket, "EAI_NODATA"):
+        not_found_codes.add(socket.EAI_NODATA)
+    try:
+        socket.setdefaulttimeout(6)
+        return "answer", socket.gethostbyname(query)
+    except socket.gaierror as exc:
+        if exc.errno in not_found_codes:
+            return "not_found", None
+        return "error", str(exc)
+    except (socket.timeout, OSError) as exc:
+        return "error", str(exc)
+    finally:
+        socket.setdefaulttimeout(None)
+
+
 def layer_dnsbl(ip):
     out = {"layer": "dnsbl", "status": "ok", "listed": [], "checked": []}
     parts = ip.split(".")
@@ -284,37 +391,50 @@ def layer_dnsbl(ip):
     # 自检：DNSBL 命中的标准返回是 127.0.0.0/8。若环境有 fake-ip DNS 劫持
     # （如 Clash TUN 返回 198.18.x.x），任何查询都会"解析成功"，必须靠
     # 127.* 校验区分真命中；同时用一个不可能被列入的探针检测劫持。
-    def _resolve(q):
-        try:
-            socket.setdefaulttimeout(6)
-            return socket.gethostbyname(q)
-        except socket.gaierror:
-            return None
-        except Exception:
-            return None
-        finally:
-            socket.setdefaulttimeout(None)
-
-    probe = _resolve(f"{rev}.zen.spamhaus.org.invalid-probe.")  # 应永远解析失败
-    fakeip_hijack = probe is not None
+    probe_state, probe = _dns_lookup(f"{rev}.zen.spamhaus.org.invalid-probe.")
+    fakeip_hijack = probe_state == "answer"
     out["dns_hijack_detected"] = fakeip_hijack
     if fakeip_hijack:
         out["status"] = "unreliable"
         out["error"] = f"DNS 被劫持（探针返回 {probe}），DNSBL 不可信；请在非 TUN 网络重跑"
         return out
+    if probe_state == "error":
+        out["status"] = "unreliable"
+        out["error"] = "DNS 探针查询失败，无法区分未列入与解析器故障"
+        return out
+    errors = []
     for zone, label in DNSBL_ZONES:
-        res = _resolve(f"{rev}.{zone}")
-        if res and res.startswith("127."):
-            out["listed"].append(label)
+        state, res = _dns_lookup(f"{rev}.{zone}")
+        if state == "error":
+            errors.append(f"{label}: DNS 查询失败")
+            continue
         out["checked"].append(label)
+        if state == "not_found":
+            continue
+        if not res.startswith("127."):
+            errors.append(f"{label}: 非法返回码 {res}")
+            continue
+        if zone == "zen.spamhaus.org" and res.startswith("127.255.255."):
+            errors.append(f"{label}: Spamhaus 查询错误码 {res}")
+            continue
+        if res:
+            out["listed"].append(label)
+    if errors:
+        out["status"] = "unreliable"
+        out["error"] = "; ".join(errors)
     return out
 
 
 # ---------- 第 6 层：住宅真实性（反向 DNS）----------
 def layer_ptr(ip):
-    out = {"layer": "ptr", "status": "ok"}
+    out = {"layer": "ptr", "status": "ok", "ptr": None, "has_ptr": False}
     try:
         r = subprocess.run(["dig", "+short", "-x", ip], capture_output=True, text=True, timeout=10)
+        if r.returncode != 0:
+            detail = (r.stderr or r.stdout or f"dig exit {r.returncode}").strip()
+            out["status"] = "error"
+            out["error"] = detail[:120]
+            return out
         ptr = r.stdout.strip().rstrip(".")
         out["ptr"] = ptr or None
         # 真住宅特征：hsd1 / dsl / cable / dyn / res 等
@@ -381,37 +501,55 @@ def layer_latency(proxy):
 
 def layer_exit(proxy):
     out = {"layer": "exit", "status": "ok", "samples": []}
+    errors = []
     for _ in range(3):
         st, b = _get("https://ipinfo.io/json", proxy=proxy)
-        try:
-            out["samples"].append(json.loads(b).get("ip"))
-        except Exception:
+        if st != 200 or not b or b.startswith("__err__"):
             out["samples"].append(None)
+            errors.append("出口查询失败")
+            time.sleep(0.5)
+            continue
+        try:
+            value = json.loads(b).get("ip")
+            out["samples"].append(_validated_ip(value) if value else None)
+            if not value:
+                errors.append("出口响应缺少 ip")
+        except (TypeError, ValueError, json.JSONDecodeError):
+            out["samples"].append(None)
+            errors.append("出口响应无效")
         time.sleep(0.5)
     ips = [s for s in out["samples"] if s]
-    out["stable"] = len(set(ips)) == 1 and len(ips) >= 2
+    out["stable"] = len(ips) == 3 and len(set(ips)) == 1
     out["exit_ip"] = ips[0] if ips else None
+    if errors:
+        out["status"] = "unreliable" if ips else "error"
+        out["error"] = "; ".join(errors)
     return out
 
 
-def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    if not args:
-        print(json.dumps({"error": "用法: ipcheck.py <IP|socks5://user:pass@host:port> [--proxy socks5://...]"}))
-        sys.exit(1)
-    target = args[0]
-    ip, proxy = parse_target(target)
-    # 显式 --proxy 覆盖
-    for i, a in enumerate(sys.argv):
-        if a == "--proxy" and i + 1 < len(sys.argv):
-            _, proxy = parse_target(sys.argv[i + 1])
-    # 如果 target 是代理且没解析出裸 IP，先通过代理拿出口 IP 当作被检测 IP
-    if proxy and not re.match(r"^\d+\.\d+\.\d+\.\d+$", ip):
-        st, b = _get("https://ipinfo.io/json", proxy=proxy)
-        try:
-            ip = json.loads(b).get("ip", ip)
-        except Exception:
-            pass
+class _JsonArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        raise ValueError(message)
+
+
+def main(argv=None):
+    parser = _JsonArgumentParser(add_help=True)
+    parser.add_argument("target")
+    parser.add_argument("--proxy")
+    try:
+        options = parser.parse_args(argv)
+        ip, target_proxy = parse_target(options.target)
+        explicit_proxy = _parse_proxy(options.proxy) if options.proxy else None
+        if target_proxy and explicit_proxy:
+            raise ValueError("代理 URL target 与 --proxy 不能同时使用")
+        proxy = explicit_proxy or target_proxy
+        if target_proxy:
+            ip = _discover_exit_ip(proxy)
+        else:
+            ip = _validated_ip(ip)
+    except (ValueError, RuntimeError) as exc:
+        sys.stdout.write(json.dumps({"error": str(exc)}, ensure_ascii=False) + "\n")
+        return 2
 
     report = {"ip": ip, "has_proxy": bool(proxy), "layers": {}}
     rdap = layer_rdap(ip); report["layers"]["rdap"] = rdap
@@ -425,8 +563,9 @@ def main():
         report["layers"]["services"] = layer_services(proxy)
         report["layers"]["exit"] = layer_exit(proxy)
         report["layers"]["latency"] = layer_latency(proxy)
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    sys.stdout.write(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -18,6 +18,7 @@ Direct actions:
 Escalate before:
 - 用户要求"改配置/切节点/加进 Clash"等落地动作时——那属于 clash-doctor 等运维 skill,本 skill 只负责判定,不代切。
 - DNSBL 层报 `unreliable`(DNS 劫持)时,必须提示用户换网络重跑,不得把未测准当"干净"。
+- 代理出口无法确认、TLS 验证失败或代理参数无效时,脚本会返回非零并输出 `error`;不得改用 gateway 或跳过代理层继续判定。
 
 Evidence-backed pushback:
 - 用户坚称某 IP 是美国、但 rdap 显示 RIPE 注册 + country 非 US 时,以 whois/geo 字段反驳,不附和主观判断。
@@ -99,5 +100,7 @@ python3 <script> <IP> --proxy socks5://user:pass@host:port     # IP 与代理分
 
 - scamalytics 全面封自动化访问(实测 403),协议已排除,用 proxycheck + ipapi.is + IPQS 替代。
 - DNSBL 在 Clash TUN 环境不可信,脚本会自动检测并标 unreliable,据此提示用户。
+- DNSBL 解析器故障和 Spamhaus `127.255.255.0/24` 查询错误码同样标 `unreliable`,不计作"未列入"或命中。
+- SOCKS HTTPS 探测使用系统 CA 和 hostname 验证;证书失败属于探测失败,不得关闭 TLS 校验重试。
 - `services` 层首页多为 SPA 空壳,`region_blocked` 是弱信号,以 http_status/cf_loc 为准。
 - ip-api.com 限 45 次/分钟、proxycheck 免费 100 次/天,批量查多个 IP 时注意配额。

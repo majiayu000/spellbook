@@ -587,7 +587,9 @@
       ]
     },
     "tags": [
-      "agent"
+      "agent",
+      "debugging",
+      "testing"
     ]
   },
   {
@@ -773,8 +775,7 @@
       "debugging",
       "multi-ai",
       "proxy",
-      "security",
-      "testing"
+      "security"
     ]
   },
   {
