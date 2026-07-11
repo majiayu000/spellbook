@@ -121,7 +121,7 @@ judgment_rule:
 用户要求可加载 skill 时，再调用 `skill-creator`：
 
 1. 以通过审计的 packet 为输入，不重新发明规则。
-2. 用 `skills/capability-distill/evals/evals.json` 中的边界场景作为最低测试集，并为目标领域增加真实、脱敏场景。
+2. 用本 `SKILL.md` 所在目录下的 `evals/evals.json` 作为最低测试集（从 skill 根解析，不从当前仓库根解析），并为目标领域增加真实、脱敏场景。
 3. 同时运行 with-skill 和 baseline/old-skill，对比可观察行为，不以“文字更好看”判定成功。
 4. 高影响工作流再交给 `skill-lifeguard` 检查负例、checkpoint、done condition、replay hook 和 drift signal。
 

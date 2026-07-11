@@ -11,7 +11,12 @@
       "id": 2,
       "prompt": "把这次数据库故障排查里真正有用的判断蒸馏下来。材料只有我附上的脱敏时间线；先给 judgment packet，不要写文件。",
       "expected_output": "Uses only the supplied timeline, reconstructs evidence-linked decision events, produces rules with observable signals, exceptions, stop/escalate conditions and confidence, runs genericness filtering, and stops at packet_only without writing a skill.",
-      "files": []
+      "files": ["evals/files/incident_timeline.md"],
+      "expectations": [
+        "Every retained rule cites a decision event from the supplied timeline.",
+        "The output distinguishes the initial saturation fix from the later retry-storm false success.",
+        "No SKILL.md or repository file is written in packet_only mode."
+      ]
     },
     {
       "id": 3,
@@ -23,7 +28,12 @@
       "id": 4,
       "prompt": "这次代码审查做得特别好，帮我固化成一个可加载 skill。先检查仓库里 skill-audit、skill-creator 和相近 review skills，不能重复造轮子。",
       "expected_output": "Extracts only evidence-backed decision rules, hands overlap ownership to skill-audit, prefers updating an existing owner when coverage exists, then routes concrete authoring and with-skill/baseline evaluation to skill-creator with explicit done-when evidence.",
-      "files": []
+      "files": ["evals/files/review_trajectory.md"],
+      "expectations": [
+        "The judgment packet maps each proposed rule to the supplied review trajectory.",
+        "Overlap ownership is decided before any new skill is proposed.",
+        "A loadable skill is not declared done without with-skill and baseline evidence."
+      ]
     }
   ]
 }
