@@ -192,6 +192,7 @@ def recent_files(root: Path, pattern: str, limit: int) -> list[Path]:
 _SHELL_COMPOSITION = re.compile(r"(?:\n|\r|&&|\|\||[;|<>`]|\$\()")
 _SAFE_SIMPLE = {"pwd", "ls", "which", "wc", "head", "tail", "tree"}
 _UNSAFE_GIT_FLAGS = ("--output", "--ext-diff", "--textconv")
+_UNSAFE_GH_FLAGS = {"--web", "-w"}
 
 
 def safe_readonly_rule(command: str) -> str | None:
@@ -210,6 +211,12 @@ def safe_readonly_rule(command: str) -> str | None:
         return None
     if not tokens:
         return None
+    if tokens[0] == "tree" and any(
+        token == "-o" or token.startswith("-o") or token == "--output"
+        or token.startswith("--output=")
+        for token in tokens[1:]
+    ):
+        return None
     if any(
         token == flag or token.startswith(f"{flag}=")
         for token in tokens
@@ -225,9 +232,13 @@ def safe_readonly_rule(command: str) -> str | None:
         if subcommand in {"status", "log", "diff", "show"}:
             safe = True
         elif subcommand == "branch":
-            safe = len(tokens) >= 3 and tokens[2] == "--list"
+            safe = tokens == ["git", "branch", "--list"]
     elif tokens[0] == "gh" and len(tokens) >= 3:
-        safe = tokens[1] == "pr" and tokens[2] in {"view", "list"}
+        safe = (
+            tokens[1] == "pr"
+            and tokens[2] in {"view", "list"}
+            and not any(token in _UNSAFE_GH_FLAGS for token in tokens[3:])
+        )
     if not safe:
         return None
     return f"Bash({shlex.join(tokens)})"

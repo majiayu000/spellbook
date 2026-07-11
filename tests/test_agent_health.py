@@ -76,6 +76,8 @@ class CommandSafetyTests(unittest.TestCase):
             "git status && rm -rf /", "git log | sh", "git diff > /tmp/x",
             "git show; touch /tmp/pwn", "cat > /tmp/x", "rm -rf ~/.claude/local",
             "git diff --output=/tmp/x", "git show --ext-diff HEAD",
+            "git branch --list --edit-description", "tree -o /tmp/tree.txt",
+            "tree --output=/tmp/tree.txt", "gh pr view 141 --web",
             "ls *", "ls $HOME", "git status $(touch /tmp/pwn)",
         ]
         for command in commands:
