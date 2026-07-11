@@ -168,7 +168,7 @@ def _get_via_socks5(url, proxy, host_header=None):
     try:
         raw = socket.create_connection((host, port), timeout=TIMEOUT)
         _socks5_connect(raw, thost, tport, user, pw)
-        if tport == 443:
+        if target.scheme == "https":
             ctx = ssl.create_default_context()
             ctx.set_alpn_protocols(["http/1.1"])
             sock = ctx.wrap_socket(raw, server_hostname=thost)
@@ -227,9 +227,12 @@ def _discover_exit_ip(proxy):
     if status != 200 or not body or body.startswith("__err__"):
         raise RuntimeError("无法通过代理确认出口 IP")
     try:
-        value = json.loads(body).get("ip")
+        data = json.loads(body)
     except (TypeError, json.JSONDecodeError) as exc:
         raise RuntimeError("代理出口 IP 响应不是有效 JSON") from exc
+    if not isinstance(data, dict):
+        raise RuntimeError("代理出口 IP JSON 根节点必须是 object")
+    value = data.get("ip")
     if not value:
         raise RuntimeError("代理出口 IP 响应缺少 ip 字段")
     try:
@@ -510,7 +513,10 @@ def layer_exit(proxy):
             time.sleep(0.5)
             continue
         try:
-            value = json.loads(b).get("ip")
+            data = json.loads(b)
+            if not isinstance(data, dict):
+                raise ValueError("出口响应 JSON 根节点不是 object")
+            value = data.get("ip")
             out["samples"].append(_validated_ip(value) if value else None)
             if not value:
                 errors.append("出口响应缺少 ip")
@@ -539,7 +545,7 @@ def main(argv=None):
     try:
         options = parser.parse_args(argv)
         ip, target_proxy = parse_target(options.target)
-        explicit_proxy = _parse_proxy(options.proxy) if options.proxy else None
+        explicit_proxy = _parse_proxy(options.proxy) if options.proxy is not None else None
         if target_proxy and explicit_proxy:
             raise ValueError("代理 URL target 与 --proxy 不能同时使用")
         proxy = explicit_proxy or target_proxy

@@ -164,7 +164,7 @@ class SocksProtocolTests(unittest.TestCase):
                 mock.patch.object(ipcheck, "_socks5_connect"),
             ):
                 status, body = ipcheck._get_via_socks5(
-                    "http://example.com:8080/x?q=1", ("proxy", 1080, None, None)
+                    "http://example.com:443/x?q=1", ("proxy", 1080, None, None)
                 )
         finally:
             server.close()
@@ -214,7 +214,7 @@ class SocksProtocolTests(unittest.TestCase):
             mock.patch.object(ipcheck.ssl, "create_default_context", return_value=context),
         ):
             status, body = ipcheck._get_via_socks5(
-                "https://example.com/data", ("proxy.example", 1080, None, None)
+                "https://example.com:8443/data", ("proxy.example", 1080, None, None)
             )
 
         self.assertIsNone(status)
@@ -251,6 +251,12 @@ class ProxyInputTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("error", json.loads(stdout.getvalue()))
 
+        stdout = io.StringIO()
+        with redirect_stdout(stdout):
+            code = ipcheck.main(["1.1.1.1", "--proxy", ""])
+        self.assertEqual(code, 2)
+        self.assertIn("error", json.loads(stdout.getvalue()))
+
     def test_main_rejects_conflicting_proxy_sources(self):
         stdout = io.StringIO()
         with redirect_stdout(stdout):
@@ -274,6 +280,7 @@ class ProxyInputTests(unittest.TestCase):
         failures = [
             (None, "__err__:timeout"),
             (200, "not-json"),
+            (200, "[]"),
             (200, "{}"),
             (200, '{"ip":"not-an-ip"}'),
         ]
@@ -372,6 +379,16 @@ class ReliabilityLayerTests(unittest.TestCase):
         self.assertFalse(output["stable"])
         self.assertEqual(output["status"], "unreliable")
         self.assertIn(None, output["samples"])
+
+    def test_non_object_exit_samples_are_explicit_errors(self):
+        with (
+            mock.patch.object(ipcheck, "_get", return_value=(200, "[]")),
+            mock.patch.object(ipcheck.time, "sleep"),
+        ):
+            output = ipcheck.layer_exit(("proxy.example", 1080, None, None))
+
+        self.assertEqual(output["status"], "error")
+        self.assertEqual(output["samples"], [None, None, None])
 
 
 class DataLayerTests(unittest.TestCase):
