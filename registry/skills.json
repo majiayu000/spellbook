@@ -1336,7 +1336,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/skill-usage-stats/SKILL.md",
-    "description": "跨工具(Claude Code + Codex)的 agent 健康体检 + skill 用量统计。两大能力:(1)体检——安装/版本、settings/config.toml 解析、agent 定义、hook 耗时、被拒只读命令、CLAUDE.md/AGENTS.md 体积、上下文占用、MCP/插件,并在用户确认后执行写操作(设 auto mode、加只读放行规则、禁用僵尸 skill/插件、claude/codex 更新、改 config.toml);(2)用量——哪些 skill 有调用证据、僵尸清单、排行、趋势。Use when the user asks 体检/doctor/健康检查/health check/诊断配置, 统计 skill 使用/skill usage/僵尸 skill/zombie skill, audit my skills/config, 看看配置有没有问题, Claude 或 Codex 配置体检, or manage which skills to keep or remove.",
+    "description": "跨工具（Claude Code + Codex）的只读 agent 健康体检与 skill 用量统计；只报告本地可验证证据，缺失检查面标为 unsupported。Use when the user asks 体检/doctor/health check/config audit、Claude 或 Codex 配置诊断、被拒命令分析、MCP/插件/skill 冲突、skill usage 排行或僵尸 skill。清理、权限、更新和配置写入必须基于证据单独确认。",
     "language": "zh",
     "compatibility": {
       "runtimes": [
