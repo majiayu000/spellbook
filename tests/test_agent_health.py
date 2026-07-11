@@ -42,15 +42,19 @@ def _codex_call(call_id: str, command: str) -> str:
     })
 
 
-def _codex_denial(call_id: str) -> str:
+def _codex_output(call_id: str, output: object) -> str:
     return _json_line({
         "type": "response_item",
         "payload": {
             "type": "function_call_output",
             "call_id": call_id,
-            "output": "command denied by sandbox policy",
+            "output": output,
         },
     })
+
+
+def _codex_denial(call_id: str) -> str:
+    return _codex_output(call_id, "command denied by sandbox policy")
 
 
 class CommandSafetyTests(unittest.TestCase):
@@ -79,6 +83,22 @@ class CommandSafetyTests(unittest.TestCase):
             "git branch --list --edit-description", "tree -o /tmp/tree.txt",
             "tree --output=/tmp/tree.txt", "gh pr view 141 --web",
             "ls *", "ls $HOME", "git status $(touch /tmp/pwn)",
+        ]
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertIsNone(agent_health._safe_readonly_rule(command))
+
+    def test_background_shell_operator_is_never_a_candidate(self):
+        for command in ("git status &", "git status&"):
+            with self.subTest(command=command):
+                self.assertIsNone(agent_health._safe_readonly_rule(command))
+
+    def test_gh_web_boolean_forms_are_never_candidates(self):
+        commands = [
+            "gh pr view 141 --web=true",
+            "gh pr view 141 --web=false",
+            "gh pr view 141 -w=true",
+            "gh pr view 141 -w=false",
         ]
         for command in commands:
             with self.subTest(command=command):
@@ -132,6 +152,107 @@ class ParseHealthTests(unittest.TestCase):
         self.assertEqual(check.status, "fail")
         self.assertTrue(check.data["schema_supported"])
         self.assertEqual(check.errors[0].kind, "invalid_record_schema")
+
+    def test_unparseable_frontmatter_line_is_structured_failure(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill = root / "broken" / "SKILL.md"
+            skill.parent.mkdir()
+            skill.write_text(
+                "---\nname: broken\nnot valid frontmatter\ndescription: usable\n---\n",
+                encoding="utf-8",
+            )
+
+            check = agent_health.check_codex_skills("en", roots=[root])
+
+        self.assertEqual(check.status, "fail")
+        self.assertEqual(check.data["parse_error_count"], 1)
+        self.assertEqual(check.errors[0].kind, "invalid_frontmatter")
+        self.assertEqual(check.errors[0].line, 3)
+
+    def test_folded_frontmatter_description_remains_valid(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill = root / "folded" / "SKILL.md"
+            skill.parent.mkdir()
+            skill.write_text(
+                "---\n"
+                "name: folded\n"
+                "description: >-\n"
+                "  Cross-tool health scanner with\n"
+                "  structured local evidence.\n"
+                "---\n",
+                encoding="utf-8",
+            )
+
+            check = agent_health.check_codex_skills("en", roots=[root])
+
+        self.assertEqual(check.status, "ok")
+        self.assertEqual(check.data["parse_error_count"], 0)
+        self.assertEqual(check.data["definition_count"], 1)
+
+    def test_sequence_frontmatter_remains_valid(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill = root / "allowed-tools" / "SKILL.md"
+            skill.parent.mkdir()
+            skill.write_text(
+                "---\n"
+                "name: allowed-tools\n"
+                "description: Valid list frontmatter.\n"
+                "allowed-tools:\n"
+                "- Read\n"
+                "- Grep\n"
+                "---\n",
+                encoding="utf-8",
+            )
+
+            check = agent_health.check_codex_skills("en", roots=[root])
+
+        self.assertEqual(check.status, "ok")
+        self.assertEqual(check.data["parse_error_count"], 0)
+        self.assertEqual(check.data["definition_count"], 1)
+
+    def test_sequence_after_scalar_is_structured_failure(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            skill = root / "broken-sequence" / "SKILL.md"
+            skill.parent.mkdir()
+            skill.write_text(
+                "---\n"
+                "name: broken-sequence\n"
+                "description: Scalar value cannot own a sequence.\n"
+                "- Read\n"
+                "---\n",
+                encoding="utf-8",
+            )
+
+            check = agent_health.check_codex_skills("en", roots=[root])
+
+        self.assertEqual(check.status, "fail")
+        self.assertEqual(check.data["parse_error_count"], 1)
+        self.assertEqual(check.errors[0].kind, "invalid_frontmatter")
+        self.assertEqual(check.errors[0].line, 4)
+
+    def test_response_item_payload_without_type_fails_scan(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rollout.jsonl"
+            path.write_text(
+                _json_line({"type": "response_item", "payload": {"call_id": "missing-type"}})
+                + "\n",
+                encoding="utf-8",
+            )
+            check = agent_health.check_codex_sessions("en", paths=[path])
+
+        self.assertEqual(check.status, "fail")
+        self.assertTrue(check.data["schema_supported"])
+        self.assertEqual(check.data["parse_error_count"], 1)
+        self.assertEqual(check.errors[0].kind, "invalid_record_schema")
+        with (
+            mock.patch.object(agent_health, "run_checks", return_value=[check]),
+            redirect_stdout(io.StringIO()),
+        ):
+            self.assertEqual(agent_health.main(["--lang", "en"]), 1)
 
 
 class CleanupAndLanguageTests(unittest.TestCase):
@@ -222,6 +343,23 @@ class CodexHealthTests(unittest.TestCase):
         self.assertEqual(check.data["denial_count"], 3)
         self.assertEqual(check.data["candidates"], ["Bash(git status --short)"])
         self.assertNotIn("merge", json.dumps(check.data))
+
+    def test_plain_permission_denied_output_is_not_a_tool_denial(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rollout.jsonl"
+            lines = [
+                _codex_call("plain-1", "git status --short"),
+                _codex_output("plain-1", "Permission denied while reading a repository file"),
+                _codex_call("plain-2", "git status --short"),
+                _codex_output("plain-2", "Permission denied while reading a repository file"),
+            ]
+            path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            check = agent_health.check_codex_sessions("en", paths=[path])
+
+        self.assertEqual(check.status, "ok")
+        self.assertTrue(check.data["schema_supported"])
+        self.assertEqual(check.data["denial_count"], 0)
+        self.assertEqual(check.data["candidates"], [])
 
     def test_codex_config_and_plugin_mcp_surfaces(self):
         with TemporaryDirectory() as tmp:

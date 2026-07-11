@@ -137,14 +137,53 @@ def read_frontmatter(path: Path) -> ObjectResult:
         issue = ParseIssue(str(path), "invalid_frontmatter", "missing closing delimiter")
         return ObjectResult(None, [issue])
     values: dict[str, object] = {}
-    for line in text[4:end].splitlines():
+    errors: list[ParseIssue] = []
+    current_key: str | None = None
+    block_scalar_key: str | None = None
+    for line_number, line in enumerate(text[4:end].splitlines(), start=2):
         if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if line[:1].isspace() and current_key is not None:
+            if block_scalar_key == current_key:
+                fragment = line.strip()
+                current = string_value(values.get(current_key)) or ""
+                values[current_key] = f"{current} {fragment}".strip()
+            continue
+        if line.startswith("- ") and current_key is not None and block_scalar_key is None:
+            item = line[2:].strip()
+            current = values.get(current_key)
+            if isinstance(current, list):
+                current.append(item)
+            elif current in {"", None}:
+                values[current_key] = [item]
+            else:
+                errors.append(ParseIssue(
+                    str(path),
+                    "invalid_frontmatter",
+                    f"sequence item cannot follow scalar key {current_key}",
+                    line_number,
+                ))
             continue
         match = re.match(r"^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*)$", line)
         if match is None:
+            errors.append(ParseIssue(
+                str(path),
+                "invalid_frontmatter",
+                "unsupported non-empty frontmatter line",
+                line_number,
+            ))
+            current_key = None
+            block_scalar_key = None
             continue
-        values[match.group(1)] = match.group(2).strip().strip("'\"")
-    return ObjectResult(values, [])
+        current_key = match.group(1)
+        raw_value = match.group(2).strip()
+        if raw_value in {">", ">-", ">+", "|", "|-", "|+"}:
+            values[current_key] = ""
+            block_scalar_key = current_key
+        else:
+            values[current_key] = raw_value.strip("'\"")
+            block_scalar_key = None
+    return ObjectResult(values, errors)
 
 
 def read_jsonl_objects(paths: Iterable[Path]) -> tuple[list[TranscriptRecord], list[ParseIssue]]:
@@ -189,7 +228,7 @@ def recent_files(root: Path, pattern: str, limit: int) -> list[Path]:
     return files[:limit]
 
 
-_SHELL_COMPOSITION = re.compile(r"(?:\n|\r|&&|\|\||[;|<>`]|\$\()")
+_SHELL_COMPOSITION = re.compile(r"(?:\n|\r|&&|\|\||[;&|<>`]|\$\()")
 _SAFE_SIMPLE = {"pwd", "ls", "which", "wc", "head", "tail", "tree"}
 _UNSAFE_GIT_FLAGS = ("--output", "--ext-diff", "--textconv")
 _UNSAFE_GH_FLAGS = {"--web", "-w"}
@@ -237,7 +276,11 @@ def safe_readonly_rule(command: str) -> str | None:
         safe = (
             tokens[1] == "pr"
             and tokens[2] in {"view", "list"}
-            and not any(token in _UNSAFE_GH_FLAGS for token in tokens[3:])
+            and not any(
+                token == flag or token.startswith(f"{flag}=")
+                for token in tokens[3:]
+                for flag in _UNSAFE_GH_FLAGS
+            )
         )
     if not safe:
         return None
@@ -246,8 +289,7 @@ def safe_readonly_rule(command: str) -> str | None:
 
 _DENIAL_MARKERS = (
     "command denied",
-    "denied by",
-    "permission denied",
+    "denied by sandbox",
     "not approved",
     "rejected by sandbox",
     "blocked by policy",
@@ -256,7 +298,7 @@ _DENIAL_MARKERS = (
 
 
 def contains_denial(value: object) -> bool:
-    """Detect explicit denial evidence without assuming an undocumented status field."""
+    """Detect explicit tool or sandbox denial markers in a verified output record."""
 
     if isinstance(value, str):
         lowered = value.lower()

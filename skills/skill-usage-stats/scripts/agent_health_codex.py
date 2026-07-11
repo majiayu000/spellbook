@@ -178,6 +178,15 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
                 str(record.path), "invalid_record_schema", "response_item payload must be an object", record.line
             ))
             continue
+        if payload_type is None:
+            schema_supported = True
+            errors.append(ParseIssue(
+                str(record.path),
+                "invalid_record_schema",
+                "response_item payload is missing string type",
+                record.line,
+            ))
+            continue
         if payload_type == "function_call":
             schema_supported = True
             call_id = string_value(payload.get("call_id"))
