@@ -264,7 +264,7 @@ def layer_rdap(ip):
             rir = r; break
     out["rir"] = rir
     ents = json.dumps(d.get("entities", []))
-    out["mnt_lease_flag"] = bool(re.search(r"interlir|lease|ip.?broker|ip.?xo", ents, re.I))
+    out["lease_flag"] = bool(re.search(r"interlir|lease|ip.?broker|ip.?xo", ents, re.I))
     org = None
     for e in d.get("entities", []):
         va = e.get("vcardArray")
