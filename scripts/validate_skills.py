@@ -124,6 +124,7 @@ CATEGORY_BY_NAME = {
     # Operations
     "clash-doctor": "Operations & Deploy",
     "clash-routes": "Operations & Deploy",
+    "ip-check": "Operations & Deploy",
     "cliproxy-deploy": "Operations & Deploy",
     "cliproxy-newapi-stack": "Operations & Deploy",
     "disk-cleaner": "Operations & Deploy",
