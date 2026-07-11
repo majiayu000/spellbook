@@ -283,6 +283,41 @@ class InstallPruneTests(unittest.TestCase):
             self.assertFalse(managed_stale_link.is_symlink())
             self.assertTrue(user_link.is_symlink())
 
+    def test_selected_skill_installs_to_both_runtimes_without_legacy_codex_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            source_skills = home / ".spellbook" / "skills"
+            self.write_skill(source_skills, "shared-skill")
+
+            env = os.environ.copy()
+            env["HOME"] = str(home)
+            env.pop("CODEX_SKILLS_DIR", None)
+            env.pop("CODEX_HOME", None)
+
+            result = subprocess.run(
+                [
+                    "bash",
+                    "-e",
+                    "-c",
+                    (
+                        "source ./install.sh; "
+                        "TARGET=all; "
+                        "setup_directories; "
+                        'install_skills "shared-skill"'
+                    ),
+                ],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue((home / ".claude" / "skills" / "shared-skill").is_symlink())
+            self.assertTrue((home / ".agents" / "skills" / "shared-skill").is_symlink())
+            self.assertFalse((home / ".codex" / "skills").exists())
+
     def test_selected_skill_name_cannot_escape_target_directory(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
