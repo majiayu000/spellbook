@@ -429,17 +429,17 @@ class HealthCoverageTests(unittest.TestCase):
             records = [
                 {"attachment": {"hookName": "PreToolUse:Bash", "durationMs": 2501}},
                 {
-                    "toolDenialKind": "permission",
+                    "toolDenialKind": "permission-rule",
                     "message": {"content": [
                         {"type": "tool_use", "name": "Bash", "id": "d1", "input": {"command": "git log -n 1"}},
-                        {"tool_use_id": "d1"},
+                        {"type": "tool_result", "tool_use_id": "d1"},
                     ]},
                 },
                 {
-                    "toolDenialKind": "permission",
+                    "toolDenialKind": "permission-rule",
                     "message": {"content": [
                         {"type": "tool_use", "name": "Bash", "id": "d2", "input": {"command": "git log -n 1"}},
-                        {"tool_use_id": "d2"},
+                        {"type": "tool_result", "tool_use_id": "d2"},
                     ]},
                 },
             ]

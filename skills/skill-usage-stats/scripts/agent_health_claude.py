@@ -22,6 +22,15 @@ from agent_health_core import (
 )
 
 
+_CLAUDE_DENIAL_KINDS = {
+    "user-rejected",
+    "permission-rule",
+    "automode-blocked",
+    "automode-unavailable",
+    "automode-parsing-error",
+}
+
+
 def _existing_json(path: Path) -> ObjectResult:
     return read_json_object(path) if path.exists() else ObjectResult(None, [])
 
@@ -283,42 +292,81 @@ def check_denials(lang: str, *, paths: Iterable[Path]) -> Check:
     for record in records:
         message = object_value(record.data.get("message")) or {}
         content = message.get("content")
+        denial_field_present = "toolDenialKind" in record.data
+        denial_kind = string_value(record.data.get("toolDenialKind"))
+        denial_marked = denial_kind in _CLAUDE_DENIAL_KINDS
+        if denial_field_present and not denial_marked:
+            errors.append(ParseIssue(
+                str(record.path), "invalid_record_schema",
+                "toolDenialKind has an unsupported value", record.line,
+            ))
         if not isinstance(content, list):
+            if denial_marked:
+                errors.append(ParseIssue(
+                    str(record.path), "invalid_record_schema",
+                    "toolDenialKind requires exactly one typed tool_result block", record.line,
+                ))
             continue
-        for raw_block in content:
-            block = object_value(raw_block)
-            if block is None:
-                continue
-            if block.get("type") == "tool_use":
+        blocks = [block for raw in content if (block := object_value(raw)) is not None]
+        result_count = sum(block.get("type") == "tool_result" for block in blocks)
+        if denial_marked and result_count != 1:
+            errors.append(ParseIssue(
+                str(record.path), "invalid_record_schema",
+                "toolDenialKind requires exactly one typed tool_result block", record.line,
+            ))
+            denial_marked = False
+        for block in blocks:
+            block_type = block.get("type")
+            if block_type == "tool_use":
                 call_id = string_value(block.get("id"))
+                if not call_id:
+                    errors.append(ParseIssue(
+                        str(record.path), "invalid_record_schema",
+                        "tool_use is missing string id", record.line,
+                    ))
+                    continue
                 command = None
                 if block.get("name") == "Bash":
                     inputs = object_value(block.get("input")) or {}
                     command = string_value(inputs.get("command"))
-                if call_id:
-                    call_key = (record.path, call_id)
-                    if call_key in calls:
-                        duplicate_call_count += 1
-                        calls[call_key] = None
-                    else:
-                        calls[call_key] = command
-            result_id = string_value(block.get("tool_use_id"))
-            if result_id:
-                call_key = (record.path, result_id)
+                    if not command:
+                        errors.append(ParseIssue(
+                            str(record.path), "invalid_record_schema",
+                            "Bash tool_use is missing string command", record.line,
+                        ))
+                call_key = (record.path, call_id)
                 if call_key in calls:
-                    command = calls.pop(call_key)
+                    duplicate_call_count += 1
+                    calls[call_key] = None
                 else:
-                    command = None
-                    unmatched_result_count += 1
-                if record.data.get("toolDenialKind") is not None:
-                    denial_count += 1
-                    if command is None:
-                        unpaired_denial_count += 1
-                    else:
-                        denied_commands.append(command)
-    candidates = candidate_rules(denied_commands)
+                    calls[call_key] = command
+            if block_type != "tool_result":
+                continue
+            result_id = string_value(block.get("tool_use_id"))
+            if not result_id:
+                errors.append(ParseIssue(
+                    str(record.path), "invalid_record_schema",
+                    "tool_result is missing string tool_use_id", record.line,
+                ))
+                continue
+            call_key = (record.path, result_id)
+            if call_key in calls:
+                command = calls.pop(call_key)
+            else:
+                command = None
+                unmatched_result_count += 1
+            if denial_marked:
+                denial_count += 1
+                if command is None:
+                    unpaired_denial_count += 1
+                else:
+                    denied_commands.append(command)
     safe_denials = sum(1 for command in denied_commands if safe_readonly_rule(command) is not None)
     incomplete_call_count = len(calls)
+    evidence_incomplete = bool(
+        incomplete_call_count or unmatched_result_count or duplicate_call_count
+    )
+    candidates = [] if errors or evidence_incomplete else candidate_rules(denied_commands)
     check.add_errors(errors)
     check.data.update({
         "supported": bool(selected),
@@ -331,8 +379,14 @@ def check_denials(lang: str, *, paths: Iterable[Path]) -> Check:
         "candidates": candidates,
         "parse_error_count": len(errors),
     })
-    if not errors:
-        if incomplete_call_count or unmatched_result_count or duplicate_call_count:
+    if errors:
+        check.add(msg(
+            lang,
+            f"Found {len(errors)} transcript parse or schema error(s).",
+            f"发现 {len(errors)} 个会话解析或结构错误。",
+        ))
+    else:
+        if evidence_incomplete:
             check.status = "warn"
             check.add(msg(
                 lang,
@@ -347,7 +401,7 @@ def check_denials(lang: str, *, paths: Iterable[Path]) -> Check:
             check.status = "warn"
         elif not selected:
             check.status = "info"
-    if incomplete_call_count or unmatched_result_count or duplicate_call_count:
+    if errors or evidence_incomplete:
         check.add(msg(
             lang,
             f"Among complete call/result pairs, observed {denial_count} denial(s); "

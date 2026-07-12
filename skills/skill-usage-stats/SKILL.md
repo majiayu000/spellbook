@@ -79,7 +79,9 @@ Unknown event shapes are not reverse-engineered into claims. If no verified reco
 - A malformed JSONL line fails transcript health even if the surrounding records parse.
 - Raw Codex function/custom-tool output is arbitrary command output and never proves a denial, even when the text says "denied". Current Codex builds may not persist transient guardian events; in that case denial analysis is unsupported.
 - Non-command guardian actions are outside this command-denial check and never produce permission candidates.
+- Claude denial evidence requires a typed `tool_result`, a prior matching tool call, and a verified `toolDenialKind` value (`user-rejected`, `permission-rule`, `automode-blocked`, `automode-unavailable`, or `automode-parsing-error`); booleans, unknown strings, and lookalike text blocks are schema errors.
 - A tool call without a matching result, an output without a prior call, a duplicate pending call ID, or an unfinished guardian assessment makes transcript evidence incomplete and must not be reported as healthy.
+- Any transcript parse/schema error or incomplete/conflicting lifecycle suppresses every permission candidate for that scan.
 - The same declared skill name in current and legacy roots is a collision even when the install-directory names differ.
 - A read-only subcommand becomes unsafe for permission generation when combined with shell operators, redirection, expansion, globbing, output-file flags, or external helpers.
 - Quarantine eligibility is advisory evidence only; the scanner never moves or deletes the directory.
