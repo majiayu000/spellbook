@@ -103,6 +103,7 @@ CATEGORY_BY_NAME = {
     "ask-opencli": "AI & Agent Workflow",
     "flowguard": "AI & Agent Workflow",
     "brainstorming": "AI & Agent Workflow",
+    "capability-distill": "AI & Agent Workflow",
     "codex": "AI & Agent Workflow",
     "codex-agent": "AI & Agent Workflow",
     "codex-fluent": "AI & Agent Workflow",
