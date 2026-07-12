@@ -103,6 +103,7 @@ CATEGORY_BY_NAME = {
     "ask-opencli": "AI & Agent Workflow",
     "flowguard": "AI & Agent Workflow",
     "brainstorming": "AI & Agent Workflow",
+    "capability-distill": "AI & Agent Workflow",
     "codex": "AI & Agent Workflow",
     "codex-agent": "AI & Agent Workflow",
     "codex-fluent": "AI & Agent Workflow",
@@ -124,6 +125,7 @@ CATEGORY_BY_NAME = {
     # Operations
     "clash-doctor": "Operations & Deploy",
     "clash-routes": "Operations & Deploy",
+    "ip-check": "Operations & Deploy",
     "cliproxy-deploy": "Operations & Deploy",
     "cliproxy-newapi-stack": "Operations & Deploy",
     "disk-cleaner": "Operations & Deploy",

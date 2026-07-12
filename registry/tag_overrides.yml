@@ -26,6 +26,11 @@ fixflow:
   - testing
   - debugging
 
+ip-check:
+  - proxy
+  - security
+  - debugging
+
 git-commit-smart:
   - code-review
   - documentation
@@ -77,4 +82,9 @@ trip-planner:
 
 weekly:
   - content
+  - documentation
+
+capability-distill:
+  - agent
+  - prompt
   - documentation

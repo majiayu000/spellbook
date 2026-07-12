@@ -24,6 +24,7 @@ SPEC = importlib.util.spec_from_file_location("agent_health", SCRIPT)
 agent_health = importlib.util.module_from_spec(SPEC)
 sys.modules["agent_health"] = agent_health
 SPEC.loader.exec_module(agent_health)
+core = importlib.import_module("agent_health_core")
 
 
 def _json_line(payload: dict[str, object]) -> str:
@@ -392,6 +393,272 @@ class CodexHealthTests(unittest.TestCase):
         self.assertEqual(check.status, "info")
         self.assertFalse(check.data["supported"])
         self.assertIn("unsupported", " ".join(check.lines).lower())
+
+
+class HealthCoverageTests(unittest.TestCase):
+    def test_claude_collectors_cover_agents_hooks_denials_context_and_metadata(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            current_agents = root / "project-agents"
+            global_agents = root / "global-agents"
+            for directory in (current_agents, global_agents):
+                agent = directory / "reviewer.md"
+                agent.parent.mkdir(parents=True)
+                agent.write_text(
+                    "---\nname: shared-reviewer\ndescription: Reviews evidence.\n---\n",
+                    encoding="utf-8",
+                )
+            invalid = current_agents / "invalid.md"
+            invalid.write_text("---\nname: incomplete\n---\n", encoding="utf-8")
+
+            transcript = root / "session.jsonl"
+            records = [
+                {"attachment": {"hookName": "PreToolUse:Bash", "durationMs": 2501}},
+                {
+                    "toolDenialKind": "permission",
+                    "message": {"content": [
+                        {"type": "tool_use", "name": "Bash", "id": "d1", "input": {"command": "git log -n 1"}},
+                        {"tool_use_id": "d1"},
+                    ]},
+                },
+                {
+                    "toolDenialKind": "permission",
+                    "message": {"content": [
+                        {"type": "tool_use", "name": "Bash", "id": "d2", "input": {"command": "git log -n 1"}},
+                        {"tool_use_id": "d2"},
+                    ]},
+                },
+            ]
+            transcript.write_text(
+                "\n".join(_json_line(record) for record in records) + "\n",
+                encoding="utf-8",
+            )
+
+            claude_dir = root / ".claude"
+            (claude_dir / "skills" / "demo").mkdir(parents=True)
+            (claude_dir / "CLAUDE.md").write_text("one\ntwo\n", encoding="utf-8")
+            claude_json = root / ".claude.json"
+            claude_json.write_text(
+                json.dumps({"mcpServers": {"docs": {}}, "pluginUsage": {"demo": {}}}),
+                encoding="utf-8",
+            )
+
+            agents = agent_health.check_claude_agents(
+                "en", roots=[current_agents, global_agents]
+            )
+            hooks = agent_health.check_claude_hooks("en", paths=[transcript])
+            denials = agent_health.check_claude_denials("en", paths=[transcript])
+            context = agent_health.check_claude_context("en", claude_dir=claude_dir)
+            metadata = agent_health.check_claude_mcp_plugins(
+                "en", claude_json=claude_json
+            )
+
+        self.assertEqual(agents.status, "warn")
+        self.assertIn("shared-reviewer", agents.data["collisions"])
+        self.assertEqual(len(agents.data["invalid"]), 1)
+        self.assertEqual(hooks.status, "warn")
+        self.assertEqual(hooks.data["slow"], ["PreToolUse:Bash"])
+        self.assertEqual(denials.data["candidates"], ["Bash(git log -n 1)"])
+        self.assertEqual(context.data["context_lines"], 3)
+        self.assertEqual(context.data["skill_count"], 1)
+        self.assertEqual(metadata.data["mcp"], ["docs"])
+        self.assertEqual(metadata.data["plugin_count"], 1)
+
+    def test_core_readers_report_invalid_input_without_swallowing(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bad_json = root / "bad.json"
+            bad_json.write_text("{", encoding="utf-8")
+            bad_toml = root / "bad.toml"
+            bad_toml.write_text("[broken", encoding="utf-8")
+            bad_frontmatter = root / "SKILL.md"
+            bad_frontmatter.write_text("---\nname: broken\n", encoding="utf-8")
+            bad_jsonl = root / "session.jsonl"
+            bad_jsonl.write_text("[]\n", encoding="utf-8")
+
+            json_result = core.read_json_object(bad_json)
+            toml_result = core.read_toml_object(bad_toml)
+            frontmatter_result = core.read_frontmatter(bad_frontmatter)
+            records, jsonl_errors = core.read_jsonl_objects([bad_jsonl, root])
+
+        self.assertEqual(json_result.errors[0].kind, "invalid_json")
+        self.assertEqual(toml_result.errors[0].kind, "invalid_toml")
+        self.assertEqual(frontmatter_result.errors[0].kind, "invalid_frontmatter")
+        self.assertEqual(records, [])
+        self.assertEqual(
+            {issue.kind for issue in jsonl_errors}, {"non_object_record", "read_error"}
+        )
+        self.assertIsNone(core.safe_readonly_rule("git status '"))
+        self.assertTrue(core.contains_denial({"nested": ["blocked by policy"]}))
+        self.assertEqual(core.semver("codex 2.3.4+build"), (2, 3, 4))
+
+    def test_claude_settings_and_metadata_reject_wrong_field_types(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            claude_dir = root / ".claude"
+            claude_dir.mkdir()
+            (claude_dir / "settings.json").write_text(
+                json.dumps({"permissions": []}), encoding="utf-8"
+            )
+            claude_json = root / ".claude.json"
+            claude_json.write_text(
+                json.dumps({"mcpServers": [], "pluginUsage": "invalid"}),
+                encoding="utf-8",
+            )
+
+            settings = agent_health.check_claude_settings(
+                "en", claude_dir=claude_dir, claude_json=claude_json, project_dir=root
+            )
+            metadata = agent_health.check_claude_mcp_plugins(
+                "en", claude_json=claude_json
+            )
+
+        self.assertEqual(settings.status, "fail")
+        self.assertIn("permissions must be a JSON object", settings.errors[0].message)
+        self.assertEqual(metadata.status, "fail")
+        self.assertEqual(metadata.data["parse_error_count"], 2)
+
+    def test_codex_collectors_cover_install_context_custom_denial_and_schema_errors(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = root / "config.toml"
+            config.write_text(
+                '[mcp_servers.docs]\nenabled = "yes"\n', encoding="utf-8"
+            )
+            agents_md = root / "AGENTS.md"
+            agents_md.write_text("first\nsecond\n", encoding="utf-8")
+
+            manifest = root / "plugins" / "demo" / ".codex-plugin" / "plugin.json"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text(
+                json.dumps({"name": "demo", "skills": "bad", "mcpServers": 3}),
+                encoding="utf-8",
+            )
+
+            transcript = root / "rollout.jsonl"
+            transcript.write_text(
+                "\n".join([
+                    _json_line({"type": "session_meta", "payload": {"id": "s1"}}),
+                    _json_line({"type": "response_item", "payload": {
+                        "type": "custom_tool_call", "call_id": "custom-1"
+                    }}),
+                    _json_line({"type": "response_item", "payload": {
+                        "type": "custom_tool_call_output", "call_id": "custom-1",
+                        "output": "tool denial: not approved",
+                    }}),
+                ]) + "\n",
+                encoding="utf-8",
+            )
+
+            completed = subprocess.CompletedProcess(
+                ["codex", "--version"], 0, "codex-cli 2.3.4\n", ""
+            )
+            with (
+                mock.patch.object(
+                    agent_health.codex_checks.shutil, "which", return_value="/usr/bin/codex"
+                ),
+                mock.patch.object(
+                    agent_health.codex_checks.subprocess, "run", return_value=completed
+                ),
+            ):
+                install = agent_health.check_codex_install("en")
+            config_check = agent_health.check_codex_config("en", path=config)
+            context = agent_health.check_codex_agents_md("en", paths=[agents_md])
+            plugins = agent_health.check_codex_plugins(
+                "en", plugins_dir=root / "plugins"
+            )
+            sessions = agent_health.check_codex_sessions("en", paths=[transcript])
+
+        self.assertEqual(install.status, "ok")
+        self.assertEqual(install.data["version"], "codex-cli 2.3.4")
+        self.assertEqual(config_check.status, "fail")
+        self.assertEqual(context.data["documents"][0]["lines"], 3)
+        self.assertEqual(plugins.status, "fail")
+        self.assertEqual(plugins.data["plugin_count"], 1)
+        self.assertEqual(sessions.status, "warn")
+        self.assertEqual(sessions.data["unpaired_denial_count"], 1)
+
+    def test_codex_argument_parser_rejects_unverified_shapes(self):
+        parser = agent_health.codex_checks._parse_exec_command
+        path = Path("rollout.jsonl")
+        cases = [None, "{", "[]", json.dumps({}), json.dumps({"cmd": 3})]
+        for arguments in cases:
+            with self.subTest(arguments=arguments):
+                command, issue = parser(path, 7, arguments)
+                self.assertIsNone(command)
+                self.assertIsNotNone(issue)
+                self.assertEqual(issue.line, 7)
+
+    def test_codex_denial_parser_fails_closed_on_malformed_verified_records(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rollout.jsonl"
+            records = [
+                {"type": "session_meta", "payload": []},
+                {"type": "response_item", "payload": {
+                    "type": "function_call", "name": "exec_command",
+                    "arguments": json.dumps({"cmd": "git status"}),
+                }},
+                {"type": "response_item", "payload": {
+                    "type": "function_call", "call_id": "missing-name",
+                }},
+                {"type": "response_item", "payload": {
+                    "type": "function_call_output", "output": "blocked by policy",
+                }},
+                {"type": "response_item", "payload": {
+                    "type": "function_call_output", "call_id": "missing-output",
+                }},
+            ]
+            path.write_text(
+                "\n".join(_json_line(record) for record in records) + "\n",
+                encoding="utf-8",
+            )
+
+            check = agent_health.check_codex_sessions("en", paths=[path])
+
+        self.assertEqual(check.status, "fail")
+        self.assertTrue(check.data["schema_supported"])
+        self.assertEqual(check.data["parse_error_count"], 5)
+        self.assertEqual(
+            {issue.kind for issue in check.errors}, {"invalid_record_schema"}
+        )
+
+    def test_report_outputs_and_optional_update_check_are_explicit(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            markdown_path = root / "health.md"
+            json_path = root / "health.json"
+            check = core.Check("demo", "Demo", status="info")
+            check.add("Unsupported test surface.")
+            with (
+                mock.patch.object(agent_health, "run_checks", return_value=[check]),
+                redirect_stdout(io.StringIO()),
+            ):
+                result = agent_health.main([
+                    "--lang", "en", "--out", str(markdown_path), "--json", str(json_path)
+                ])
+
+            response = mock.MagicMock()
+            response.__enter__.return_value.read.return_value = b"2.1.0"
+            with (
+                mock.patch.dict(agent_health.os.environ, {}, clear=True),
+                mock.patch.object(agent_health.urllib.request, "urlopen", return_value=response),
+            ):
+                update = agent_health.check_updates("2.0.0", "en")
+            with mock.patch.dict(
+                agent_health.os.environ,
+                {"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"},
+                clear=True,
+            ):
+                disabled = agent_health.check_updates("2.0.0", "en")
+            markdown = markdown_path.read_text(encoding="utf-8")
+            payload = json.loads(json_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result, 0)
+        self.assertIn("# Agent Health Check", markdown)
+        self.assertEqual(payload["summary"]["info"], 1)
+        self.assertEqual(update.status, "warn")
+        self.assertEqual(update.data["claude_latest"], "2.1.0")
+        self.assertEqual(disabled.status, "info")
 
 
 class SourceContractTests(unittest.TestCase):
