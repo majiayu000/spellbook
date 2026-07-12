@@ -66,8 +66,8 @@ Codex checks only locally verified surfaces:
 - CLI resolution and version, while still running filesystem checks if the CLI is absent;
 - `config.toml` parse health and `[mcp_servers]` enabled flags;
 - current `$HOME/.agents/skills` and legacy `$HOME/.codex/skills` definitions, invalid frontmatter, and declared-name collisions;
-- recent `$HOME/.codex/sessions/**/rollout-*.jsonl` records using verified `session_meta` and `response_item` function-call/output shapes;
-- local denial evidence where a command can be paired through a verified call ID;
+- recent `$HOME/.codex/sessions/**/rollout-*.jsonl` records using verified `session_meta`, `response_item`, and structured guardian-event shapes;
+- local command-denial evidence only from persisted `guardian_assessment` events whose status and canonical action are structurally verified;
 - global/project `AGENTS.md` context files;
 - cached `.codex-plugin/plugin.json` manifests and their skill/MCP declarations.
 
@@ -77,7 +77,9 @@ Unknown event shapes are not reverse-engineered into claims. If no verified reco
 
 - A missing local surface is unsupported evidence, not a passing check.
 - A malformed JSONL line fails transcript health even if the surrounding records parse.
-- Codex custom tool records may prove a denial occurred without exposing a verified command shape; count the denial but leave the command candidate blank.
+- Raw Codex function/custom-tool output is arbitrary command output and never proves a denial, even when the text says "denied". Current Codex builds may not persist transient guardian events; in that case denial analysis is unsupported.
+- Non-command guardian actions are outside this command-denial check and never produce permission candidates.
+- A tool call without a matching result, an output without a prior call, or an unfinished guardian assessment makes transcript evidence incomplete and must not be reported as healthy.
 - The same declared skill name in current and legacy roots is a collision even when the install-directory names differ.
 - A read-only subcommand becomes unsafe for permission generation when combined with shell operators, redirection, expansion, globbing, output-file flags, or external helpers.
 - Quarantine eligibility is advisory evidence only; the scanner never moves or deletes the directory.
@@ -88,7 +90,7 @@ Never discard malformed config or transcript records. Report a structured error 
 
 ### Permission candidates
 
-Denial evidence may produce a permission candidate only when the same exact command is denied repeatedly and the complete command passes the conservative classifier.
+Denial evidence may produce a permission candidate only when a structured guardian event exposes the same exact canonical command repeatedly and the complete command passes the conservative classifier.
 
 Allowed command shapes are deliberately narrow:
 

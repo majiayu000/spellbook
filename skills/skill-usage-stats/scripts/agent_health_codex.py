@@ -12,7 +12,6 @@ from agent_health_core import (
     Check,
     ParseIssue,
     candidate_rules,
-    contains_denial,
     msg,
     object_value,
     read_frontmatter,
@@ -22,6 +21,10 @@ from agent_health_core import (
     safe_readonly_rule,
     string_value,
 )
+
+
+_GUARDIAN_STATUSES = {"in_progress", "approved", "denied", "timed_out", "aborted"}
+_GUARDIAN_COMMAND_SOURCES = {"shell", "unified_exec"}
 
 
 def check_install(lang: str) -> Check:
@@ -150,14 +153,51 @@ def _parse_exec_command(record_path: Path, line: int, arguments: object) -> tupl
     return command, None
 
 
+def _parse_guardian_assessment(
+    record_path: Path, line: int, payload: dict[str, object]
+) -> tuple[str | None, str | None, str | None, ParseIssue | None]:
+    assessment_id = string_value(payload.get("id"))
+    status = string_value(payload.get("status"))
+    action = object_value(payload.get("action"))
+    if not assessment_id:
+        issue = ParseIssue(
+            str(record_path), "invalid_record_schema",
+            "guardian_assessment is missing string id", line,
+        )
+        return None, None, None, issue
+    if status not in _GUARDIAN_STATUSES:
+        issue = ParseIssue(
+            str(record_path), "invalid_record_schema",
+            "guardian_assessment has an unsupported status", line,
+        )
+        return None, None, None, issue
+    if action is None or string_value(action.get("type")) is None:
+        issue = ParseIssue(
+            str(record_path), "invalid_record_schema",
+            "guardian_assessment action must be a typed object", line,
+        )
+        return None, None, None, issue
+    if action.get("type") != "command":
+        return None, None, None, None
+    command = string_value(action.get("command"))
+    cwd = string_value(action.get("cwd"))
+    source = string_value(action.get("source"))
+    if not command or not cwd or source not in _GUARDIAN_COMMAND_SOURCES:
+        issue = ParseIssue(
+            str(record_path), "invalid_record_schema",
+            "guardian command action requires source, command, and cwd", line,
+        )
+        return None, None, None, issue
+    return assessment_id, status, command, None
+
+
 def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
     selected = list(paths)
     check = Check("codex_sessions", msg(lang, "Codex local session health", "Codex 本地会话健康度"))
     records, errors = read_jsonl_objects(selected)
-    calls: dict[tuple[Path, str], str | None] = {}
-    denied_commands: list[str] = []
-    denial_count = 0
-    unpaired_denials = 0
+    calls: set[tuple[Path, str]] = set()
+    assessments: dict[tuple[Path, str], tuple[str, str | None]] = {}
+    unmatched_output_count = 0
     schema_supported = False
     for record in records:
         event_type = string_value(record.data.get("type"))
@@ -171,6 +211,31 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
                 errors.append(ParseIssue(
                     str(record.path), "invalid_record_schema", "session_meta payload must be an object", record.line
                 ))
+            continue
+        if event_type == "event_msg":
+            schema_supported = True
+            if payload_object is None:
+                errors.append(ParseIssue(
+                    str(record.path), "invalid_record_schema",
+                    "event_msg payload must be an object", record.line,
+                ))
+                continue
+            if payload_type is None:
+                errors.append(ParseIssue(
+                    str(record.path), "invalid_record_schema",
+                    "event_msg payload is missing string type", record.line,
+                ))
+                continue
+            if payload_type != "guardian_assessment":
+                continue
+            assessment_id, status, command, issue = _parse_guardian_assessment(
+                record.path, record.line, payload
+            )
+            if issue is not None:
+                errors.append(issue)
+                continue
+            if assessment_id is not None and status is not None:
+                assessments[(record.path, assessment_id)] = (status, command)
             continue
         if event_type != "response_item":
             continue
@@ -204,16 +269,14 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
                 ))
                 continue
             if function_name == "exec_command":
-                command, issue = _parse_exec_command(record.path, record.line, payload.get("arguments"))
+                _, issue = _parse_exec_command(record.path, record.line, payload.get("arguments"))
                 if issue is not None:
                     errors.append(issue)
-                calls[(record.path, call_id)] = command
-            else:
-                calls[(record.path, call_id)] = None
+            calls.add((record.path, call_id))
         elif payload_type == "function_call_output":
             schema_supported = True
             call_id = string_value(payload.get("call_id"))
-            if call_id is None:
+            if not call_id:
                 errors.append(ParseIssue(
                     str(record.path), "invalid_record_schema", "function_call_output is missing string call_id", record.line
                 ))
@@ -223,28 +286,50 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
                     str(record.path), "invalid_record_schema", "function_call_output is missing output", record.line
                 ))
                 continue
-            command = calls.pop((record.path, call_id), None)
-            if call_id and contains_denial(payload.get("output")):
-                denial_count += 1
-                if command is None:
-                    unpaired_denials += 1
-                else:
-                    denied_commands.append(command)
+            call_key = (record.path, call_id)
+            if call_key in calls:
+                calls.remove(call_key)
+            else:
+                unmatched_output_count += 1
         elif payload_type in {"custom_tool_call", "custom_tool_call_output"}:
             schema_supported = True
             call_id = string_value(payload.get("call_id"))
             if payload_type == "custom_tool_call":
-                if call_id:
-                    calls[(record.path, call_id)] = None
-            elif call_id:
-                command = calls.pop((record.path, call_id), None)
-                if contains_denial(payload.get("output")):
-                    denial_count += 1
-                    if command is None:
-                        unpaired_denials += 1
-                    else:
-                        denied_commands.append(command)
+                if not call_id:
+                    errors.append(ParseIssue(
+                        str(record.path), "invalid_record_schema",
+                        "custom_tool_call is missing string call_id", record.line,
+                    ))
+                else:
+                    calls.add((record.path, call_id))
+            elif not call_id:
+                errors.append(ParseIssue(
+                    str(record.path), "invalid_record_schema",
+                    "custom_tool_call_output is missing string call_id", record.line,
+                ))
+            elif "output" not in payload:
+                errors.append(ParseIssue(
+                    str(record.path), "invalid_record_schema",
+                    "custom_tool_call_output is missing output", record.line,
+                ))
+            else:
+                call_key = (record.path, call_id)
+                if call_key in calls:
+                    calls.remove(call_key)
+                else:
+                    unmatched_output_count += 1
 
+    denied_assessments = [
+        command for status, command in assessments.values() if status == "denied"
+    ]
+    denied_commands = [command for command in denied_assessments if command is not None]
+    denial_count = len(denied_assessments)
+    unpaired_denials = sum(command is None for command in denied_assessments)
+    incomplete_call_count = len(calls)
+    incomplete_assessment_count = sum(
+        status == "in_progress" for status, _ in assessments.values()
+    )
+    denial_evidence_supported = bool(assessments)
     candidates = candidate_rules(denied_commands)
     unsafe_denials = sum(
         1
@@ -258,6 +343,10 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
         "transcript_count": len(selected),
         "record_count": len(records),
         "parse_error_count": len(errors),
+        "denial_evidence_supported": denial_evidence_supported,
+        "incomplete_call_count": incomplete_call_count,
+        "unmatched_output_count": unmatched_output_count,
+        "incomplete_assessment_count": incomplete_assessment_count,
         "denial_count": denial_count,
         "unpaired_denial_count": unpaired_denials,
         "unsafe_denial_count": unsafe_denials,
@@ -268,11 +357,30 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
     elif not selected or not schema_supported:
         check.status = "info"
         check.add(msg(lang, "No verifiable local Codex session schema was available; this surface is unsupported.", "没有可验证的本地 Codex 会话结构；此检查面不受支持。"))
+    elif incomplete_call_count or unmatched_output_count or incomplete_assessment_count:
+        check.status = "warn"
+        check.add(msg(
+            lang,
+            f"Denial evidence is incomplete: {incomplete_call_count} call(s) lack output, "
+            f"{unmatched_output_count} output(s) lack a prior call, and "
+            f"{incomplete_assessment_count} guardian assessment(s) are unfinished.",
+            f"拒绝证据不完整：{incomplete_call_count} 个调用缺少输出，"
+            f"{unmatched_output_count} 个输出缺少先前调用，"
+            f"{incomplete_assessment_count} 个 guardian 评估尚未结束。",
+        ))
     elif denial_count:
         check.status = "warn"
-        check.add(msg(lang, f"Observed {denial_count} denial(s); {len(candidates)} exact repeated read-only candidate(s).", f"观察到 {denial_count} 次拒绝；{len(candidates)} 个重复且精确的只读候选。"))
-    else:
-        check.add(msg(lang, f"Parsed {len(records)} record(s) using the verified local schema; no denials were observed.", f"使用已验证的本地结构解析了 {len(records)} 条记录；未观察到拒绝。"))
+    elif not denial_evidence_supported:
+        check.status = "info"
+
+    if selected and schema_supported and denial_evidence_supported:
+        check.add(msg(lang, f"Observed {denial_count} structured denial(s); {len(candidates)} exact repeated read-only candidate(s).", f"观察到 {denial_count} 次结构化拒绝；{len(candidates)} 个重复且精确的只读候选。"))
+    elif selected and schema_supported:
+        check.add(msg(
+            lang,
+            f"Parsed {len(records)} record(s), but no persisted structured guardian evidence was available; denial analysis is unsupported.",
+            f"解析了 {len(records)} 条记录，但没有持久化的结构化 guardian 证据；拒绝分析不受支持。",
+        ))
     for candidate in candidates:
         check.add(candidate)
     return check

@@ -276,33 +276,6 @@ def safe_readonly_rule(command: str) -> str | None:
     return f"Bash({shlex.join(tokens)})"
 
 
-_DENIAL_TEXT_PATTERN = re.compile(
-    r"^(?:"
-    r"(?:command|request|tool call)\s+(?:was\s+)?(?:"
-    r"denied(?:\s+by\s+(?:the\s+)?sandbox(?:\s+policy)?)?"
-    r"|not approved"
-    r"|rejected\s+by\s+(?:the\s+)?sandbox"
-    r"|blocked\s+by\s+policy"
-    r")"
-    r"|denied\s+by\s+(?:the\s+)?sandbox(?:\s+policy)?"
-    r"|rejected\s+by\s+(?:the\s+)?sandbox"
-    r"|tool denial(?:\s*:\s*(?:not approved|blocked by policy|denied by sandbox(?: policy)?))?"
-    r")\.?$",
-    re.IGNORECASE,
-)
-
-
-def contains_denial(value: object) -> bool:
-    """Match only a complete, single-line tool or sandbox denial message."""
-
-    if not isinstance(value, str):
-        return False
-    stripped = value.strip()
-    if not stripped or "\n" in stripped or "\r" in stripped:
-        return False
-    return _DENIAL_TEXT_PATTERN.fullmatch(stripped) is not None
-
-
 def candidate_rules(commands: Iterable[str], minimum_count: int = 2) -> list[str]:
     """Aggregate only exact commands that pass the conservative classifier."""
 

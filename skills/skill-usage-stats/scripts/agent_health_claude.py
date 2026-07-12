@@ -304,24 +304,43 @@ def check_denials(lang: str, *, paths: Iterable[Path]) -> Check:
                         denied_commands.append(command)
     candidates = candidate_rules(denied_commands)
     safe_denials = sum(1 for command in denied_commands if safe_readonly_rule(command) is not None)
+    incomplete_call_count = len(calls)
     check.add_errors(errors)
     check.data.update({
+        "supported": bool(selected),
         "denial_count": denial_count,
         "unpaired_denial_count": unpaired_denial_count,
+        "incomplete_call_count": incomplete_call_count,
         "safe_denial_count": safe_denials,
         "candidates": candidates,
         "parse_error_count": len(errors),
     })
     if not errors:
-        if denial_count:
+        if incomplete_call_count:
+            check.status = "warn"
+            check.add(msg(
+                lang,
+                f"Denial evidence is incomplete: {incomplete_call_count} Bash call(s) lack a matching result.",
+                f"拒绝证据不完整：{incomplete_call_count} 个 Bash 调用缺少匹配结果。",
+            ))
+        elif denial_count:
             check.status = "warn"
         elif not selected:
             check.status = "info"
-    check.add(msg(
-        lang,
-        f"Observed {denial_count} denial(s); {len(candidates)} exact repeated read-only candidate(s).",
-        f"观察到 {denial_count} 次拒绝；{len(candidates)} 个重复且精确的只读候选。",
-    ))
+    if incomplete_call_count:
+        check.add(msg(
+            lang,
+            f"Among complete call/result pairs, observed {denial_count} denial(s); "
+            f"{len(candidates)} exact repeated read-only candidate(s).",
+            f"在完整的调用/结果配对中观察到 {denial_count} 次拒绝；"
+            f"{len(candidates)} 个重复且精确的只读候选。",
+        ))
+    else:
+        check.add(msg(
+            lang,
+            f"Observed {denial_count} denial(s); {len(candidates)} exact repeated read-only candidate(s).",
+            f"观察到 {denial_count} 次拒绝；{len(candidates)} 个重复且精确的只读候选。",
+        ))
     for candidate in candidates:
         check.add(candidate)
     return check

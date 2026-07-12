@@ -44,6 +44,23 @@ def _codex_output(call_id: str, output: str) -> str:
     })
 
 
+def _codex_guardian(assessment_id: str, status: str, command: str) -> str:
+    return _line({
+        "type": "event_msg",
+        "payload": {
+            "type": "guardian_assessment",
+            "id": assessment_id,
+            "status": status,
+            "action": {
+                "type": "command",
+                "source": "shell",
+                "command": command,
+                "cwd": "/tmp",
+            },
+        },
+    })
+
+
 def _claude_call(call_id: str, command: str) -> str:
     return _line({
         "message": {"content": [{
@@ -81,19 +98,17 @@ class AgentDefinitionEvidenceTests(unittest.TestCase):
 
 
 class DenialPairingEvidenceTests(unittest.TestCase):
-    def test_codex_call_ids_are_scoped_to_each_transcript(self):
+    def test_codex_guardian_ids_are_scoped_to_each_transcript(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             first = root / "first.jsonl"
             second = root / "second.jsonl"
             first.write_text(
-                _codex_call("same-id", "git status --short") + "\n"
-                + _codex_output("same-id", "command denied by sandbox policy") + "\n",
+                _codex_guardian("same-id", "denied", "git status --short") + "\n",
                 encoding="utf-8",
             )
             second.write_text(
-                _codex_call("same-id", "git log -n 1") + "\n"
-                + _codex_output("same-id", "command denied by sandbox policy") + "\n",
+                _codex_guardian("same-id", "denied", "git log -n 1") + "\n",
                 encoding="utf-8",
             )
 
@@ -103,43 +118,95 @@ class DenialPairingEvidenceTests(unittest.TestCase):
         self.assertEqual(check.data["unpaired_denial_count"], 0)
         self.assertEqual(check.data["candidates"], [])
 
-    def test_codex_denial_cannot_pair_with_a_later_call(self):
+    def test_codex_output_cannot_pair_with_a_later_call(self):
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "rollout.jsonl"
             path.write_text(
                 "\n".join([
                     _codex_output("one", "command denied by sandbox policy"),
-                    _codex_call("one", "git status --short"),
+                    _codex_call("one", "git log -n 1 --format=%s"),
                     _codex_output("two", "command denied by sandbox policy"),
-                    _codex_call("two", "git status --short"),
+                    _codex_call("two", "git log -n 1 --format=%s"),
                 ]) + "\n",
                 encoding="utf-8",
             )
 
             check = agent_health.check_codex_sessions("en", paths=[path])
 
-        self.assertEqual(check.data["denial_count"], 2)
-        self.assertEqual(check.data["unpaired_denial_count"], 2)
+        self.assertEqual(check.status, "warn")
+        self.assertEqual(check.data["denial_count"], 0)
+        self.assertEqual(check.data["unmatched_output_count"], 2)
+        self.assertEqual(check.data["incomplete_call_count"], 2)
         self.assertEqual(check.data["candidates"], [])
 
-    def test_ordinary_codex_output_with_denial_words_is_not_denial_evidence(self):
+    def test_exact_denial_text_in_codex_stdout_is_not_denial_evidence(self):
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "rollout.jsonl"
             path.write_text(
                 "\n".join([
                     _codex_call("one", "git status --short"),
-                    _codex_output("one", "not approved"),
+                    _codex_output("one", "command denied by sandbox policy"),
                     _codex_call("two", "git status --short"),
-                    _codex_output("two", "docs say this request is blocked by policy"),
+                    _codex_output("two", "command denied by sandbox policy"),
                 ]) + "\n",
                 encoding="utf-8",
             )
 
             check = agent_health.check_codex_sessions("en", paths=[path])
 
-        self.assertEqual(check.status, "ok")
+        self.assertEqual(check.status, "info")
         self.assertEqual(check.data["denial_count"], 0)
+        self.assertFalse(check.data["denial_evidence_supported"])
+        self.assertEqual(check.data["incomplete_call_count"], 0)
         self.assertEqual(check.data["candidates"], [])
+
+    def test_dangling_codex_call_is_incomplete_not_healthy(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rollout.jsonl"
+            path.write_text(
+                _codex_call("pending", "git status --short") + "\n",
+                encoding="utf-8",
+            )
+
+            check = agent_health.check_codex_sessions("en", paths=[path])
+
+        self.assertEqual(check.status, "warn")
+        self.assertEqual(check.data["incomplete_call_count"], 1)
+        self.assertEqual(check.data["denial_count"], 0)
+        self.assertNotIn("no denials were observed", "\n".join(check.lines).lower())
+
+    def test_unfinished_guardian_assessment_is_incomplete(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rollout.jsonl"
+            path.write_text(
+                _codex_guardian("pending", "in_progress", "git status --short") + "\n",
+                encoding="utf-8",
+            )
+
+            check = agent_health.check_codex_sessions("en", paths=[path])
+
+        self.assertEqual(check.status, "warn")
+        self.assertEqual(check.data["incomplete_assessment_count"], 1)
+        self.assertEqual(check.data["denial_count"], 0)
+
+    def test_non_command_guardian_does_not_claim_command_denial_evidence(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rollout.jsonl"
+            path.write_text(_line({
+                "type": "event_msg",
+                "payload": {
+                    "type": "guardian_assessment",
+                    "id": "patch-denied",
+                    "status": "denied",
+                    "action": {"type": "apply_patch", "cwd": "/tmp", "files": []},
+                },
+            }) + "\n", encoding="utf-8")
+
+            check = agent_health.check_codex_sessions("en", paths=[path])
+
+        self.assertEqual(check.status, "info")
+        self.assertFalse(check.data["denial_evidence_supported"])
+        self.assertEqual(check.data["denial_count"], 0)
 
     def test_claude_call_ids_are_scoped_to_each_transcript(self):
         with TemporaryDirectory() as tmp:
@@ -180,7 +247,23 @@ class DenialPairingEvidenceTests(unittest.TestCase):
 
         self.assertEqual(check.data["denial_count"], 2)
         self.assertEqual(check.data["unpaired_denial_count"], 2)
+        self.assertEqual(check.data["incomplete_call_count"], 2)
         self.assertEqual(check.data["candidates"], [])
+
+    def test_dangling_claude_call_is_incomplete_not_healthy(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "session.jsonl"
+            path.write_text(
+                _claude_call("pending", "git status --short") + "\n",
+                encoding="utf-8",
+            )
+
+            check = agent_health.check_claude_denials("en", paths=[path])
+
+        self.assertEqual(check.status, "warn")
+        self.assertEqual(check.data["incomplete_call_count"], 1)
+        self.assertEqual(check.data["denial_count"], 0)
+        self.assertIn("complete call/result pairs", "\n".join(check.lines))
 
 
 if __name__ == "__main__":

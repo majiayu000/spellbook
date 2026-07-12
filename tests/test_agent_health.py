@@ -54,8 +54,21 @@ def _codex_output(call_id: str, output: object) -> str:
     })
 
 
-def _codex_denial(call_id: str) -> str:
-    return _codex_output(call_id, "command denied by sandbox policy")
+def _codex_guardian(assessment_id: str, status: str, command: str) -> str:
+    return _json_line({
+        "type": "event_msg",
+        "payload": {
+            "type": "guardian_assessment",
+            "id": assessment_id,
+            "status": status,
+            "action": {
+                "type": "command",
+                "source": "shell",
+                "command": command,
+                "cwd": "/tmp",
+            },
+        },
+    })
 
 
 class CommandSafetyTests(unittest.TestCase):
@@ -331,15 +344,16 @@ class CodexHealthTests(unittest.TestCase):
             path = Path(tmp) / "rollout.jsonl"
             lines = [
                 _json_line({"type": "session_meta", "payload": {"id": "s1"}}),
-                _codex_call("safe-1", "git status --short"), _codex_denial("safe-1"),
-                _codex_call("safe-2", "git status --short"), _codex_denial("safe-2"),
-                _codex_call("bad", "gh pr merge 141"), _codex_denial("bad"),
+                _codex_guardian("safe-1", "denied", "git status --short"),
+                _codex_guardian("safe-2", "denied", "git status --short"),
+                _codex_guardian("bad", "denied", "gh pr merge 141"),
             ]
             path.write_text("\n".join(lines) + "\n", encoding="utf-8")
             check = agent_health.check_codex_sessions("en", paths=[path])
 
         self.assertEqual(check.status, "warn")
         self.assertTrue(check.data["schema_supported"])
+        self.assertTrue(check.data["denial_evidence_supported"])
         self.assertEqual(check.data["denial_count"], 3)
         self.assertEqual(check.data["candidates"], ["Bash(git status --short)"])
         self.assertNotIn("merge", json.dumps(check.data))
@@ -356,8 +370,9 @@ class CodexHealthTests(unittest.TestCase):
             path.write_text("\n".join(lines) + "\n", encoding="utf-8")
             check = agent_health.check_codex_sessions("en", paths=[path])
 
-        self.assertEqual(check.status, "ok")
+        self.assertEqual(check.status, "info")
         self.assertTrue(check.data["schema_supported"])
+        self.assertFalse(check.data["denial_evidence_supported"])
         self.assertEqual(check.data["denial_count"], 0)
         self.assertEqual(check.data["candidates"], [])
 
@@ -488,9 +503,6 @@ class HealthCoverageTests(unittest.TestCase):
             {issue.kind for issue in jsonl_errors}, {"non_object_record", "read_error"}
         )
         self.assertIsNone(core.safe_readonly_rule("git status '"))
-        self.assertTrue(core.contains_denial("command denied by sandbox policy"))
-        self.assertFalse(core.contains_denial({"nested": ["blocked by policy"]}))
-        self.assertFalse(core.contains_denial("log entry: request not approved"))
         self.assertEqual(core.semver("codex 2.3.4+build"), (2, 3, 4))
 
     def test_claude_settings_and_metadata_reject_wrong_field_types(self):
@@ -519,7 +531,7 @@ class HealthCoverageTests(unittest.TestCase):
         self.assertEqual(metadata.status, "fail")
         self.assertEqual(metadata.data["parse_error_count"], 2)
 
-    def test_codex_collectors_cover_install_context_custom_denial_and_schema_errors(self):
+    def test_codex_collectors_cover_install_context_custom_output_and_schema_errors(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             config = root / "config.toml"
@@ -576,8 +588,10 @@ class HealthCoverageTests(unittest.TestCase):
         self.assertEqual(context.data["documents"][0]["lines"], 3)
         self.assertEqual(plugins.status, "fail")
         self.assertEqual(plugins.data["plugin_count"], 1)
-        self.assertEqual(sessions.status, "warn")
-        self.assertEqual(sessions.data["unpaired_denial_count"], 1)
+        self.assertEqual(sessions.status, "info")
+        self.assertEqual(sessions.data["denial_count"], 0)
+        self.assertEqual(sessions.data["unpaired_denial_count"], 0)
+        self.assertFalse(sessions.data["denial_evidence_supported"])
 
     def test_codex_argument_parser_rejects_unverified_shapes(self):
         parser = agent_health.codex_checks._parse_exec_command
@@ -608,6 +622,12 @@ class HealthCoverageTests(unittest.TestCase):
                 {"type": "response_item", "payload": {
                     "type": "function_call_output", "call_id": "missing-output",
                 }},
+                {"type": "event_msg", "payload": {
+                    "type": "guardian_assessment", "id": "bad-action",
+                    "status": "denied", "action": {
+                        "type": "command", "source": "shell", "command": "git status",
+                    },
+                }},
             ]
             path.write_text(
                 "\n".join(_json_line(record) for record in records) + "\n",
@@ -618,7 +638,7 @@ class HealthCoverageTests(unittest.TestCase):
 
         self.assertEqual(check.status, "fail")
         self.assertTrue(check.data["schema_supported"])
-        self.assertEqual(check.data["parse_error_count"], 5)
+        self.assertEqual(check.data["parse_error_count"], 6)
         self.assertEqual(
             {issue.kind for issue in check.errors}, {"invalid_record_schema"}
         )
