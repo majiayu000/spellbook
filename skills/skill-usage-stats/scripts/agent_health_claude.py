@@ -274,10 +274,12 @@ def check_denials(lang: str, *, paths: Iterable[Path]) -> Check:
     selected = list(paths)
     check = Check("claude_denials", msg(lang, "Claude denied read-only commands", "Claude 被拒只读命令"))
     records, errors = read_jsonl_objects(selected)
-    calls: dict[tuple[Path, str], str] = {}
+    calls: dict[tuple[Path, str], str | None] = {}
     denied_commands: list[str] = []
     denial_count = 0
     unpaired_denial_count = 0
+    unmatched_result_count = 0
+    duplicate_call_count = 0
     for record in records:
         message = object_value(record.data.get("message")) or {}
         content = message.get("content")
@@ -287,15 +289,27 @@ def check_denials(lang: str, *, paths: Iterable[Path]) -> Check:
             block = object_value(raw_block)
             if block is None:
                 continue
-            if block.get("type") == "tool_use" and block.get("name") == "Bash":
+            if block.get("type") == "tool_use":
                 call_id = string_value(block.get("id"))
-                inputs = object_value(block.get("input")) or {}
-                command = string_value(inputs.get("command"))
-                if call_id and command:
-                    calls[(record.path, call_id)] = command
+                command = None
+                if block.get("name") == "Bash":
+                    inputs = object_value(block.get("input")) or {}
+                    command = string_value(inputs.get("command"))
+                if call_id:
+                    call_key = (record.path, call_id)
+                    if call_key in calls:
+                        duplicate_call_count += 1
+                        calls[call_key] = None
+                    else:
+                        calls[call_key] = command
             result_id = string_value(block.get("tool_use_id"))
             if result_id:
-                command = calls.pop((record.path, result_id), None)
+                call_key = (record.path, result_id)
+                if call_key in calls:
+                    command = calls.pop(call_key)
+                else:
+                    command = None
+                    unmatched_result_count += 1
                 if record.data.get("toolDenialKind") is not None:
                     denial_count += 1
                     if command is None:
@@ -311,23 +325,29 @@ def check_denials(lang: str, *, paths: Iterable[Path]) -> Check:
         "denial_count": denial_count,
         "unpaired_denial_count": unpaired_denial_count,
         "incomplete_call_count": incomplete_call_count,
+        "unmatched_result_count": unmatched_result_count,
+        "duplicate_call_count": duplicate_call_count,
         "safe_denial_count": safe_denials,
         "candidates": candidates,
         "parse_error_count": len(errors),
     })
     if not errors:
-        if incomplete_call_count:
+        if incomplete_call_count or unmatched_result_count or duplicate_call_count:
             check.status = "warn"
             check.add(msg(
                 lang,
-                f"Denial evidence is incomplete: {incomplete_call_count} Bash call(s) lack a matching result.",
-                f"拒绝证据不完整：{incomplete_call_count} 个 Bash 调用缺少匹配结果。",
+                f"Denial evidence is incomplete: {incomplete_call_count} tool call(s) lack a result, "
+                f"{unmatched_result_count} result(s) lack a prior call, and "
+                f"{duplicate_call_count} pending call ID(s) were duplicated.",
+                f"拒绝证据不完整：{incomplete_call_count} 个工具调用缺少结果，"
+                f"{unmatched_result_count} 个结果缺少先前调用，"
+                f"{duplicate_call_count} 个待处理调用 ID 重复。",
             ))
         elif denial_count:
             check.status = "warn"
         elif not selected:
             check.status = "info"
-    if incomplete_call_count:
+    if incomplete_call_count or unmatched_result_count or duplicate_call_count:
         check.add(msg(
             lang,
             f"Among complete call/result pairs, observed {denial_count} denial(s); "

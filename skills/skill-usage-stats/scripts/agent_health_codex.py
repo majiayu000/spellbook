@@ -198,6 +198,7 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
     calls: set[tuple[Path, str]] = set()
     assessments: dict[tuple[Path, str], tuple[str, str | None]] = {}
     unmatched_output_count = 0
+    duplicate_call_count = 0
     schema_supported = False
     for record in records:
         event_type = string_value(record.data.get("type"))
@@ -272,7 +273,11 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
                 _, issue = _parse_exec_command(record.path, record.line, payload.get("arguments"))
                 if issue is not None:
                     errors.append(issue)
-            calls.add((record.path, call_id))
+            call_key = (record.path, call_id)
+            if call_key in calls:
+                duplicate_call_count += 1
+            else:
+                calls.add(call_key)
         elif payload_type == "function_call_output":
             schema_supported = True
             call_id = string_value(payload.get("call_id"))
@@ -301,7 +306,11 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
                         "custom_tool_call is missing string call_id", record.line,
                     ))
                 else:
-                    calls.add((record.path, call_id))
+                    call_key = (record.path, call_id)
+                    if call_key in calls:
+                        duplicate_call_count += 1
+                    else:
+                        calls.add(call_key)
             elif not call_id:
                 errors.append(ParseIssue(
                     str(record.path), "invalid_record_schema",
@@ -346,6 +355,7 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
         "denial_evidence_supported": denial_evidence_supported,
         "incomplete_call_count": incomplete_call_count,
         "unmatched_output_count": unmatched_output_count,
+        "duplicate_call_count": duplicate_call_count,
         "incomplete_assessment_count": incomplete_assessment_count,
         "denial_count": denial_count,
         "unpaired_denial_count": unpaired_denials,
@@ -357,15 +367,22 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
     elif not selected or not schema_supported:
         check.status = "info"
         check.add(msg(lang, "No verifiable local Codex session schema was available; this surface is unsupported.", "没有可验证的本地 Codex 会话结构；此检查面不受支持。"))
-    elif incomplete_call_count or unmatched_output_count or incomplete_assessment_count:
+    elif (
+        incomplete_call_count
+        or unmatched_output_count
+        or duplicate_call_count
+        or incomplete_assessment_count
+    ):
         check.status = "warn"
         check.add(msg(
             lang,
             f"Denial evidence is incomplete: {incomplete_call_count} call(s) lack output, "
             f"{unmatched_output_count} output(s) lack a prior call, and "
+            f"{duplicate_call_count} pending call ID(s) were duplicated; "
             f"{incomplete_assessment_count} guardian assessment(s) are unfinished.",
             f"拒绝证据不完整：{incomplete_call_count} 个调用缺少输出，"
             f"{unmatched_output_count} 个输出缺少先前调用，"
+            f"{duplicate_call_count} 个待处理调用 ID 重复；"
             f"{incomplete_assessment_count} 个 guardian 评估尚未结束。",
         ))
     elif denial_count:

@@ -79,6 +79,16 @@ def _claude_denial(call_id: str) -> str:
     })
 
 
+def _claude_result(call_id: str) -> str:
+    return _line({
+        "message": {"content": [{
+            "type": "tool_result",
+            "tool_use_id": call_id,
+            "content": "ordinary output",
+        }]},
+    })
+
+
 class AgentDefinitionEvidenceTests(unittest.TestCase):
     def test_claude_agent_without_declared_name_is_invalid_not_invisible(self):
         with TemporaryDirectory() as tmp:
@@ -248,6 +258,7 @@ class DenialPairingEvidenceTests(unittest.TestCase):
         self.assertEqual(check.data["denial_count"], 2)
         self.assertEqual(check.data["unpaired_denial_count"], 2)
         self.assertEqual(check.data["incomplete_call_count"], 2)
+        self.assertEqual(check.data["unmatched_result_count"], 2)
         self.assertEqual(check.data["candidates"], [])
 
     def test_dangling_claude_call_is_incomplete_not_healthy(self):
@@ -264,6 +275,43 @@ class DenialPairingEvidenceTests(unittest.TestCase):
         self.assertEqual(check.data["incomplete_call_count"], 1)
         self.assertEqual(check.data["denial_count"], 0)
         self.assertIn("complete call/result pairs", "\n".join(check.lines))
+
+    def test_unmatched_claude_result_is_incomplete_not_healthy(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "session.jsonl"
+            path.write_text(_claude_result("missing") + "\n", encoding="utf-8")
+
+            check = agent_health.check_claude_denials("en", paths=[path])
+
+        self.assertEqual(check.status, "warn")
+        self.assertEqual(check.data["unmatched_result_count"], 1)
+        self.assertEqual(check.data["denial_count"], 0)
+
+    def test_duplicate_pending_call_ids_are_incomplete_in_both_scanners(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            codex_path = root / "rollout.jsonl"
+            codex_path.write_text("\n".join([
+                _codex_call("duplicate", "git status --short"),
+                _codex_call("duplicate", "git status --short"),
+                _codex_output("duplicate", "ordinary output"),
+            ]) + "\n", encoding="utf-8")
+            claude_path = root / "session.jsonl"
+            claude_path.write_text("\n".join([
+                _claude_call("duplicate", "git status --short"),
+                _claude_call("duplicate", "git status --short"),
+                _claude_result("duplicate"),
+            ]) + "\n", encoding="utf-8")
+
+            codex = agent_health.check_codex_sessions("en", paths=[codex_path])
+            claude = agent_health.check_claude_denials("en", paths=[claude_path])
+
+        self.assertEqual(codex.status, "warn")
+        self.assertEqual(codex.data["duplicate_call_count"], 1)
+        self.assertEqual(codex.data["incomplete_call_count"], 0)
+        self.assertEqual(claude.status, "warn")
+        self.assertEqual(claude.data["duplicate_call_count"], 1)
+        self.assertEqual(claude.data["incomplete_call_count"], 0)
 
 
 if __name__ == "__main__":
