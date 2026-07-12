@@ -7,7 +7,7 @@ import re
 import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable
 
 
 STATUS_ICON = {"ok": "✅", "warn": "⚠️", "fail": "❌", "info": "ℹ️"}
@@ -231,7 +231,6 @@ def recent_files(root: Path, pattern: str, limit: int) -> list[Path]:
 _SHELL_COMPOSITION = re.compile(r"(?:\n|\r|&&|\|\||[;&|<>`]|\$\()")
 _SAFE_SIMPLE = {"pwd", "ls", "which", "wc", "head", "tail", "tree"}
 _UNSAFE_GIT_FLAGS = ("--output", "--ext-diff", "--textconv")
-_UNSAFE_GH_FLAGS = {"--web", "-w"}
 
 
 def safe_readonly_rule(command: str) -> str | None:
@@ -272,42 +271,36 @@ def safe_readonly_rule(command: str) -> str | None:
             safe = True
         elif subcommand == "branch":
             safe = tokens == ["git", "branch", "--list"]
-    elif tokens[0] == "gh" and len(tokens) >= 3:
-        safe = (
-            tokens[1] == "pr"
-            and tokens[2] in {"view", "list"}
-            and not any(
-                token == flag or token.startswith(f"{flag}=")
-                for token in tokens[3:]
-                for flag in _UNSAFE_GH_FLAGS
-            )
-        )
     if not safe:
         return None
     return f"Bash({shlex.join(tokens)})"
 
 
-_DENIAL_MARKERS = (
-    "command denied",
-    "denied by sandbox",
-    "not approved",
-    "rejected by sandbox",
-    "blocked by policy",
-    "tool denial",
+_DENIAL_TEXT_PATTERN = re.compile(
+    r"^(?:"
+    r"(?:command|request|tool call)\s+(?:was\s+)?(?:"
+    r"denied(?:\s+by\s+(?:the\s+)?sandbox(?:\s+policy)?)?"
+    r"|not approved"
+    r"|rejected\s+by\s+(?:the\s+)?sandbox"
+    r"|blocked\s+by\s+policy"
+    r")"
+    r"|denied\s+by\s+(?:the\s+)?sandbox(?:\s+policy)?"
+    r"|rejected\s+by\s+(?:the\s+)?sandbox"
+    r"|tool denial(?:\s*:\s*(?:not approved|blocked by policy|denied by sandbox(?: policy)?))?"
+    r")\.?$",
+    re.IGNORECASE,
 )
 
 
 def contains_denial(value: object) -> bool:
-    """Detect explicit tool or sandbox denial markers in a verified output record."""
+    """Match only a complete, single-line tool or sandbox denial message."""
 
-    if isinstance(value, str):
-        lowered = value.lower()
-        return any(marker in lowered for marker in _DENIAL_MARKERS)
-    if isinstance(value, Mapping):
-        return any(contains_denial(item) for item in value.values())
-    if isinstance(value, list):
-        return any(contains_denial(item) for item in value)
-    return False
+    if not isinstance(value, str):
+        return False
+    stripped = value.strip()
+    if not stripped or "\n" in stripped or "\r" in stripped:
+        return False
+    return _DENIAL_TEXT_PATTERN.fullmatch(stripped) is not None
 
 
 def candidate_rules(commands: Iterable[str], minimum_count: int = 2) -> list[str]:

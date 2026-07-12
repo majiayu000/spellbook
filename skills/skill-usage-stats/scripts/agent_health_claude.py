@@ -188,11 +188,11 @@ def check_agents(lang: str, *, roots: Iterable[Path]) -> Check:
             check.add_errors(result.errors)
             fields = result.data or {}
             name = string_value(fields.get("name"))
+            definition_count += 1
+            if not name or not string_value(fields.get("description")):
+                invalid.append(str(path))
             if not name:
                 continue
-            definition_count += 1
-            if not string_value(fields.get("description")):
-                invalid.append(str(path))
             names.setdefault(name, []).append(str(path))
     collisions = {name: paths for name, paths in names.items() if len(paths) > 1}
     check.data.update({
@@ -274,8 +274,10 @@ def check_denials(lang: str, *, paths: Iterable[Path]) -> Check:
     selected = list(paths)
     check = Check("claude_denials", msg(lang, "Claude denied read-only commands", "Claude 被拒只读命令"))
     records, errors = read_jsonl_objects(selected)
-    calls: dict[str, str] = {}
-    denial_ids: list[str] = []
+    calls: dict[tuple[Path, str], str] = {}
+    denied_commands: list[str] = []
+    denial_count = 0
+    unpaired_denial_count = 0
     for record in records:
         message = object_value(record.data.get("message")) or {}
         content = message.get("content")
@@ -290,29 +292,35 @@ def check_denials(lang: str, *, paths: Iterable[Path]) -> Check:
                 inputs = object_value(block.get("input")) or {}
                 command = string_value(inputs.get("command"))
                 if call_id and command:
-                    calls[call_id] = command
-            denied_id = string_value(block.get("tool_use_id"))
-            if denied_id and record.data.get("toolDenialKind") is not None:
-                denial_ids.append(denied_id)
-    denied_commands = [calls[call_id] for call_id in denial_ids if call_id in calls]
+                    calls[(record.path, call_id)] = command
+            result_id = string_value(block.get("tool_use_id"))
+            if result_id:
+                command = calls.pop((record.path, result_id), None)
+                if record.data.get("toolDenialKind") is not None:
+                    denial_count += 1
+                    if command is None:
+                        unpaired_denial_count += 1
+                    else:
+                        denied_commands.append(command)
     candidates = candidate_rules(denied_commands)
     safe_denials = sum(1 for command in denied_commands if safe_readonly_rule(command) is not None)
     check.add_errors(errors)
     check.data.update({
-        "denial_count": len(denial_ids),
+        "denial_count": denial_count,
+        "unpaired_denial_count": unpaired_denial_count,
         "safe_denial_count": safe_denials,
         "candidates": candidates,
         "parse_error_count": len(errors),
     })
     if not errors:
-        if denial_ids:
+        if denial_count:
             check.status = "warn"
         elif not selected:
             check.status = "info"
     check.add(msg(
         lang,
-        f"Observed {len(denial_ids)} denial(s); {len(candidates)} exact repeated read-only candidate(s).",
-        f"观察到 {len(denial_ids)} 次拒绝；{len(candidates)} 个重复且精确的只读候选。",
+        f"Observed {denial_count} denial(s); {len(candidates)} exact repeated read-only candidate(s).",
+        f"观察到 {denial_count} 次拒绝；{len(candidates)} 个重复且精确的只读候选。",
     ))
     for candidate in candidates:
         check.add(candidate)

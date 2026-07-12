@@ -154,8 +154,10 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
     selected = list(paths)
     check = Check("codex_sessions", msg(lang, "Codex local session health", "Codex 本地会话健康度"))
     records, errors = read_jsonl_objects(selected)
-    calls: dict[str, str | None] = {}
-    denied_call_ids: list[str] = []
+    calls: dict[tuple[Path, str], str | None] = {}
+    denied_commands: list[str] = []
+    denial_count = 0
+    unpaired_denials = 0
     schema_supported = False
     for record in records:
         event_type = string_value(record.data.get("type"))
@@ -205,9 +207,9 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
                 command, issue = _parse_exec_command(record.path, record.line, payload.get("arguments"))
                 if issue is not None:
                     errors.append(issue)
-                calls[call_id] = command
+                calls[(record.path, call_id)] = command
             else:
-                calls[call_id] = None
+                calls[(record.path, call_id)] = None
         elif payload_type == "function_call_output":
             schema_supported = True
             call_id = string_value(payload.get("call_id"))
@@ -221,24 +223,33 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
                     str(record.path), "invalid_record_schema", "function_call_output is missing output", record.line
                 ))
                 continue
+            command = calls.pop((record.path, call_id), None)
             if call_id and contains_denial(payload.get("output")):
-                denied_call_ids.append(call_id)
+                denial_count += 1
+                if command is None:
+                    unpaired_denials += 1
+                else:
+                    denied_commands.append(command)
         elif payload_type in {"custom_tool_call", "custom_tool_call_output"}:
             schema_supported = True
             call_id = string_value(payload.get("call_id"))
             if payload_type == "custom_tool_call":
                 if call_id:
-                    calls[call_id] = None
-            elif call_id and contains_denial(payload):
-                denied_call_ids.append(call_id)
+                    calls[(record.path, call_id)] = None
+            elif call_id:
+                command = calls.pop((record.path, call_id), None)
+                if contains_denial(payload.get("output")):
+                    denial_count += 1
+                    if command is None:
+                        unpaired_denials += 1
+                    else:
+                        denied_commands.append(command)
 
-    denied_commands = [calls[call_id] for call_id in denied_call_ids if calls.get(call_id)]
-    candidates = candidate_rules(command for command in denied_commands if command is not None)
-    unpaired_denials = sum(1 for call_id in denied_call_ids if not calls.get(call_id))
+    candidates = candidate_rules(denied_commands)
     unsafe_denials = sum(
         1
         for command in denied_commands
-        if command is not None and safe_readonly_rule(command) is None
+        if safe_readonly_rule(command) is None
     )
     check.add_errors(errors)
     check.data.update({
@@ -247,7 +258,7 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
         "transcript_count": len(selected),
         "record_count": len(records),
         "parse_error_count": len(errors),
-        "denial_count": len(denied_call_ids),
+        "denial_count": denial_count,
         "unpaired_denial_count": unpaired_denials,
         "unsafe_denial_count": unsafe_denials,
         "candidates": candidates,
@@ -257,9 +268,9 @@ def check_sessions(lang: str, *, paths: Iterable[Path]) -> Check:
     elif not selected or not schema_supported:
         check.status = "info"
         check.add(msg(lang, "No verifiable local Codex session schema was available; this surface is unsupported.", "没有可验证的本地 Codex 会话结构；此检查面不受支持。"))
-    elif denied_call_ids:
+    elif denial_count:
         check.status = "warn"
-        check.add(msg(lang, f"Observed {len(denied_call_ids)} denial(s); {len(candidates)} exact repeated read-only candidate(s).", f"观察到 {len(denied_call_ids)} 次拒绝；{len(candidates)} 个重复且精确的只读候选。"))
+        check.add(msg(lang, f"Observed {denial_count} denial(s); {len(candidates)} exact repeated read-only candidate(s).", f"观察到 {denial_count} 次拒绝；{len(candidates)} 个重复且精确的只读候选。"))
     else:
         check.add(msg(lang, f"Parsed {len(records)} record(s) using the verified local schema; no denials were observed.", f"使用已验证的本地结构解析了 {len(records)} 条记录；未观察到拒绝。"))
     for candidate in candidates:

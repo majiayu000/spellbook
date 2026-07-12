@@ -66,8 +66,6 @@ class CommandSafetyTests(unittest.TestCase):
             "git diff --stat": "Bash(git diff --stat)",
             "git show --stat HEAD": "Bash(git show --stat HEAD)",
             "git branch --list": "Bash(git branch --list)",
-            "gh pr view 141 --json title": "Bash(gh pr view 141 --json title)",
-            "gh pr list --limit 10": "Bash(gh pr list --limit 10)",
             "pwd": "Bash(pwd)",
         }
         for command, rule in expected.items():
@@ -83,6 +81,7 @@ class CommandSafetyTests(unittest.TestCase):
             "git diff --output=/tmp/x", "git show --ext-diff HEAD",
             "git branch --list --edit-description", "tree -o /tmp/tree.txt",
             "tree --output=/tmp/tree.txt", "gh pr view 141 --web",
+            "gh pr view 141 --json title", "gh pr list --limit 10",
             "ls *", "ls $HOME", "git status $(touch /tmp/pwn)",
         ]
         for command in commands:
@@ -489,7 +488,9 @@ class HealthCoverageTests(unittest.TestCase):
             {issue.kind for issue in jsonl_errors}, {"non_object_record", "read_error"}
         )
         self.assertIsNone(core.safe_readonly_rule("git status '"))
-        self.assertTrue(core.contains_denial({"nested": ["blocked by policy"]}))
+        self.assertTrue(core.contains_denial("command denied by sandbox policy"))
+        self.assertFalse(core.contains_denial({"nested": ["blocked by policy"]}))
+        self.assertFalse(core.contains_denial("log entry: request not approved"))
         self.assertEqual(core.semver("codex 2.3.4+build"), (2, 3, 4))
 
     def test_claude_settings_and_metadata_reject_wrong_field_types(self):
