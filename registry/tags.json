@@ -1,5 +1,5 @@
 {
-  "total_skills": 102,
+  "total_skills": 103,
   "total_tags": 35,
   "tag_counts": {
     "agent": 14,
@@ -10,7 +10,7 @@
     "code-review": 14,
     "content": 7,
     "database": 5,
-    "debugging": 8,
+    "debugging": 9,
     "deploy": 8,
     "design-system": 2,
     "devops": 2,
@@ -19,18 +19,18 @@
     "go": 5,
     "harmonyos": 1,
     "javascript": 5,
-    "multi-ai": 6,
+    "multi-ai": 7,
     "observability": 3,
     "performance": 9,
     "product-management": 4,
     "prompt": 3,
-    "proxy": 3,
+    "proxy": 4,
     "python": 3,
     "react": 7,
     "refactoring": 4,
     "research": 1,
     "rust": 5,
-    "security": 5,
+    "security": 6,
     "system": 7,
     "testing": 8,
     "typescript": 4,
@@ -137,6 +137,7 @@
       "codex-log-guard",
       "css-debug",
       "fixflow",
+      "ip-check",
       "optimize-network",
       "performance-capacity",
       "rustdesk-doctor",
@@ -214,6 +215,7 @@
       "cliproxy-newapi-stack",
       "codex",
       "gemma4-local-deploy",
+      "ip-check",
       "multi-ai-research"
     ],
     "observability": [
@@ -246,6 +248,7 @@
     "proxy": [
       "clash-doctor",
       "clash-routes",
+      "ip-check",
       "optimize-network"
     ],
     "python": [
@@ -281,6 +284,7 @@
     "security": [
       "auth-security",
       "dev-architecture-playbook",
+      "ip-check",
       "optflow",
       "security-threat-model",
       "server-security"

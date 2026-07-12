@@ -26,6 +26,11 @@ fixflow:
   - testing
   - debugging
 
+ip-check:
+  - proxy
+  - security
+  - debugging
+
 git-commit-smart:
   - code-review
   - documentation
