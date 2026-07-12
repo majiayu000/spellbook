@@ -1,8 +1,8 @@
 {
   "total_skills": 103,
-  "total_tags": 35,
+  "total_tags": 36,
   "tag_counts": {
-    "agent": 14,
+    "agent": 15,
     "architecture": 16,
     "auth": 4,
     "backend": 14,
@@ -19,6 +19,7 @@
     "go": 5,
     "harmonyos": 1,
     "javascript": 5,
+    "mcp": 1,
     "multi-ai": 7,
     "observability": 3,
     "performance": 9,
@@ -52,6 +53,7 @@
       "repo-scaffold",
       "review-gate",
       "skill-audit",
+      "skill-usage-stats",
       "strategic-compact",
       "threads"
     ],
@@ -208,6 +210,9 @@
       "react-best-practices",
       "server-deploy",
       "ui-ux-pro-max"
+    ],
+    "mcp": [
+      "skill-usage-stats"
     ],
     "multi-ai": [
       "ask-opencli",
