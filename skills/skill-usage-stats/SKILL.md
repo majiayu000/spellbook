@@ -96,7 +96,6 @@ Allowed command shapes are deliberately narrow:
 
 - Git status, log, diff, and show operations without output-file, external-diff, or text-conversion flags;
 - Git branch listing only when the explicit list option is present;
-- GitHub pull-request view and list operations only;
 - a small set of simple local inspection commands such as `pwd`, `ls`, `which`, `wc`, `head`, `tail`, and `tree`.
 
 Never generalize an observed command to a command-family prefix. Never emit a candidate for mutation, remote API access, branch deletion, stash mutation, shell composition, pipes, redirection, command substitution, interpreters, package managers, or network-fetch commands. Show every exact rule string and obtain a separate confirmation before writing it to project-local permission settings.
