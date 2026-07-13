@@ -217,7 +217,11 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
             for finding in result["findings"]
             if finding["code"] == "broken_projection"
         ]
+        broken_paths = {finding["path"] for finding in broken_findings}
         self.assertEqual(len(broken_findings), 2)
+        self.assertIn(str(broken / "SKILL.md"), broken_paths)
+        self.assertIn(str(wrong_type / "SKILL.md"), broken_paths)
+        self.assertFalse(result["ok"])
 
     def test_projection_directory_without_skill_md_is_an_error(self):
         empty_projection = self.codex / "empty-projection"
@@ -596,6 +600,8 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         )
         fifo_path = skill_dir / "references" / "hang.fifo"
         os.mkfifo(fifo_path)
+        link_to_fifo = skill_dir / "references" / "hang.link"
+        os.symlink(fifo_path, link_to_fifo)
 
         found = list(ecosystem_model.iter_skill_files(skill_dir))
         found_names = {path.name for path in found}
@@ -603,10 +609,18 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         self.assertIn("SKILL.md", found_names)
         self.assertIn("guide.md", found_names)
         self.assertNotIn("hang.fifo", found_names)
+        # Symlink entries remain for digest hashing via readlink.
+        self.assertIn("hang.link", found_names)
+        self.assertFalse(ecosystem_model.is_regular_content_file(link_to_fifo))
 
         # Directory digest must also complete without opening the FIFO.
         digest = ecosystem_model.directory_digest(skill_dir)
         self.assertEqual(len(digest), 64)
+
+        # Full content scanners must not hang on symlink→FIFO either.
+        os.symlink(skill_dir, self.codex / skill_dir.name, target_is_directory=True)
+        result = self.validate()
+        self.assertNotIn("skill_unreadable", self.codes(result, "error"))
 
     def test_loom_doctor_uses_argv_and_reports_pending_operations(self):
         payload = {

@@ -17,6 +17,7 @@ from ecosystem_model import (
     expand_path,
     file_skill_digest,
     frontmatter_name,
+    is_regular_content_file,
     iter_skill_files,
     materialization_digest,
 )
@@ -341,6 +342,8 @@ def scan_resource_references(
         if resolved_source in visited:
             continue
         visited.add(resolved_source)
+        if not is_regular_content_file(source_file):
+            continue
         try:
             if source_file.stat().st_size > 2 * 1024 * 1024:
                 continue
@@ -409,6 +412,8 @@ def scan_retired_references(
         else iter_skill_files(base)
     )
     for file_path in files:
+        if not is_regular_content_file(file_path):
+            continue
         try:
             if file_path.stat().st_size > 2 * 1024 * 1024:
                 continue
@@ -450,6 +455,8 @@ def scan_secrets(instance: SkillInstance, findings: list[EcosystemFinding]) -> N
         else iter_skill_files(base)
     )
     for file_path in files:
+        if not is_regular_content_file(file_path):
+            continue
         try:
             if file_path.stat().st_size > 2 * 1024 * 1024:
                 continue

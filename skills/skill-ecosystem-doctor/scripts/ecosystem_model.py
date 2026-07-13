@@ -90,6 +90,19 @@ def frontmatter_name(skill_file: Path) -> str | None:
     return match.group(1).strip().strip("'\"") or None
 
 
+def is_regular_content_file(path: Path) -> bool:
+    """True only for regular files after following one symlink hop.
+
+    Symlinks to FIFOs/devices must not be opened for content scans: open()
+    can block forever on a FIFO even though the walk entry is a symlink.
+    """
+    try:
+        mode = path.stat().st_mode
+    except OSError:
+        return False
+    return stat.S_ISREG(mode)
+
+
 def iter_skill_files(base: Path) -> Iterator[Path]:
     for current, dir_names, file_names in os.walk(base, followlinks=False):
         dir_names[:] = sorted(
@@ -102,11 +115,12 @@ def iter_skill_files(base: Path) -> Iterator[Path]:
             if file_name in IGNORED_FILES or file_name.endswith((".pyc", ".pyo")):
                 continue
             path = current_path / file_name
-            try:
-                mode = path.lstat().st_mode
-            except OSError:
-                continue
-            # Skip FIFOs, devices, and sockets so later open() cannot hang.
+            # Fail closed: unreadable entries must surface to directory_digest
+            # callers as skill_unreadable rather than silently omitting bytes.
+            mode = path.lstat().st_mode
+            # Skip direct FIFOs, devices, and sockets so later open() cannot hang.
+            # Symlinks are still yielded so digests can hash link targets via
+            # readlink; content scanners must use is_regular_content_file.
             if not (stat.S_ISREG(mode) or stat.S_ISLNK(mode)):
                 continue
             yield path
