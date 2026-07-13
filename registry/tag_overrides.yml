@@ -70,6 +70,10 @@ skill-audit:
   - documentation
   - prompt
 
+skill-ecosystem-doctor:
+  - agent
+  - security
+
 strategic-compact:
   - agent
   - prompt

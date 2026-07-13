@@ -30,7 +30,7 @@ print_banner() {
     echo "╔═══════════════════════════════════════════════════════════╗"
     echo "║                                                           ║"
     echo "║                  Spellbook Installer                      ║"
-    echo "║     103 Skills | 7 Agents | Claude + Codex Ready          ║"
+    echo "║     104 Skills | 7 Agents | Claude + Codex Ready          ║"
     echo "║                                                           ║"
     echo "╚═══════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
@@ -400,7 +400,7 @@ prune_stale_managed_skills_from_dir() {
 
     runtime_id=$(runtime_id_for_name "$runtime_name")
 
-    [ -d "$skills_dir" ] || return
+    [ -d "$skills_dir" ] || return 0
 
     local pruned=0
     local skill_path
@@ -439,7 +439,7 @@ prune_all_managed_skills_from_dir() {
     local skills_dir="$1"
     local runtime_name="$2"
 
-    [ -d "$skills_dir" ] || return
+    [ -d "$skills_dir" ] || return 0
 
     local pruned=0
     local skill_path

@@ -1,8 +1,8 @@
 {
-  "total_skills": 103,
+  "total_skills": 104,
   "total_tags": 36,
   "tag_counts": {
-    "agent": 15,
+    "agent": 16,
     "architecture": 16,
     "auth": 4,
     "backend": 14,
@@ -31,7 +31,7 @@
     "refactoring": 4,
     "research": 1,
     "rust": 5,
-    "security": 6,
+    "security": 7,
     "system": 7,
     "testing": 8,
     "typescript": 4,
@@ -53,6 +53,7 @@
       "repo-scaffold",
       "review-gate",
       "skill-audit",
+      "skill-ecosystem-doctor",
       "skill-usage-stats",
       "strategic-compact",
       "threads"
@@ -292,7 +293,8 @@
       "ip-check",
       "optflow",
       "security-threat-model",
-      "server-security"
+      "server-security",
+      "skill-ecosystem-doctor"
     ],
     "system": [
       "codex-log-guard",

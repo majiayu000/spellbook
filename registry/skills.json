@@ -1355,6 +1355,23 @@
     ]
   },
   {
+    "name": "skill-ecosystem-doctor",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/skill-ecosystem-doctor/SKILL.md",
+    "description": "Audit and safely remediate a cross-runtime Skill ecosystem spanning Codex, Claude Code, Loom, VibeGuard, Spellbook, and independent Git sources. Use when the user asks to inspect all local skills, resolve duplicate or divergent Skill copies, establish canonical sources and managed projections, retire obsolete skills without reinstall resurrection, scan Skill files for embedded credentials, quarantine unsafe automation, or prove Codex/Claude visibility with fresh checks. Do not use for invocation statistics alone; use skill-usage-stats for usage and zombie-skill evidence.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "agent",
+      "security"
+    ]
+  },
+  {
     "name": "skill-lifeguard",
     "category": "AI & Agent Workflow",
     "format": "directory",

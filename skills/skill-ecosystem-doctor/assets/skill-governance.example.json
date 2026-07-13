@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "source_policy": {
+    "local_only_canonical_registry": "~/.loom-registry",
+    "projection_roots": [
+      "~/.codex/skills",
+      "~/.claude/skills"
+    ]
+  },
+  "pinned_materializations": [],
+  "retired_skills": [],
+  "quarantined_skills": [],
+  "projection_denials": [],
+  "retired_reference_allowlist": [],
+  "external_actions": []
+}
