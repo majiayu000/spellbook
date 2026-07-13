@@ -78,6 +78,15 @@ def scan_root(
                 )
                 continue
             if not skill_file.is_file():
+                if root_kind == "projection":
+                    findings.append(
+                        EcosystemFinding(
+                            "error",
+                            "broken_projection",
+                            "projection directory has no usable SKILL.md",
+                            str(entry),
+                        )
+                    )
                 continue
             install_name = entry.name
             layout = (
@@ -208,11 +217,36 @@ def _verify_physical_projection(
         return
 
     resource_mappings = pin.get("resource_mappings") or []
-    missing_resources = [
-        str(expand_path(mapping["source_path"]))
-        for mapping in resource_mappings
-        if not expand_path(mapping["source_path"]).is_file()
-    ]
+    try:
+        projection_resolved = Path(entry_path).resolve(strict=True)
+    except OSError as exc:
+        findings.append(
+            EcosystemFinding(
+                "error",
+                "skill_unreadable",
+                f"cannot resolve projection path: {exc}",
+                entry_path,
+            )
+        )
+        return
+
+    missing_resources: list[str] = []
+    self_sourced_resources: list[str] = []
+    for mapping in resource_mappings:
+        mapping_source = expand_path(mapping["source_path"])
+        if not mapping_source.is_file():
+            missing_resources.append(str(mapping_source))
+            continue
+        try:
+            mapping_resolved = mapping_source.resolve(strict=True)
+        except OSError:
+            missing_resources.append(str(mapping_source))
+            continue
+        if mapping_resolved == projection_resolved or mapping_resolved.is_relative_to(
+            projection_resolved
+        ):
+            self_sourced_resources.append(str(mapping_source))
+
     for missing_resource in missing_resources:
         findings.append(
             EcosystemFinding(
@@ -223,12 +257,23 @@ def _verify_physical_projection(
                 {"projection_path": entry_path},
             )
         )
+    for self_sourced_resource in self_sourced_resources:
+        findings.append(
+            EcosystemFinding(
+                "error",
+                "pinned_materialization_self_source",
+                "pinned materialization resource mapping cannot source from the projection",
+                self_sourced_resource,
+                {"projection_path": entry_path},
+            )
+        )
+    skip_digest = bool(missing_resources or self_sourced_resources)
     try:
         source_resolved = source_path.resolve(strict=True)
         source_digest = (
-            materialization_digest(source_path, resource_mappings)
-            if not missing_resources
-            else None
+            None
+            if skip_digest
+            else materialization_digest(source_path, resource_mappings)
         )
     except OSError as exc:
         findings.append(

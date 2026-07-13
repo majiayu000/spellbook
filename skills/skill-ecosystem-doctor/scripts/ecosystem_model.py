@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import stat
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -100,7 +101,15 @@ def iter_skill_files(base: Path) -> Iterator[Path]:
         for file_name in sorted(file_names):
             if file_name in IGNORED_FILES or file_name.endswith((".pyc", ".pyo")):
                 continue
-            yield current_path / file_name
+            path = current_path / file_name
+            try:
+                mode = path.lstat().st_mode
+            except OSError:
+                continue
+            # Skip FIFOs, devices, and sockets so later open() cannot hang.
+            if not (stat.S_ISREG(mode) or stat.S_ISLNK(mode)):
+                continue
+            yield path
 
 
 def files_digest(files: dict[str, Path]) -> str:

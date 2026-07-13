@@ -18,6 +18,7 @@ CLI = SCRIPT_DIR / "ecosystem_doctor.py"
 sys.path.insert(0, str(SCRIPT_DIR))
 
 import ecosystem_checks as validator
+import ecosystem_model
 import ecosystem_scans
 
 
@@ -217,6 +218,30 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
             if finding["code"] == "broken_projection"
         ]
         self.assertEqual(len(broken_findings), 2)
+
+    def test_projection_directory_without_skill_md_is_an_error(self):
+        empty_projection = self.codex / "empty-projection"
+        empty_projection.mkdir()
+
+        linked_target = self.base / "linked-empty"
+        linked_target.mkdir()
+        os.symlink(linked_target, self.claude / "linked-empty", target_is_directory=True)
+
+        # Registry non-skill directories stay silent; only projections report.
+        (self.registry_skills / "not-a-skill-dir").mkdir()
+
+        result = self.validate()
+
+        broken = [
+            finding
+            for finding in result["findings"]
+            if finding["code"] == "broken_projection"
+        ]
+        broken_paths = {finding["path"] for finding in broken}
+        self.assertEqual(len(broken), 2)
+        self.assertIn(str(empty_projection), broken_paths)
+        self.assertIn(str(self.claude / "linked-empty"), broken_paths)
+        self.assertFalse(result["ok"])
 
     def test_all_supported_resource_paths_and_file_types_are_checked(self):
         references = (
@@ -520,6 +545,68 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         (installed / "references" / "threads.md").write_text("# Drift\n", encoding="utf-8")
         drifted = self.validate()
         self.assertIn("pinned_materialization_drift", self.codes(drifted, "error"))
+
+    def test_resource_mapping_cannot_source_from_projection(self):
+        source_root = self.base / "independent-source"
+        source_root.mkdir()
+        source = self.write_skill(source_root, "self-map-skill", body="verified version")
+        installed = self.write_skill(
+            self.codex,
+            "self-map-skill",
+            body="verified version",
+            files={"references/local.md": "# Local\n"},
+        )
+        inner_resource = installed / "references" / "local.md"
+        self.write_governance(
+            pinned_materializations=[
+                {
+                    "name": "self-map-skill",
+                    "path": str(installed),
+                    "source_path": str(source),
+                    "reason": "Installer-managed self-map fixture.",
+                    "resource_mappings": [
+                        {
+                            "source_path": str(inner_resource),
+                            "destination_path": "references/local.md",
+                        }
+                    ],
+                }
+            ]
+        )
+
+        result = self.validate()
+
+        self.assertFalse(result["ok"])
+        self.assertIn("pinned_materialization_self_source", self.codes(result, "error"))
+        finding = next(
+            item
+            for item in result["findings"]
+            if item["code"] == "pinned_materialization_self_source"
+        )
+        self.assertEqual(finding["path"], str(inner_resource))
+        self.assertEqual(finding["details"]["projection_path"], str(installed))
+        # Must fail closed before digest comparison hides the self-source.
+        self.assertNotIn("pinned_materialization_drift", self.codes(result))
+
+    def test_iter_skill_files_skips_special_files(self):
+        skill_dir = self.write_skill(
+            self.registry_skills,
+            "special-nodes",
+            files={"references/guide.md": "ok\n"},
+        )
+        fifo_path = skill_dir / "references" / "hang.fifo"
+        os.mkfifo(fifo_path)
+
+        found = list(ecosystem_model.iter_skill_files(skill_dir))
+        found_names = {path.name for path in found}
+
+        self.assertIn("SKILL.md", found_names)
+        self.assertIn("guide.md", found_names)
+        self.assertNotIn("hang.fifo", found_names)
+
+        # Directory digest must also complete without opening the FIFO.
+        digest = ecosystem_model.directory_digest(skill_dir)
+        self.assertEqual(len(digest), 64)
 
     def test_loom_doctor_uses_argv_and_reports_pending_operations(self):
         payload = {
