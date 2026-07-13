@@ -8,6 +8,30 @@ from pathlib import Path
 from ecosystem_model import expand_path
 
 
+TOP_LEVEL_FIELDS = {
+    "schema_version",
+    "source_policy",
+    "retired_skills",
+    "quarantined_skills",
+    "projection_denials",
+    "pinned_materializations",
+    "retired_reference_allowlist",
+    "external_actions",
+}
+SOURCE_POLICY_FIELDS = {
+    "local_only_canonical_registry",
+    "projection_roots",
+}
+
+
+def _reject_unknown_fields(data: dict, allowed: set[str], context: str) -> None:
+    unknown = sorted(set(data) - allowed)
+    if not unknown:
+        return
+    label = "field" if len(unknown) == 1 else "fields"
+    raise ValueError(f"unknown {context} {label}: {', '.join(unknown)}")
+
+
 def _require_string(item: dict, field: str, context: str) -> str:
     value = item.get(field)
     if not isinstance(value, str) or not value.strip():
@@ -108,12 +132,14 @@ def read_governance(path: Path) -> dict:
 
     if not isinstance(data, dict):
         raise ValueError("governance JSON root must be an object")
+    _reject_unknown_fields(data, TOP_LEVEL_FIELDS, "governance")
     if data.get("schema_version") != 1:
         raise ValueError("schema_version must be 1")
 
     source_policy = data.get("source_policy")
     if not isinstance(source_policy, dict):
         raise ValueError("source_policy must be an object")
+    _reject_unknown_fields(source_policy, SOURCE_POLICY_FIELDS, "source_policy")
     _require_string(
         source_policy,
         "local_only_canonical_registry",

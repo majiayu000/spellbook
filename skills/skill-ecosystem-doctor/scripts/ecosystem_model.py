@@ -135,10 +135,14 @@ def file_skill_digest(skill_file: Path) -> str:
 
 def materialization_digest(base: Path, mappings: list[dict]) -> str:
     resolved = base.resolve(strict=True)
-    files = {
-        file_path.relative_to(resolved).as_posix(): file_path
-        for file_path in iter_skill_files(resolved)
-    }
+    files = (
+        {"SKILL.md": resolved}
+        if resolved.is_file()
+        else {
+            file_path.relative_to(resolved).as_posix(): file_path
+            for file_path in iter_skill_files(resolved)
+        }
+    )
     for mapping in mappings:
         source = expand_path(mapping["source_path"]).resolve(strict=True)
         files[Path(mapping["destination_path"]).as_posix()] = source

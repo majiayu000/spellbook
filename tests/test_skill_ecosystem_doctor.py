@@ -197,6 +197,27 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         self.assertIn("broken_projection", codes)
         self.assertIn("missing_skill_resource", codes)
 
+    def test_broken_inner_skill_file_symlink_is_an_error(self):
+        missing_target = self.base / "missing-file.SKILL.md"
+        broken = self.codex / "broken-file"
+        broken.mkdir()
+        os.symlink(missing_target, broken / "SKILL.md")
+
+        directory_target = self.base / "not-a-skill-file"
+        directory_target.mkdir()
+        wrong_type = self.claude / "wrong-type"
+        wrong_type.mkdir()
+        os.symlink(directory_target, wrong_type / "SKILL.md")
+
+        result = self.validate()
+
+        broken_findings = [
+            finding
+            for finding in result["findings"]
+            if finding["code"] == "broken_projection"
+        ]
+        self.assertEqual(len(broken_findings), 2)
+
     def test_all_supported_resource_paths_and_file_types_are_checked(self):
         references = (
             "agents/missing.yaml",
@@ -223,6 +244,36 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
             if finding["code"] == "missing_skill_resource"
         ]
         self.assertEqual(len(missing), len(references))
+
+    def test_resource_references_cannot_escape_the_skill_root(self):
+        source = self.write_skill(
+            self.registry_skills,
+            "escaping-resource",
+            body="Read references/../../outside.md before acting.",
+        )
+        (source / "references").mkdir()
+        (self.registry_skills / "outside.md").write_text("outside\n", encoding="utf-8")
+        os.symlink(source, self.codex / source.name, target_is_directory=True)
+
+        result = self.validate()
+
+        self.assertIn("unsafe_skill_resource_reference", self.codes(result, "error"))
+
+    def test_resource_references_in_reachable_support_files_are_scanned(self):
+        source = self.write_skill(
+            self.registry_skills,
+            "nested-resource",
+            body="Read references/guide.md before acting.",
+            files={"references/guide.md": "Load templates/missing.md before acting.\n"},
+        )
+        os.symlink(source, self.codex / source.name, target_is_directory=True)
+
+        result = self.validate()
+
+        finding = next(
+            item for item in result["findings"] if item["code"] == "missing_skill_resource"
+        )
+        self.assertEqual(Path(finding["path"]).name, "guide.md")
 
     def test_retired_reference_in_active_skill_is_an_error(self):
         source = self.write_skill(
@@ -287,6 +338,25 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             r"pinned_materializations\[0\]\.resource_mappings must be an array",
+        ):
+            self.validate()
+
+    def test_unknown_governance_fields_fail_closed(self):
+        data = json.loads(self.governance.read_text(encoding="utf-8"))
+        data["retired_skill"] = ["misspelled"]
+        self.governance.write_text(json.dumps(data), encoding="utf-8")
+
+        with self.assertRaisesRegex(ValueError, r"unknown governance field: retired_skill"):
+            self.validate()
+
+        self.write_governance()
+        data = json.loads(self.governance.read_text(encoding="utf-8"))
+        data["source_policy"]["projection_root"] = [str(self.codex)]
+        self.governance.write_text(json.dumps(data), encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"unknown source_policy field: projection_root",
         ):
             self.validate()
 
@@ -355,6 +425,37 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
 
         (installed / "SKILL.md").write_text(
             "---\nname: pinned-skill\ndescription: Use when testing.\n---\n\n# Drift\n",
+            encoding="utf-8",
+        )
+        drifted = self.validate()
+
+        self.assertFalse(drifted["ok"])
+        self.assertIn("pinned_materialization_drift", self.codes(drifted, "error"))
+
+    def test_file_skill_can_pin_a_physical_runtime_materialization(self):
+        source_root = self.base / "independent-source"
+        source_root.mkdir()
+        source = self.write_file_skill(source_root, "pinned-file", body="verified version")
+        installed = self.write_skill(self.codex, "pinned-file", body="verified version")
+        self.write_governance(
+            pinned_materializations=[
+                {
+                    "name": "pinned-file",
+                    "path": str(installed),
+                    "source_path": str(source),
+                    "reason": "Installer-managed file Skill fixture.",
+                }
+            ]
+        )
+
+        result = self.validate()
+
+        self.assertTrue(result["ok"])
+        self.assertNotIn("pinned_materialization_source_missing", self.codes(result))
+        self.assertNotIn("physical_projection_unpinned", self.codes(result))
+
+        (installed / "SKILL.md").write_text(
+            "---\nname: pinned-file\ndescription: Use when testing.\n---\n\n# Drift\n",
             encoding="utf-8",
         )
         drifted = self.validate()

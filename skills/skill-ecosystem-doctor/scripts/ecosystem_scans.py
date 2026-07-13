@@ -63,6 +63,20 @@ def scan_root(
             layout = "file"
         elif entry.is_dir():
             skill_file = entry / "SKILL.md"
+            if (
+                root_kind == "projection"
+                and skill_file.is_symlink()
+                and not skill_file.is_file()
+            ):
+                findings.append(
+                    EcosystemFinding(
+                        "error",
+                        "broken_projection",
+                        "projected SKILL.md symlink target is missing or is not a file",
+                        str(skill_file),
+                    )
+                )
+                continue
             if not skill_file.is_file():
                 continue
             install_name = entry.name
@@ -181,12 +195,12 @@ def _verify_physical_projection(
         )
 
     source_path = expand_path(pin["source_path"])
-    if not source_path.is_dir():
+    if not source_path.is_dir() and not source_path.is_file():
         findings.append(
             EcosystemFinding(
                 "error",
                 "pinned_materialization_source_missing",
-                "pinned materialization source directory is missing",
+                "pinned materialization source file or directory is missing",
                 str(source_path),
                 {"projection_path": entry_path},
             )
@@ -227,7 +241,13 @@ def _verify_physical_projection(
             )
         )
         return
-    if source_resolved == resolved:
+    installed_skill_file = resolved / "SKILL.md"
+    self_source = source_resolved == resolved or (
+        source_resolved.is_file()
+        and installed_skill_file.is_file()
+        and source_resolved == installed_skill_file.resolve(strict=True)
+    )
+    if self_source:
         findings.append(
             EcosystemFinding(
                 "error",
@@ -256,28 +276,77 @@ def scan_resource_references(
 ) -> None:
     skill_file = Path(instance.skill_file_path)
     base = skill_file.parent
-    try:
-        text = skill_file.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        findings.append(
-            EcosystemFinding("error", "skill_unreadable", f"cannot read SKILL.md: {exc}", str(skill_file))
-        )
-        return
-    references = {
-        match.rstrip(".,;:!?")
-        for pattern in (RESOURCE_LINK, ACTION_RESOURCE_REFERENCE)
-        for match in pattern.findall(text)
-    }
-    for reference in sorted(references):
-        if not (base / reference).is_file():
+    resolved_base = base.resolve(strict=True)
+    pending = [skill_file]
+    visited: set[Path] = set()
+    while pending:
+        source_file = pending.pop()
+        try:
+            resolved_source = source_file.resolve(strict=True)
+        except OSError as exc:
             findings.append(
                 EcosystemFinding(
                     "error" if active else "warning",
-                    "missing_skill_resource",
-                    f"declared Skill resource does not exist: {reference}",
-                    str(skill_file),
+                    "skill_unreadable",
+                    f"cannot resolve Skill resource while scanning references: {exc}",
+                    str(source_file),
                 )
             )
+            continue
+        if resolved_source in visited:
+            continue
+        visited.add(resolved_source)
+        try:
+            if source_file.stat().st_size > 2 * 1024 * 1024:
+                continue
+            text = source_file.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        except OSError as exc:
+            findings.append(
+                EcosystemFinding(
+                    "error" if active else "warning",
+                    "skill_unreadable",
+                    f"cannot read Skill resource while scanning references: {exc}",
+                    str(source_file),
+                )
+            )
+            continue
+        references = {
+            match.rstrip(".,;:!?")
+            for pattern in (RESOURCE_LINK, ACTION_RESOURCE_REFERENCE)
+            for match in pattern.findall(text)
+        }
+        for reference in sorted(references):
+            normalized = reference.removeprefix("./")
+            relative = Path(normalized)
+            candidate = base / relative
+            try:
+                resolved_candidate = candidate.resolve(strict=False)
+                stays_inside = resolved_candidate.is_relative_to(resolved_base)
+            except OSError:
+                stays_inside = False
+            if ".." in relative.parts or not stays_inside:
+                findings.append(
+                    EcosystemFinding(
+                        "error" if active else "warning",
+                        "unsafe_skill_resource_reference",
+                        f"declared Skill resource escapes the Skill root: {reference}",
+                        str(source_file),
+                    )
+                )
+                continue
+            if not candidate.is_file():
+                findings.append(
+                    EcosystemFinding(
+                        "error" if active else "warning",
+                        "missing_skill_resource",
+                        f"declared Skill resource does not exist: {reference}",
+                        str(source_file),
+                    )
+                )
+                continue
+            pending.append(candidate)
 
 
 def scan_retired_references(

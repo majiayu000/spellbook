@@ -1,7 +1,6 @@
 {
   "schema_version": 1,
   "source_policy": {
-    "independent_git_is_canonical_when_present": true,
     "local_only_canonical_registry": "~/.loom-registry",
     "projection_roots": [
       "~/.codex/skills",

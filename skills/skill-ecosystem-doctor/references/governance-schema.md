@@ -25,6 +25,8 @@ the deterministic validator. Keep facts in the document and workflow rules in
 | `external_actions` | Account, remote, history, or review actions outside local proof. |
 
 Arrays default to empty. Do not invent a value to make validation pass.
+Unknown top-level or `source_policy` fields are errors so misspelled safety
+controls cannot silently become no-ops.
 
 ## Pinned materializations
 
@@ -59,6 +61,10 @@ For composite installers, add exact file mappings:
 `destination_path` must be relative and remain inside the materialization.
 Duplicate destinations, self-sources, missing source files, or digest drift are
 errors.
+
+`source_path` may identify either a directory Skill or a canonical
+`skills/<name>.SKILL.md` file Skill. File sources materialize as `SKILL.md` in
+the pinned runtime directory.
 
 ## Projection denials
 
