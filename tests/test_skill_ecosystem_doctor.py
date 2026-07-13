@@ -68,6 +68,22 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
             target.write_text(content, encoding="utf-8")
         return skill_dir
 
+    @staticmethod
+    def write_file_skill(root, install_name, body=""):
+        skill_file = root / f"{install_name}.SKILL.md"
+        skill_file.write_text(
+            f"---\nname: {install_name}\ndescription: Use when testing.\n---\n\n# Test\n\n{body}\n",
+            encoding="utf-8",
+        )
+        return skill_file
+
+    @staticmethod
+    def install_file_skill(root, install_name, source):
+        skill_dir = root / install_name
+        skill_dir.mkdir()
+        os.symlink(source, skill_dir / "SKILL.md")
+        return skill_dir
+
     def validate(self, **kwargs):
         return validator.validate_ecosystem(self.governance, run_loom=False, **kwargs)
 
@@ -95,6 +111,39 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         self.assertEqual(result["summary"]["instances"], 3)
         self.assertEqual(result["summary"]["declared_names"], 1)
         self.assertEqual(result["findings"], [])
+
+    def test_file_skill_and_installed_symlink_projections_are_scanned(self):
+        source = self.write_file_skill(self.registry_skills, "brainstorming")
+        self.install_file_skill(self.codex, "brainstorming", source)
+        self.install_file_skill(self.claude, "brainstorming", source)
+
+        result = self.validate()
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["summary"]["instances"], 3)
+        self.assertEqual(result["summary"]["declared_names"], 1)
+        self.assertEqual(result["summary"]["unique_sources"], 1)
+        self.assertNotIn("physical_projection_unpinned", self.codes(result))
+
+    def test_file_skill_content_receives_active_safety_scans(self):
+        token = "ghp_" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcd"
+        source = self.write_file_skill(
+            self.registry_skills,
+            "legacy-file",
+            body=(
+                "Read references/missing.md, call auto-optimize, and never embed "
+                f"{token}."
+            ),
+        )
+        self.install_file_skill(self.codex, "legacy-file", source)
+
+        result = self.validate()
+
+        codes = self.codes(result, "error")
+        self.assertIn("missing_skill_resource", codes)
+        self.assertIn("retired_skill_reference", codes)
+        self.assertIn("possible_embedded_secret", codes)
+        self.assertNotIn(token, json.dumps(result))
 
     def test_retired_and_denied_skills_are_rejected_in_active_roots(self):
         self.write_skill(self.codex, "auto-optimize")
@@ -148,6 +197,33 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         self.assertIn("broken_projection", codes)
         self.assertIn("missing_skill_resource", codes)
 
+    def test_all_supported_resource_paths_and_file_types_are_checked(self):
+        references = (
+            "agents/missing.yaml",
+            "assets/missing.md",
+            "evals/missing.json",
+            "reference/missing.md",
+            "references/guide.md",
+            "scripts/missing.py",
+            "./templates/missing.md",
+        )
+        source = self.write_skill(
+            self.registry_skills,
+            "missing-support-files",
+            body="\n".join(f"Load [{path}]({path})." for path in references),
+        )
+        (source / "references" / "guide.md").mkdir(parents=True)
+        os.symlink(source, self.codex / source.name, target_is_directory=True)
+
+        result = self.validate()
+
+        missing = [
+            finding
+            for finding in result["findings"]
+            if finding["code"] == "missing_skill_resource"
+        ]
+        self.assertEqual(len(missing), len(references))
+
     def test_retired_reference_in_active_skill_is_an_error(self):
         source = self.write_skill(
             self.registry_skills,
@@ -159,6 +235,60 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         result = self.validate()
 
         self.assertIn("retired_skill_reference", self.codes(result, "error"))
+
+    def test_retired_reference_in_support_file_is_an_error(self):
+        source = self.write_skill(
+            self.registry_skills,
+            "new-flow",
+            body="Read references/guide.md before acting.",
+            files={"references/guide.md": "Call auto-optimize for the next step.\n"},
+        )
+        os.symlink(source, self.codex / "new-flow", target_is_directory=True)
+
+        result = self.validate()
+
+        finding = next(
+            item for item in result["findings"] if item["code"] == "retired_skill_reference"
+        )
+        self.assertEqual(Path(finding["path"]).name, "guide.md")
+
+    def test_present_non_array_governance_fields_fail_closed(self):
+        fields = (
+            "retired_skills",
+            "quarantined_skills",
+            "external_actions",
+            "pinned_materializations",
+            "projection_denials",
+            "retired_reference_allowlist",
+        )
+        for field in fields:
+            with self.subTest(field=field):
+                self.write_governance(**{field: ""})
+                with self.assertRaisesRegex(ValueError, rf"{field} must be an array"):
+                    self.validate()
+
+    def test_present_non_array_resource_mappings_fail_closed(self):
+        source_root = self.base / "independent-source"
+        source_root.mkdir()
+        source = self.write_skill(source_root, "pinned-skill")
+        installed = self.write_skill(self.codex, "pinned-skill")
+        self.write_governance(
+            pinned_materializations=[
+                {
+                    "name": "pinned-skill",
+                    "path": str(installed),
+                    "source_path": str(source),
+                    "reason": "Installer-managed test fixture.",
+                    "resource_mappings": "",
+                }
+            ]
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"pinned_materializations\[0\]\.resource_mappings must be an array",
+        ):
+            self.validate()
 
     def test_secret_finding_suppresses_the_value(self):
         token = "ghp_" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcd"

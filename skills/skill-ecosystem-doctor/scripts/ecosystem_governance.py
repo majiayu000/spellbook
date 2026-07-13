@@ -15,10 +15,18 @@ def _require_string(item: dict, field: str, context: str) -> str:
     return value
 
 
-def _validate_string_array(data: dict, field: str) -> list[str]:
-    values = data.get(field) or []
+def _optional_array(data: dict, field: str, *, context: str | None = None) -> list:
+    field_context = context or field
+    if field not in data:
+        return []
+    values = data[field]
     if not isinstance(values, list):
-        raise ValueError(f"{field} must be an array")
+        raise ValueError(f"{field_context} must be an array")
+    return values
+
+
+def _validate_string_array(data: dict, field: str) -> list[str]:
+    values = _optional_array(data, field)
     normalized: list[str] = []
     for index, value in enumerate(values):
         if not isinstance(value, str) or not value.strip():
@@ -30,9 +38,7 @@ def _validate_string_array(data: dict, field: str) -> list[str]:
 
 
 def _validate_pins(data: dict) -> None:
-    pins = data.get("pinned_materializations") or []
-    if not isinstance(pins, list):
-        raise ValueError("pinned_materializations must be an array")
+    pins = _optional_array(data, "pinned_materializations")
     pinned_paths: set[str] = set()
     for index, item in enumerate(pins):
         context = f"pinned_materializations[{index}]"
@@ -45,9 +51,11 @@ def _validate_pins(data: dict) -> None:
             raise ValueError(f"duplicate pinned materialization path: {normalized_path}")
         pinned_paths.add(normalized_path)
 
-        mappings = item.get("resource_mappings") or []
-        if not isinstance(mappings, list):
-            raise ValueError(f"{context}.resource_mappings must be an array")
+        mappings = _optional_array(
+            item,
+            "resource_mappings",
+            context=f"{context}.resource_mappings",
+        )
         destinations: set[str] = set()
         for mapping_index, mapping in enumerate(mappings):
             mapping_context = f"{context}.resource_mappings[{mapping_index}]"
@@ -69,9 +77,7 @@ def _validate_pins(data: dict) -> None:
 
 
 def _validate_object_arrays(data: dict) -> None:
-    denials = data.get("projection_denials") or []
-    if not isinstance(denials, list):
-        raise ValueError("projection_denials must be an array")
+    denials = _optional_array(data, "projection_denials")
     for index, item in enumerate(denials):
         context = f"projection_denials[{index}]"
         if not isinstance(item, dict):
@@ -81,9 +87,7 @@ def _validate_object_arrays(data: dict) -> None:
         if projection != "deny":
             raise ValueError(f"{context}.projection must be 'deny'")
 
-    allowlist = data.get("retired_reference_allowlist") or []
-    if not isinstance(allowlist, list):
-        raise ValueError("retired_reference_allowlist must be an array")
+    allowlist = _optional_array(data, "retired_reference_allowlist")
     for index, item in enumerate(allowlist):
         context = f"retired_reference_allowlist[{index}]"
         if not isinstance(item, dict):

@@ -15,6 +15,7 @@ from ecosystem_model import (
     SkillInstance,
     directory_digest,
     expand_path,
+    file_skill_digest,
     frontmatter_name,
     iter_skill_files,
     materialization_digest,
@@ -55,10 +56,24 @@ def scan_root(
                 )
             )
             continue
-        if not entry.is_dir():
-            continue
-        skill_file = entry / "SKILL.md"
-        if not skill_file.is_file():
+        is_file_skill = entry.is_file() and entry.name.endswith(".SKILL.md")
+        if is_file_skill:
+            skill_file = entry
+            install_name = entry.name.removesuffix(".SKILL.md")
+            layout = "file"
+        elif entry.is_dir():
+            skill_file = entry / "SKILL.md"
+            if not skill_file.is_file():
+                continue
+            install_name = entry.name
+            layout = (
+                "file"
+                if root_kind == "projection"
+                and not entry.is_symlink()
+                and skill_file.is_symlink()
+                else "directory"
+            )
+        else:
             continue
         name = frontmatter_name(skill_file)
         if not name:
@@ -72,8 +87,16 @@ def scan_root(
             )
             continue
         try:
-            resolved = entry.resolve(strict=True)
-            digest = directory_digest(entry)
+            resolved = (
+                skill_file.resolve(strict=True)
+                if layout == "file"
+                else entry.resolve(strict=True)
+            )
+            digest = (
+                file_skill_digest(skill_file)
+                if layout == "file"
+                else directory_digest(entry)
+            )
         except OSError as exc:
             findings.append(
                 EcosystemFinding(
@@ -85,16 +108,19 @@ def scan_root(
             )
             continue
 
-        if entry.name != name:
+        if install_name != name:
             findings.append(
                 EcosystemFinding(
                     "warning",
                     "directory_name_mismatch",
-                    f"directory name '{entry.name}' differs from declared name '{name}'",
+                    f"install name '{install_name}' differs from declared name '{name}'",
                     str(entry),
                 )
             )
-        if root_kind == "projection" and not entry.is_symlink():
+        managed_projection = entry.is_symlink() or (
+            root_kind == "projection" and layout == "file" and skill_file.is_symlink()
+        )
+        if root_kind == "projection" and not managed_projection:
             _verify_physical_projection(
                 entry,
                 name,
@@ -111,7 +137,9 @@ def scan_root(
                 resolved_path=str(resolved),
                 root_kind=root_kind,
                 digest=digest,
-                is_symlink=entry.is_symlink(),
+                is_symlink=managed_projection,
+                layout=layout,
+                skill_file_path=str(skill_file.resolve(strict=True)),
             )
         )
     return instances
@@ -226,8 +254,8 @@ def scan_resource_references(
     *,
     active: bool,
 ) -> None:
-    base = Path(instance.resolved_path)
-    skill_file = base / "SKILL.md"
+    skill_file = Path(instance.skill_file_path)
+    base = skill_file.parent
     try:
         text = skill_file.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
@@ -241,7 +269,7 @@ def scan_resource_references(
         for match in pattern.findall(text)
     }
     for reference in sorted(references):
-        if not (base / reference).exists():
+        if not (base / reference).is_file():
             findings.append(
                 EcosystemFinding(
                     "error" if active else "warning",
@@ -260,36 +288,54 @@ def scan_retired_references(
     active: bool,
     allowlist: set[tuple[str, str]],
 ) -> None:
-    skill_file = Path(instance.resolved_path) / "SKILL.md"
-    try:
-        text = skill_file.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        findings.append(
-            EcosystemFinding(
-                "error" if active else "warning",
-                "skill_unreadable",
-                f"cannot scan retired references: {exc}",
-                str(skill_file),
-            )
-        )
-        return
-    for retired in sorted(retired_names):
-        if (instance.name, retired) in allowlist:
+    base = Path(instance.resolved_path)
+    files = (
+        [Path(instance.skill_file_path)]
+        if instance.layout == "file"
+        else iter_skill_files(base)
+    )
+    for file_path in files:
+        try:
+            if file_path.stat().st_size > 2 * 1024 * 1024:
+                continue
+            text = file_path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
             continue
-        if re.search(rf"(?<![A-Za-z0-9_-]){re.escape(retired)}(?![A-Za-z0-9_-])", text):
+        except OSError as exc:
             findings.append(
                 EcosystemFinding(
                     "error" if active else "warning",
-                    "retired_skill_reference",
-                    f"active Skill still references retired entry '{retired}'",
-                    str(skill_file),
+                    "skill_unreadable",
+                    f"cannot scan retired references: {exc}",
+                    str(file_path),
                 )
             )
+            continue
+        for retired in sorted(retired_names):
+            if (instance.name, retired) in allowlist:
+                continue
+            if re.search(
+                rf"(?<![A-Za-z0-9_-]){re.escape(retired)}(?![A-Za-z0-9_-])",
+                text,
+            ):
+                findings.append(
+                    EcosystemFinding(
+                        "error" if active else "warning",
+                        "retired_skill_reference",
+                        f"active Skill still references retired entry '{retired}'",
+                        str(file_path),
+                    )
+                )
 
 
 def scan_secrets(instance: SkillInstance, findings: list[EcosystemFinding]) -> None:
     base = Path(instance.resolved_path)
-    for file_path in iter_skill_files(base):
+    files = (
+        [Path(instance.skill_file_path)]
+        if instance.layout == "file"
+        else iter_skill_files(base)
+    )
+    for file_path in files:
         try:
             if file_path.stat().st_size > 2 * 1024 * 1024:
                 continue

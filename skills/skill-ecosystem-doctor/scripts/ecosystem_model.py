@@ -13,12 +13,13 @@ from pathlib import Path
 IGNORED_DIRS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache"}
 IGNORED_FILES = {".DS_Store"}
 NAME_LINE = re.compile(r"^name\s*:\s*(.+?)\s*$", re.MULTILINE)
+SUPPORT_DIR_PATTERN = r"(?:agents|assets|evals|reference|references|scripts|templates)"
 RESOURCE_LINK = re.compile(
-    r"\[[^\]]+\]\(\s*<?((?:references|scripts|assets)/[A-Za-z0-9_.@+/-]+)"
+    rf"\[[^\]]+\]\(\s*<?((?:\./)?{SUPPORT_DIR_PATTERN}/[A-Za-z0-9_.@+/-]+)"
 )
 ACTION_RESOURCE_REFERENCE = re.compile(
     r"(?im)\b(?:read|open|load|run|execute|读取|打开|加载|运行)\s+"
-    r"`?((?:references|scripts|assets)/[A-Za-z0-9_.@+/-]+)"
+    rf"`?((?:\./)?{SUPPORT_DIR_PATTERN}/[A-Za-z0-9_.@+/-]+)"
 )
 SECRET_RULES = (
     (
@@ -54,6 +55,8 @@ class SkillInstance:
     root_kind: str
     digest: str
     is_symlink: bool
+    layout: str
+    skill_file_path: str
 
 
 @dataclass(frozen=True)
@@ -123,6 +126,11 @@ def directory_digest(base: Path) -> str:
         for file_path in iter_skill_files(resolved)
     }
     return files_digest(files)
+
+
+def file_skill_digest(skill_file: Path) -> str:
+    resolved = skill_file.resolve(strict=True)
+    return files_digest({"SKILL.md": resolved})
 
 
 def materialization_digest(base: Path, mappings: list[dict]) -> str:
