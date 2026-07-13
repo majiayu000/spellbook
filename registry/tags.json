@@ -1,8 +1,8 @@
 {
-  "total_skills": 103,
-  "total_tags": 35,
+  "total_skills": 104,
+  "total_tags": 36,
   "tag_counts": {
-    "agent": 14,
+    "agent": 16,
     "architecture": 16,
     "auth": 4,
     "backend": 14,
@@ -14,16 +14,17 @@
     "deploy": 8,
     "design-system": 2,
     "devops": 2,
-    "documentation": 11,
+    "documentation": 12,
     "frontend": 14,
     "go": 5,
     "harmonyos": 1,
     "javascript": 5,
+    "mcp": 1,
     "multi-ai": 7,
     "observability": 3,
     "performance": 9,
     "product-management": 4,
-    "prompt": 2,
+    "prompt": 3,
     "proxy": 4,
     "python": 3,
     "react": 7,
@@ -43,6 +44,7 @@
       "agentsmd-optimize",
       "agentsmd-scaffold",
       "auto-optimize",
+      "capability-distill",
       "codex-agent",
       "fixflow",
       "flowguard",
@@ -52,6 +54,7 @@
       "review-gate",
       "skill-audit",
       "skill-ecosystem-doctor",
+      "skill-usage-stats",
       "strategic-compact",
       "threads"
     ],
@@ -165,6 +168,7 @@
     "documentation": [
       "app-user-story-qa",
       "auth-security",
+      "capability-distill",
       "dev-architecture-playbook",
       "git-commit-smart",
       "multi-model-orchestrator",
@@ -208,6 +212,9 @@
       "server-deploy",
       "ui-ux-pro-max"
     ],
+    "mcp": [
+      "skill-usage-stats"
+    ],
     "multi-ai": [
       "ask-opencli",
       "cliproxy-deploy",
@@ -240,6 +247,7 @@
       "product-manager-toolkit"
     ],
     "prompt": [
+      "capability-distill",
       "skill-audit",
       "strategic-compact"
     ],

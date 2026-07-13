@@ -87,3 +87,8 @@ trip-planner:
 weekly:
   - content
   - documentation
+
+capability-distill:
+  - agent
+  - prompt
+  - documentation

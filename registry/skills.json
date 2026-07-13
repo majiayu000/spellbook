@@ -171,6 +171,24 @@
     ]
   },
   {
+    "name": "capability-distill",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/capability-distill/SKILL.md",
+    "description": "能力蒸馏工作流——从用户批准的强模型访谈或真实任务轨迹中提取非显然的判断规则，形成可审计的 judgment packet，再交给 skill-audit 和 skill-creator 决定是否落成可加载 skill。当用户说“蒸馏这个模型的判断力”“把这次任务的关键决策固化下来”“模型窗口要关了，保留它在某类场景的判断”时使用。普通流程文档、直接写 SKILL.md、泛化最佳实践或未授权的会话日志扫描不使用本 skill。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "agent",
+      "documentation",
+      "prompt"
+    ]
+  },
+  {
     "name": "clash-doctor",
     "category": "Operations & Deploy",
     "format": "directory",
@@ -1372,14 +1390,17 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/skill-usage-stats/SKILL.md",
-    "description": "扫描本机 Claude Code 和 Codex 的会话日志，统计哪些 skill 有本地调用证据、哪些在本机无证据（已安装但日志无痕迹，不等于从未使用）、调用排行、月度趋势、项目分布，输出终端表格和 Markdown 报告，可导出 CSV/JSON。Use when the user asks to 统计 skill 使用, 看 skill usage, find zombie skills, 僵尸 skill, which skills are installed but never used, skill 调用排行, skill usage report, skill 使用健康度, audit personal skill arsenal, or manage which skills to keep or remove.",
+    "description": "跨工具（Claude Code + Codex）的只读 agent 健康体检与 skill 用量统计；只报告本地可验证证据，缺失检查面标为 unsupported。Use when the user asks 体检/doctor/health check/config audit、Claude 或 Codex 配置诊断、被拒命令分析、MCP/插件/skill 冲突、skill usage 排行或僵尸 skill。清理、权限、更新和配置写入必须基于证据单独确认。",
     "language": "zh",
     "compatibility": {
       "runtimes": [
         "unspecified"
       ]
     },
-    "tags": []
+    "tags": [
+      "agent",
+      "mcp"
+    ]
   },
   {
     "name": "slides",
