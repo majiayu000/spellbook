@@ -139,22 +139,6 @@
     ]
   },
   {
-    "name": "auto-optimize",
-    "category": "Delivery Workflow",
-    "format": "directory",
-    "path": "skills/auto-optimize/SKILL.md",
-    "description": "使用 auto-run-agent 对目标项目进行自动化分析、评估、设计和优化。完整流程包括：探索项目现状 → 识别问题 → 设计任务列表 → 创建 runner 环境 → 启动自主执行。适用于任何需要批量优化的项目。",
-    "language": "zh",
-    "compatibility": {
-      "runtimes": [
-        "unspecified"
-      ]
-    },
-    "tags": [
-      "agent"
-    ]
-  },
-  {
     "name": "brainstorming",
     "category": "AI & Agent Workflow",
     "format": "file",
@@ -412,6 +396,7 @@
     "tags": [
       "architecture",
       "code-review",
+      "debugging",
       "refactoring"
     ]
   },
@@ -590,24 +575,6 @@
       "javascript",
       "react",
       "typescript"
-    ]
-  },
-  {
-    "name": "fixflow",
-    "category": "Delivery Workflow",
-    "format": "directory",
-    "path": "skills/fixflow/SKILL.md",
-    "description": "Use when executing coding tasks with a strict delivery workflow: build a full plan, implement one step at a time, run tests continuously, and commit by default after each step (`per_step`). Support explicit commit policy overrides (`final_only`, `milestone`) and optional BDD (Given/When/Then) when users ask for behavior-driven delivery or requirements are unclear.",
-    "language": "en",
-    "compatibility": {
-      "runtimes": [
-        "unspecified"
-      ]
-    },
-    "tags": [
-      "agent",
-      "debugging",
-      "testing"
     ]
   },
   {
@@ -862,24 +829,6 @@
     ]
   },
   {
-    "name": "optflow",
-    "category": "Delivery Workflow",
-    "format": "directory",
-    "path": "skills/optflow/SKILL.md",
-    "description": "Use when the user asks to discover and deliver repository optimization work end to end: identify performance/reliability/maintainability/security/dx/cost optimization points, prioritize by impact-effort-risk, then execute fixes step by step with continuous testing and explicit commit policy (`final_only`, `per_step`, `milestone`). Default to `per_step` for implementation work so each feature is tested then committed before the next feature. Supports optional BDD (Given/When/Then).",
-    "language": "en",
-    "compatibility": {
-      "runtimes": [
-        "unspecified"
-      ]
-    },
-    "tags": [
-      "performance",
-      "security",
-      "testing"
-    ]
-  },
-  {
     "name": "optimize-network",
     "category": "Operations & Deploy",
     "format": "directory",
@@ -913,37 +862,6 @@
       "debugging",
       "performance",
       "system"
-    ]
-  },
-  {
-    "name": "personal-arsenal-lifecycle-doctor",
-    "category": "AI & Agent Workflow",
-    "format": "directory",
-    "path": "skills/personal-arsenal-lifecycle-doctor/SKILL.md",
-    "description": "扫描并诊断你个人 ~/.claude/skills 里的技能健康状态。当用户说以下任意内容时使用： - “我的技能失效了”“升级后老技能不认了” - “技能腐烂了”“外部依赖坏了”“我的个人 Arsenal 乱了” - “帮我检查技能健康”“技能生命周期”“长期维护技能” - “我 1-2 年前超好用的 Skill 现在 Claude 完全不认了” - “我的部署类技能现在执行不了了，外部项目下线了” 特别适合维护 1 年以上个人技能集合（Arsenal + 自定义 + 社区拷贝混合）的重度用户。 Always protect 用户现有的 CLAUDE.md / AGENTS.md / 自定义配置，只读优先，任何修改必须用户明确确认后才执行。 发现问题时优先给出最小变更 + 备份建议，绝不擅自大规模修改。",
-    "language": "zh",
-    "compatibility": {
-      "runtimes": [
-        "unspecified"
-      ]
-    },
-    "tags": []
-  },
-  {
-    "name": "plan-flow",
-    "category": "Delivery Workflow",
-    "format": "directory",
-    "path": "skills/plan-flow/SKILL.md",
-    "description": "Use when deep architecture review or convergence planning requires analyzing repository-level duplicate/redundant design first, then building and executing a strict step-test-update plan in docs/plan.",
-    "language": "en",
-    "compatibility": {
-      "runtimes": [
-        "unspecified"
-      ]
-    },
-    "tags": [
-      "architecture",
-      "code-review"
     ]
   },
   {
@@ -1285,26 +1203,6 @@
     ]
   },
   {
-    "name": "server-deploy",
-    "category": "Operations & Deploy",
-    "format": "directory",
-    "path": "skills/server-deploy/SKILL.md",
-    "description": "通用项目部署到远程服务器。自动识别项目类型（Node.js/Python/Rust/Go/静态站），SSH 配置、环境安装、项目上传、进程管理、Nginx 反向代理、Cloudflare SSL、安全加固。当用户需要部署项目、上线服务、配置域名时使用",
-    "language": "zh",
-    "compatibility": {
-      "runtimes": [
-        "unspecified"
-      ]
-    },
-    "tags": [
-      "deploy",
-      "go",
-      "javascript",
-      "python",
-      "rust"
-    ]
-  },
-  {
     "name": "server-security",
     "category": "Operations & Deploy",
     "format": "directory",
@@ -1359,7 +1257,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/skill-ecosystem-doctor/SKILL.md",
-    "description": "Audit and safely remediate a cross-runtime Skill ecosystem spanning Codex, Claude Code, Loom, VibeGuard, Spellbook, and independent Git sources. Use when the user asks to inspect all local skills, resolve duplicate or divergent Skill copies, establish canonical sources and managed projections, retire obsolete skills without reinstall resurrection, scan Skill files for embedded credentials, quarantine unsafe automation, or prove Codex/Claude visibility with fresh checks. Do not use for invocation statistics alone; use skill-usage-stats for usage and zombie-skill evidence.",
+    "description": "Audit and safely remediate a cross-runtime Skill ecosystem spanning Codex, Claude Code, Loom, plugins, registries, caches, archives, and Git sources. Use only when the user explicitly asks to inspect or repair all local Skills, accidental loading, canonical ownership, duplicate or divergent copies, global/project/profile/cold exposure, catalog budgets, unsafe automation, lifecycle drift, quarantine, or retirement. Ignore quoted traces and ordinary Skill-name mentions. For usage statistics alone, use skill-usage-stats.",
     "language": "en",
     "compatibility": {
       "runtimes": [
@@ -1390,7 +1288,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/skill-usage-stats/SKILL.md",
-    "description": "跨工具（Claude Code + Codex）的只读 agent 健康体检与 skill 用量统计；只报告本地可验证证据，缺失检查面标为 unsupported。Use when the user asks 体检/doctor/health check/config audit、Claude 或 Codex 配置诊断、被拒命令分析、MCP/插件/skill 冲突、skill usage 排行或僵尸 skill。清理、权限、更新和配置写入必须基于证据单独确认。",
+    "description": "只读统计 Claude/Codex 的 Skill 使用证据并检查 agent 配置健康。仅用于明确的健康检查、配置诊断、使用排行或低使用候选请求；会识别 enabled 插件并单列批量审计读取。不要用于规范源、触发、全局/项目/profile/冷存储、投影或退役治理，改用 skill-ecosystem-doctor。忽略引用日志和相邻任务。",
     "language": "zh",
     "compatibility": {
       "runtimes": [
@@ -1398,8 +1296,7 @@
       ]
     },
     "tags": [
-      "agent",
-      "mcp"
+      "agent"
     ]
   },
   {
@@ -1416,40 +1313,6 @@
     },
     "tags": [
       "content"
-    ]
-  },
-  {
-    "name": "strategic-compact",
-    "category": "AI & Agent Workflow",
-    "format": "directory",
-    "path": "skills/strategic-compact/SKILL.md",
-    "description": "当用户需要在长会话的逻辑边界手动压缩上下文、做 context engineering、目标复述、上下文审计、外部 scratchpad、handoff 或 compaction policy 时使用。",
-    "language": "zh",
-    "compatibility": {
-      "runtimes": [
-        "unspecified"
-      ]
-    },
-    "tags": [
-      "agent",
-      "prompt"
-    ]
-  },
-  {
-    "name": "structured-logging",
-    "category": "API & Backend",
-    "format": "directory",
-    "path": "skills/structured-logging/SKILL.md",
-    "description": "Comprehensive logging system design guide. Use when designing log architecture, establishing logging standards, adding observability, or debugging production issues. Covers centralized configuration, field standards, and distributed tracing.",
-    "language": "en",
-    "compatibility": {
-      "runtimes": [
-        "unspecified"
-      ]
-    },
-    "tags": [
-      "architecture",
-      "observability"
     ]
   },
   {

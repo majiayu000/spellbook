@@ -9,7 +9,7 @@ description: GitHub Trending 探索与分析。用于发现热门开源项目、
 
 **职责边界**（严格遵守）：
 - 只负责**发现 + 趋势分析 + 日报/洞察报告**
-- **不负责**把结果加工成公众号/小红书/X 帖（用 `/scout-to-article` 或 `/blog-write`）
+- **不负责**把结果加工成公众号/小红书/X 帖（用 `/scout-to-article`）
 - **不负责**多 AI 深度竞品/社区反应调研（用 `/multi-ai-research`）
 
 ---

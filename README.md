@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>104 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>102 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-104-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-102-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -82,12 +82,12 @@ Start with a small bundle that matches the job, then add more skills when the wo
 | Workflow | Install | Good for |
 |---|---|---|
 | Frontend and UI | `./install.sh --target all --skills frontend-design,app-ui-design,ui-design-system,figma-to-react` | Product UI, landing pages, design systems, Figma handoff |
-| Code quality | `./install.sh --target all --skills codebase-audit,fixflow,optflow,systematic-debugging` | Audits, bug fixes, refactors, root-cause debugging |
-| Ops and deploy | `./install.sh --target all --skills server-deploy,server-security,clash-doctor,system-doctor` | Shipping apps, hardening servers, diagnosing local and network issues |
+| Code quality | `./install.sh --target all --skills codebase-audit,systematic-debugging,comprehensive-testing,vibeguard` | Audits, root-cause debugging, tests, and review guardrails |
+| Ops and diagnostics | `./install.sh --target all --skills server-security,clash-doctor,system-doctor` | Hardening servers and diagnosing local or network issues |
 | Product and docs | `./install.sh --target all --skills product-discovery,prd-master,technical-spec,product-analytics` | Discovery, PRDs, technical specs, metrics plans |
-| Agent workflows | `./install.sh --target all --skills codex-agent,multi-ai-research,strategic-compact,vibeguard` | Cross-review, multi-AI research, context handoff, anti-hallucination checks |
+| Agent workflows | `./install.sh --target all --skills codex-agent,multi-ai-research,flowguard,vibeguard` | Cross-review, multi-AI research, context handoff, anti-hallucination checks |
 
-High-signal individual skills to try first: `github-trending`, `harmonyos-app`, `app-ui-design`, `product-discovery`, `xiaohongshu`, `codebase-audit`, and `server-deploy`.
+High-signal individual skills to try first: `github-trending`, `harmonyos-app`, `app-ui-design`, `product-discovery`, `xiaohongshu`, `codebase-audit`, and `server-security`.
 
 See [Showcase](./docs/showcase.md) for copy-paste prompts and expected outputs.
 Release history lives in [Changelog](./CHANGELOG.md).
@@ -150,7 +150,6 @@ Skills for orchestrating, guarding, and maintaining AI agent workflows — the c
 | [`codex-fluent`](./skills/codex-fluent/) | Codex session hygiene, archive strategy, and handoff discipline |
 | [`codex-retrospective`](./skills/codex-retrospective/) | Codex self-review of recent history to improve behavior |
 | [`brainstorming`](./skills/brainstorming/) | Socratic dialogue for design refinement and architecture exploration |
-| [`personal-arsenal-lifecycle-doctor`](./skills/personal-arsenal-lifecycle-doctor/) | Diagnose the health of personal `~/.claude/skills` |
 
 See [`docs/agent-reliability-trio.md`](./docs/agent-reliability-trio.md) for the Reliable Skill + Context Engineering + Review Gate workflow.
 
@@ -190,7 +189,6 @@ End-to-end product development from discovery to deployment.
 | [`auth-security`](./skills/auth-security/) | OAuth 2.1, JWT, security best practices |
 | [`database-patterns`](./skills/database-patterns/) | PostgreSQL, Redis, migrations, optimization |
 | [`codebase-audit`](./skills/codebase-audit/) | Deep adaptive repository audit with severity-ranked findings and repair roadmap |
-| [`structured-logging`](./skills/structured-logging/) | Log architecture, standards, observability, and tracing |
 | [`structured-logging-lite`](./skills/structured-logging-lite/) | Centralized logging, field standards, and distributed tracing |
 
 ### Development Practices
@@ -199,7 +197,6 @@ End-to-end product development from discovery to deployment.
 |-------|-------------|--------|
 | [`contributor`](./skills/contributor/) | End-to-end open source contribution workflow from issue discovery to PR submission | Custom |
 | [`repo-agent-context-audit`](./skills/repo-agent-context-audit/) | Audit and scaffold repo agent context across AGENTS, skills, and specs | Custom |
-| [`strategic-compact`](./skills/strategic-compact/) | Compress context at logical boundaries while preserving decisions and constraints | Custom |
 | [`skill-creator`](./skills/skill-creator/) | Create, improve, and benchmark reusable skills | Custom |
 | [`humanizer`](./skills/humanizer/) | Remove obvious AI writing patterns from user-facing text | External guide + custom adaptation |
 
@@ -252,10 +249,6 @@ Skills for using multiple coding agents and CLI tools together.
 |-------|-------------|
 | [`web-asset-generator`](./skills/web-asset-generator/) | Favicons, app icons, OG images |
 | [`github-trending`](./skills/github-trending/) | GitHub trending analysis |
-| [`auto-optimize`](./skills/auto-optimize/) | Autonomous codebase optimization with dimension rotation |
-| [`fixflow`](./skills/fixflow/) | Strict plan-implement-test-commit workflow for delivery tasks |
-| [`optflow`](./skills/optflow/) | Optimization discovery and execution workflow with continuous validation |
-| [`plan-flow`](./skills/plan-flow/) | Repository-level redundancy analysis with step-test-update planning |
 | [`vibeguard`](./skills/vibeguard/) | Task contracts, finding scoring, and lightweight anti-hallucination reviews |
 | [`clash-doctor`](./skills/clash-doctor/) | Clash proxy & network diagnostics |
 | [`clash-routes`](./skills/clash-routes/) | Inspect active proxy routes for specific processes via Mihomo API |
@@ -263,7 +256,6 @@ Skills for using multiple coding agents and CLI tools together.
 | [`disk-cleaner`](./skills/disk-cleaner/) | Scan and reclaim disk space with interactive cleanup guidance |
 | [`system-doctor`](./skills/system-doctor/) | Diagnose CPU, memory, and process-level system slowdowns |
 | [`codex-log-guard`](./skills/codex-log-guard/) | Diagnose and mitigate excessive Codex local SQLite diagnostic log writes |
-| [`server-deploy`](./skills/server-deploy/) | Deploy Node, Python, Rust, Go, or static projects to remote servers |
 | [`server-security`](./skills/server-security/) | Audit and harden Linux server SSH, firewall, and exposed services |
 | [`cliproxy-deploy`](./skills/cliproxy-deploy/) | Deploy router-for-me/CLIProxyAPI on a Linux VPS, exposing Codex/Claude/Gemini OAuth subscription accounts as an OpenAI-compatible API |
 | [`cliproxy-newapi-stack`](./skills/cliproxy-newapi-stack/) | Layer NewAPI metering on top of CLIProxyAPI: Docker deploy, ratio-based pricing, quota top-up, dual-path verification, and OAuth account hot-swap |

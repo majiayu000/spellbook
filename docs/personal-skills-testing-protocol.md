@@ -2,7 +2,7 @@
 
 本协议基于仓库现有的 `skill-creator` 成熟流程 + 三个子代理研究成果制定，目标是对以下两个 Skill 进行**科学、完整、可复现**的验证：
 
-- `personal-arsenal-lifecycle-doctor`（应对 PAIN-1001）
+- `skill-ecosystem-doctor`（应对 PAIN-1001，并覆盖跨 Runtime Skill 治理）
 - `xiaohongshu-netfeel-guardian`（应对 PAIN-301）
 
 ---
@@ -18,7 +18,7 @@
 2. 把要测试的 Skill 复制进去（或用符号链接，推荐符号链接便于迭代）：
    ```bash
    mkdir -p .claude/skills
-   ln -s /path/to/spellbook/skills/personal-arsenal-lifecycle-doctor .claude/skills/
+   ln -s /path/to/spellbook/skills/skill-ecosystem-doctor .claude/skills/
    ln -s /path/to/spellbook/skills/xiaohongshu-netfeel-guardian .claude/skills/
    ```
 
@@ -68,7 +68,7 @@ lifecycle-doctor 同理更换路径和名称。
 ```bash
 python /path/to/spellbook/skills/skill-creator/eval-viewer/generate_review.py \
   ~/claude-skill-test-workspace/iteration-1 \
-  --skill-name personal-arsenal-lifecycle-doctor \
+  --skill-name skill-ecosystem-doctor \
   --benchmark ~/claude-skill-test-workspace/iteration-1/benchmark.json
 ```
 
@@ -95,7 +95,7 @@ python /path/to/spellbook/skills/skill-creator/eval-viewer/generate_review.py \
 
 ## 三、推荐的测试重点（来自 3 个子代理研究）
 
-### 对 `personal-arsenal-lifecycle-doctor` 的测试重点
+### 对 `skill-ecosystem-doctor` 的测试重点
 - 能否准确发现“1-2 年前的技能”类问题（召回率）
 - 报告是否 actionable（用户看完能不能马上知道怎么修）
 - 是否对用户现有 CLAUDE.md / 自定义配置零干扰（安全）

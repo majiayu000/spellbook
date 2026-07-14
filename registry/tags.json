@@ -1,39 +1,38 @@
 {
-  "total_skills": 104,
-  "total_tags": 36,
+  "total_skills": 96,
+  "total_tags": 35,
   "tag_counts": {
-    "agent": 16,
-    "architecture": 16,
+    "agent": 13,
+    "architecture": 14,
     "auth": 4,
     "backend": 14,
     "browser": 4,
-    "code-review": 14,
+    "code-review": 13,
     "content": 7,
     "database": 5,
     "debugging": 9,
-    "deploy": 8,
+    "deploy": 7,
     "design-system": 2,
     "devops": 2,
     "documentation": 12,
     "frontend": 14,
-    "go": 5,
+    "go": 4,
     "harmonyos": 1,
-    "javascript": 5,
-    "mcp": 1,
+    "javascript": 4,
     "multi-ai": 7,
-    "observability": 3,
-    "performance": 9,
+    "observability": 2,
+    "performance": 8,
     "product-management": 4,
-    "prompt": 3,
+    "prompt": 2,
     "proxy": 4,
-    "python": 3,
+    "python": 2,
     "react": 7,
     "refactoring": 4,
     "research": 1,
-    "rust": 5,
-    "security": 7,
+    "rust": 4,
+    "security": 6,
     "system": 7,
-    "testing": 8,
+    "testing": 6,
     "typescript": 4,
     "ux": 4,
     "writing": 2,
@@ -43,10 +42,8 @@
     "agent": [
       "agentsmd-optimize",
       "agentsmd-scaffold",
-      "auto-optimize",
       "capability-distill",
       "codex-agent",
-      "fixflow",
       "flowguard",
       "multi-model-orchestrator",
       "repo-agent-context-audit",
@@ -55,7 +52,6 @@
       "skill-audit",
       "skill-ecosystem-doctor",
       "skill-usage-stats",
-      "strategic-compact",
       "threads"
     ],
     "architecture": [
@@ -66,11 +62,9 @@
       "dev-architecture-playbook",
       "elegant-architecture",
       "golang-web",
-      "plan-flow",
       "project-health-auditor",
       "python-project",
       "rust-project",
-      "structured-logging",
       "structured-logging-lite",
       "technical-spec",
       "typescript-project",
@@ -111,7 +105,6 @@
       "contribution-architect",
       "contributor",
       "git-commit-smart",
-      "plan-flow",
       "project-health-auditor",
       "push-all",
       "repo-agent-context-audit",
@@ -138,8 +131,8 @@
     ],
     "debugging": [
       "codex-log-guard",
+      "contribution-architect",
       "css-debug",
-      "fixflow",
       "ip-check",
       "optimize-network",
       "performance-capacity",
@@ -154,8 +147,7 @@
       "gemma4-local-deploy",
       "gpu-use",
       "openclaw-deploy",
-      "release-engineering",
-      "server-deploy"
+      "release-engineering"
     ],
     "design-system": [
       "figma-to-code",
@@ -199,8 +191,7 @@
       "architecture-foundation",
       "cliproxy-deploy",
       "golang-web",
-      "product-manager-toolkit",
-      "server-deploy"
+      "product-manager-toolkit"
     ],
     "harmonyos": [
       "harmonyos-app"
@@ -209,11 +200,7 @@
       "figma-to-code",
       "figma-to-react",
       "react-best-practices",
-      "server-deploy",
       "ui-ux-pro-max"
-    ],
-    "mcp": [
-      "skill-usage-stats"
     ],
     "multi-ai": [
       "ask-opencli",
@@ -226,12 +213,10 @@
     ],
     "observability": [
       "observability-sre",
-      "structured-logging",
       "structured-logging-lite"
     ],
     "performance": [
       "dev-architecture-playbook",
-      "optflow",
       "optimize-network",
       "performance-capacity",
       "react-best-practices",
@@ -248,8 +233,7 @@
     ],
     "prompt": [
       "capability-distill",
-      "skill-audit",
-      "strategic-compact"
+      "skill-audit"
     ],
     "proxy": [
       "clash-doctor",
@@ -259,8 +243,7 @@
     ],
     "python": [
       "comprehensive-testing",
-      "python-project",
-      "server-deploy"
+      "python-project"
     ],
     "react": [
       "css-debug",
@@ -284,14 +267,12 @@
       "architecture-foundation",
       "github-trending",
       "rust-best-practices",
-      "rust-project",
-      "server-deploy"
+      "rust-project"
     ],
     "security": [
       "auth-security",
       "dev-architecture-playbook",
       "ip-check",
-      "optflow",
       "security-threat-model",
       "server-security",
       "skill-ecosystem-doctor"
@@ -310,8 +291,6 @@
       "comprehensive-testing",
       "dev-architecture-playbook",
       "elegant-architecture",
-      "fixflow",
-      "optflow",
       "playwright-automation",
       "test-driven-development"
     ],

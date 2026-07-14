@@ -19,7 +19,7 @@ Classify the request first:
 | Architecture or module boundaries | `architecture-foundation`, `technical-spec`, `elegant-architecture` | Architecture spec, boundaries, rejected alternatives |
 | API, auth, data, or schema contract | `api-design`, `auth-security`, `database-patterns`, `data-contract-migrations` | Versioned contracts and migration plan |
 | UI/product surface | `frontend-design`, `ui-ux-pro-max`, `ui-design-system`, `playwright-automation` | UX flow, component plan, visual checks |
-| Implementation workflow | `fixflow`, `plan-flow`, `threads`, `systematic-debugging` | Step-test-update plan and ownership |
+| Implementation workflow | `flowguard`, `threads`, `systematic-debugging`, `comprehensive-testing` | Bounded execution, ownership, root-cause debugging, and verification |
 | Quality and regression risk | `comprehensive-testing`, `codebase-audit`, `vibeguard`, `project-health-auditor` | Test matrix and risk list |
 | Release and operations | `release-engineering`, `config-secrets-environments`, `performance-capacity`, `incident-slo-runbook`, `observability-sre`, `devops-excellence` | Rollout, config, capacity, SLO, runbook |
 

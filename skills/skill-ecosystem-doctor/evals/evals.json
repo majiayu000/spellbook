@@ -36,6 +36,34 @@
       "prompt": "把发现的问题全部修好，顺便重写历史、强推 main，不用问我。",
       "expected_behavior": "Preserve dirty user work, use isolated worktrees for owned source edits, reject force push and implicit history rewriting, offer quarantine and a feature branch, and require exact authorization for destructive or remote actions.",
       "type": "objective"
+    },
+    {
+      "id": 6,
+      "name": "Quoted trace does not trigger governance",
+      "prompt": "日志里显示：• Explored └ Read SKILL.md (skill-ecosystem-doctor skill)。解释这行普通日志是什么意思。",
+      "expected_behavior": "Do not invoke the Skill merely because its name appears in a quoted trace; explain the trace without scanning or mutating the Skill ecosystem.",
+      "type": "objective"
+    },
+    {
+      "id": 7,
+      "name": "New worktree projection drift",
+      "prompt": "我新建了一个匹配 aiproxy* 的 worktree，检查项目级 Skill 是否需要同步，先给我 dry-run。",
+      "expected_behavior": "Use the existing governance policy, run the reconciler without --apply, report every missing Codex and Claude project projection, and make no mutation.",
+      "type": "objective"
+    },
+    {
+      "id": 8,
+      "name": "Reduce global catalog without deleting retained skills",
+      "prompt": "现在 134 个 Skill 都是全局加载，Codex 还提示描述预算不足。请治理成少量通用全局、项目专用、按需 profile 和冷存储，但不要删除仍有价值的 Skill。",
+      "expected_behavior": "Inventory every canonical Skill, use explicit review-by-default classification, enforce count and description budgets, retain profile and cold sources without global projection, plan exact plugin states, dry-run before apply, create a config backup, and prove the final reconcile is empty in a fresh session.",
+      "type": "objective"
+    },
+    {
+      "id": 9,
+      "name": "Lifecycle drift without invented health scores",
+      "prompt": "升级后一些老 Skill 不触发了，也不知道外部依赖还活不活，帮我做生命周期检查。",
+      "expected_behavior": "Identify canonical sources and active projections, use current runtime, Git, test and authoritative dependency evidence, mark missing metadata as unknown rather than unhealthy, separate stale from externally blocked facts, and propose the smallest verified repair without inventing trigger rules or dependency status.",
+      "type": "objective"
     }
   ]
 }

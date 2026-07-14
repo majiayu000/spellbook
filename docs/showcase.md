@@ -7,7 +7,7 @@ These examples are quick checks after installing Spellbook. Pick one workflow, p
 Install:
 
 ```bash
-./install.sh --target all --skills codebase-audit,fixflow,systematic-debugging
+./install.sh --target all --skills codebase-audit,systematic-debugging,comprehensive-testing
 ```
 
 Prompt:
@@ -41,26 +41,6 @@ Expected output:
 - A working first screen, not a marketing landing page.
 - UI controls and states a real operator would expect.
 - Browser verification or clear explanation if no frontend runtime exists.
-
-## Server Deploy
-
-Install:
-
-```bash
-./install.sh --target all --skills server-deploy,server-security,system-doctor
-```
-
-Prompt:
-
-```text
-Use server-deploy to prepare this app for a Linux VPS. Detect the stack, list required environment variables, create a deploy plan with rollback, and identify security hardening steps. Do not SSH until I confirm the target host.
-```
-
-Expected output:
-
-- Stack detection from local files.
-- Deployment steps with rollback and verification.
-- Explicit security checks before any remote command.
 
 ## Product Spec
 

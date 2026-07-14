@@ -5,23 +5,52 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from ecosystem_legacy import is_legacy_policy, normalize_legacy_policy
 from ecosystem_model import expand_path
 
 
 TOP_LEVEL_FIELDS = {
     "schema_version",
+    "updated_at",
     "source_policy",
     "retired_skills",
+    "stale_runtime_skills",
     "quarantined_skills",
+    "quarantine_reasons",
+    "codex_reserved_names",
     "projection_denials",
     "pinned_materializations",
     "retired_reference_allowlist",
     "external_actions",
+    "skill_decisions",
 }
 SOURCE_POLICY_FIELDS = {
     "local_only_canonical_registry",
     "projection_roots",
+    "projection_globs",
+    "inventory_roots",
+    "managed_physical_skills",
+    "independent_git_is_canonical_when_present",
+    "projection_rule",
 }
+INVENTORY_ROOT_FIELDS = {"path", "kind", "owner"}
+INVENTORY_ROOT_KINDS = {
+    "canonical_source",
+    "repository_source",
+    "managed_projection",
+    "managed_cache",
+    "archive",
+}
+DECISION_FIELDS = {
+    "name",
+    "decision",
+    "reason",
+    "owner",
+    "target",
+    "canonical_path",
+    "evidence",
+}
+DECISIONS = {"keep", "repair", "merge", "quarantine", "retire", "managed", "archive"}
 
 
 def _reject_unknown_fields(data: dict, allowed: set[str], context: str) -> None:
@@ -120,6 +149,60 @@ def _validate_object_arrays(data: dict) -> None:
         _require_string(item, "retired_name", context)
 
 
+def _validate_inventory_roots(source_policy: dict, reserved_paths: set[str]) -> None:
+    roots = _optional_array(
+        source_policy,
+        "inventory_roots",
+        context="source_policy.inventory_roots",
+    )
+    seen_paths = set(reserved_paths)
+    for index, item in enumerate(roots):
+        context = f"source_policy.inventory_roots[{index}]"
+        if not isinstance(item, dict):
+            raise ValueError(f"{context} must be an object")
+        _reject_unknown_fields(item, INVENTORY_ROOT_FIELDS, context)
+        path = _require_string(item, "path", context)
+        kind = _require_string(item, "kind", context)
+        _require_string(item, "owner", context)
+        if kind not in INVENTORY_ROOT_KINDS:
+            allowed = ", ".join(sorted(INVENTORY_ROOT_KINDS))
+            raise ValueError(f"{context}.kind must be one of: {allowed}")
+        normalized = str(expand_path(path))
+        if normalized in seen_paths:
+            raise ValueError(f"duplicate Skill root: {normalized}")
+        seen_paths.add(normalized)
+
+
+def _validate_skill_decisions(data: dict) -> None:
+    decisions = _optional_array(data, "skill_decisions")
+    seen_names: set[str] = set()
+    for index, item in enumerate(decisions):
+        context = f"skill_decisions[{index}]"
+        if not isinstance(item, dict):
+            raise ValueError(f"{context} must be an object")
+        _reject_unknown_fields(item, DECISION_FIELDS, context)
+        name = _require_string(item, "name", context)
+        decision = _require_string(item, "decision", context)
+        _require_string(item, "reason", context)
+        _require_string(item, "owner", context)
+        if decision not in DECISIONS:
+            allowed = ", ".join(sorted(DECISIONS))
+            raise ValueError(f"{context}.decision must be one of: {allowed}")
+        if name in seen_names:
+            raise ValueError(f"duplicate skill_decisions name: {name}")
+        seen_names.add(name)
+        if "target" in item:
+            _require_string(item, "target", context)
+        if "canonical_path" in item:
+            _require_string(item, "canonical_path", context)
+        evidence = _optional_array(item, "evidence", context=f"{context}.evidence")
+        for evidence_index, value in enumerate(evidence):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(
+                    f"{context}.evidence[{evidence_index}] must be a non-empty string"
+                )
+
+
 def read_governance(path: Path) -> dict:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -132,6 +215,8 @@ def read_governance(path: Path) -> dict:
 
     if not isinstance(data, dict):
         raise ValueError("governance JSON root must be an object")
+    if is_legacy_policy(data):
+        return normalize_legacy_policy(data, path)
     _reject_unknown_fields(data, TOP_LEVEL_FIELDS, "governance")
     if data.get("schema_version") != 1:
         raise ValueError("schema_version must be 1")
@@ -159,9 +244,65 @@ def read_governance(path: Path) -> dict:
             raise ValueError(f"duplicate projection root: {normalized}")
         normalized_roots.add(normalized)
 
+    projection_globs = _optional_array(
+        source_policy,
+        "projection_globs",
+        context="source_policy.projection_globs",
+    )
+    seen_globs: set[str] = set()
+    for index, value in enumerate(projection_globs):
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(
+                f"source_policy.projection_globs[{index}] must be a non-empty string"
+            )
+        normalized = str(expand_path(value))
+        if normalized in seen_globs:
+            raise ValueError(f"duplicate projection glob: {normalized}")
+        seen_globs.add(normalized)
+
+    registry_skills = str(
+        expand_path(source_policy["local_only_canonical_registry"]) / "skills"
+    )
+    _validate_inventory_roots(source_policy, normalized_roots | {registry_skills})
+    if "independent_git_is_canonical_when_present" in source_policy and not isinstance(
+        source_policy["independent_git_is_canonical_when_present"], bool
+    ):
+        raise ValueError(
+            "source_policy.independent_git_is_canonical_when_present must be a boolean"
+        )
+    if "projection_rule" in source_policy:
+        _require_string(source_policy, "projection_rule", "source_policy")
+    managed_physical = source_policy.get("managed_physical_skills", {})
+    if not isinstance(managed_physical, dict) or not all(
+        isinstance(name, str)
+        and name.strip()
+        and isinstance(owner, str)
+        and owner.strip()
+        for name, owner in managed_physical.items()
+    ):
+        raise ValueError(
+            "source_policy.managed_physical_skills must map Skill names to owners"
+        )
+
     _validate_string_array(data, "retired_skills")
+    _validate_string_array(data, "stale_runtime_skills")
     _validate_string_array(data, "quarantined_skills")
+    _validate_string_array(data, "codex_reserved_names")
     _validate_string_array(data, "external_actions")
+    if "updated_at" in data:
+        _require_string(data, "updated_at", "governance")
+    if "quarantine_reasons" in data:
+        reasons = data["quarantine_reasons"]
+        if not isinstance(reasons, dict):
+            raise ValueError("quarantine_reasons must be an object")
+        for name, reason in reasons.items():
+            if not isinstance(name, str) or not name.strip():
+                raise ValueError("quarantine_reasons keys must be non-empty strings")
+            if not isinstance(reason, str) or not reason.strip():
+                raise ValueError(
+                    f"quarantine_reasons.{name} must be a non-empty string"
+                )
     _validate_pins(data)
     _validate_object_arrays(data)
+    _validate_skill_decisions(data)
     return data

@@ -3,8 +3,7 @@
 Spellbook treats reliable agent work as a three-part pattern:
 
 1. `skill-lifeguard` keeps high-value skills self-maintaining.
-2. `strategic-compact` and `flowguard` keep long sessions from drifting or
-   losing important context.
+2. `flowguard` keeps long sessions from drifting or losing important context.
 3. `review-gate` stops agent-generated diffs from landing without a review pack
    and explicit human approval.
 
@@ -17,7 +16,7 @@ clearly different domain.
 | Pattern | Primary home | Supporting files |
 | --- | --- | --- |
 | Reliable Skill Contract | `skills/skill-lifeguard/` | `skills/skill-audit/`, `skills/skill-creator/`, `docs/skill-quality-playbook.md` |
-| Context Engineering | `skills/flowguard/`, `skills/strategic-compact/` | `skills/flowguard/references/state-contract.md` |
+| Context Engineering | `skills/flowguard/` | `skills/flowguard/references/state-contract.md` |
 | Review Gate | `skills/review-gate/` | PR queue and delivery skills that need landing approval |
 
 ## End-To-End Example
@@ -26,7 +25,7 @@ clearly different domain.
 1. User asks to harden a long-running skill.
 2. skill-lifeguard audits the target skill against the five contract elements.
 3. flowguard records goal, constraints, done-when, and a five-step plan.
-4. strategic-compact runs a context audit before handoff or compaction.
+4. flowguard runs a context audit before handoff or compaction.
 5. The agent patches the skill and runs validation.
 6. review-gate produces a review pack and waits for explicit human approval
    before commit, push, PR, or merge.

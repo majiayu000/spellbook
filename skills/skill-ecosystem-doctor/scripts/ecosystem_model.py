@@ -13,6 +13,8 @@ from pathlib import Path
 
 IGNORED_DIRS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache"}
 IGNORED_FILES = {".DS_Store"}
+ACTIVE_ROOT_KINDS = {"projection", "managed_projection"}
+SOURCE_ROOT_KINDS = {"registry", "canonical_source", "repository_source"}
 NAME_LINE = re.compile(r"^name\s*:\s*(.+?)\s*$", re.MULTILINE)
 SUPPORT_DIR_PATTERN = r"(?:agents|assets|evals|reference|references|scripts|templates)"
 RESOURCE_LINK = re.compile(
@@ -58,6 +60,14 @@ class SkillInstance:
     is_symlink: bool
     layout: str
     skill_file_path: str
+
+
+def root_is_active(root_kind: str) -> bool:
+    return root_kind in ACTIVE_ROOT_KINDS
+
+
+def root_is_source(root_kind: str) -> bool:
+    return root_kind in SOURCE_ROOT_KINDS
 
 
 @dataclass(frozen=True)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -20,6 +21,8 @@ from ecosystem_model import (
     is_regular_content_file,
     iter_skill_files,
     materialization_digest,
+    root_is_active,
+    root_is_source,
 )
 
 
@@ -29,6 +32,7 @@ def scan_root(
     findings: list[EcosystemFinding],
     pinned_materializations: dict[str, dict],
     seen_pins: set[str],
+    managed_physical_names: set[str] | None = None,
 ) -> list[SkillInstance]:
     instances: list[SkillInstance] = []
     if not root.is_dir():
@@ -37,12 +41,44 @@ def scan_root(
         )
         return instances
     try:
-        entries = sorted(root.iterdir(), key=lambda path: path.name)
+        children = sorted(root.iterdir(), key=lambda path: path.name)
     except OSError as exc:
         findings.append(
             EcosystemFinding("error", "root_unreadable", f"cannot read Skill root: {exc}", str(root))
         )
         return instances
+
+    if root_kind == "repository_source":
+        root_skill = root / "SKILL.md"
+        if not root_skill.is_file():
+            findings.append(
+                EcosystemFinding(
+                    "error",
+                    "skill_entrypoint_missing",
+                    "repository Skill source has no usable root SKILL.md",
+                    str(root),
+                )
+            )
+            return instances
+        entries = [root]
+        entries.extend(
+            entry
+            for entry in children
+            if (
+                (entry.is_file() and entry.name.endswith(".SKILL.md"))
+                or (
+                    entry.is_dir()
+                    and (
+                        (entry / "SKILL.md").is_file()
+                        or (entry / "SKILL.md").is_symlink()
+                    )
+                )
+            )
+        )
+    elif root_kind == "archive":
+        entries = _archive_entries(root)
+    else:
+        entries = children
 
     for entry in entries:
         if entry.name.startswith("."):
@@ -57,15 +93,24 @@ def scan_root(
                 )
             )
             continue
+        is_repository_root = root_kind == "repository_source" and entry == root
         is_file_skill = entry.is_file() and entry.name.endswith(".SKILL.md")
-        if is_file_skill:
+        if is_repository_root:
+            skill_file = root / "SKILL.md"
+            install_name = root.name
+            # A repository-style Skill owns its support files as well as its
+            # SKILL.md. Hashing only the entrypoint makes a symlinked runtime
+            # projection of the same directory look divergent whenever the
+            # Skill has scripts, references, or evals.
+            layout = "directory"
+        elif is_file_skill:
             skill_file = entry
             install_name = entry.name.removesuffix(".SKILL.md")
             layout = "file"
         elif entry.is_dir():
             skill_file = entry / "SKILL.md"
             if (
-                root_kind == "projection"
+                root_is_active(root_kind)
                 and skill_file.is_symlink()
                 and not skill_file.is_file()
             ):
@@ -79,7 +124,7 @@ def scan_root(
                 )
                 continue
             if not skill_file.is_file():
-                if root_kind == "projection":
+                if root_is_active(root_kind):
                     findings.append(
                         EcosystemFinding(
                             "error",
@@ -88,11 +133,20 @@ def scan_root(
                             str(entry),
                         )
                     )
+                elif root_is_source(root_kind):
+                    findings.append(
+                        EcosystemFinding(
+                            "error",
+                            "skill_entrypoint_missing",
+                            "source Skill directory has no usable SKILL.md",
+                            str(entry),
+                        )
+                    )
                 continue
             install_name = entry.name
             layout = (
                 "file"
-                if root_kind == "projection"
+                if root_is_active(root_kind)
                 and not entry.is_symlink()
                 and skill_file.is_symlink()
                 else "directory"
@@ -132,7 +186,7 @@ def scan_root(
             )
             continue
 
-        if install_name != name:
+        if install_name != name and root_kind != "archive":
             findings.append(
                 EcosystemFinding(
                     "warning",
@@ -142,9 +196,13 @@ def scan_root(
                 )
             )
         managed_projection = entry.is_symlink() or (
-            root_kind == "projection" and layout == "file" and skill_file.is_symlink()
+            root_is_active(root_kind) and layout == "file" and skill_file.is_symlink()
         )
-        if root_kind == "projection" and not managed_projection:
+        if (
+            root_kind == "projection"
+            and not managed_projection
+            and name not in (managed_physical_names or set())
+        ):
             _verify_physical_projection(
                 entry,
                 name,
@@ -167,6 +225,29 @@ def scan_root(
             )
         )
     return instances
+
+
+def _archive_entries(root: Path) -> list[Path]:
+    """Find nested archived Skills without treating container folders as Skills."""
+    entries: list[Path] = []
+    for current, dir_names, file_names in os.walk(root, followlinks=False):
+        dir_names[:] = sorted(
+            name
+            for name in dir_names
+            if name not in {".git", "__pycache__", ".pytest_cache", ".mypy_cache"}
+            and not name.startswith(".git")
+        )
+        current_path = Path(current)
+        if "SKILL.md" in file_names:
+            entries.append(current_path)
+            dir_names[:] = []
+            continue
+        entries.extend(
+            current_path / file_name
+            for file_name in sorted(file_names)
+            if file_name.endswith(".SKILL.md")
+        )
+    return sorted(entries, key=lambda path: str(path))
 
 
 def _verify_physical_projection(
@@ -319,6 +400,7 @@ def scan_resource_references(
     findings: list[EcosystemFinding],
     *,
     active: bool,
+    provided_resources: set[str] | None = None,
 ) -> None:
     skill_file = Path(instance.skill_file_path)
     base = skill_file.parent
@@ -384,7 +466,7 @@ def scan_resource_references(
                     )
                 )
                 continue
-            if not candidate.is_file():
+            if not candidate.is_file() and normalized not in (provided_resources or set()):
                 findings.append(
                     EcosystemFinding(
                         "error" if active else "warning",
@@ -393,6 +475,8 @@ def scan_resource_references(
                         str(source_file),
                     )
                 )
+                continue
+            if not candidate.is_file():
                 continue
             pending.append(candidate)
 
