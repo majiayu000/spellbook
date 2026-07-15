@@ -1,4 +1,4 @@
 interface:
   display_name: "App User Story QA"
   short_description: "Track and test every app user story"
-  default_prompt: "Use $app-user-story-qa to inventory this app, create a canonical feature tracker, test every user story, fix UX or logistical issues, and retest."
+  default_prompt: "Use $app-user-story-qa to inventory this app, create a canonical feature tracker, test every user story, and report defects without changing product behavior unless I explicitly ask for fixes."

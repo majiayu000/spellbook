@@ -1,13 +1,43 @@
 ---
 name: codex-log-guard
-description: Automatically diagnose excessive Codex local SQLite diagnostic log writes and give a concrete fix plan. Use when a user asks whether Codex is writing too much to disk, mentions logs_2.sqlite, logs_2.sqlite-wal, block_log_inserts, SSD/TBW wear from Codex logs, or wants Codex log write issues checked, explained, stopped, cleaned up, verified, or restored.
+description: Diagnose excessive Codex local SQLite diagnostic log writes with read-only evidence by default. Use when a user mentions logs_2.sqlite, logs_2.sqlite-wal, block_log_inserts, SSD/TBW wear, or explicitly asks to protect, clean up, verify, or restore Codex diagnostic logging.
 ---
 
 # Codex Log Guard
 
 ## Overview
 
-Automatically diagnose Codex persistent diagnostic logging from local evidence, then give a concise conclusion and the safest next action. Do not make the user choose from a command menu.
+Diagnose Codex persistent diagnostic logging from local evidence, then give a concise conclusion and the safest next action. Do not make the user choose from a command menu.
+
+## Operating Contract
+
+Select one mode from the current user request:
+
+- `diagnose_only` is the default for check, inspect, explain, or verify requests. It is read-only.
+- `protect` requires an explicit request to stop or mitigate log writes. It may install and verify `block_log_inserts`, but it does not delete rows or vacuum files.
+- `cleanup` requires an explicit current request to reclaim disk space or clean up logs. It first installs protection when needed, creates and verifies a timestamped backup, and only then deletes log rows and vacuums.
+- `restore` requires an explicit request to resume diagnostic logging. It may drop only the known `block_log_inserts` trigger.
+
+Generic wording such as "处理", "修一下", or "止血" selects `protect`, not `cleanup`. Prior approval does not carry into a later run. If the requested write mode is ambiguous, return the `diagnose_only` report and the exact proposed mutation without applying it.
+
+Direct actions:
+
+- Run local read-only file, SQLite schema, row, and open-process checks.
+- Apply only the mutation authorized by the selected mode and verify its result.
+
+Escalate before:
+
+- Touching any database outside the two declared Codex log paths, deleting a backup, killing a process, or changing remote telemetry or credentials.
+
+Evidence-backed pushback:
+
+- Reject cleanup when protection is unverified, the backup check failed, or sampled row IDs still move. Cite the exact database path and failed command instead of treating file size as proof.
+
+Feedback loop:
+
+- When a new schema, active path, or false-success signal is confirmed more than once, update this Skill's diagnosis rules and a focused contract test before automating that case.
+
+`agents/openai.yaml` contains discovery UI metadata only; it is not an operational instruction source.
 
 ## Default Flow
 
@@ -28,14 +58,20 @@ When the user asks to "check", "看看", "诊断", or asks whether the local mac
    - recommended next action: do nothing / install trigger / cleanup later / cleanup now / restore logging
 7. Do not ask the user which command to run. Choose the diagnosis path from the evidence.
 
-When the user asks to "处理", "修一下", "止血", or explicitly approves mitigation:
+In `protect` mode:
 
 1. Install `block_log_inserts` first.
 2. Verify that `COUNT(*), MAX(id)` stops growing.
-3. If disk space should be reclaimed, create a SQLite `.backup`, then delete log rows, vacuum, and truncate WAL.
+3. Report the protected database path and fresh samples. Do not delete or vacuum rows.
+
+In `cleanup` mode:
+
+1. Complete and verify protection first.
+2. Create a timestamped SQLite `.backup` and require a non-empty file plus a successful `PRAGMA quick_check` result.
+3. Delete log rows, vacuum, and checkpoint the WAL.
 4. Report the backup path and final file sizes.
 
-When the user asks to restore diagnostics:
+In `restore` mode:
 
 1. Drop `block_log_inserts`.
 2. Sample `COUNT(*), MAX(id)` to confirm logging resumes or stays quiet.
@@ -53,10 +89,24 @@ for db in ~/.codex/logs_2.sqlite ~/.codex/sqlite/logs_2.sqlite; do
 done
 ```
 
+After `lsof` identifies the active candidate, validate the selected path in the
+same shell command before running any later SQLite snippet:
+
+```bash
+: "${CODEX_LOG_DB:?set CODEX_LOG_DB to the verified active candidate}"
+case "$CODEX_LOG_DB" in
+  "$HOME/.codex/logs_2.sqlite"|"$HOME/.codex/sqlite/logs_2.sqlite") ;;
+  *) echo "refusing unexpected Codex log database path" >&2; exit 2 ;;
+esac
+readonly db="$CODEX_LOG_DB"
+```
+
+Do not supply a default. If no active path can be proven, stay in
+`diagnose_only` and report the ambiguity.
+
 Check schema and trigger:
 
 ```bash
-db=~/.codex/logs_2.sqlite
 sqlite3 "$db" ".tables"
 sqlite3 "$db" "PRAGMA table_info(logs);"
 sqlite3 "$db" "SELECT name, tbl_name, sql FROM sqlite_master WHERE type='trigger' AND name='block_log_inserts';"
@@ -65,7 +115,6 @@ sqlite3 "$db" "SELECT name, tbl_name, sql FROM sqlite_master WHERE type='trigger
 Sample writes and growth:
 
 ```bash
-db=~/.codex/logs_2.sqlite
 for i in 1 2 3; do
   date '+%F %T'
   sqlite3 "$db" "SELECT COUNT(*) AS rows, MIN(id) AS min_id, MAX(id) AS max_id FROM logs;"
@@ -77,7 +126,6 @@ done
 Inspect levels and noisy targets:
 
 ```bash
-db=~/.codex/logs_2.sqlite
 sqlite3 "$db" "SELECT level, COUNT(*) AS n, ROUND(SUM(estimated_bytes)/1024.0/1024.0, 1) AS estimated_mib FROM logs GROUP BY level ORDER BY n DESC;"
 sqlite3 "$db" "SELECT target, level, COUNT(*) AS n, ROUND(SUM(estimated_bytes)/1024.0/1024.0, 1) AS estimated_mib FROM logs GROUP BY target, level ORDER BY n DESC LIMIT 15;"
 ```
@@ -92,16 +140,16 @@ lsof ~/.codex/logs_2.sqlite ~/.codex/logs_2.sqlite-wal ~/.codex/logs_2.sqlite-sh
 Install protection:
 
 ```bash
-db=~/.codex/logs_2.sqlite
 sqlite3 "$db" "PRAGMA busy_timeout=10000; CREATE TRIGGER IF NOT EXISTS block_log_inserts BEFORE INSERT ON logs BEGIN SELECT RAISE(IGNORE); END;"
 ```
 
 Clean up after protection:
 
 ```bash
-db="$HOME/.codex/logs_2.sqlite"
 backup="$db.bak.$(date +%Y%m%d-%H%M%S)"
 sqlite3 "$db" ".backup '$backup'"
+test -s "$backup"
+test "$(sqlite3 "$backup" 'PRAGMA quick_check;')" = "ok"
 sqlite3 "$db" "PRAGMA busy_timeout=10000; PRAGMA wal_checkpoint(TRUNCATE); DELETE FROM logs; VACUUM; PRAGMA wal_checkpoint(TRUNCATE);"
 echo "$backup"
 ```
@@ -109,7 +157,6 @@ echo "$backup"
 Restore persistent logging:
 
 ```bash
-db=~/.codex/logs_2.sqlite
 sqlite3 "$db" "DROP TRIGGER IF EXISTS block_log_inserts;"
 ```
 
@@ -133,6 +180,14 @@ sqlite3 "$db" "DROP TRIGGER IF EXISTS block_log_inserts;"
 - Do not delete backups automatically.
 - If SQLite reports lock or corruption errors, stop and report the exact error. Do not kill Codex processes unless the user explicitly asks.
 - This skill only manages Codex local SQLite diagnostic logs (`~/.codex/logs_2.sqlite*` and `~/.codex/sqlite/logs_2.sqlite*`); it does not manage conversation archives, repo files, credentials, or remote telemetry.
+
+## Gotchas
+
+- `COUNT(*)` can stay constant while `MIN(id)` and `MAX(id)` move; classify this as churn, not a quiet database.
+- A WAL mtime change alone does not prove material disk growth.
+- Two database candidates may exist. Mutate only the path proven active or explicitly selected; never mirror a write to both paths by assumption.
+- Protection success does not authorize cleanup. Cleanup success requires a verified backup and fresh final sizes.
+- An unknown schema, lock error, failed backup check, or post-write verification failure is a hard error. Do not continue to the next mutation.
 
 ## Answer Shape
 
