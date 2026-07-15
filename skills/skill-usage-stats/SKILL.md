@@ -1,7 +1,7 @@
 ---
 name: skill-usage-stats
 description: >-
-  跨工具（Claude Code + Codex）的只读 agent 健康体检与 skill 用量统计；只报告本地可验证证据，缺失检查面标为 unsupported。Use when the user asks 体检/doctor/health check/config audit、Claude 或 Codex 配置诊断、被拒命令分析、MCP/插件/skill 冲突、skill usage 排行或僵尸 skill。清理、权限、更新和配置写入必须基于证据单独确认。
+  只读统计 Claude/Codex 的 Skill 使用证据并检查 agent 配置健康。仅用于明确的健康检查、配置诊断、使用排行或低使用候选请求；会识别 enabled 插件并单列批量审计读取。不要用于规范源、触发、全局/项目/profile/冷存储、投影或退役治理，改用 skill-ecosystem-doctor。忽略引用日志和相邻任务。
 ---
 
 # Agent Health and Skill Usage

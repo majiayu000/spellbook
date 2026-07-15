@@ -28,7 +28,7 @@ Escalate before:
 
 Evidence-backed pushback: challenge any "fact" in the doc that an `ls` or command check refutes (stale paths, missing references, commands absent from the manifest), and cite the check output before proposing the fix. Never restate the doc's claim as truth without verifying it.
 
-Feedback loop: if the same doc keeps drifting (stale paths recur, rules duplicate the auto-loaded set every audit), promote the root cause — a too-long file needs `claude-md-split`, an over-injected rule set needs a generator-config change, not another round of per-line edits.
+Feedback loop: if the same doc keeps drifting (stale paths recur, rules duplicate the auto-loaded set every audit), promote the root cause — split a too-long file into a short index plus scoped references, and fix an over-injected rule set in generator configuration instead of repeating per-line edits.
 
 ## When to Activate
 
@@ -112,6 +112,6 @@ State each applied fix with its before/after intent, what you deliberately left 
 ## Related
 
 - `agentsmd-audit` — audit-only sibling; run it if the user wants findings without edits.
-- `claude-md-split` — when the file is too long and needs decomposing into an index + `references/`.
+- Progressive disclosure — when the file is too long, keep a short index and move topic-specific detail into `references/`.
 - `W-17` — prefer extending an existing section over adding a new rule.
 - `U-32` — rule-overload threshold; past it, decompose instead of per-line editing.

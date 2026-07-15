@@ -2,7 +2,7 @@
  * Structured logging
  *
  * Simple, structured logger for development and production.
- * For more advanced logging, see structured-logging skill.
+ * For more advanced logging, see structured-logging-lite skill.
  */
 
 import { config } from './config.js';

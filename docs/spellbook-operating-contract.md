@@ -25,8 +25,8 @@ For long-running, high-impact, multi-agent, or merge-capable workflows, use the
 three reliability homes together:
 
 - `skill-lifeguard` for the Reliable Skill Contract and drift repair loop.
-- `flowguard` plus `strategic-compact` for objective re-verify, context audit,
-  compaction policy, and external scratchpads.
+- `flowguard` for objective re-verify, context audit, compaction policy, and
+  external scratchpads.
 - `review-gate` for review packs and explicit human approval before landing
   agent-generated diffs.
 

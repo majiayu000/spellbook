@@ -91,7 +91,7 @@ Generate a safe, report-only weekly reminder prompt that never applies changes a
 ## Integration with Other Spellbook Skills
 
 - After running `codex-retrospective`, if Codex complains about "having to re-read huge context every time" or repeated state loss, this skill is the natural follow-up.
-- Use `strategic-compact` thinking when designing handoff documents — they should be the ultimate compact representation of a thread.
+- Design handoff documents as the compact representation of a thread: preserve the objective, constraints, decisions, verification, and unresolved work.
 - Handoff documents created here are excellent material to feed into future `codex-retrospective` runs.
 
 ## What This Skill Will Not Do

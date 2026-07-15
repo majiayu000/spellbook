@@ -109,7 +109,7 @@
 
 ### 结合其他 skill
 - 发现 2-3 个重点项目后 → 调用 `multi-ai-research` 做“这个项目在 X 上的真实讨论密度”
-- 想发内容 → 把日报 JSON + angle 喂给 `scout-to-article` 或直接 `blog-write`
+- 想发内容 → 把日报 JSON + angle 喂给 `scout-to-article`
 - 想长期跟踪 → 用 `loop` 技能每天跑一次，输出到固定目录
 
 ### 开发者榜特殊处理

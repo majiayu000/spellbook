@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>104 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>96 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-104-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-96-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -82,12 +82,12 @@ Claude Code 仍是一等支持目标，也是用户搜索和认知入口。项�
 | 工作流 | 安装命令 | 适合场景 |
 |---|---|---|
 | 前端与 UI | `./install.sh --target all --skills frontend-design,app-ui-design,ui-design-system,figma-to-react` | 产品界面、落地页、设计系统、Figma 交付 |
-| 代码质量 | `./install.sh --target all --skills codebase-audit,fixflow,optflow,systematic-debugging` | 代码审计、Bug 修复、重构、根因定位 |
-| 运维与部署 | `./install.sh --target all --skills server-deploy,server-security,clash-doctor,system-doctor` | 应用上线、服务器加固、本地与网络诊断 |
+| 代码质量 | `./install.sh --target all --skills codebase-audit,systematic-debugging,comprehensive-testing,vibeguard` | 代码审计、根因定位、测试与审查护栏 |
+| 运维与诊断 | `./install.sh --target all --skills server-security,clash-doctor,system-doctor` | 服务器加固、本地与网络诊断 |
 | 产品与文档 | `./install.sh --target all --skills product-discovery,prd-master,technical-spec,product-analytics` | 用户发现、PRD、技术方案、指标设计 |
-| Agent 工作流 | `./install.sh --target all --skills codex-agent,multi-ai-research,strategic-compact,vibeguard` | 交叉审查、多 AI 调研、上下文交接、防幻觉检查 |
+| Agent 工作流 | `./install.sh --target all --skills codex-agent,multi-ai-research,flowguard,vibeguard` | 交叉审查、多 AI 调研、上下文交接、防幻觉检查 |
 
-优先体验的高信号单项：`github-trending`、`harmonyos-app`、`app-ui-design`、`product-discovery`、`xiaohongshu`、`codebase-audit`、`server-deploy`。
+优先体验的高信号单项：`github-trending`、`harmonyos-app`、`app-ui-design`、`product-discovery`、`xiaohongshu`、`codebase-audit`、`server-security`。
 
 可复制的试用 prompt 见 [Showcase](./docs/showcase.md)。
 版本历史见 [Changelog](./CHANGELOG.md)。
@@ -150,7 +150,6 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`codex-fluent`](./skills/codex-fluent/) | Codex session 清理、归档策略与交接纪律 |
 | [`codex-retrospective`](./skills/codex-retrospective/) | 让 Codex 复盘近期历史以改进行为 |
 | [`brainstorming`](./skills/brainstorming/) | 通过苏格拉底式对话打磨设计与架构 |
-| [`personal-arsenal-lifecycle-doctor`](./skills/personal-arsenal-lifecycle-doctor/) | 诊断个人 `~/.claude/skills` 的技能健康状态 |
 
 参见 [`docs/agent-reliability-trio.md`](./docs/agent-reliability-trio.md) 了解 Reliable Skill + Context Engineering + Review Gate 组合流程。
 
@@ -190,7 +189,6 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`auth-security`](./skills/auth-security/) | OAuth 2.1、JWT、安全最佳实践 |
 | [`database-patterns`](./skills/database-patterns/) | PostgreSQL、Redis、迁移、优化 |
 | [`codebase-audit`](./skills/codebase-audit/) | 自适应深度代码库审计，输出按严重度排序的问题与修复路线图 |
-| [`structured-logging`](./skills/structured-logging/) | 日志架构、标准、可观测性与链路追踪 |
 | [`structured-logging-lite`](./skills/structured-logging-lite/) | 集中式日志、字段标准与分布式追踪 |
 
 ### 开发实践
@@ -199,7 +197,6 @@ python3 scripts/audit_skill_quality.py skill-creator
 |------|------|------|
 | [`contributor`](./skills/contributor/) | 从 Issue 扫描到 PR 提交的端到端开源贡献工作流 | 自研 |
 | [`repo-agent-context-audit`](./skills/repo-agent-context-audit/) | 审计并搭建仓库级 agent 上下文，覆盖 AGENTS、skills 与 specs | 自研 |
-| [`strategic-compact`](./skills/strategic-compact/) | 在逻辑边界压缩上下文，保留关键决策与约束 | 自研 |
 | [`skill-creator`](./skills/skill-creator/) | 创建、优化并评估可复用 skill | 自研 |
 | [`humanizer`](./skills/humanizer/) | 消除明显 AI 痕迹，让文本更自然可读 | 外部指南 + 自研整理 |
 
@@ -252,10 +249,6 @@ python3 scripts/audit_skill_quality.py skill-creator
 |------|------|
 | [`web-asset-generator`](./skills/web-asset-generator/) | Favicon、应用图标、OG 图片 |
 | [`github-trending`](./skills/github-trending/) | GitHub 趋势分析 |
-| [`auto-optimize`](./skills/auto-optimize/) | 自主代码库优化，维度轮换扫描 |
-| [`fixflow`](./skills/fixflow/) | 严格的规划-实现-测试-提交交付工作流 |
-| [`optflow`](./skills/optflow/) | 优化机会发现与逐步交付工作流，强调持续验证 |
-| [`plan-flow`](./skills/plan-flow/) | 仓库级冗余分析与 step-test-update 执行计划 |
 | [`vibeguard`](./skills/vibeguard/) | 任务契约、问题评分与轻量防幻觉复盘 |
 | [`clash-doctor`](./skills/clash-doctor/) | Clash 代理与网络诊断 |
 | [`clash-routes`](./skills/clash-routes/) | 通过 Mihomo API 查看指定进程的代理线路 |
@@ -263,7 +256,6 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`disk-cleaner`](./skills/disk-cleaner/) | 扫描磁盘占用并交互式清理可安全删除的内容 |
 | [`system-doctor`](./skills/system-doctor/) | 诊断 CPU、内存和进程级系统卡顿问题 |
 | [`codex-log-guard`](./skills/codex-log-guard/) | 诊断并缓解 Codex 本地 SQLite 诊断日志过量写入 |
-| [`server-deploy`](./skills/server-deploy/) | 将 Node、Python、Rust、Go 或静态站部署到远程服务器 |
 | [`server-security`](./skills/server-security/) | 审计并加固 Linux 服务器的 SSH、防火墙与暴露服务 |
 | [`cliproxy-deploy`](./skills/cliproxy-deploy/) | 在 Linux VPS 上部署 router-for-me/CLIProxyAPI，把 Codex/Claude/Gemini OAuth 订阅账号暴露为 OpenAI 兼容 API |
 | [`cliproxy-newapi-stack`](./skills/cliproxy-newapi-stack/) | 在 CLIProxyAPI 之上叠加 NewAPI 计量：Docker 部署、按比例计费、配额充值、双路径验证与 OAuth 账号热切换 |

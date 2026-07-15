@@ -5,6 +5,26 @@
     "projection_roots": [
       "~/.codex/skills",
       "~/.claude/skills"
+    ],
+    "projection_globs": [
+      "~/src/project-*/.codex/skills"
+    ],
+    "inventory_roots": [
+      {
+        "path": "~/src/spellbook/skills",
+        "kind": "canonical_source",
+        "owner": "spellbook"
+      },
+      {
+        "path": "~/src/repository-style-skill",
+        "kind": "repository_source",
+        "owner": "independent-git"
+      },
+      {
+        "path": "~/.agents/skills",
+        "kind": "managed_projection",
+        "owner": "skill-installer"
+      }
     ]
   },
   "pinned_materializations": [],
@@ -12,5 +32,18 @@
   "quarantined_skills": [],
   "projection_denials": [],
   "retired_reference_allowlist": [],
-  "external_actions": []
+  "external_actions": [],
+  "skill_decisions": [
+    {
+      "name": "example-skill",
+      "decision": "keep",
+      "reason": "Distinct capability with a maintained canonical source.",
+      "owner": "spellbook",
+      "canonical_path": "~/src/spellbook/skills/example-skill",
+      "evidence": [
+        "source review",
+        "fresh validator run"
+      ]
+    }
+  ]
 }

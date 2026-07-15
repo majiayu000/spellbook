@@ -273,7 +273,7 @@ export const config = {
   },
 } as const;
 
-// lib/logger.ts — Logging (see structured-logging skill)
+// lib/logger.ts — Logging (see structured-logging-lite skill)
 ```
 
 ### services/ — Business Logic
@@ -486,4 +486,4 @@ describe('UserService', () => {
 - [reference/tech-stack.md](reference/tech-stack.md) — Tech stack comparison
 - [reference/patterns.md](reference/patterns.md) — Design patterns
 - [elegant-architecture skill](../elegant-architecture/SKILL.md) — 200-line file limit
-- [structured-logging skill](../structured-logging/) — Logging setup
+- [structured-logging-lite skill](../structured-logging-lite/) — Logging setup

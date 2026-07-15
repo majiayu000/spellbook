@@ -21,9 +21,6 @@ contribution-architect:
   - code-review
   - refactoring
 
-fixflow:
-  - agent
-  - testing
   - debugging
 
 ip-check:
@@ -73,10 +70,6 @@ skill-audit:
 skill-ecosystem-doctor:
   - agent
   - security
-
-strategic-compact:
-  - agent
-  - prompt
 
 systematic-debugging:
   - debugging
