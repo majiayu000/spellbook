@@ -1,6 +1,6 @@
 ---
 name: skill-ecosystem-doctor
-description: "Audit and safely remediate a cross-runtime Skill ecosystem spanning Codex, Claude Code, Loom, plugins, registries, caches, archives, and Git sources. Use only when the user explicitly asks to inspect or repair all local Skills, accidental loading, canonical ownership, duplicate or divergent copies, global/project/profile/cold exposure, catalog budgets, unsafe automation, lifecycle drift, quarantine, or retirement. Ignore quoted traces and ordinary Skill-name mentions. For usage statistics alone, use skill-usage-stats."
+description: "Audit and safely repair cross-runtime Skill ownership, loading, duplication, scopes, budgets, lifecycle, quarantine, and retirement. Usage statistics alone belong to skill-usage-stats. Use when explicitly governing the Skill ecosystem; ignore mentions/traces."
 ---
 
 # Skill Ecosystem Doctor
