@@ -1,13 +1,13 @@
 ---
 name: app-user-story-qa
-description: "End-to-end app feature inventory and user-story testing workflow. Use when the user asks to audit every feature, create user stories or expected behavior from code, maintain a single canonical spreadsheet/tracker, test each user behavior, document errors, fix logistical or UX issues, and retest after fixes."
+description: "End-to-end app feature inventory and user-story testing workflow with a canonical tracker. Use when the user asks to audit every feature, derive expected behavior from code, test user journeys, or explicitly fix and retest documented UX or logistical defects."
 ---
 
 # App User Story QA
 
 ## Purpose
 
-Use this skill to turn a broad "test every feature in this app" request into a controlled loop with one source of truth. Anchor every feature to code, track expected behavior in a canonical spreadsheet, run tests against each user story, classify failures, fix only in-scope logistical or UX defects, and retest.
+Use this skill to turn a broad "test every feature in this app" request into a controlled loop with one source of truth. Anchor every feature to code, track expected behavior in a canonical spreadsheet, run tests against each user story, and classify failures. Apply fixes only when the current request explicitly authorizes them.
 
 ## Route
 
@@ -23,9 +23,16 @@ Before editing:
 
 ## Operating Contract
 
+Select one mode before editing production code:
+
+- `report_only` is the default for audit, inventory, test, diagnose, or tracker requests. It may create or update the requested canonical tracker and run tests, but it must not change product behavior.
+- `apply_fixes` requires the current user request to explicitly ask for fixes. It covers only defects already reproduced and classified within the agreed app boundary. Earlier approval and a generic request to "test everything" do not authorize fixes.
+
+If the mode is ambiguous, use `report_only` and record proposed fixes in the tracker.
+
 Direct actions:
-- Inventory local code and docs, create or update the single canonical tracker, run local tests, document failures, and fix narrow in-scope logistical or UX defects.
-- Add focused coverage when a production or UX fix changes user-observable behavior.
+- Inventory local code and docs, create or update the single canonical tracker, run local tests, and document failures.
+- In `apply_fixes` only, fix narrow in-scope logistical or UX defects and add focused coverage when user-observable behavior changes.
 
 Escalate before:
 - Testing production systems, using paid external services, changing credentials or deployment state, deleting user data, or broadening the app boundary beyond the user's request.
@@ -43,6 +50,7 @@ Feedback loop:
 - Do not invent expected behavior from product hopes. Expected behavior comes from current code, docs, and visible user surfaces.
 - Do not mark a feature passed from stale output. Fresh evidence from the current session is required.
 - Do not "fix" environment blockers unless the user asked for environment repair.
+- Do not infer fix authorization from words such as "audit", "test", "check", or "create a tracker". Keep those runs in `report_only`.
 
 ## Canonical Tracker
 
@@ -125,7 +133,9 @@ Record the command, route, or manual steps in the tracker. Fresh output from the
 
 ### 3. Fix
 
-Before editing, state the exact defect and files being changed. Keep fixes narrow:
+In `report_only`, record the reproduced defect, evidence, and proposed fix, then continue testing without editing production code.
+
+In `apply_fixes`, state the exact defect and files being changed before editing. Keep fixes narrow:
 
 - For UX defects, fix production code and add or update focused coverage.
 - For product defects, record the evidence and escalate unless the user's request explicitly authorizes product behavior fixes.
@@ -151,8 +161,8 @@ Before completion, run the repo's required formatting, build, typecheck, lint, a
 Finish only when:
 
 - every feature row has a user story, expected behavior, code anchors, and a status;
-- every `Failed` row is fixed, explicitly out of scope, or blocked by environment with evidence;
-- every fix has a retest result;
+- every `Failed` row is fixed and retested in `apply_fixes`, or is explicitly recorded as proposed, out of scope, or blocked with evidence in `report_only`;
+- every applied fix has a retest result;
 - the tracker validates structurally;
 - the final answer names the tracker path, changed files, defects found, fixes made, and verification commands.
 

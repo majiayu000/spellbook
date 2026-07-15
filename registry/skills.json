@@ -69,7 +69,7 @@
     "category": "Delivery Workflow",
     "format": "directory",
     "path": "skills/app-user-story-qa/SKILL.md",
-    "description": "End-to-end app feature inventory and user-story testing workflow. Use when the user asks to audit every feature, create user stories or expected behavior from code, maintain a single canonical spreadsheet/tracker, test each user behavior, document errors, fix logistical or UX issues, and retest after fixes.",
+    "description": "End-to-end app feature inventory and user-story testing workflow with a canonical tracker. Use when the user asks to audit every feature, derive expected behavior from code, test user journeys, or explicitly fix and retest documented UX or logistical defects.",
     "language": "en",
     "compatibility": {
       "runtimes": [
@@ -77,7 +77,6 @@
       ]
     },
     "tags": [
-      "documentation",
       "testing",
       "ux"
     ]
@@ -318,7 +317,7 @@
     "category": "Operations & Deploy",
     "format": "directory",
     "path": "skills/codex-log-guard/SKILL.md",
-    "description": "Automatically diagnose excessive Codex local SQLite diagnostic log writes and give a concrete fix plan. Use when a user asks whether Codex is writing too much to disk, mentions logs_2.sqlite, logs_2.sqlite-wal, block_log_inserts, SSD/TBW wear from Codex logs, or wants Codex log write issues checked, explained, stopped, cleaned up, verified, or restored.",
+    "description": "Diagnose excessive Codex local SQLite diagnostic log writes with read-only evidence by default. Use when a user mentions logs_2.sqlite, logs_2.sqlite-wal, block_log_inserts, SSD/TBW wear, or explicitly asks to protect, clean up, verify, or restore Codex diagnostic logging.",
     "language": "en",
     "compatibility": {
       "runtimes": [
@@ -328,7 +327,7 @@
     "tags": [
       "database",
       "debugging",
-      "system"
+      "observability"
     ]
   },
   {

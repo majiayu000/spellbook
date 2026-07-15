@@ -14,13 +14,13 @@
     "deploy": 7,
     "design-system": 2,
     "devops": 2,
-    "documentation": 12,
+    "documentation": 11,
     "frontend": 14,
     "go": 4,
     "harmonyos": 1,
     "javascript": 4,
     "multi-ai": 7,
-    "observability": 2,
+    "observability": 3,
     "performance": 8,
     "product-management": 4,
     "prompt": 2,
@@ -31,7 +31,7 @@
     "research": 1,
     "rust": 4,
     "security": 6,
-    "system": 7,
+    "system": 6,
     "testing": 6,
     "typescript": 4,
     "ux": 4,
@@ -158,7 +158,6 @@
       "devops-excellence"
     ],
     "documentation": [
-      "app-user-story-qa",
       "auth-security",
       "capability-distill",
       "dev-architecture-playbook",
@@ -212,6 +211,7 @@
       "multi-ai-research"
     ],
     "observability": [
+      "codex-log-guard",
       "observability-sre",
       "structured-logging-lite"
     ],
@@ -278,7 +278,6 @@
       "skill-ecosystem-doctor"
     ],
     "system": [
-      "codex-log-guard",
       "disk-cleaner",
       "gpu-use",
       "performance-capacity",
