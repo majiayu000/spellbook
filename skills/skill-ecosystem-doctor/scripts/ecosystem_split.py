@@ -46,6 +46,42 @@ def _line_index(lines: list[str], heading: str, start: int = 0) -> int | None:
     return next((index for index in range(start, len(lines)) if lines[index] == heading), None)
 
 
+def _skill_source(registry: Path, skill: str) -> Path:
+    relative = Path(skill)
+    if (
+        relative.is_absolute()
+        or len(relative.parts) != 1
+        or relative.name != skill
+        or relative.name in {".", ".."}
+    ):
+        raise SplitError(f"split skill name must be one directory segment: {skill!r}")
+    source = registry / "skills" / relative / "SKILL.md"
+    if not source.is_file():
+        raise SplitError(f"missing split source: {source}")
+    skills_root = (registry / "skills").resolve(strict=True)
+    skill_root = source.parent.resolve(strict=True)
+    if source.parent.is_symlink() or skill_root.parent != skills_root:
+        raise SplitError(f"split source must be a physical registry Skill: {source}")
+    return skill_root / "SKILL.md"
+
+
+def _reference_path(source: Path, reference_name: str) -> Path:
+    relative = Path(reference_name)
+    if not relative.parts or relative.is_absolute() or ".." in relative.parts:
+        raise SplitError(
+            "split reference must stay inside its Skill directory: "
+            f"{reference_name!r}"
+        )
+    skill_root = source.parent.resolve(strict=True)
+    reference = (skill_root / relative).resolve(strict=False)
+    if not reference.is_relative_to(skill_root):
+        raise SplitError(
+            "split reference must stay inside its Skill directory: "
+            f"{reference_name!r}"
+        )
+    return reference
+
+
 def build_split_plan(
     registry: Path,
     policy: dict,
@@ -63,9 +99,7 @@ def build_split_plan(
     for skill, moves in raw_splits.items():
         if not isinstance(skill, str) or not isinstance(moves, list):
             raise SplitError("splits must map skill names to move arrays")
-        source = registry / "skills" / skill / "SKILL.md"
-        if not source.is_file():
-            raise SplitError(f"missing split source: {source}")
+        source = _skill_source(registry, skill)
         original = source.read_text(encoding="utf-8")
         text = original
         for move in moves:
@@ -86,7 +120,7 @@ def build_split_plan(
                 raise SplitError(
                     f"replacement repeats the start heading for {skill}: {start_heading}"
                 )
-            reference = source.parent / reference_name
+            reference = _reference_path(source, reference_name)
             lines = text.splitlines()
             start_index = _line_index(lines, start_heading)
             if start_index is None:
@@ -138,10 +172,25 @@ def _atomic_write(path: Path, text: str, mode: int) -> None:
 
 
 def apply_split_plan(registry: Path, updates: dict[Path, str]) -> None:
-    for path, text in sorted(updates.items(), key=lambda item: len(item[0].parts), reverse=True):
-        relative = path.relative_to(registry / "skills")
-        source_mode = (registry / "skills" / relative.parts[0] / "SKILL.md").stat().st_mode
-        _atomic_write(path, text, source_mode)
+    skills_root = (registry / "skills").resolve(strict=True)
+    for path, text in sorted(
+        updates.items(), key=lambda item: len(item[0].parts), reverse=True
+    ):
+        try:
+            relative = path.relative_to(skills_root)
+        except ValueError as exc:
+            raise SplitError(f"split target escaped the registry: {path}") from exc
+        if len(relative.parts) < 2:
+            raise SplitError(f"invalid split target: {path}")
+        skill_root_path = skills_root / relative.parts[0]
+        if skill_root_path.is_symlink():
+            raise SplitError(f"split target uses a symlinked Skill root: {path}")
+        skill_root = skill_root_path.resolve(strict=True)
+        resolved_path = path.resolve(strict=False)
+        if not resolved_path.is_relative_to(skill_root):
+            raise SplitError(f"split target escaped its Skill directory: {path}")
+        source_mode = (skill_root / "SKILL.md").stat().st_mode
+        _atomic_write(resolved_path, text, source_mode)
 
 
 def main() -> int:

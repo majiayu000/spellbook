@@ -486,3 +486,53 @@ def test_split_is_idempotent(tmp_path: Path) -> None:
     assert plan.skills == ("sample",)
     assert repeated.skills == ()
     assert repeated_updates == {}
+
+
+def test_split_rejects_reference_and_skill_path_escapes(tmp_path: Path) -> None:
+    registry = tmp_path / "registry"
+    write_skill(registry / "skills", "sample")
+    escaped_source = write_skill(registry, "outside")
+    move = {
+        "start": "# sample",
+        "reference": "../../escaped.md",
+        "title": "Escaped",
+        "intro": "Must remain inside the Skill.",
+        "replacement": "# sample (moved)",
+    }
+
+    with pytest.raises(split.SplitError, match="reference must stay inside"):
+        split.build_split_plan(registry, {"splits": {"sample": [move]}})
+
+    safe_move = {**move, "reference": "references/details.md"}
+    with pytest.raises(split.SplitError, match="one directory segment"):
+        split.build_split_plan(registry, {"splits": {"../outside": [safe_move]}})
+
+    assert escaped_source.joinpath("SKILL.md").is_file()
+    assert not (registry / "escaped.md").exists()
+
+
+def test_split_apply_rechecks_symlink_containment(tmp_path: Path) -> None:
+    registry = tmp_path / "registry"
+    skill = write_skill(registry / "skills", "sample")
+    policy = {
+        "splits": {
+            "sample": [
+                {
+                    "start": "# sample",
+                    "reference": "references/details.md",
+                    "title": "Details",
+                    "intro": "Read on demand.",
+                    "replacement": "# sample (moved)",
+                }
+            ]
+        }
+    }
+    _, updates = split.build_split_plan(registry, policy)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (skill / "references").symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(split.SplitError, match="escaped its Skill directory"):
+        split.apply_split_plan(registry, updates)
+
+    assert not (outside / "details.md").exists()
