@@ -1280,7 +1280,7 @@
     "category": "API & Backend",
     "format": "directory",
     "path": "skills/structured-logging-lite/SKILL.md",
-    "description": "Logging system design guide covering centralized architecture, field standards, and distributed tracing. Use when designing log systems, establishing standards, or debugging production issues.",
+    "description": "Design, audit, or implement application structured logging architecture from repository evidence. Use when a user asks whether or where to add logs, how to choose or migrate a logger, how to standardize events/fields/levels/redaction, how to add HTTP access or panic logs, or why production logs cannot answer an incident question. Do not use merely to tail platform logs or to design a full metrics, tracing, SLO, and incident-management program.",
     "language": "en",
     "compatibility": {
       "runtimes": [
