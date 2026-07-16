@@ -206,26 +206,6 @@
     ]
   },
   {
-    "name": "cliproxy-deploy",
-    "category": "Operations & Deploy",
-    "format": "directory",
-    "path": "skills/cliproxy-deploy/SKILL.md",
-    "description": "在 Linux VPS 上部署 CLIProxyAPI（router-for-me/CLIProxyAPI）并暴露 OpenAI 兼容 API。覆盖 Go 环境、源码拉取、最小配置、OAuth 登录（远端 / 本地同步两种路径）、UFW 放行、密钥轮换、健康校验、环境变量落盘。当用户说“部署 cliproxy / 把 codex/claude/gemini 账号暴露成 API / router-for-me 上线 VPS”时触发。",
-    "language": "zh",
-    "compatibility": {
-      "runtimes": [
-        "unspecified"
-      ]
-    },
-    "tags": [
-      "auth",
-      "backend",
-      "deploy",
-      "go",
-      "multi-ai"
-    ]
-  },
-  {
     "name": "cliproxy-newapi-stack",
     "category": "Operations & Deploy",
     "format": "directory",
@@ -393,7 +373,6 @@
     "tags": [
       "architecture",
       "code-review",
-      "debugging",
       "refactoring"
     ]
   },
@@ -807,22 +786,6 @@
     },
     "tags": [
       "observability"
-    ]
-  },
-  {
-    "name": "openclaw-deploy",
-    "category": "Operations & Deploy",
-    "format": "directory",
-    "path": "skills/openclaw-deploy/SKILL.md",
-    "description": "在远程服务器上一键部署 OpenClaw。当用户需要安装 OpenClaw、部署 OpenClaw、配置 OpenClaw 到服务器时使用",
-    "language": "zh",
-    "compatibility": {
-      "runtimes": [
-        "unspecified"
-      ]
-    },
-    "tags": [
-      "deploy"
     ]
   },
   {

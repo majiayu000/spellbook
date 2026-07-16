@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>96 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>94 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-96-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-94-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -82,8 +82,8 @@ Start with a small bundle that matches the job, then add more skills when the wo
 | Workflow | Install | Good for |
 |---|---|---|
 | Frontend and UI | `./install.sh --target all --skills frontend-design,app-ui-design,ui-design-system,figma-to-react` | Product UI, landing pages, design systems, Figma handoff |
-| Code quality | `./install.sh --target all --skills codebase-audit,systematic-debugging,comprehensive-testing,vibeguard` | Audits, root-cause debugging, tests, and review guardrails |
-| Ops and diagnostics | `./install.sh --target all --skills server-security,clash-doctor,system-doctor` | Hardening servers and diagnosing local or network issues |
+| Code quality | `./install.sh --target all --skills codebase-audit,flowguard,systematic-debugging,review-gate` | Audits, guarded delivery, root-cause debugging, pre-landing review |
+| Ops and release | `./install.sh --target all --skills release-engineering,server-security,clash-doctor,system-doctor` | Release planning, server hardening, and local or network diagnosis |
 | Product and docs | `./install.sh --target all --skills product-discovery,prd-master,technical-spec,product-analytics` | Discovery, PRDs, technical specs, metrics plans |
 | Agent workflows | `./install.sh --target all --skills codex-agent,multi-ai-research,flowguard,vibeguard` | Cross-review, multi-AI research, context handoff, anti-hallucination checks |
 
@@ -257,8 +257,7 @@ Skills for using multiple coding agents and CLI tools together.
 | [`system-doctor`](./skills/system-doctor/) | Diagnose CPU, memory, and process-level system slowdowns |
 | [`codex-log-guard`](./skills/codex-log-guard/) | Diagnose and mitigate excessive Codex local SQLite diagnostic log writes |
 | [`server-security`](./skills/server-security/) | Audit and harden Linux server SSH, firewall, and exposed services |
-| [`cliproxy-deploy`](./skills/cliproxy-deploy/) | Deploy router-for-me/CLIProxyAPI on a Linux VPS, exposing Codex/Claude/Gemini OAuth subscription accounts as an OpenAI-compatible API |
-| [`cliproxy-newapi-stack`](./skills/cliproxy-newapi-stack/) | Layer NewAPI metering on top of CLIProxyAPI: Docker deploy, ratio-based pricing, quota top-up, dual-path verification, and OAuth account hot-swap |
+| [`cliproxy-newapi-stack`](./skills/cliproxy-newapi-stack/) | Add a loopback-first NewAPI metering layer to an independently verified CLIProxyAPI upstream |
 
 ### Operations & Deploy
 
@@ -268,7 +267,6 @@ Deploy models and diagnose local and remote environments.
 |-------|-------------|
 | [`gemma4-local-deploy`](./skills/gemma4-local-deploy/) | Deploy Gemma 4 12B locally on Mac/Apple Silicon via llama.cpp or Ollama |
 | [`gpu-use`](./skills/gpu-use/) | Inspect remote server GPU usage (per-card VRAM, processes, containers) |
-| [`openclaw-deploy`](./skills/openclaw-deploy/) | One-click OpenClaw deployment on a remote server |
 | [`rustdesk-doctor`](./skills/rustdesk-doctor/) | Diagnose RustDesk connection issues |
 | [`vscode-doctor`](./skills/vscode-doctor/) | Diagnose slow or freezing VS Code-compatible editors |
 

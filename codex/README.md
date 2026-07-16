@@ -20,7 +20,6 @@ The adapter provides:
 
 ## Current Adapters
 
-- `personal-arsenal-lifecycle-doctor/` — for long-term personal skill health and rot detection (PAIN-1001).
 - `xiaohongshu-netfeel-guardian/` — for protecting authentic Chinese creator voice against English-thinking pollution (PAIN-301).
 
 See the README inside each adapter for usage details.

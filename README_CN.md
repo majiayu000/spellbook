@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>96 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>94 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-96-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-94-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -82,8 +82,8 @@ Claude Code 仍是一等支持目标，也是用户搜索和认知入口。项�
 | 工作流 | 安装命令 | 适合场景 |
 |---|---|---|
 | 前端与 UI | `./install.sh --target all --skills frontend-design,app-ui-design,ui-design-system,figma-to-react` | 产品界面、落地页、设计系统、Figma 交付 |
-| 代码质量 | `./install.sh --target all --skills codebase-audit,systematic-debugging,comprehensive-testing,vibeguard` | 代码审计、根因定位、测试与审查护栏 |
-| 运维与诊断 | `./install.sh --target all --skills server-security,clash-doctor,system-doctor` | 服务器加固、本地与网络诊断 |
+| 代码质量 | `./install.sh --target all --skills codebase-audit,flowguard,systematic-debugging,review-gate` | 代码审计、受控交付、根因定位、落地前审查 |
+| 运维与发布 | `./install.sh --target all --skills release-engineering,server-security,clash-doctor,system-doctor` | 发布规划、服务器加固、本地与网络诊断 |
 | 产品与文档 | `./install.sh --target all --skills product-discovery,prd-master,technical-spec,product-analytics` | 用户发现、PRD、技术方案、指标设计 |
 | Agent 工作流 | `./install.sh --target all --skills codex-agent,multi-ai-research,flowguard,vibeguard` | 交叉审查、多 AI 调研、上下文交接、防幻觉检查 |
 
@@ -257,8 +257,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`system-doctor`](./skills/system-doctor/) | 诊断 CPU、内存和进程级系统卡顿问题 |
 | [`codex-log-guard`](./skills/codex-log-guard/) | 诊断并缓解 Codex 本地 SQLite 诊断日志过量写入 |
 | [`server-security`](./skills/server-security/) | 审计并加固 Linux 服务器的 SSH、防火墙与暴露服务 |
-| [`cliproxy-deploy`](./skills/cliproxy-deploy/) | 在 Linux VPS 上部署 router-for-me/CLIProxyAPI，把 Codex/Claude/Gemini OAuth 订阅账号暴露为 OpenAI 兼容 API |
-| [`cliproxy-newapi-stack`](./skills/cliproxy-newapi-stack/) | 在 CLIProxyAPI 之上叠加 NewAPI 计量：Docker 部署、按比例计费、配额充值、双路径验证与 OAuth 账号热切换 |
+| [`cliproxy-newapi-stack`](./skills/cliproxy-newapi-stack/) | 为经过独立验证的 CLIProxyAPI upstream 增加 loopback-first NewAPI 计量层 |
 
 ### 运维与部署
 
@@ -268,7 +267,6 @@ python3 scripts/audit_skill_quality.py skill-creator
 |------|------|
 | [`gemma4-local-deploy`](./skills/gemma4-local-deploy/) | 在 Mac/Apple Silicon 上用 llama.cpp 或 Ollama 本地部署 Gemma 4 12B |
 | [`gpu-use`](./skills/gpu-use/) | 查看远程服务器 GPU 用量（每张卡显存、进程、容器） |
-| [`openclaw-deploy`](./skills/openclaw-deploy/) | 在远程服务器上一键部署 OpenClaw |
 | [`rustdesk-doctor`](./skills/rustdesk-doctor/) | 诊断 RustDesk 连接问题 |
 | [`vscode-doctor`](./skills/vscode-doctor/) | 诊断 VS Code 兼容编辑器卡顿与冻结 |
 

@@ -1,25 +1,25 @@
 {
-  "total_skills": 96,
+  "total_skills": 94,
   "total_tags": 35,
   "tag_counts": {
     "agent": 13,
     "architecture": 14,
-    "auth": 4,
-    "backend": 14,
+    "auth": 3,
+    "backend": 13,
     "browser": 4,
     "code-review": 13,
     "content": 7,
     "database": 4,
-    "debugging": 9,
-    "deploy": 6,
+    "debugging": 8,
+    "deploy": 4,
     "design-system": 2,
     "devops": 2,
     "documentation": 11,
     "frontend": 14,
-    "go": 4,
+    "go": 3,
     "harmonyos": 1,
     "javascript": 4,
-    "multi-ai": 7,
+    "multi-ai": 6,
     "observability": 3,
     "performance": 8,
     "product-management": 4,
@@ -72,7 +72,6 @@
     ],
     "auth": [
       "auth-security",
-      "cliproxy-deploy",
       "cliproxy-newapi-stack",
       "security-threat-model"
     ],
@@ -81,7 +80,6 @@
       "ask-opencli",
       "auth-security",
       "clash-routes",
-      "cliproxy-deploy",
       "cliproxy-newapi-stack",
       "codebase-audit",
       "config-secrets-environments",
@@ -130,7 +128,6 @@
     ],
     "debugging": [
       "codex-log-guard",
-      "contribution-architect",
       "css-debug",
       "ip-check",
       "optimize-network",
@@ -140,11 +137,9 @@
       "vscode-doctor"
     ],
     "deploy": [
-      "cliproxy-deploy",
       "config-secrets-environments",
       "gemma4-local-deploy",
       "gpu-use",
-      "openclaw-deploy",
       "release-engineering"
     ],
     "design-system": [
@@ -186,7 +181,6 @@
     ],
     "go": [
       "architecture-foundation",
-      "cliproxy-deploy",
       "golang-web",
       "product-manager-toolkit"
     ],
@@ -201,7 +195,6 @@
     ],
     "multi-ai": [
       "ask-opencli",
-      "cliproxy-deploy",
       "cliproxy-newapi-stack",
       "codex",
       "gemma4-local-deploy",
