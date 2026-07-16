@@ -21,8 +21,6 @@ contribution-architect:
   - code-review
   - refactoring
 
-  - debugging
-
 ip-check:
   - proxy
   - security

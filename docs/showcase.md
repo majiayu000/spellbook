@@ -7,7 +7,7 @@ These examples are quick checks after installing Spellbook. Pick one workflow, p
 Install:
 
 ```bash
-./install.sh --target all --skills codebase-audit,systematic-debugging,comprehensive-testing
+./install.sh --target all --skills codebase-audit,flowguard,systematic-debugging
 ```
 
 Prompt:
@@ -41,6 +41,26 @@ Expected output:
 - A working first screen, not a marketing landing page.
 - UI controls and states a real operator would expect.
 - Browser verification or clear explanation if no frontend runtime exists.
+
+## Release and Server Safety
+
+Install:
+
+```bash
+./install.sh --target all --skills release-engineering,server-security,system-doctor
+```
+
+Prompt:
+
+```text
+Use release-engineering to prepare a release plan for this app and server-security to identify the Linux hardening gates. Detect the stack, list required environment variables, define rollback and verification, and do not SSH or deploy.
+```
+
+Expected output:
+
+- Stack detection from local files.
+- Release steps with rollback and verification.
+- Explicit security gates without remote mutation.
 
 ## Product Spec
 
