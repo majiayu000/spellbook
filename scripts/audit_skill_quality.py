@@ -22,6 +22,9 @@ from skill_artifact_checks import (
 )
 from validate_skills import CATEGORY_BY_NAME, ROOT, SkillEntry, discover_skills, parse_frontmatter
 
+
+CONTENT_SUPPORT_DIR_NAMES = SUPPORT_DIR_NAMES - {"agents"}
+
 TRIGGER_CUES = (
     "use when",
     "use this skill",
@@ -140,7 +143,7 @@ def support_dirs_for(entry: SkillEntry) -> list[str]:
     return sorted(
         child.name
         for child in skill_dir.iterdir()
-        if child.is_dir() and child.name in SUPPORT_DIR_NAMES
+        if child.is_dir() and child.name in CONTENT_SUPPORT_DIR_NAMES
     )
 
 

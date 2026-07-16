@@ -138,6 +138,21 @@ class SkillArtifactCheckTests(unittest.TestCase):
 
             self.assertTrue(any(finding.check == "script-reference" for finding in findings), findings)
 
+    def test_audit_treats_agents_directory_as_runtime_metadata(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            entry = write_skill(root, "fixture-skill", "Step\n" * 301)
+            metadata_file = root / "skills" / "fixture-skill" / "agents" / "openai.yaml"
+            metadata_file.parent.mkdir()
+            metadata_file.write_text("interface: {}\n", encoding="utf-8")
+
+            with patched_roots(root):
+                findings = audit_skill_quality.audit_entry(entry)
+
+            checks = {finding.check for finding in findings}
+            self.assertNotIn("support-reference", checks)
+            self.assertIn("progressive-disclosure", checks)
+
 
 if __name__ == "__main__":
     unittest.main()
