@@ -1,6 +1,6 @@
 ---
 name: cliproxy-newapi-stack
-description: 在 Linux VPS 上部署 CLIProxyAPI + NewAPI 组合栈，把 Codex/Claude/Gemini/Qwen 等订阅账号包装成可计费的 OpenAI 兼容 API。负责 NewAPI Docker 部署、容器→宿主桥接、模型计费倍率（ModelRatio/CacheRatio/CompletionRatio）、SQLite 直写额度、CLIProxyAPI 408 冷却补丁、多账号 OAuth 凭据热加载、双路径验证。当用户说"部署 cliproxy + newapi"、"加 OpenAI 计费层"、"配置 newapi 渠道接 cliproxy"、"newapi 价格不对"、"加新的 codex/claude 账号到现有部署"、"172.17.0.1 容器网络"、"408 冷却放大故障"时触发。
+description: 在已经过独立验证的 CLIProxyAPI upstream 之上部署 NewAPI 计费层，把 Codex/Claude/Gemini/Qwen 等订阅账号包装成可计费的 OpenAI 兼容 API。本 Skill 不负责新建裸 CLIProxyAPI；负责 NewAPI Docker 部署、容器到宿主桥接、模型计费倍率、参数化额度修正、多账号 OAuth 凭据热加载和双路径验证。当用户说“给现有 cliproxy 加 NewAPI”“配置 NewAPI 渠道接已运行的 cliproxy”“NewAPI 价格不对”“给现有部署加账号”“172.17.0.1 容器网络”或“408 冷却放大故障”时触发。
 allowed-tools: Bash, Read, Write, Edit
 metadata:
   argument-hint: '[ssh-目标，例如 root@1.2.3.4]'
@@ -8,12 +8,19 @@ metadata:
 
 # CLIProxyAPI + NewAPI Metering Stack
 
-把 OAuth 订阅账号 (`codex`/`claude`/`gemini`/`qwen`/`iflow`) 通过 **CLIProxyAPI** 暴露为
-OpenAI 兼容 API，再用 **NewAPI** (`calciumion/new-api`) 在前面套一层计费/限流/多用户 token。
-姊妹 skill `cliproxy-deploy` 只负责裸 CLIProxyAPI；本 skill 在其上加 metering 层并补全踩过的坑。
+在用户已有并已验证的 **CLIProxyAPI** upstream 前增加 **NewAPI**
+(`calciumion/new-api`) 计费、限流和多用户 token 层。本 Skill 不安装裸
+CLIProxyAPI，也不调用其他部署 Skill 补齐这个前置条件。
 
 所有"完成"结论必须基于**本会话**命令输出（W-16）。价格和额度变更后必须真发一次请求并查
-`logs.quota` 不为 0。
+`logs.quota` 与本次请求的 token 数和目标价格相符。
+
+## Operating Contract
+
+- Direct actions: 只读检查、配置备份和本地 dry-run 可直接执行。
+- Escalate before: 安装容器、修改既有 upstream、重启服务、改防火墙或写生产额度前必须取得本次任务的明确授权。
+- Evidence-backed pushback: 密钥只从环境变量或密码管理器读取；要求明文落盘或公网暴露原始端口时，展示具体风险并改用 tunnel/TLS。
+- Feedback loop: 每次变更后重跑 upstream、NewAPI 和精确计费验证；任一步骤无法取得真实状态时停止并报告，不用默认值伪造成功。
 
 ---
 
@@ -21,19 +28,24 @@ OpenAI 兼容 API，再用 **NewAPI** (`calciumion/new-api`) 在前面套一层�
 
 - **SSH 目标**：`root@HOST` 是否能免密
 - **端口分配**：`CLIPROXY_PORT`（默认 `8317`）、`NEWAPI_PORT`（默认 `8200`）
-- **裸部署是否就绪**：CLIProxyAPI 已经在 `<HOST>:<CLIPROXY_PORT>` 跑通？没就先跑
-  `cliproxy-deploy` skill
+- **upstream 证据**：CLIProxyAPI 已在目标主机运行，当前会话能通过用户批准的
+  SSH tunnel 或 loopback 请求验证健康、模型列表和认证；证据不足就停止，不猜测、
+  不自动安装裸 upstream
 - **登录账号供应商**：`codex` / `claude` / `qwen` / `iflow` / `gemini`
 - **价格输入格式**：每个虚拟模型给我 input / cached / output 三个 USD per 1M 数字
 - **客户端机器**：要在哪些机器上落 `BASE_URL` 环境变量
 
-降级路径：默认走"本地 OAuth + scp 同步 + UFW 开 NewAPI 端口 + SQLite 直写价格"。
+安全默认：本地 OAuth + scp 同步；NewAPI 仅绑定 VPS loopback，通过 SSH
+tunnel 完成首次注册。公网访问必须走已配置 TLS 的反向代理，不能直接开放
+NewAPI 原始 HTTP 端口。
 
 ---
 
-## Phase 1 — CLIProxyAPI（委托给姊妹 skill）
+## Phase 1 — 验证现有 CLIProxyAPI upstream
 
-裸部署已在 `cliproxy-deploy` skill 完成；本 skill 不重复其内容，只补丁两个点：
+先记录现有服务的进程、监听地址、健康响应、模型列表和配置备份位置。任何一项
+无法验证都停止。只有用户在当前消息批准修改这个既有 upstream 时，才执行以下
+两个补丁：
 
 1. **加稳定性开关**到 `/root/CLIProxyAPI/config.yaml`：
    ```yaml
@@ -43,25 +55,29 @@ OpenAI 兼容 API，再用 **NewAPI** (`calciumion/new-api`) 在前面套一层�
    若漏改，30 并发 5KB payload 会出现混合 ~50% 503。
 
 2. **不要把 CLIProxyAPI 端口暴露到公网**（与裸部署不同）：
-   - `host: ""` 仍可，但仅给容器访问，外部公网走 NewAPI 入口即可
-   - 如果之前已经 `ufw allow <CLIPROXY_PORT>` 想保留作为 admin 后门也行，但要换强 key
+   - 先用 `ip -4 addr show docker0` 确认 Docker bridge 地址，再把 `host` 绑定到该地址（常见值为 `172.17.0.1`）
+   - 删除已有的公网 `ufw allow <CLIPROXY_PORT>/tcp`；管理访问统一走 SSH tunnel，不保留公网 admin 后门
 
 ---
 
 ## Phase 2 — 部署 NewAPI 容器
 
 ```bash
-SSH_TARGET=root@<HOST> SSH_KEY=~/.ssh/id_ed25519 NEWAPI_PORT=8200 \
+IMAGE='calciumion/new-api@sha256:<VERIFIED_DIGEST>' \
+SSH_TARGET=root@<HOST> SSH_KEY=~/.ssh/id_ed25519 PORT=8200 \
   scripts/deploy_newapi.sh
 ```
 
-脚本完成后 UFW 放行：
+脚本只绑定远端 `127.0.0.1:8200`。首次注册前保持防火墙关闭该端口，建立
+SSH tunnel：
+
 ```bash
-ssh -i <KEY> <SSH_TARGET> "ufw allow <NEWAPI_PORT>/tcp && ufw status | grep <NEWAPI_PORT>"
+ssh -N -L 8200:127.0.0.1:8200 -i <KEY> <SSH_TARGET>
 ```
 
-首次访问 `http://<HOST>:<NEWAPI_PORT>` 完成 root 账号注册（NewAPI 不预置默认密码）。
-保存账号密码到密码管理器（不要写进 skill / 日志 / 提交）。
+仅访问本机 `http://127.0.0.1:8200` 完成 root 账号注册，并把密码保存到密码
+管理器。注册和登录验证成功后，再配置带 TLS 的 Caddy/Nginx 反向代理；先
+验证 HTTPS、认证和来源限制，再按需开放 `443/tcp`。禁止开放 `<NEWAPI_PORT>`。
 
 ---
 
@@ -110,7 +126,7 @@ SSH_TARGET=root@<HOST> SSH_KEY=~/.ssh/id_ed25519 \
 
 ### 4b. 充额度
 
-NewAPI 在线充值通常未配，最快走 SQLite 直写：
+NewAPI 在线充值通常未配。需要紧急修正额度时，可使用参数化 SQLite helper：
 ```bash
 SSH_TARGET=root@<HOST> SSH_KEY=~/.ssh/id_ed25519 \
   scripts/topup.sh <user_id> <quota>
@@ -121,21 +137,25 @@ SSH_TARGET=root@<HOST> SSH_KEY=~/.ssh/id_ed25519 \
 
 如果要让用户自助充值，NewAPI 后台 → 系统 → 支付：
 - Stripe / 易支付 / 自定义 → 填 `TopUpLink` 等字段
-- 不配也行，管理员手动加额度 (`scripts/topup.sh`) 是合法主路径
+- 不配在线充值时，管理员可使用经验证的 `scripts/topup.sh`；输入必须为整数，脚本会参数化 SQL 并验证恰好更新一行
 
 ---
 
 ## Phase 5 — 客户端环境变量
 
-把以下三行追加到客户端的 `~/.zshrc` 或 `~/.bashrc`：
+只把非敏感配置写入客户端 shell 配置：
 
 ```bash
-export BASE_URL="http://<HOST>:<NEWAPI_PORT>/v1"
-export BASE_API_KEY="<NEWAPI_TOKEN>"   # sk-xxx
+export BASE_URL="https://<NEWAPI_DOMAIN>/v1"
 export BASE_MODEL="<虚拟模型名>"       # 如 gpt-5.4
 ```
 
-`source` 一下生效。
+API key 必须存进 Keychain 或其他密码管理器，在当前进程启动前读取；禁止写入
+`~/.zshrc`、聊天、脚本或命令行参数。例如 macOS 可使用：
+
+```bash
+export BASE_API_KEY="$(security find-generic-password -s newapi-client -a client-default -w)"
+```
 
 跨多台机器同步时（W-14 文件归属）：单台单台手动 SSH 改各自的 rc 文件，避免并行写覆盖。
 
@@ -167,16 +187,21 @@ PROVIDER=codex \
 ## 验证（Phase 4/5/6 之后必跑）
 
 ```bash
-HOST=<HOST> SSH_TARGET=root@<HOST> SSH_KEY=~/.ssh/id_ed25519 \
-  CLIPROXY_PORT=<CLIPROXY_PORT> NEWAPI_PORT=<NEWAPI_PORT> \
-  CLIPROXY_KEY=<cpa_xxx> NEWAPI_TOKEN=<sk-xxx> MODEL=<虚拟模型> \
+SSH_TARGET=root@<HOST> SSH_KEY=~/.ssh/id_ed25519 \
+  CLIPROXY_URL=http://127.0.0.1:<TUNNELED_CLIPROXY_PORT> \
+  NEWAPI_URL=https://<NEWAPI_DOMAIN> \
+  CLIPROXY_KEY="$(security find-generic-password -s cliproxy-admin -w)" \
+  NEWAPI_TOKEN="$(security find-generic-password -s newapi-client -a client-default -w)" \
+  MODEL=<虚拟模型> INPUT_USD_PER_M=<输入价> OUTPUT_USD_PER_M=<输出价> \
+  QUOTA_PER_UNIT=500000 \
   scripts/verify_stack.sh
 ```
 
 通过判定：
 - 直连 CLIProxyAPI HTTP 200
 - 经 NewAPI HTTP 200
-- 最近 `logs` 里对应 `request_id` 行 `quota > 0`
+- `logs` 中对应 `request_id`、模型和 token 数匹配本次请求
+- 实际 `quota` 与目标输入/输出价格计算结果的误差不超过 5%（且至少允许 1 quota 的整数舍入）
 
 任一不满足都不得声称"部署完成"。
 
@@ -191,7 +216,7 @@ HOST=<HOST> SSH_TARGET=root@<HOST> SSH_KEY=~/.ssh/id_ed25519 \
 | `scripts/topup.sh` | 直接 SQLite 改 `users.quota` |
 | `scripts/verify_stack.sh` | 双路径 + 计费日志验证 |
 | `scripts/add_codex_account.sh` | OAuth 登录 + 同步凭据 + watcher 校验 |
-| `agents/openai.yaml` | 需要第二模型复核计费/部署方案时的 agent 配置 |
+| `agents/openai.yaml` | 需要独立复核高风险部署或计费方案时的 agent 配置 |
 | `references/newapi-pricing.md` | ModelRatio / CacheRatio / CompletionRatio / QuotaPerUnit 完整语义 + 计算示例 |
 | `references/troubleshooting.md` | 容器网络、cooldown、PUT 不生效、UFW 等踩坑表 |
 | `references/multi-account.md` | 多账号轮询语义 + 加号 / 删号 / 订阅条件 |

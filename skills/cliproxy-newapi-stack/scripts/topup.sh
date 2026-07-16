@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Top up a NewAPI user's quota directly in SQLite (admin API does not always persist).
+# Set one NewAPI user's quota with a parameterized SQLite update.
 #
 # Usage:
 #   SSH_TARGET=root@host SSH_KEY=~/.ssh/id_ed25519 ./topup.sh <user_id> <quota>
-# Example: ./topup.sh 1 1000000000   # 1B quota = USD 2000 at QuotaPerUnit=500000
 
 set -euo pipefail
 
@@ -25,15 +24,43 @@ require_uint QUOTA "$QUOTA"
 require_absolute_safe_path DB "$DB"
 require_safe_container_name CONTAINER "$CONTAINER"
 
-ssh -i "$SSH_KEY" -- "$SSH_TARGET" bash -s -- "$USER_ID" "$QUOTA" "$DB" "$CONTAINER" <<'REMOTE'
-  set -euo pipefail
-  user_id=$1
-  quota=$2
-  db=$3
-  container=$4
+ssh -i "$SSH_KEY" -- "$SSH_TARGET" python3 - \
+  "$DB" "$CONTAINER" "$USER_ID" "$QUOTA" <<'PY'
+import sqlite3
+import subprocess
+import sys
 
-  sqlite3 "$db" "UPDATE users SET quota=$quota WHERE id=$user_id;"
-  sqlite3 -header -column "$db" "SELECT id, username, quota, used_quota FROM users WHERE id=$user_id;"
-  docker restart "$container" >/dev/null
-  echo "restarted ${container}"
-REMOTE
+
+db_path, container, user_id_raw, quota_raw = sys.argv[1:]
+user_id = int(user_id_raw)
+quota = int(quota_raw)
+
+connection = sqlite3.connect(f"file:{db_path}?mode=rw", uri=True)
+try:
+    cursor = connection.execute(
+        "UPDATE users SET quota = ? WHERE id = ?",
+        (quota, user_id),
+    )
+    if cursor.rowcount != 1:
+        connection.rollback()
+        raise RuntimeError(f"expected one user row, updated {cursor.rowcount}")
+    row = connection.execute(
+        "SELECT id, username, quota, used_quota FROM users WHERE id = ?",
+        (user_id,),
+    ).fetchone()
+    connection.commit()
+finally:
+    connection.close()
+
+if row is None:
+    raise RuntimeError("updated user could not be read back")
+
+print("id\tusername\tquota\tused_quota")
+print("\t".join(map(str, row)))
+subprocess.run(
+    ["docker", "restart", container],
+    check=True,
+    stdout=subprocess.DEVNULL,
+)
+print(f"restarted {container}")
+PY

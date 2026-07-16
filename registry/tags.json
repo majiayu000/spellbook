@@ -9,9 +9,9 @@
     "browser": 4,
     "code-review": 13,
     "content": 7,
-    "database": 5,
+    "database": 4,
     "debugging": 9,
-    "deploy": 7,
+    "deploy": 6,
     "design-system": 2,
     "devops": 2,
     "documentation": 11,
@@ -123,7 +123,6 @@
       "xiaohongshu-netfeel-guardian"
     ],
     "database": [
-      "cliproxy-newapi-stack",
       "codex-log-guard",
       "data-contract-migrations",
       "database-patterns",
@@ -142,7 +141,6 @@
     ],
     "deploy": [
       "cliproxy-deploy",
-      "cliproxy-newapi-stack",
       "config-secrets-environments",
       "gemma4-local-deploy",
       "gpu-use",
