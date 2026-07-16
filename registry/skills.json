@@ -230,7 +230,7 @@
     "category": "Operations & Deploy",
     "format": "directory",
     "path": "skills/cliproxy-newapi-stack/SKILL.md",
-    "description": "在 Linux VPS 上部署 CLIProxyAPI + NewAPI 组合栈，把 Codex/Claude/Gemini/Qwen 等订阅账号包装成可计费的 OpenAI 兼容 API。负责 NewAPI Docker 部署、容器→宿主桥接、模型计费倍率（ModelRatio/CacheRatio/CompletionRatio）、SQLite 直写额度、CLIProxyAPI 408 冷却补丁、多账号 OAuth 凭据热加载、双路径验证。当用户说\"部署 cliproxy + newapi\"、\"加 OpenAI 计费层\"、\"配置 newapi 渠道接 cliproxy\"、\"newapi 价格不对\"、\"加新的 codex/claude 账号到现有部署\"、\"172.17.0.1 容器网络\"、\"408 冷却放大故障\"时触发。",
+    "description": "在已经过独立验证的 CLIProxyAPI upstream 之上部署 NewAPI 计费层，把 Codex/Claude/Gemini/Qwen 等订阅账号包装成可计费的 OpenAI 兼容 API。本 Skill 不负责新建裸 CLIProxyAPI；负责 NewAPI Docker 部署、容器到宿主桥接、模型计费倍率、参数化额度修正、多账号 OAuth 凭据热加载和双路径验证。当用户说“给现有 cliproxy 加 NewAPI”“配置 NewAPI 渠道接已运行的 cliproxy”“NewAPI 价格不对”“给现有部署加账号”“172.17.0.1 容器网络”或“408 冷却放大故障”时触发。",
     "language": "zh",
     "compatibility": {
       "runtimes": [
@@ -240,8 +240,6 @@
     "tags": [
       "auth",
       "backend",
-      "database",
-      "deploy",
       "devops",
       "multi-ai"
     ]
