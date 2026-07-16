@@ -179,6 +179,52 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertIn("registry_projection_content_conflict", self.codes(result, "warning"))
 
+    def test_verified_canonical_path_classifies_inactive_source_variants(self):
+        self.write_skill(self.registry_skills, "shared", body="old registry version")
+        active = self.write_skill(self.codex, "shared", body="active version")
+        os.symlink(active, self.claude / "shared", target_is_directory=True)
+        self.write_governance(
+            skill_decisions=[
+                {
+                    "name": "shared",
+                    "decision": "keep",
+                    "reason": "The active reviewed source is canonical.",
+                    "owner": "runtime-owner",
+                    "canonical_path": str(active),
+                }
+            ]
+        )
+
+        result = self.validate()
+
+        self.assertTrue(result["ok"])
+        self.assertIn("declared_source_variant", self.codes(result, "info"))
+        self.assertNotIn(
+            "registry_projection_content_conflict",
+            self.codes(result, "warning"),
+        )
+
+    def test_unknown_decision_canonical_path_fails_closed(self):
+        self.write_skill(self.registry_skills, "shared")
+        self.write_governance(
+            skill_decisions=[
+                {
+                    "name": "shared",
+                    "decision": "keep",
+                    "reason": "Test fixture.",
+                    "owner": "runtime-owner",
+                    "canonical_path": str(self.base / "missing"),
+                }
+            ]
+        )
+
+        result = self.validate()
+
+        self.assertIn(
+            "skill_decision_canonical_path_missing",
+            self.codes(result, "error"),
+        )
+
     def test_broken_symlink_and_missing_resource_are_errors(self):
         missing_resource = self.write_skill(
             self.registry_skills,
@@ -223,7 +269,7 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         self.assertIn(str(wrong_type / "SKILL.md"), broken_paths)
         self.assertFalse(result["ok"])
 
-    def test_projection_directory_without_skill_md_is_an_error(self):
+    def test_skill_directory_without_skill_md_is_an_error(self):
         empty_projection = self.codex / "empty-projection"
         empty_projection.mkdir()
 
@@ -231,8 +277,8 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         linked_target.mkdir()
         os.symlink(linked_target, self.claude / "linked-empty", target_is_directory=True)
 
-        # Registry non-skill directories stay silent; only projections report.
-        (self.registry_skills / "not-a-skill-dir").mkdir()
+        empty_source = self.registry_skills / "not-a-skill-dir"
+        empty_source.mkdir()
 
         result = self.validate()
 
@@ -245,7 +291,90 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         self.assertEqual(len(broken), 2)
         self.assertIn(str(empty_projection), broken_paths)
         self.assertIn(str(self.claude / "linked-empty"), broken_paths)
+        missing_source = [
+            finding
+            for finding in result["findings"]
+            if finding["code"] == "skill_entrypoint_missing"
+        ]
+        self.assertEqual([finding["path"] for finding in missing_source], [str(empty_source)])
         self.assertFalse(result["ok"])
+
+    def test_additional_inventory_roots_are_scanned_with_declared_roles(self):
+        spellbook = self.base / "spellbook-skills"
+        agents = self.base / "agents-skills"
+        spellbook.mkdir()
+        agents.mkdir()
+        source = self.write_skill(spellbook, "source-only")
+        self.write_skill(agents, "managed-only")
+        self.write_governance(
+            source_policy={
+                "local_only_canonical_registry": str(self.registry),
+                "projection_roots": [str(self.codex), str(self.claude)],
+                "inventory_roots": [
+                    {
+                        "path": str(spellbook),
+                        "kind": "canonical_source",
+                        "owner": "spellbook",
+                    },
+                    {
+                        "path": str(agents),
+                        "kind": "managed_projection",
+                        "owner": "skill-installer",
+                    },
+                ],
+            }
+        )
+
+        result = self.validate()
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["summary"]["instances"], 2)
+        self.assertEqual(result["summary"]["declared_names"], 2)
+        self.assertEqual(result["roots"]["inventory"][0]["path"], str(spellbook))
+        self.assertNotIn("physical_projection_unpinned", self.codes(result))
+        self.assertTrue(source.is_dir())
+
+    def test_skill_decisions_must_cover_every_discovered_name(self):
+        self.write_skill(self.registry_skills, "classified")
+        self.write_skill(self.registry_skills, "unclassified")
+        self.write_governance(
+            skill_decisions=[
+                {
+                    "name": "classified",
+                    "decision": "keep",
+                    "reason": "Distinct tested capability.",
+                    "owner": "local-registry",
+                    "evidence": ["manual review"],
+                },
+                {
+                    "name": "future-name",
+                    "decision": "repair",
+                    "reason": "Expected source has not been restored.",
+                    "owner": "unresolved",
+                },
+            ]
+        )
+
+        result = self.validate()
+
+        self.assertIn("skill_decision_missing", self.codes(result, "error"))
+        self.assertIn("skill_decision_not_discovered", self.codes(result, "warning"))
+
+    def test_duplicate_or_invalid_skill_decisions_fail_closed(self):
+        duplicate = {
+            "name": "same",
+            "decision": "keep",
+            "reason": "Test fixture.",
+            "owner": "test",
+        }
+        self.write_governance(skill_decisions=[duplicate, duplicate])
+        with self.assertRaisesRegex(ValueError, "duplicate skill_decisions name: same"):
+            self.validate()
+
+        invalid = dict(duplicate, name="invalid", decision="delete-maybe")
+        self.write_governance(skill_decisions=[invalid])
+        with self.assertRaisesRegex(ValueError, r"skill_decisions\[0\]\.decision"):
+            self.validate()
 
     def test_all_supported_resource_paths_and_file_types_are_checked(self):
         references = (
@@ -549,6 +678,43 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         (installed / "references" / "threads.md").write_text("# Drift\n", encoding="utf-8")
         drifted = self.validate()
         self.assertIn("pinned_materialization_drift", self.codes(drifted, "error"))
+
+    def test_composite_mapping_satisfies_source_resource_reference(self):
+        source = self.write_skill(
+            self.registry_skills,
+            "composite-source",
+            body="Read [Threads](references/threads.md).",
+        )
+        shared_resource = self.base / "integrations" / "threads.md"
+        shared_resource.parent.mkdir()
+        shared_resource.write_text("# Threads\n", encoding="utf-8")
+        installed = self.write_skill(
+            self.codex,
+            "composite-source",
+            body="Read [Threads](references/threads.md).",
+            files={"references/threads.md": "# Threads\n"},
+        )
+        self.write_governance(
+            pinned_materializations=[
+                {
+                    "name": "composite-source",
+                    "path": str(installed),
+                    "source_path": str(source),
+                    "reason": "Installer-managed composite fixture.",
+                    "resource_mappings": [
+                        {
+                            "source_path": str(shared_resource),
+                            "destination_path": "references/threads.md",
+                        }
+                    ],
+                }
+            ]
+        )
+
+        result = self.validate()
+
+        self.assertTrue(result["ok"])
+        self.assertNotIn("missing_skill_resource", self.codes(result))
 
     def test_resource_mapping_cannot_source_from_projection(self):
         source_root = self.base / "independent-source"
