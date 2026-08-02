@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sol-Luna Router"
+  short_description: "让 Sol 指挥 Luna Max 完成并验证具体工作"
+  default_prompt: "Use $sol-luna-router to have Sol plan and review while Luna Max performs the concrete implementation."

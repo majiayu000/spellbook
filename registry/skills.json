@@ -1276,6 +1276,23 @@
     ]
   },
   {
+    "name": "sol-luna-router",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/sol-luna-router/SKILL.md",
+    "description": "Route coding work so GPT-5.6 Sol remains the commander and reviewer while a separate GPT-5.6 Luna Max Codex CLI session performs concrete implementation. Use when the user asks for Sol to direct, plan, supervise, or review work done by Luna Max; when native Sol-to-Luna subagent spawning is unavailable or incompatible; or when a task needs an auditable plan, bounded worker ownership, verification, and review loop.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "agent",
+      "code-review"
+    ]
+  },
+  {
     "name": "structured-logging-lite",
     "category": "API & Backend",
     "format": "directory",

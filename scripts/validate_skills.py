@@ -107,6 +107,7 @@ CATEGORY_BY_NAME = {
     "codex-retrospective": "AI & Agent Workflow",
     "multi-ai-research": "AI & Agent Workflow",
     "multi-model-orchestrator": "AI & Agent Workflow",
+    "sol-luna-router": "AI & Agent Workflow",
     "repo-agent-context-audit": "AI & Agent Workflow",
     "agentsmd-scaffold": "AI & Agent Workflow",
     "review-gate": "AI & Agent Workflow",
