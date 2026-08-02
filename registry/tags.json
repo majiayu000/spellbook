@@ -1,13 +1,13 @@
 {
-  "total_skills": 94,
+  "total_skills": 95,
   "total_tags": 35,
   "tag_counts": {
-    "agent": 13,
+    "agent": 14,
     "architecture": 14,
     "auth": 3,
     "backend": 13,
     "browser": 4,
-    "code-review": 13,
+    "code-review": 14,
     "content": 7,
     "database": 4,
     "debugging": 8,
@@ -52,6 +52,7 @@
       "skill-audit",
       "skill-ecosystem-doctor",
       "skill-usage-stats",
+      "sol-luna-router",
       "threads"
     ],
     "architecture": [
@@ -107,6 +108,7 @@
       "push-all",
       "repo-agent-context-audit",
       "review-gate",
+      "sol-luna-router",
       "threads",
       "ui-ux-pro-max",
       "vibeguard"

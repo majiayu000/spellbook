@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>94 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>95 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-94-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-95-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -222,6 +222,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 |------|------|
 | [`codex`](./skills/codex/) | 在其他 agent 工作流中调用 Codex CLI session |
 | [`codex-agent`](./skills/codex-agent/) | 通过 Codex CLI 做可选的二次审查、交叉验证和替代实现 |
+| [`sol-luna-router`](./skills/sol-luna-router/) | 让 GPT-5.6 Sol 担任指挥与审查者，由 GPT-5.6 Luna Max 执行受限实现 |
 | [`ask-opencli`](./skills/ask-opencli/) | 通过 opencli 和已有浏览器登录态询问 Grok 或 Gemini |
 | [`multi-ai-research`](./skills/multi-ai-research/) | 跨多个 AI 工具和内部 agents 并行研究 |
 

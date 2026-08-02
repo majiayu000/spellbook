@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>94 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>95 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-94-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-95-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -222,6 +222,7 @@ Skills for using multiple coding agents and CLI tools together.
 |-------|-------------|
 | [`codex`](./skills/codex/) | Invoke Codex CLI sessions from another agent workflow |
 | [`codex-agent`](./skills/codex-agent/) | Optional second-opinion review, cross-verification, and alternatives through Codex CLI |
+| [`sol-luna-router`](./skills/sol-luna-router/) | Keep GPT-5.6 Sol as commander/reviewer while GPT-5.6 Luna Max performs bounded implementation |
 | [`ask-opencli`](./skills/ask-opencli/) | Ask Grok or Gemini through opencli and an existing browser session |
 | [`multi-ai-research`](./skills/multi-ai-research/) | Parallel research across multiple AI tools and internal agents |
 
