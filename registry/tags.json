@@ -1,5 +1,5 @@
 {
-  "total_skills": 95,
+  "total_skills": 96,
   "total_tags": 35,
   "tag_counts": {
     "agent": 14,
@@ -18,7 +18,7 @@
     "frontend": 14,
     "go": 3,
     "harmonyos": 1,
-    "javascript": 4,
+    "javascript": 5,
     "multi-ai": 6,
     "observability": 3,
     "performance": 8,
@@ -30,7 +30,7 @@
     "refactoring": 4,
     "research": 1,
     "rust": 4,
-    "security": 6,
+    "security": 7,
     "system": 6,
     "testing": 6,
     "typescript": 4,
@@ -192,6 +192,7 @@
     "javascript": [
       "figma-to-code",
       "figma-to-react",
+      "npm-supply-chain-check",
       "react-best-practices",
       "ui-ux-pro-max"
     ],
@@ -266,6 +267,7 @@
       "auth-security",
       "dev-architecture-playbook",
       "ip-check",
+      "npm-supply-chain-check",
       "security-threat-model",
       "server-security",
       "skill-ecosystem-doctor"

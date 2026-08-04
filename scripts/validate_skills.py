@@ -68,6 +68,7 @@ CATEGORY_BY_NAME = {
     "codebase-audit": "Delivery Workflow",
     "contribution-architect": "Delivery Workflow",
     "contributor": "Delivery Workflow",
+    "npm-supply-chain-check": "Delivery Workflow",
     "project-health-auditor": "Delivery Workflow",
     "repo-scaffold": "Delivery Workflow",
     "security-threat-model": "Delivery Workflow",
