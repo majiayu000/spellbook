@@ -222,7 +222,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 |------|------|
 | [`codex`](./skills/codex/) | 在其他 agent 工作流中调用 Codex CLI session |
 | [`codex-agent`](./skills/codex-agent/) | 通过 Codex CLI 做可选的二次审查、交叉验证和替代实现 |
-| [`sol-luna-router`](./skills/sol-luna-router/) | 让 GPT-5.6 Sol 担任指挥与审查者，由 GPT-5.6 Luna Max 执行受限实现 |
+| [`sol-luna-router`](./skills/sol-luna-router/) | 让 GPT-5.6 Sol 担任指挥与审查者，由 GPT-5.6 Luna 执行受限实现 |
 | [`ask-opencli`](./skills/ask-opencli/) | 通过 opencli 和已有浏览器登录态询问 Grok 或 Gemini |
 | [`multi-ai-research`](./skills/multi-ai-research/) | 跨多个 AI 工具和内部 agents 并行研究 |
 

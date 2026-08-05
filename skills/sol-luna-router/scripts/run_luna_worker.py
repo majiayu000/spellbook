@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run or resume a fixed GPT-5.6 Luna Max Codex worker and summarize JSONL output."""
+"""Run or resume a fixed GPT-5.6 Luna Codex worker and summarize JSONL output."""
 
 from __future__ import annotations
 
@@ -14,7 +14,9 @@ from typing import TextIO
 
 
 MODEL = "gpt-5.6-luna"
-REASONING_EFFORT = "max"
+REASONING_EFFORT_CHOICES = ("low", "medium", "high", "xhigh", "max")
+DEFAULT_REASONING_EFFORT = "high"
+REASONING_EFFORT_ENV = "SOL_LUNA_REASONING_EFFORT"
 DEFAULT_TIMEOUT_SECONDS = 1800
 STDERR_TAIL_CHARS = 4000
 
@@ -25,11 +27,11 @@ class WorkerRunError(RuntimeError):
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run or resume a gpt-5.6-luna Codex worker at max reasoning."
+        description="Run or resume a gpt-5.6-luna Codex worker."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    run_parser = subparsers.add_parser("run", help="Start a new Luna Max worker thread.")
+    run_parser = subparsers.add_parser("run", help="Start a new Luna worker thread.")
     add_shared_arguments(run_parser)
     run_parser.add_argument(
         "--sandbox",
@@ -41,6 +43,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-non-git",
         action="store_true",
         help="Allow a target that is not inside a Git repository.",
+    )
+    run_parser.add_argument(
+        "--reasoning-effort",
+        choices=REASONING_EFFORT_CHOICES,
+        help=(
+            f"Reasoning effort for a new thread. Overrides {REASONING_EFFORT_ENV}; "
+            f"defaults to {DEFAULT_REASONING_EFFORT}."
+        ),
     )
 
     resume_parser = subparsers.add_parser("resume", help="Resume an existing Luna worker thread.")
@@ -79,6 +89,21 @@ def resolve_codex_bin(explicit: str | None) -> str:
             raise WorkerRunError(f"Codex executable is not runnable: {resolved}")
         return str(resolved)
     return candidate
+
+
+def resolve_reasoning_effort(args: argparse.Namespace) -> str:
+    if args.command == "resume":
+        return "inherited"
+
+    effort = (
+        args.reasoning_effort
+        or os.environ.get(REASONING_EFFORT_ENV)
+        or DEFAULT_REASONING_EFFORT
+    )
+    if effort not in REASONING_EFFORT_CHOICES:
+        choices = ", ".join(REASONING_EFFORT_CHOICES)
+        raise WorkerRunError(f"{REASONING_EFFORT_ENV} must be one of: {choices}")
+    return effort
 
 
 def resolve_inputs(args: argparse.Namespace) -> tuple[Path, Path, str, str | None]:
@@ -121,6 +146,7 @@ def build_codex_args(
     codex_bin: str,
     cwd: Path,
     prompt: str,
+    reasoning_effort: str,
 ) -> list[str]:
     command = [codex_bin, "exec", "--json", "--strict-config"]
     if args.command == "resume":
@@ -131,7 +157,7 @@ def build_codex_args(
             "-m",
             MODEL,
             "-c",
-            f'model_reasoning_effort="{REASONING_EFFORT}"',
+            f'model_reasoning_effort="{reasoning_effort}"',
             "-c",
             "features.multi_agent_v2.enabled=false",
             "-c",
@@ -270,14 +296,15 @@ def write_events(path_text: str | None, stdout: str) -> str | None:
 
 def run(args: argparse.Namespace, output: TextIO) -> None:
     cwd, prompt_file, prompt, git_root = resolve_inputs(args)
+    reasoning_effort = resolve_reasoning_effort(args)
     codex_bin = resolve_codex_bin(args.codex_bin)
-    command = build_codex_args(args, codex_bin, cwd, prompt)
+    command = build_codex_args(args, codex_bin, cwd, prompt, reasoning_effort)
     stdout, stderr, returncode = execute_worker(command, cwd, args.timeout_seconds)
     result = parse_events(stdout, stderr, returncode)
     result.update(
         {
             "model": MODEL,
-            "reasoning_effort": REASONING_EFFORT,
+            "reasoning_effort": reasoning_effort,
             "cwd": str(cwd),
             "git_root": git_root,
             "prompt_file": str(prompt_file),

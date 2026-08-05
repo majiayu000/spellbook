@@ -222,7 +222,7 @@ Skills for using multiple coding agents and CLI tools together.
 |-------|-------------|
 | [`codex`](./skills/codex/) | Invoke Codex CLI sessions from another agent workflow |
 | [`codex-agent`](./skills/codex-agent/) | Optional second-opinion review, cross-verification, and alternatives through Codex CLI |
-| [`sol-luna-router`](./skills/sol-luna-router/) | Keep GPT-5.6 Sol as commander/reviewer while GPT-5.6 Luna Max performs bounded implementation |
+| [`sol-luna-router`](./skills/sol-luna-router/) | Keep GPT-5.6 Sol as commander/reviewer while GPT-5.6 Luna performs bounded implementation |
 | [`ask-opencli`](./skills/ask-opencli/) | Ask Grok or Gemini through opencli and an existing browser session |
 | [`multi-ai-research`](./skills/multi-ai-research/) | Parallel research across multiple AI tools and internal agents |
 
