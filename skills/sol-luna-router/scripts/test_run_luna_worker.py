@@ -84,7 +84,12 @@ class RunnerTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
 
-    def invoke(self, *arguments: str, mode: str = "success") -> Invocation:
+    def invoke(
+        self,
+        *arguments: str,
+        mode: str = "success",
+        reasoning_effort_env: str = "",
+    ) -> Invocation:
         argv = [
             str(SCRIPT),
             *arguments,
@@ -96,6 +101,7 @@ class RunnerTests(unittest.TestCase):
         environment = {
             "FAKE_CODEX_MODE": mode,
             "FAKE_CODEX_ARGS_FILE": str(self.args_file),
+            "SOL_LUNA_REASONING_EFFORT": reasoning_effort_env,
         }
         with (
             mock.patch.object(sys, "argv", argv),
@@ -106,7 +112,7 @@ class RunnerTests(unittest.TestCase):
             returncode = RUNNER.main()
         return Invocation(returncode, stdout.getvalue(), stderr.getvalue())
 
-    def test_run_uses_luna_max_and_disables_native_agents(self) -> None:
+    def test_run_defaults_to_luna_high_and_disables_native_agents(self) -> None:
         result = self.invoke(
             "run",
             "--cwd",
@@ -118,12 +124,12 @@ class RunnerTests(unittest.TestCase):
         payload = json.loads(result.stdout)
         self.assertEqual(payload["thread_id"], "thread-123")
         self.assertEqual(payload["model"], "gpt-5.6-luna")
-        self.assertEqual(payload["reasoning_effort"], "max")
+        self.assertEqual(payload["reasoning_effort"], "high")
         self.assertEqual(payload["final_response"], "done")
 
         command = json.loads(self.args_file.read_text(encoding="utf-8"))
         self.assertIn("gpt-5.6-luna", command)
-        self.assertIn('model_reasoning_effort="max"', command)
+        self.assertIn('model_reasoning_effort="high"', command)
         self.assertIn("features.multi_agent_v2.enabled=false", command)
         self.assertIn("agents.enabled=false", command)
         self.assertNotIn("--skip-git-repo-check", command)
@@ -137,13 +143,61 @@ class RunnerTests(unittest.TestCase):
             "thread-previous",
             "--prompt-file",
             str(self.prompt),
+            reasoning_effort_env="extreme",
         )
         self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["reasoning_effort"], "inherited")
         command = json.loads(self.args_file.read_text(encoding="utf-8"))
         self.assertEqual(command[:3], ["exec", "--json", "--strict-config"])
         self.assertEqual(command[3:5], ["resume", "thread-previous"])
         self.assertNotIn("-m", command)
         self.assertNotIn("-c", command)
+
+    def test_explicit_reasoning_effort_overrides_environment(self) -> None:
+        result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+            "--reasoning-effort",
+            "max",
+            reasoning_effort_env="low",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["reasoning_effort"], "max")
+        command = json.loads(self.args_file.read_text(encoding="utf-8"))
+        self.assertIn('model_reasoning_effort="max"', command)
+
+    def test_environment_sets_reasoning_effort(self) -> None:
+        result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+            reasoning_effort_env="xhigh",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["reasoning_effort"], "xhigh")
+        command = json.loads(self.args_file.read_text(encoding="utf-8"))
+        self.assertIn('model_reasoning_effort="xhigh"', command)
+
+    def test_invalid_environment_reasoning_effort_fails_closed(self) -> None:
+        result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+            reasoning_effort_env="extreme",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("SOL_LUNA_REASONING_EFFORT must be one of", result.stderr)
+        self.assertFalse(self.args_file.exists())
 
     def test_non_git_target_requires_explicit_override(self) -> None:
         non_git = self.root / "plain"

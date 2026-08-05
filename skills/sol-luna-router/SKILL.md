@@ -1,11 +1,11 @@
 ---
 name: sol-luna-router
-description: Route coding work so GPT-5.6 Sol remains the commander and reviewer while a separate GPT-5.6 Luna Max Codex CLI session performs concrete implementation. Use when the user asks for Sol to direct, plan, supervise, or review work done by Luna Max; when native Sol-to-Luna subagent spawning is unavailable or incompatible; or when a task needs an auditable plan, bounded worker ownership, verification, and review loop.
+description: Route coding work so GPT-5.6 Sol remains the commander and reviewer while a separate GPT-5.6 Luna Codex CLI session performs concrete implementation. Use when the user asks for Sol to direct, plan, supervise, or review work done by Luna; when native Sol-to-Luna subagent spawning is unavailable or incompatible; or when a task needs an auditable plan, bounded worker ownership, verification, and review loop.
 ---
 
 # Sol-Luna Router
 
-Keep Sol responsible for decisions and Luna Max responsible for implementation. Use the bundled
+Keep Sol responsible for decisions and Luna responsible for implementation. Use the bundled
 runner instead of native `spawn_agent`; current Sol and Luna releases can select different
 multi-agent backends.
 
@@ -13,7 +13,7 @@ multi-agent backends.
 
 - Treat the current Sol thread as commander and reviewer. Do not edit target product files from
   this thread.
-- Delegate concrete implementation, fixes, and worker-owned test changes to Luna Max.
+- Delegate concrete implementation, fixes, and worker-owned test changes to Luna.
 - Allow only one write-capable Luna worker in a worktree at a time. Parallelize read-only work, or
   use isolated worktrees with explicit, disjoint file ownership.
 - Keep the parent approval and sandbox boundary intact. Never add bypass, full-access, force-push,
@@ -50,7 +50,7 @@ Return: root cause, changed files, commands with outcomes, and remaining risks.
 
 Do not leak an intended patch or diagnosis when Luna must independently determine the root cause.
 
-### 3. Run Luna Max
+### 3. Run Luna
 
 Run the bundled script with an absolute target directory and task-file path:
 
@@ -61,15 +61,20 @@ python3 <skill-dir>/scripts/run_luna_worker.py run \
   --sandbox workspace-write
 ```
 
-The script fixes the worker to `gpt-5.6-luna` with `model_reasoning_effort="max"`, disables
-native multi-agent tools for the worker, invokes Codex without a shell, and returns one JSON
-object containing `thread_id`, `final_response`, usage, and repository metadata.
+The script fixes the worker to `gpt-5.6-luna`, defaults new threads to
+`model_reasoning_effort="high"`, disables native multi-agent tools for the worker, invokes Codex
+without a shell, and returns one JSON object containing `thread_id`, `final_response`, the selected
+reasoning effort, usage, and repository metadata. Use `--reasoning-effort <level>` with `low`,
+`medium`, `high`, `xhigh`, or `max` when a task warrants a different level. The CLI option
+overrides `SOL_LUNA_REASONING_EFFORT`; invalid environment values fail closed.
 Recovered top-level retry errors and completed error items are preserved in the additive
 `warnings` list when the process exits zero and emits both a final agent message and
 `turn.completed`.
 
 Use `--allow-non-git` only when the user explicitly wants work outside a Git repository. Use
 `--events-file /absolute/path/events.jsonl` only when a durable raw trace is needed.
+Resume commands do not send model or reasoning overrides; the thread inherits its original effort,
+and the result reports `reasoning_effort` as `inherited`.
 
 ### 4. Verify and review
 
