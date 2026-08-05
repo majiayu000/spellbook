@@ -183,7 +183,8 @@ def parse_events(stdout: str, stderr: str, returncode: int) -> dict[str, object]
     final_response: str | None = None
     usage: object = None
     completed = False
-    reported_error: str | None = None
+    fatal_error: str | None = None
+    warnings: list[str] = []
 
     for line_number, raw_line in enumerate(stdout.splitlines(), start=1):
         if not raw_line.strip():
@@ -209,17 +210,22 @@ def parse_events(stdout: str, stderr: str, returncode: int) -> dict[str, object]
                 text = item.get("text")
                 if isinstance(text, str):
                     final_response = text
+            elif isinstance(item, dict) and item.get("type") == "error":
+                warnings.append(extract_error(item))
         elif event_type == "turn.completed":
             completed = True
             usage = event.get("usage")
-        elif event_type in ("turn.failed", "error"):
-            reported_error = extract_error(event)
+        elif event_type == "turn.failed":
+            fatal_error = extract_error(event)
+        elif event_type == "error":
+            warnings.append(extract_error(event))
 
     if returncode != 0:
-        detail = reported_error or stderr[-STDERR_TAIL_CHARS:] or "no error details"
+        detail = fatal_error or (warnings[-1] if warnings else None)
+        detail = detail or stderr[-STDERR_TAIL_CHARS:] or "no error details"
         raise WorkerRunError(f"Codex exited with status {returncode}: {detail}")
-    if reported_error:
-        raise WorkerRunError(f"Codex reported an error: {reported_error}")
+    if fatal_error:
+        raise WorkerRunError(f"Codex reported a failed turn: {fatal_error}")
     if not completed:
         raise WorkerRunError("Codex did not emit turn.completed")
     if not thread_id:
@@ -232,6 +238,7 @@ def parse_events(stdout: str, stderr: str, returncode: int) -> dict[str, object]
         "final_response": final_response,
         "usage": usage,
         "event_count": len(events),
+        "warnings": warnings,
     }
 
 

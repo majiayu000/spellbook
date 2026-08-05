@@ -50,7 +50,19 @@ if mode == "failure":
     print(json.dumps({"type": "error", "message": "simulated failure"}))
     raise SystemExit(7)
 print(json.dumps({"type": "thread.started", "thread_id": "thread-123"}))
+if mode == "recovered":
+    print(json.dumps({"type": "error", "message": "Reconnecting after request timed out"}))
+    print(json.dumps({"type": "item.completed", "item": {"type": "error", "message": "Falling back to HTTPS transport"}}))
+if mode == "turn-failed":
+    print(json.dumps({"type": "turn.failed", "error": {"message": "terminal failure"}}))
+if mode == "missing-final-after-error":
+    print(json.dumps({"type": "error", "message": "retry before empty completion"}))
+    print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 10, "output_tokens": 0}}))
+    raise SystemExit(0)
 print(json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": "done"}}))
+if mode == "incomplete-after-error":
+    print(json.dumps({"type": "error", "message": "retry was never recovered"}))
+    raise SystemExit(0)
 print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 10, "output_tokens": 2}}))
 '''
 
@@ -170,6 +182,62 @@ class RunnerTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 1)
         self.assertIn("simulated failure", result.stderr)
+
+    def test_recovered_transport_errors_are_returned_as_warnings(self) -> None:
+        result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+            mode="recovered",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["final_response"], "done")
+        self.assertEqual(
+            payload["warnings"],
+            [
+                "Reconnecting after request timed out",
+                "Falling back to HTTPS transport",
+            ],
+        )
+
+    def test_turn_failed_remains_fatal_even_with_completion_evidence(self) -> None:
+        result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+            mode="turn-failed",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("terminal failure", result.stderr)
+
+    def test_recovered_error_without_turn_completed_fails_closed(self) -> None:
+        result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+            mode="incomplete-after-error",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("did not emit turn.completed", result.stderr)
+
+    def test_recovered_error_without_final_message_fails_closed(self) -> None:
+        result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+            mode="missing-final-after-error",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("did not emit a final agent message", result.stderr)
 
     def test_events_file_preserves_jsonl(self) -> None:
         events_file = self.root / "events" / "worker.jsonl"
