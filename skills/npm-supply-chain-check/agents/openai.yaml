@@ -1,0 +1,4 @@
+interface:
+  display_name: "NPM Supply Chain Check"
+  short_description: "Detect malicious npm packages and install-time IOCs"
+  default_prompt: "Use $npm-supply-chain-check to scan this repository for compromised npm packages and supply-chain indicators."

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "incident": {
+    "name": "Shai-Hulud Keyv and cacheable npm supply-chain attack",
+    "updated_at": "2026-08-04T13:37:00+02:00",
+    "source_url": "https://www.aikido.dev/blog/keyv-and-friends-compromised-in-npm-supply-chain-attack",
+    "scope_note": "Minimum confirmed package and IOC baseline from the cited report; community spread is broader and evolving."
+  },
+  "affected_packages": [
+    {"name": "keyv", "versions": ["6.0.0"]},
+    {"name": "flat-cache", "versions": ["6.1.24"]},
+    {"name": "file-entry-cache", "versions": ["11.1.6"]},
+    {"name": "cacheable-request", "versions": ["13.0.20"]},
+    {"name": "cacheable", "versions": ["2.5.1"]},
+    {"name": "@cacheable/memory", "versions": ["2.2.1"]},
+    {"name": "cache-manager", "versions": ["7.2.10"]},
+    {"name": "@cacheable/node-cache", "versions": ["3.1.2"]},
+    {"name": "@cacheable/utils", "versions": ["2.5.1"]},
+    {"name": "@cacheable/net", "versions": ["2.1.1"]},
+    {"name": "ecto", "versions": ["5.0.1"]},
+    {"name": "@deliveroo/reevent", "versions": ["1.0.1"]},
+    {"name": "@or-sdk/invitations", "versions": ["1.4.9"]},
+    {"name": "@picsart/ai-sdk", "versions": ["3.32.2"]},
+    {"name": "@qlik/embed-runtime", "versions": ["1.6.4"]},
+    {"name": "picasso.js", "versions": ["2.11.6"]}
+  ],
+  "files": [
+    {
+      "name": "setup.mjs",
+      "sha256": [
+        "54dc7ea54a1317cca0e890a2770630cf7fa6c97813e0cb9d2caa93012b350668",
+        "fd3ca4007b225fdf8de7af4345a19179d5efa8c4bb9205f88cda806e5684b1eb"
+      ]
+    },
+    {
+      "name": "Math_Symbol.js",
+      "sha256": [
+        "9fc2570b7cef51c1b8df116d144d11ff4096357be7d2c4c6367cfc2509cf1bcc"
+      ]
+    },
+    {
+      "name": "math_init.js",
+      "sha256": [
+        "9fc2570b7cef51c1b8df116d144d11ff4096357be7d2c4c6367cfc2509cf1bcc"
+      ]
+    }
+  ],
+  "preinstall_markers": [
+    "setup.mjs",
+    "Math_Symbol.js",
+    "math_init.js"
+  ],
+  "strings": [
+    {"kind": "network", "value": "npm-cache.com:443/router"},
+    {"kind": "campaign", "value": "Shai-Hulud: Here We Go Again"}
+  ]
+}
