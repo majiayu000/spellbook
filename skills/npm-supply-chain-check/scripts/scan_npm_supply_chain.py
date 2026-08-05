@@ -285,12 +285,26 @@ def scan_text_lock(
             direct = re.compile(
                 rf"(?<![0-9A-Za-z._/-])/?{package_token}@(?:npm:)?{re.escape(version)}"
             )
-            yarn_version = re.compile(
-                rf"(?:^|\n)\s*version\s*(?::\s*|\s+['\"]){re.escape(version)}(?:['\"])?\s*(?:\n|$)"
-            )
             hit = direct.search(text) is not None
-            if not hit:
-                hit = any(package in block and yarn_version.search(block) for block in blocks)
+            if not hit and path.name == "pnpm-lock.yaml":
+                legacy_pnpm = re.compile(
+                    rf"(?m)^\s*['\"]?/{package_token}/{re.escape(version)}"
+                    rf"(?:_[^:'\"\s]+)?['\"]?:"
+                )
+                hit = legacy_pnpm.search(text) is not None
+            if not hit and path.name == "yarn.lock":
+                yarn_descriptor = re.compile(
+                    rf"(?<![0-9A-Za-z._/-]){package_token}@"
+                )
+                yarn_version = re.compile(
+                    rf"(?:^|\n)\s*version\s*(?::\s*|\s+['\"]){re.escape(version)}"
+                    rf"(?:['\"])?\s*(?:\n|$)"
+                )
+                for block in blocks:
+                    header = block.splitlines()[0] if block.splitlines() else ""
+                    if yarn_descriptor.search(header) and yarn_version.search(block):
+                        hit = True
+                        break
             if hit:
                 add_finding(
                     findings,

@@ -85,6 +85,35 @@ class ScanNpmSupplyChainTests(unittest.TestCase):
             self.assertIn("keyv@6.0.0", evidence)
             self.assertIn("flat-cache@6.1.24", evidence)
 
+    def test_yarn_version_does_not_cross_match_dependency_name(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "yarn.lock").write_text(
+                'unrelated-package@^6.0.0:\n'
+                '  version "6.0.0"\n'
+                '  dependencies:\n'
+                '    keyv "^5.0.0"\n',
+                encoding="utf-8",
+            )
+            completed, payload = self.run_scan(root)
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertIsNotNone(payload)
+            self.assertEqual(payload["findings"], [])
+
+    def test_legacy_pnpm_slash_key_detects_affected_version(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "pnpm-lock.yaml").write_text(
+                "lockfileVersion: 5.4\npackages:\n  /keyv/6.0.0:\n"
+                "    resolution: {integrity: fixture}\n",
+                encoding="utf-8",
+            )
+            completed, payload = self.run_scan(root)
+            self.assertEqual(completed.returncode, 1, completed.stderr)
+            self.assertIsNotNone(payload)
+            evidence = {item["evidence"] for item in payload["findings"]}
+            self.assertIn("keyv@6.0.0", evidence)
+
     def test_installed_manifest_and_preinstall_are_distinct_findings(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             package_dir = Path(directory) / "node_modules" / "keyv"
