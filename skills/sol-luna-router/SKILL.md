@@ -64,6 +64,9 @@ python3 <skill-dir>/scripts/run_luna_worker.py run \
 The script fixes the worker to `gpt-5.6-luna` with `model_reasoning_effort="max"`, disables
 native multi-agent tools for the worker, invokes Codex without a shell, and returns one JSON
 object containing `thread_id`, `final_response`, usage, and repository metadata.
+Recovered top-level retry errors and completed error items are preserved in the additive
+`warnings` list when the process exits zero and emits both a final agent message and
+`turn.completed`.
 
 Use `--allow-non-git` only when the user explicitly wants work outside a Git repository. Use
 `--events-file /absolute/path/events.jsonl` only when a durable raw trace is needed.
@@ -96,6 +99,8 @@ thread is unavailable or the task has materially changed.
 - If the runner reports an incompatible or unavailable model, stop and report the exact error.
 - If Luna requests broader file ownership, network access, or permissions, return the request to
   the user or revise the plan; do not grant it silently.
-- If JSONL is malformed, the process exits nonzero, or the final response is missing, treat the
-  worker run as failed.
+- Treat a zero-exit run with a final agent message and `turn.completed` as successful even when
+  earlier transport retry or fallback events appear; inspect the returned `warnings` list.
+- If JSONL is malformed, the process exits nonzero, `turn.failed` appears, `turn.completed` is
+  absent, or the final response is missing, treat the worker run as failed.
 - If unrelated user changes block safe verification, report the boundary instead of reverting them.
