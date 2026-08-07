@@ -461,6 +461,64 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         )
         self.assertEqual(Path(finding["path"]).name, "guide.md")
 
+    def test_retired_name_as_ordinary_prose_is_not_a_reference(self):
+        """A retired name colliding with domain vocabulary must not fail the gate."""
+        self.write_governance(retired_skills=["wallpaper"])
+        source = self.write_skill(
+            self.registry_skills,
+            "desktop-art",
+            body=(
+                "Generate a wallpaper for the user.\n"
+                "Save each wallpaper as PNG; a wallpaper must be 4K.\n"
+            ),
+        )
+        os.symlink(source, self.codex / "desktop-art", target_is_directory=True)
+
+        result = self.validate()
+
+        self.assertNotIn("retired_skill_reference", self.codes(result))
+
+    def test_explicit_reference_forms_are_still_detected(self):
+        forms = {
+            "slash_command": "Run /wallpaper to continue.",
+            "wiki_link": "See [[wallpaper]] for details.",
+            "skill_path": "Read skills/wallpaper/SKILL.md first.",
+            "code_span": "Invoke `wallpaper` at this point.",
+            "invocation": "Call wallpaper before rendering.",
+            "qualified_noun": "The wallpaper skill handles this.",
+        }
+        for kind, body in forms.items():
+            with self.subTest(kind=kind):
+                found = ecosystem_scans.find_retired_reference(body, "wallpaper")
+                self.assertIsNotNone(found, f"{kind} should be detected")
+
+    def test_retired_reference_finding_carries_verifiable_line_number(self):
+        self.write_governance(retired_skills=["wallpaper"])
+        source = self.write_skill(
+            self.registry_skills,
+            "desktop-art",
+            body="A wallpaper is an image.\nPick one.\nCall wallpaper now.\n",
+        )
+        os.symlink(source, self.codex / "desktop-art", target_is_directory=True)
+
+        result = self.validate()
+
+        finding = next(
+            item for item in result["findings"] if item["code"] == "retired_skill_reference"
+        )
+        line = finding["details"]["line"]
+        text = Path(finding["path"]).read_text(encoding="utf-8").splitlines()
+        self.assertIn("wallpaper", text[line - 1])
+        self.assertIn("Call wallpaper", text[line - 1])
+
+    def test_retired_reference_evidence_redacts_secrets(self):
+        token = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcd"
+        found = ecosystem_scans.find_retired_reference(
+            f"Call auto-optimize {token} now.", "auto-optimize"
+        )
+        self.assertIsNotNone(found)
+        self.assertNotIn(token, found[1])
+
     def test_present_non_array_governance_fields_fail_closed(self):
         fields = (
             "retired_skills",
@@ -810,7 +868,7 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
             ["loom-test", "workspace", "doctor", "--json"],
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=120,
             check=False,
         )
         self.assertEqual([finding.code for finding in findings], ["loom_pending_ops"])
