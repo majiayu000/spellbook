@@ -1,12 +1,20 @@
 ---
 name: frontend-design
-description: Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, or applications. Generates creative, polished code that avoids generic AI aesthetics.
+description: "Create distinctive, production-grade web frontend interfaces with high design quality. Use when the user explicitly asks to build or substantially redesign a web component, page, or application. Only applies when repository inspection confirms that the visual surface is a browser-rendered web UI. Do not use for native or GPU-rendered graphics, shaders, games, terminal UIs, or other non-web visual systems. Ignore incidental mentions and traces."
 license: Complete terms in LICENSE.txt
 ---
 
 This skill guides creation of distinctive, production-grade frontend interfaces that avoid generic "AI slop" aesthetics. Implement real working code with exceptional attention to aesthetic details and creative choices.
 
 The user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purpose, audience, or technical constraints.
+
+## Gotchas and Scope Gate
+
+Use this skill only when the implementation target is a web frontend. Before applying its aesthetics guidance, verify that the relevant code is HTML/CSS/JavaScript or a web UI framework.
+
+Stop using this skill if repository inspection shows that the visual surface is implemented by a native renderer, GPU shader, game engine, terminal UI, video pipeline, or another non-web graphics stack. Route that work to the relevant language, rendering, or visual-verification workflow instead. A request to make something look more polished does not establish web-frontend scope.
+
+Trigger regression cases live in `evals/triggers.jsonl`.
 
 ## Design Thinking
 

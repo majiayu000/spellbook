@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Agent Harness"
+  short_description: "Audit agent readiness and learning loops"
+  default_prompt: "Use $review-agent-harness to review this repository's agent workflow from task intent through validation, delivery, and learning."
