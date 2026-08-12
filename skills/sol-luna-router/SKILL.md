@@ -24,6 +24,9 @@ implementation or read-only investigation. Use the bundled runner instead of nat
 - Never claim completion from the worker summary alone. Verify from the current session.
 - Do not use worker timeout as a test budget. Select a profile and give every potentially expensive
   command an explicit bound before launch.
+- Keep the commander thin: do not duplicate Luna's repository scan or implementation analysis;
+  launch one bounded worker, collect one result, and combine independent verification commands
+  into the smallest safe check. Resume only from concrete failed evidence.
 
 ## Operating Contract
 
@@ -118,12 +121,22 @@ emits a heartbeat to stderr every 30 seconds.
 ```bash
 python3 <skill-dir>/scripts/run_luna_worker.py annotate \
   --run-id <run_id> \
-  --outcome verified
+  --outcome verified \
+  --checks-passed <count> \
+  --checks-failed 0
 ```
 
 Use `needs_correction`, `blocked`, or `rejected` instead when that is the evidence-backed result.
-The annotation is append-only and contains no free-text notes. If everything passes, summarize the
-result and cite fresh verification output.
+`verified` requires at least one fresh passing check and no failed checks. The annotation is
+append-only and contains no free-text notes. Summarize accumulated reliability, quality, and cost:
+
+```bash
+python3 <skill-dir>/scripts/analyze_run_log.py --format json
+```
+
+Treat the report as observational evidence. Its token totals cover Luna only, not the Sol
+commander. Use comparable task cohorts or controlled A/B benchmarks that include both agents
+before claiming that routing caused an efficiency improvement.
 
 ### 5. Request a correction
 
@@ -151,6 +164,8 @@ has materially changed.
 - On timeout, retain the partial `thread_id` and events path; resume with a smaller prompt, or treat a run without a thread ID as unrecoverable.
 - Treat `capacity_exhausted` as infrastructure capacity, not task quality; never lower Luna effort automatically.
 - Treat malformed JSONL, nonzero exit, `turn.failed`, missing completion, or missing final response as failure; recovered transport errors remain warnings.
+- Do not claim the Skill is effective from invocation count, worker success, or token totals alone;
+  require commander evaluations with fresh check evidence and report the sample size.
 - If unrelated user changes block safe verification, report the boundary instead of reverting them.
 - If `bounded-review` requests or starts an unbudgeted full suite, stop the run and tighten the
   task instead of increasing its timeout.

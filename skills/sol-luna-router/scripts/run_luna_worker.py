@@ -90,6 +90,18 @@ def build_parser() -> argparse.ArgumentParser:
     annotate_parser.add_argument("--run-id", required=True, help="Run UUID returned by the worker.")
     annotate_parser.add_argument("--outcome", required=True, choices=OUTCOMES)
     annotate_parser.add_argument(
+        "--checks-passed",
+        type=int,
+        default=0,
+        help="Number of fresh verification checks that passed.",
+    )
+    annotate_parser.add_argument(
+        "--checks-failed",
+        type=int,
+        default=0,
+        help="Number of fresh verification checks that failed.",
+    )
+    annotate_parser.add_argument(
         "--run-log",
         help=(
             f"Absolute JSONL ledger path. Defaults to {RUN_LOG_ENV} or "
@@ -723,6 +735,18 @@ def annotate_run(args: argparse.Namespace, output: TextIO) -> int:
     if run_log_path is None:
         raise WorkerRunError("annotate requires a run log", code="invalid_input")
     run_id = normalize_run_id(args.run_id)
+    if args.checks_passed < 0 or args.checks_failed < 0:
+        raise WorkerRunError(
+            "--checks-passed and --checks-failed must be zero or greater",
+            code="invalid_input",
+        )
+    if args.outcome == "verified" and (
+        args.checks_passed < 1 or args.checks_failed != 0
+    ):
+        raise WorkerRunError(
+            "verified requires at least one passed check and zero failed checks",
+            code="invalid_evaluation",
+        )
     if not ledger_contains_run(run_log_path, run_id):
         raise WorkerRunError(
             f"Run ID was not found in ledger: {run_id}", code="run_not_found"
@@ -737,6 +761,8 @@ def annotate_run(args: argparse.Namespace, output: TextIO) -> int:
         "recorded_at": utc_now(),
         "parent_session_id": resolve_parent_session_id(args),
         "outcome": args.outcome,
+        "checks_passed": args.checks_passed,
+        "checks_failed": args.checks_failed,
     }
     append_run_log(run_log_path, record)
     json.dump(record, output, ensure_ascii=False, sort_keys=True)
