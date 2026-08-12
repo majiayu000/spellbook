@@ -153,6 +153,58 @@ class ReviewAgentHarnessBoundaryTests(unittest.TestCase):
             facts = json.loads(completed.stdout)["sessions"]["sessions"][0]
             self.assertEqual(facts["tool_failures"], 1)
 
+    def test_adapter_counts_messages_and_exact_edit_tools(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            target = root / "target"
+            target.mkdir()
+            session = root / "session.jsonl"
+            rows = [
+                {
+                    "type": "response_item",
+                    "payload": {
+                        "type": "message",
+                        "role": "user",
+                        "content": [
+                            {"type": "input_text", "text": "First block"},
+                            {"type": "input_text", "text": "Second block"},
+                        ],
+                    },
+                },
+                {
+                    "type": "response_item",
+                    "payload": {
+                        "type": "function_call",
+                        "name": "write_stdin",
+                        "arguments": "{}",
+                    },
+                },
+                {
+                    "type": "response_item",
+                    "payload": {
+                        "type": "function_call",
+                        "name": "functions.apply_patch",
+                        "arguments": "{}",
+                    },
+                },
+            ]
+            session.write_text(
+                "\n".join(json.dumps(row) for row in rows) + "\n",
+                encoding="utf-8",
+            )
+            completed = run_script(
+                "collect_evidence.py",
+                "--target", str(target),
+                "--mode", "episode",
+                "--provider", "codex",
+                "--session-file", str(session),
+                *boundary_args(),
+            )
+            facts = json.loads(completed.stdout)["sessions"]["sessions"][0]
+            self.assertEqual(facts["user_turns"], 1)
+            self.assertEqual(facts["tool_calls"], 2)
+            self.assertEqual(facts["edit_calls"], 1)
+
     def test_depth_limit_and_external_manifest_symlinks_are_visible(self) -> None:
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

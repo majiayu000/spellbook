@@ -15,7 +15,19 @@ MAX_SESSION_BYTES = 16 * 1024 * 1024
 MAX_SESSION_LINES = 100_000
 MAX_SESSION_LINE_BYTES = 1024 * 1024
 MAX_SESSION_WARNINGS = 200
-_EDIT_TOOL_RE = re.compile(r"(?:apply_patch|edit|write|create_file|replace|str_replace)", re.IGNORECASE)
+_EDIT_TOOL_NAMES = {
+    "apply_patch",
+    "create_file",
+    "edit",
+    "edit_file",
+    "multiedit",
+    "notebookedit",
+    "replace",
+    "str_replace",
+    "str_replace_editor",
+    "write",
+    "write_file",
+}
 _VALIDATION_RE = re.compile(
     r"(?:^|\b)(?:pytest|cargo\s+(?:check|test)|go\s+(?:build|test)|npm\s+(?:test|run)|pnpm\s+(?:test|run)|yarn\s+(?:test|run)|tsc|lint|check|test|build)(?:\b|$)",
     re.IGNORECASE,
@@ -89,7 +101,8 @@ def _command_text(tool_input: object) -> str:
 
 def _tool_counts(name: str, tool_input: object) -> tuple[int, int]:
     command = _command_text(tool_input)
-    edit = int(bool(_EDIT_TOOL_RE.search(name)))
+    tool_leaf = re.split(r"__|[.:/]", name.casefold())[-1].replace("-", "_")
+    edit = int(tool_leaf in _EDIT_TOOL_NAMES)
     validation = int(bool(_VALIDATION_RE.search(command) or _VALIDATION_RE.search(name)))
     return edit, validation
 
@@ -181,13 +194,12 @@ def _parse_codex_event(event: dict[str, object], session: dict[str, object], req
     item_type = payload.get("type")
     if item_type == "message" and payload.get("role") == "user":
         content_values = _content_text(payload.get("content"))
-        recognized = False
-        for text in content_values:
-            if text.strip():
-                if not requests:
-                    requests.append(text)
-                session["user_turns"] = int(session["user_turns"]) + 1
-                recognized = True
+        nonempty = [text for text in content_values if text.strip()]
+        recognized = bool(nonempty)
+        if nonempty:
+            if not requests:
+                requests.append(nonempty[0])
+            session["user_turns"] = int(session["user_turns"]) + 1
         return recognized
     if item_type in {"function_call", "custom_tool_call"}:
         raw_name = payload.get("name") or payload.get("tool_name")
@@ -222,13 +234,12 @@ def _parse_claude_event(event: dict[str, object], session: dict[str, object], re
                 for item in content
                 if not (isinstance(item, dict) and item.get("type") == "tool_result")
             ]
-        recognized = False
-        for text in _content_text(request_content):
-            if text.strip():
-                if not requests:
-                    requests.append(text)
-                session["user_turns"] = int(session["user_turns"]) + 1
-                recognized = True
+        nonempty = [text for text in _content_text(request_content) if text.strip()]
+        recognized = bool(nonempty)
+        if nonempty:
+            if not requests:
+                requests.append(nonempty[0])
+            session["user_turns"] = int(session["user_turns"]) + 1
         if isinstance(content, list):
             for item in content:
                 if isinstance(item, dict) and item.get("type") == "tool_result":
