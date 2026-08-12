@@ -138,6 +138,8 @@ Treat the report as observational evidence. Its token totals cover Luna only, no
 commander. Use comparable task cohorts or controlled A/B benchmarks that include both agents
 before claiming that routing caused an efficiency improvement.
 
+When evaluating router effectiveness, read [the 2026-08-12 transport-warning benchmark](references/transport-warning-benchmark-2026-08-12.md) and its [machine-checkable record](evals/transport-warning-benchmark-2026-08-12.json) for measured scope, arithmetic, and claim limits.
+
 ### Optional historical credit estimate
 
 Credit estimation is opt-in. Without `--rate-card`, the analyzer does not estimate credits and keeps
