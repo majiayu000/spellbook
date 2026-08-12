@@ -479,6 +479,7 @@ def parse_events(stdout: str, stderr: str, returncode: int) -> dict[str, object]
     thread_id: str | None = None
     final_response: str | None = None
     usage: object = None
+    failure_usage: object = None
     completed = False
     fatal_error: str | None = None
     warnings: list[str] = []
@@ -504,6 +505,10 @@ def parse_events(stdout: str, stderr: str, returncode: int) -> dict[str, object]
             )
         events.append(event)
 
+        candidate_usage = event.get("usage")
+        if isinstance(candidate_usage, dict):
+            usage = candidate_usage
+
         event_type = event.get("type")
         if event_type == "thread.started":
             candidate = event.get("thread_id")
@@ -522,10 +527,15 @@ def parse_events(stdout: str, stderr: str, returncode: int) -> dict[str, object]
             usage = event.get("usage")
         elif event_type == "turn.failed":
             fatal_error = extract_error(event)
+            failure_usage = usage
         elif event_type == "error":
             warnings.append(extract_error(event))
 
     details = {"worker_thread_id": thread_id, "event_count": len(events)}
+    usage_for_failure = failure_usage if fatal_error is not None else usage
+    normalized_usage = normalize_usage(usage_for_failure)
+    if normalized_usage:
+        details["usage"] = normalized_usage
     if returncode != 0:
         detail = fatal_error or (warnings[-1] if warnings else None)
         detail = detail or stderr[-STDERR_TAIL_CHARS:] or "no error details"
@@ -799,6 +809,9 @@ def build_failure_record(
     )
     if isinstance(details.get("duration_seconds"), (int, float)):
         record["worker_duration_seconds"] = details["duration_seconds"]
+    usage = details.get("usage")
+    if isinstance(usage, dict) and usage:
+        record["usage"] = usage
     return record
 
 

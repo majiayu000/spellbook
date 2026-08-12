@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "id": "sol-luna-credits-2026-08-05",
+  "as_of": "2026-08-05",
+  "label": "historical benchmark estimate",
+  "not_current_pricing": true,
+  "units": {
+    "currency": "credits",
+    "token_basis": "per_1m_tokens"
+  },
+  "model_mapping": {
+    "sol": "gpt-5.6-sol",
+    "luna": "gpt-5.6-luna"
+  },
+  "rates": {
+    "gpt-5.6-sol": {
+      "uncached_input": 125,
+      "cached_input": 12.5,
+      "output": 750
+    },
+    "gpt-5.6-luna": {
+      "uncached_input": 5,
+      "cached_input": 0.5,
+      "output": 30
+    }
+  }
+}

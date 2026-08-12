@@ -56,6 +56,9 @@ if mode == "malformed":
 if mode == "failure":
     print(json.dumps({"type": "error", "message": "simulated failure"}))
     raise SystemExit(7)
+if mode == "failure-with-usage":
+    print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 40, "cached_input_tokens": 10, "output_tokens": 8}}))
+    raise SystemExit(7)
 if mode == "capacity":
     print(json.dumps({"type": "error", "message": "usage limit reached"}))
     raise SystemExit(7)
@@ -67,6 +70,9 @@ if mode == "recovered":
     print(json.dumps({"type": "item.completed", "item": {"type": "error", "message": "Falling back to HTTPS transport"}}))
 if mode == "turn-failed":
     print(json.dumps({"type": "turn.failed", "error": {"message": "terminal failure"}}))
+if mode == "turn-failed-with-usage":
+    print(json.dumps({"type": "turn.failed", "usage": {"input_tokens": 30, "cached_input_tokens": 5, "output_tokens": 7}, "error": {"message": "terminal failure with usage"}}))
+    raise SystemExit(0)
 if mode == "missing-final-after-error":
     print(json.dumps({"type": "error", "message": "retry before empty completion"}))
     print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 10, "output_tokens": 0}}))
@@ -411,6 +417,24 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("usage limit reached", result.stderr)
         self.assertEqual(self.read_records()[0]["failure_code"], "capacity_exhausted")
+        self.assertNotIn("usage", self.read_records()[0])
+
+    def test_nonzero_exit_preserves_exact_usage_in_failure_telemetry(self) -> None:
+        result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+            mode="failure-with-usage",
+        )
+        self.assertEqual(result.returncode, 1)
+        record = self.read_records()[0]
+        self.assertEqual(record["failure_code"], "codex_exit")
+        self.assertEqual(
+            record["usage"],
+            {"input_tokens": 40, "cached_input_tokens": 10, "output_tokens": 8},
+        )
 
     def test_recovered_transport_errors_are_warnings_not_failures(self) -> None:
         result = self.invoke(
@@ -440,6 +464,35 @@ class RunnerTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 1)
         self.assertIn("terminal failure", result.stderr)
+        self.assertNotIn("usage", self.read_records()[0])
+
+    def test_turn_failed_preserves_exact_usage_and_absent_usage_is_not_zero(self) -> None:
+        result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+            mode="turn-failed-with-usage",
+        )
+        self.assertEqual(result.returncode, 1)
+        record = self.read_records()[0]
+        self.assertEqual(record["failure_code"], "turn_failed")
+        self.assertEqual(
+            record["usage"],
+            {"input_tokens": 30, "cached_input_tokens": 5, "output_tokens": 7},
+        )
+
+        absent_result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+            mode="failure",
+        )
+        self.assertEqual(absent_result.returncode, 1)
+        self.assertNotIn("usage", self.read_records()[-1])
 
     def test_recovered_error_without_turn_completed_fails_closed(self) -> None:
         result = self.invoke(

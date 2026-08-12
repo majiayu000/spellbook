@@ -138,6 +138,52 @@ Treat the report as observational evidence. Its token totals cover Luna only, no
 commander. Use comparable task cohorts or controlled A/B benchmarks that include both agents
 before claiming that routing caused an efficiency improvement.
 
+### Optional historical credit estimate
+
+Credit estimation is opt-in. Without `--rate-card`, the analyzer does not estimate credits and keeps
+the existing token-only report behavior. The bundled card is a dated benchmark assumption, not
+current pricing:
+
+```bash
+python3 <skill-dir>/scripts/analyze_run_log.py \
+  --run-log /absolute/private/runs.jsonl \
+  --rate-card <skill-dir>/references/rate-card-2026-08-05.json \
+  --format json
+```
+
+The card calculates Luna worker credits from `input_tokens`,
+`cached_input_tokens`, and `output_tokens`; `input_tokens` includes cached input, so uncached input
+is the difference. Every run, including failed runs, is costed when it has exact valid usage.
+Missing usage is unresolved rather than zero; malformed, negative, or inconsistent supplied usage
+is excluded and reported as unresolved. Worker-only normalized metrics are null when worker usage
+coverage is incomplete.
+`gpt-5.6-luna` remains fixed at max reasoning; the estimate does not change routing or reasoning.
+
+Joining Sol commander usage is a separate explicit opt-in and reads only parent IDs already present
+in the ledger:
+
+```bash
+python3 <skill-dir>/scripts/analyze_run_log.py \
+  --run-log /absolute/private/runs.jsonl \
+  --rate-card <skill-dir>/references/rate-card-2026-08-05.json \
+  --codex-sessions-root /absolute/private/.codex/sessions \
+  --format json
+```
+
+The join reads only session metadata, token-count event timestamps/types, and cumulative token
+usage. For the union of each parent’s merged run windows, it subtracts the last snapshot at or
+before each window start from the first snapshot at or after its end. It never copies prompt,
+response, or raw event text into the report or ledger. Sol preflight before the first run start and
+work after the last run completion are outside this attribution window. Shared parent windows are
+charged once; missing baselines/endpoints, counter resets, malformed data, missing sessions, and
+ambiguous files remain visible as unresolved coverage. Resolved partial commander components may
+be shown, but commander-plus-worker totals and total-scope normalized metrics are null until every
+required parent window resolves. A complete total additionally requires every ledger run to have
+valid worker usage; commander-window coverage alone is insufficient. The runner preserves exact
+usage on failed Codex exits or failed turns when Codex emitted it, but absent usage remains
+unresolved. The normalized credit metrics are observational cost-per-outcome measures; controlled
+A/B remains the causal total-cost proof.
+
 ### 5. Request a correction
 
 When verification or Sol review finds an actionable defect, write a new temporary prompt containing
