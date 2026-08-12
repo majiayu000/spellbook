@@ -110,6 +110,7 @@ CATEGORY_BY_NAME = {
     "multi-model-orchestrator": "AI & Agent Workflow",
     "sol-luna-router": "AI & Agent Workflow",
     "repo-agent-context-audit": "AI & Agent Workflow",
+    "review-agent-harness": "AI & Agent Workflow",
     "agentsmd-scaffold": "AI & Agent Workflow",
     "review-gate": "AI & Agent Workflow",
     "skill-creator": "AI & Agent Workflow",

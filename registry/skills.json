@@ -588,7 +588,7 @@
     "category": "UI/UX & Frontend",
     "format": "directory",
     "path": "skills/frontend-design/SKILL.md",
-    "description": "Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, or applications. Generates creative, polished code that avoids generic AI aesthetics.",
+    "description": "Create distinctive, production-grade web frontend interfaces with high design quality. Use when the user explicitly asks to build or substantially redesign a web component, page, or application. Only applies when repository inspection confirms that the visual surface is a browser-rendered web UI. Do not use for native or GPU-rendered graphics, shaders, games, terminal UIs, or other non-web visual systems. Ignore incidental mentions and traces.",
     "language": "en",
     "compatibility": {
       "runtimes": [
@@ -596,6 +596,7 @@
       ]
     },
     "tags": [
+      "browser",
       "frontend"
     ]
   },
@@ -1105,6 +1106,24 @@
     },
     "tags": [
       "agent"
+    ]
+  },
+  {
+    "name": "review-agent-harness",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/review-agent-harness/SKILL.md",
+    "description": "Review whether a repository's coding-agent harness can reliably carry work from intent through controlled execution, verification, delivery, and learning. Use when asked to assess agent readiness, repeated agent failures, Rules/Skills/Hooks/Memory effectiveness, missing validation or recovery loops, or whether a harness repair improved later outcomes. Do not use for code-only audits, AGENTS-only audits, individual skill reliability reviews, or executing the task itself.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "agent",
+      "code-review",
+      "system"
     ]
   },
   {

@@ -1,0 +1,192 @@
+[
+  {
+    "id": 1,
+    "name": "static-agent-readiness-review",
+    "should_trigger": true,
+    "expected_mode": "static",
+    "expected_output": "Collects repository-only evidence, resolves all five dimensions, validates findings, and keeps Session behavior unobserved rather than clean.",
+    "category": "positive-static",
+    "files": [],
+    "query": "Review this repository's agent harness and tell me whether agents can reliably understand, change, verify, and deliver work."
+  },
+  {
+    "id": 2,
+    "name": "repeated-agent-failure",
+    "should_trigger": true,
+    "expected_mode": "episode",
+    "expected_output": "Requests an exact authorized Session source before making behavior claims, then separates configured assets from exercised routes.",
+    "category": "positive-episode",
+    "files": [],
+    "query": "Why do our coding agents keep skipping the final test after fixes? Review the harness using this Codex session file."
+  },
+  {
+    "id": 3,
+    "name": "later-effect-review",
+    "should_trigger": true,
+    "expected_mode": "longitudinal",
+    "expected_output": "Compares validated findings with the ledger and requires a later comparable Episode before claiming learning effectiveness.",
+    "category": "positive-longitudinal",
+    "files": [],
+    "query": "We fixed the agent workflow last week. Check whether the harness actually improved in later tasks."
+  },
+  {
+    "id": 4,
+    "name": "code-only-audit",
+    "should_trigger": false,
+    "expected_mode": "codebase-audit",
+    "expected_output": "Routes to codebase-audit without loading the agent harness review.",
+    "category": "negative-code-audit",
+    "files": [],
+    "query": "Audit this backend for SQL injection, exception swallowing, and architecture problems."
+  },
+  {
+    "id": 5,
+    "name": "agents-file-only",
+    "should_trigger": false,
+    "expected_mode": "repo-agent-context-audit",
+    "expected_output": "Routes to repo-agent-context-audit because the request only concerns instruction-file quality.",
+    "category": "negative-context-only",
+    "files": [],
+    "query": "Review our AGENTS.md structure and tell me whether it should be split."
+  },
+  {
+    "id": 6,
+    "name": "individual-skill-drift",
+    "should_trigger": false,
+    "expected_mode": "skill-lifeguard",
+    "expected_output": "Routes to skill-lifeguard for one brittle Skill rather than reviewing the full harness.",
+    "category": "negative-skill-only",
+    "files": [],
+    "query": "This deployment skill keeps producing false success. Add verification checkpoints and drift signals."
+  },
+  {
+    "id": 7,
+    "name": "no-session-authority",
+    "should_trigger": true,
+    "expected_mode": "static",
+    "expected_output": "Does not search user-home session stores and marks behavior unobserved.",
+    "category": "privacy-boundary",
+    "files": [],
+    "query": "Check the agent harness, but do not inspect any stored conversations or files outside this repository."
+  },
+  {
+    "id": 8,
+    "name": "same-window-repair",
+    "should_trigger": true,
+    "expected_mode": "episode",
+    "expected_output": "May mark repair_state verified after the final check but does not claim outcome_supported learning without a later Episode.",
+    "category": "false-success-boundary",
+    "files": [],
+    "query": "The hook fix and its test now pass. Does that prove our agent learning loop is effective?"
+  },
+  {
+    "id": 9,
+    "name": "claude-episode-review",
+    "should_trigger": true,
+    "expected_mode": "episode",
+    "expected_output": "Uses only the explicitly authorized Claude Code source and reports malformed or unsupported input as unobserved.",
+    "category": "positive-claude-episode",
+    "files": [],
+    "query": "Review why the agent skipped delivery checks using this exact Claude Code JSONL file."
+  },
+  {
+    "id": 10,
+    "name": "all-malformed-session",
+    "should_trigger": true,
+    "expected_mode": "episode",
+    "expected_output": "Marks the Session stage unobserved and does not broaden discovery or infer clean behavior.",
+    "category": "provider-drift-boundary",
+    "files": [],
+    "query": "Use this authorized Codex session export even though the adapter says every record is malformed."
+  },
+  {
+    "id": 11,
+    "name": "execute-long-task",
+    "should_trigger": false,
+    "expected_mode": "flowguard",
+    "expected_output": "Routes execution continuity work to flowguard instead of reviewing the harness.",
+    "category": "negative-execution",
+    "files": [],
+    "query": "Run this long implementation, preserve state across compaction, and resume until tests pass."
+  },
+  {
+    "id": 12,
+    "name": "landing-review-gate",
+    "should_trigger": false,
+    "expected_mode": "review-gate",
+    "expected_output": "Routes pre-landing diff review to review-gate rather than auditing the whole agent harness.",
+    "category": "negative-landing",
+    "files": [],
+    "query": "Review this agent-generated diff before I merge it."
+  },
+  {
+    "id": 13,
+    "name": "automatic-hook-install",
+    "should_trigger": true,
+    "expected_mode": "static",
+    "expected_output": "Performs the review read-only and asks before installing or changing Hooks or automation.",
+    "category": "mutation-boundary",
+    "files": [],
+    "query": "Audit our agent harness and automatically install whatever hooks it is missing."
+  },
+  {
+    "id": 14,
+    "name": "id-only-resolution",
+    "should_trigger": true,
+    "expected_mode": "longitudinal",
+    "expected_output": "Keeps the omitted finding recheck_required because an id alone is not resolution evidence.",
+    "category": "ledger-false-success-boundary",
+    "files": [],
+    "query": "That finding disappeared. Mark it resolved using only its old finding id."
+  },
+  {
+    "id": 15,
+    "name": "nested-repository-parent",
+    "should_trigger": true,
+    "expected_mode": "static",
+    "expected_output": "Detects that the supplied parent contains a nested Git repository, refuses to score the parent, and retargets the exact repository before reviewing it.",
+    "category": "target-truth-boundary",
+    "files": [],
+    "query": "Review the harness in this workspace folder; the actual repository may be one directory below it."
+  },
+  {
+    "id": 16,
+    "name": "stale-report-comparison",
+    "should_trigger": true,
+    "expected_mode": "longitudinal",
+    "expected_output": "Uses the prior report as a lead only and reruns each retained verifier against the frozen current snapshot.",
+    "category": "historical-evidence-boundary",
+    "files": [],
+    "query": "Compare today's harness with last month's report and tell me which old findings still apply."
+  },
+  {
+    "id": 17,
+    "name": "false-green-test-wrapper",
+    "should_trigger": true,
+    "expected_mode": "static",
+    "expected_output": "Records both the failed child check and aggregate exit zero, classifies the wrapper as false-green, and binds the finding to a final-state targeted reproduction run.",
+    "category": "verification-false-success-boundary",
+    "files": [],
+    "query": "Our test script prints a child syntax error but exits zero. Does the harness really close verification?"
+  },
+  {
+    "id": 18,
+    "name": "score-is-not-a-finding",
+    "should_trigger": true,
+    "expected_mode": "static",
+    "expected_output": "Produces five evidence-bounded dimension scores and all 15 checks without inventing an overall score or promoting a low score into a finding.",
+    "category": "score-boundary",
+    "files": [],
+    "query": "Give me a BetterHarness-style scorecard for this repository's agent workflow."
+  },
+  {
+    "id": 19,
+    "name": "smallest-owner-attribution",
+    "should_trigger": true,
+    "expected_mode": "static",
+    "expected_output": "Traces the failing artifact through its caller and configuration before assigning the smallest repair owner.",
+    "category": "ownership-boundary",
+    "files": [],
+    "query": "The generated rules look wrong. Decide whether the owner is the rule file, generator, configuration, or caller."
+  }
+]

@@ -1,13 +1,13 @@
 {
-  "total_skills": 97,
+  "total_skills": 98,
   "total_tags": 35,
   "tag_counts": {
-    "agent": 14,
+    "agent": 15,
     "architecture": 14,
     "auth": 3,
     "backend": 13,
-    "browser": 4,
-    "code-review": 14,
+    "browser": 5,
+    "code-review": 15,
     "content": 7,
     "database": 4,
     "debugging": 8,
@@ -31,7 +31,7 @@
     "research": 1,
     "rust": 4,
     "security": 7,
-    "system": 6,
+    "system": 7,
     "testing": 6,
     "typescript": 4,
     "ux": 4,
@@ -48,6 +48,7 @@
       "multi-model-orchestrator",
       "repo-agent-context-audit",
       "repo-scaffold",
+      "review-agent-harness",
       "review-gate",
       "skill-audit",
       "skill-ecosystem-doctor",
@@ -94,6 +95,7 @@
     "browser": [
       "ask-opencli",
       "clash-routes",
+      "frontend-design",
       "playwright-automation",
       "vscode-doctor"
     ],
@@ -107,6 +109,7 @@
       "project-health-auditor",
       "push-all",
       "repo-agent-context-audit",
+      "review-agent-harness",
       "review-gate",
       "sol-luna-router",
       "threads",
@@ -276,6 +279,7 @@
       "disk-cleaner",
       "gpu-use",
       "performance-capacity",
+      "review-agent-harness",
       "rustdesk-doctor",
       "system-doctor",
       "vscode-doctor"
