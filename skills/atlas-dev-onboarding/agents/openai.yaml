@@ -1,0 +1,4 @@
+interface:
+  display_name: "Atlas Dev Onboarding"
+  short_description: "Deploy and verify Atlas dev aiproxy safely"
+  default_prompt: "Use $atlas-dev-onboarding to access Atlas dev, deploy or configure aiproxy, and prove the runtime result."

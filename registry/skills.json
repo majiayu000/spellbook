@@ -119,6 +119,23 @@
     ]
   },
   {
+    "name": "atlas-dev-onboarding",
+    "category": "Uncategorized",
+    "format": "directory",
+    "path": "skills/atlas-dev-onboarding/SKILL.md",
+    "description": "Use when a user asks to log in to Atlas dev, access the dev server or bastion, deploy aiproxy, run dev DMS/MySQL SQL, onboard a model or provider, refresh route caches, or test provider routing and VSR/ESR. Uses the verified origin-IP transport for console.dev.atlascloud.ai and guards deployment, credentials, and runtime proof.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "database",
+      "deploy"
+    ]
+  },
+  {
     "name": "auth-security",
     "category": "API & Backend",
     "format": "directory",

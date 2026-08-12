@@ -1,5 +1,5 @@
 {
-  "total_skills": 97,
+  "total_skills": 98,
   "total_tags": 35,
   "tag_counts": {
     "agent": 14,
@@ -9,9 +9,9 @@
     "browser": 4,
     "code-review": 14,
     "content": 7,
-    "database": 4,
+    "database": 5,
     "debugging": 8,
-    "deploy": 4,
+    "deploy": 5,
     "design-system": 2,
     "devops": 2,
     "documentation": 11,
@@ -123,6 +123,7 @@
       "xiaohongshu-netfeel-guardian"
     ],
     "database": [
+      "atlas-dev-onboarding",
       "codex-log-guard",
       "data-contract-migrations",
       "database-patterns",
@@ -139,6 +140,7 @@
       "vscode-doctor"
     ],
     "deploy": [
+      "atlas-dev-onboarding",
       "config-secrets-environments",
       "gemma4-local-deploy",
       "gpu-use",

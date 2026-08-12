@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if (( $# < 2 )); then
+  echo "usage: atlas-dev-scp <scp-args...> <source> <destination>" >&2
+  exit 2
+fi
+
+atlas_dev_host="${ATLAS_DEV_SSH_HOST:-47.251.103.202}"
+atlas_dev_port="${ATLAS_DEV_SSH_PORT:-30022}"
+atlas_dev_user="${ATLAS_DEV_SSH_USER:-root}"
+atlas_dev_alias="${ATLAS_DEV_SSH_HOST_KEY_ALIAS:-[console.dev.atlascloud.ai]:30022}"
+atlas_dev_identity="${ATLAS_DEV_SSH_IDENTITY:-${HOME}/.ssh/id_ed25519}"
+
+args=("$@")
+last_index=$((${#args[@]} - 1))
+
+if [[ "${args[$last_index]}" == /* ]]; then
+  args[$last_index]="${atlas_dev_user}@${atlas_dev_host}:${args[$last_index]}"
+fi
+
+exec scp \
+  -o BatchMode=yes \
+  -o ConnectTimeout=15 \
+  -o IdentitiesOnly=yes \
+  -o "HostKeyAlias=${atlas_dev_alias}" \
+  -i "${atlas_dev_identity}" \
+  -P "${atlas_dev_port}" \
+  "${args[@]}"
