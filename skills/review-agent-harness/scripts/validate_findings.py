@@ -69,6 +69,8 @@ REFERENCE_PURPOSES = {
 }
 FINDING_ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*(?:--[a-z0-9]+(?:-[a-z0-9]+)*){2,}$")
 RUN_ID_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+TARGET_ID_RE = re.compile(r"^local-sha256:[0-9a-f]{64}$")
+SNAPSHOT_ID_RE = re.compile(r"^(?:git|fsmeta)-sha256:[0-9a-f]{64}$")
 
 
 def _require_object(value: object, location: str, errors: list[str]) -> dict[str, object]:
@@ -174,7 +176,16 @@ def _validate_later_effect_envelopes(
         if not isinstance(scope, dict) or not isinstance(sessions, dict):
             errors.append(f"evidence[{index}] requires scope and sessions objects")
             continue
-        for key in ("target", "snapshot", "mode", "locale", "decision", "acceptance_boundary", "output_mode"):
+        for key in (
+            "target",
+            "target_id",
+            "snapshot",
+            "mode",
+            "locale",
+            "decision",
+            "acceptance_boundary",
+            "output_mode",
+        ):
             if scope.get(key) != findings_scope.get(key):
                 errors.append(f"evidence[{index}].scope.{key} must match findings")
         role = scope.get("episode_role")
@@ -245,6 +256,9 @@ def validate_document(
 
     scope = _require_object(document.get("scope"), "scope", errors)
     _require_text(scope, "target", "scope", errors)
+    target_id = _require_text(scope, "target_id", "scope", errors)
+    if target_id and not TARGET_ID_RE.fullmatch(target_id):
+        errors.append("scope.target_id is invalid")
     mode = _require_text(scope, "mode", "scope", errors)
     if mode and mode not in {"static", "episode", "longitudinal"}:
         errors.append("scope.mode must be static, episode, or longitudinal")
@@ -262,10 +276,13 @@ def validate_document(
     snapshot = _require_object(scope.get("snapshot"), "scope.snapshot", errors)
     baseline = _require_text(snapshot, "baseline", "scope.snapshot", errors)
     target_relation = _require_text(snapshot, "target_relation", "scope.snapshot", errors)
+    snapshot_id = _require_text(snapshot, "id", "scope.snapshot", errors)
     if baseline and baseline not in SNAPSHOT_BASELINES:
         errors.append("scope.snapshot.baseline is invalid")
     if target_relation and target_relation not in TARGET_RELATIONS:
         errors.append("scope.snapshot.target_relation is invalid")
+    if snapshot_id and not SNAPSHOT_ID_RE.fullmatch(snapshot_id):
+        errors.append("scope.snapshot.id is invalid")
     if target_relation == "contains_nested_git_root":
         errors.append("scope.snapshot.target_relation contains a nested Git root; retarget the exact repository before scoring")
 

@@ -7,11 +7,27 @@ import argparse
 import json
 import os
 import re
+from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 
-from harness_common import relative_path, run_command, sanitize_text, write_json_atomic
-from session_adapters import SUPPORTED_PROVIDERS, discover_jsonl_files, parse_sessions
+from harness_common import (
+    privacy_rule_matches,
+    relative_path,
+    run_command,
+    sanitize_text,
+    target_binding,
+    write_json_atomic,
+)
+from session_adapters import (
+    MAX_SESSION_BYTES,
+    MAX_SESSION_LINE_BYTES,
+    MAX_SESSION_LINES,
+    MAX_SESSION_WARNINGS,
+    SUPPORTED_PROVIDERS,
+    discover_jsonl_files,
+    parse_sessions,
+)
 
 
 SKIP_DIRS = {
@@ -57,6 +73,9 @@ TEST_FILE_RE = re.compile(
     r"(?:py|js|jsx|ts|tsx|mjs|cjs|rs|go|rb|java|kt|kts|cs|php|swift|sh|bash|zsh|bats|feature)$",
     re.IGNORECASE,
 )
+NESTED_GIT_SEARCH_MAX_DEPTH = 6
+NESTED_GIT_SEARCH_MAX_DIRECTORIES = 3000
+NESTED_GIT_ROOT_OUTPUT_LIMIT = 20
 
 
 def _raise_walk_error(error: OSError) -> None:
@@ -102,7 +121,51 @@ def _bounded_files(
     return files, omitted, sorted(depth_limited)
 
 
-def _target_resolution(target: Path) -> tuple[dict[str, object], Path | None]:
+def _find_nested_git_roots(
+    target: Path,
+    *,
+    max_depth: int = NESTED_GIT_SEARCH_MAX_DEPTH,
+    max_directories: int = NESTED_GIT_SEARCH_MAX_DIRECTORIES,
+) -> tuple[list[Path], list[str], bool]:
+    """Find nested Git roots without following links or leaving the target."""
+
+    nested_roots: list[Path] = []
+    depth_limited: list[str] = []
+    pending: deque[tuple[Path, int]] = deque([(target, 0)])
+    directories_observed = 0
+    directory_limit_reached = False
+    while pending:
+        current, depth = pending.popleft()
+        try:
+            with os.scandir(current) as iterator:
+                entries = sorted(iterator, key=lambda entry: entry.name)
+        except OSError:
+            raise
+        for entry in entries:
+            if entry.name == ".git":
+                continue
+            if not entry.is_dir(follow_symlinks=False):
+                continue
+            if directories_observed >= max_directories:
+                directory_limit_reached = True
+                pending.clear()
+                break
+            directories_observed += 1
+            candidate = Path(entry.path)
+            relative = candidate.relative_to(target).as_posix()
+            candidate_depth = depth + 1
+            if candidate_depth > max_depth:
+                depth_limited.append(relative)
+                continue
+            git_marker = candidate / ".git"
+            if not git_marker.is_symlink() and (git_marker.is_dir() or git_marker.is_file()):
+                nested_roots.append(candidate)
+                continue
+            pending.append((candidate, candidate_depth))
+    return nested_roots, sorted(depth_limited), directory_limit_reached
+
+
+def _target_resolution(target: Path) -> tuple[dict[str, object], Path | None, set[Path]]:
     root_result = run_command(["git", "rev-parse", "--show-toplevel"], cwd=target)
     if root_result["status"] == "available" and root_result["exit_code"] == 0:
         git_root = Path(str(root_result["stdout"]).strip()).resolve()
@@ -113,11 +176,12 @@ def _target_resolution(target: Path) -> tuple[dict[str, object], Path | None]:
             "git_root_name": git_root.name,
             "nested_git_roots": [],
             "nested_git_root_count": 0,
-        }, git_root
+            "nested_git_search_max_depth": NESTED_GIT_SEARCH_MAX_DEPTH,
+            "nested_git_search_complete": True,
+        }, git_root, set()
 
-    nested_roots: list[Path] = []
     try:
-        children = sorted(target.iterdir(), key=lambda path: path.name)
+        nested_roots, depth_limited, directory_limit_reached = _find_nested_git_roots(target)
     except OSError as error:
         return {
             "status": "unavailable",
@@ -125,26 +189,40 @@ def _target_resolution(target: Path) -> tuple[dict[str, object], Path | None]:
             "reason": sanitize_text(error, limit=180),
             "nested_git_roots": [],
             "nested_git_root_count": 0,
-        }, None
-    for child in children:
-        if child.is_dir() and not child.is_symlink() and (child / ".git").exists():
-            nested_roots.append(child)
-    names = [path.name for path in nested_roots]
+            "nested_git_search_max_depth": NESTED_GIT_SEARCH_MAX_DEPTH,
+            "nested_git_search_complete": False,
+        }, None, set()
+    names = [path.relative_to(target).as_posix() for path in nested_roots]
+    search_complete = not depth_limited and not directory_limit_reached
     if nested_roots:
+        multiple_roots = len(nested_roots) > 1
         return {
             "status": "constrained",
             "relation": "contains_nested_git_root",
-            "reason": "target-is-not-the-nested-git-root",
-            "nested_git_roots": names[:20],
+            "reason": (
+                "multiple-nested-git-roots-require-explicit-target"
+                if multiple_roots
+                else "target-is-not-the-nested-git-root"
+            ),
+            "nested_git_roots": names[:NESTED_GIT_ROOT_OUTPUT_LIMIT],
             "nested_git_root_count": len(names),
-            "nested_git_roots_omitted": max(0, len(names) - 20),
-        }, None
+            "nested_git_roots_omitted": max(0, len(names) - NESTED_GIT_ROOT_OUTPUT_LIMIT),
+            "nested_git_search_max_depth": NESTED_GIT_SEARCH_MAX_DEPTH,
+            "nested_git_search_complete": search_complete,
+            "nested_git_search_depth_limited_count": len(depth_limited),
+            "nested_git_search_directory_limit_reached": directory_limit_reached,
+        }, None, set(nested_roots)
     return {
-        "status": "available",
+        "status": "available" if search_complete else "constrained",
         "relation": "non_git_directory",
+        "reason": None if search_complete else "nested-git-root-search-bounded",
         "nested_git_roots": [],
         "nested_git_root_count": 0,
-    }, None
+        "nested_git_search_max_depth": NESTED_GIT_SEARCH_MAX_DEPTH,
+        "nested_git_search_complete": search_complete,
+        "nested_git_search_depth_limited_count": len(depth_limited),
+        "nested_git_search_directory_limit_reached": directory_limit_reached,
+    }, None, set()
 
 
 def _git_inventory(target: Path, git_root: Path, *, limit: int = 3000) -> tuple[list[Path], int]:
@@ -251,6 +329,7 @@ def collect_static_evidence(
     target: Path,
     root_resolution: dict[str, object],
     git_root: Path | None,
+    nested_git_roots: set[Path],
 ) -> dict[str, object]:
     scan_source = "filesystem"
     if git_root is not None:
@@ -258,12 +337,10 @@ def collect_static_evidence(
         depth_limited: list[str] = []
         scan_source = "git-index"
     else:
-        blocked_roots = {
-            target / str(name)
-            for name in root_resolution.get("nested_git_roots", [])
-            if isinstance(name, str)
-        }
-        files, omitted_files, depth_limited = _bounded_files(target, blocked_roots=blocked_roots)
+        files, omitted_files, depth_limited = _bounded_files(
+            target,
+            blocked_roots=nested_git_roots,
+        )
     instructions = [
         path for path in files
         if path.name in INSTRUCTION_NAMES or path.as_posix().endswith(".github/copilot-instructions.md")
@@ -310,10 +387,25 @@ def collect_static_evidence(
 
 
 def build_evidence(args: argparse.Namespace) -> dict[str, object]:
+    if args.mode == "static" and (
+        args.session_file
+        or args.session_root
+        or args.provider
+        or args.mechanism_category
+        or args.episode_role
+        or args.comparison_basis
+        or args.include_request_summaries
+        or args.max_session_bytes != MAX_SESSION_BYTES
+        or args.max_session_lines != MAX_SESSION_LINES
+        or args.max_session_line_bytes != MAX_SESSION_LINE_BYTES
+        or args.max_session_warnings != MAX_SESSION_WARNINGS
+    ):
+        raise ValueError("static mode does not accept session sources")
     target = Path(args.target).expanduser().resolve()
     if not target.is_dir():
         raise ValueError(f"target is not a directory: {args.target}")
-    root_resolution, git_root = _target_resolution(target)
+    root_resolution, git_root, nested_git_roots = _target_resolution(target)
+    binding = target_binding(target)
     session_files = [Path(value) for value in args.session_file]
     discovered_omitted = 0
     if args.session_root:
@@ -328,8 +420,6 @@ def build_evidence(args: argparse.Namespace) -> dict[str, object]:
 
     session_evidence: dict[str, object]
     if args.mode == "static":
-        if session_files or args.provider or args.mechanism_category or args.episode_role:
-            raise ValueError("static mode does not accept session sources")
         session_evidence = {
             "status": "not_authorized",
             "reason": "static-mode-excludes-session-evidence",
@@ -350,6 +440,10 @@ def build_evidence(args: argparse.Namespace) -> dict[str, object]:
             args.provider,
             session_files,
             include_request_summaries=args.include_request_summaries,
+            max_bytes=args.max_session_bytes,
+            max_lines=args.max_session_lines,
+            max_line_bytes=args.max_session_line_bytes,
+            max_warnings=args.max_session_warnings,
         )
         session_evidence["session_files_omitted"] = session_files_omitted
 
@@ -363,9 +457,11 @@ def build_evidence(args: argparse.Namespace) -> dict[str, object]:
         "created_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "scope": {
             "target": target.name,
+            "target_id": binding["target_id"],
             "snapshot": {
                 "baseline": "current_checkout" if git_root is not None else "filesystem_state",
                 "target_relation": root_resolution["relation"],
+                "id": binding["snapshot_id"],
             },
             "mode": args.mode,
             "provider": args.provider,
@@ -391,7 +487,12 @@ def build_evidence(args: argparse.Namespace) -> dict[str, object]:
             "session_source_policy": "explicit-files-or-roots-only",
             "unavailable": unavailable,
         },
-        "static": collect_static_evidence(target, root_resolution, git_root),
+        "static": collect_static_evidence(
+            target,
+            root_resolution,
+            git_root,
+            nested_git_roots,
+        ),
         "sessions": session_evidence,
     }
 
@@ -411,6 +512,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--session-file", action="append", default=[])
     parser.add_argument("--session-root", action="append", default=[])
     parser.add_argument("--max-session-files", type=int, default=20)
+    parser.add_argument("--max-session-bytes", type=int, default=MAX_SESSION_BYTES)
+    parser.add_argument("--max-session-lines", type=int, default=MAX_SESSION_LINES)
+    parser.add_argument("--max-session-line-bytes", type=int, default=MAX_SESSION_LINE_BYTES)
+    parser.add_argument("--max-session-warnings", type=int, default=MAX_SESSION_WARNINGS)
     parser.add_argument("--include-request-summaries", action="store_true")
     parser.add_argument("--output")
     parser.add_argument("--replace", action="store_true")
@@ -421,9 +526,20 @@ def main() -> int:
     args = parse_args()
     if args.max_session_files < 1 or args.max_session_files > 100:
         raise ValueError("--max-session-files must be between 1 and 100")
+    if args.max_session_bytes < 1 or args.max_session_bytes > 64 * 1024 * 1024:
+        raise ValueError("--max-session-bytes must be between 1 and 67108864")
+    if args.max_session_lines < 1 or args.max_session_lines > 500_000:
+        raise ValueError("--max-session-lines must be between 1 and 500000")
+    if args.max_session_line_bytes < 1 or args.max_session_line_bytes > 4 * 1024 * 1024:
+        raise ValueError("--max-session-line-bytes must be between 1 and 4194304")
+    if args.max_session_warnings < 1 or args.max_session_warnings > 1000:
+        raise ValueError("--max-session-warnings must be between 1 and 1000")
     if bool(args.episode_role) != bool(args.comparison_basis):
         raise ValueError("--episode-role and --comparison-basis must be supplied together")
     evidence = build_evidence(args)
+    privacy_hits = privacy_rule_matches(evidence)
+    if privacy_hits:
+        raise ValueError(f"collected evidence violates privacy: {', '.join(privacy_hits)}")
     if args.output:
         write_json_atomic(Path(args.output), evidence, replace=args.replace)
     else:

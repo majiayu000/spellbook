@@ -14,7 +14,15 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from harness_common import all_strings, load_json, private_data_matches, slug, write_json_atomic
+from harness_common import (
+    all_strings,
+    load_json,
+    private_data_matches,
+    require_canonical_artifact_path,
+    slug,
+    validate_target_binding,
+    write_json_atomic,
+)
 from validate_findings import CHECK_IDS, DIMENSION_IDS, validate_document
 
 
@@ -222,7 +230,15 @@ def _validate_evidence_contract(
     findings_scope = findings.get("scope")
     if not isinstance(evidence_scope, dict) or not isinstance(findings_scope, dict):
         return errors + ["evidence and findings scopes must be objects"]
-    for key in ("target", "mode", "locale", "decision", "acceptance_boundary", "output_mode"):
+    for key in (
+        "target",
+        "target_id",
+        "mode",
+        "locale",
+        "decision",
+        "acceptance_boundary",
+        "output_mode",
+    ):
         if evidence_scope.get(key) != findings_scope.get(key):
             errors.append(f"evidence.scope.{key} must match findings.scope.{key}")
     if evidence_scope.get("snapshot") != findings_scope.get("snapshot"):
@@ -295,12 +311,14 @@ def _validate_evidence_contract(
         and isinstance(sessions.get("reason"), str)
     ):
         pass
-    elif isinstance(sessions, dict) and sessions.get("status") in {"available", "unobserved"}:
+    elif isinstance(sessions, dict) and sessions.get("status") in {"available", "constrained", "unobserved"}:
         for key, expected_type in (
             ("provider", str),
             ("sessions", list),
             ("summary", dict),
             ("warnings", list),
+            ("warnings_omitted", int),
+            ("bounds", dict),
             ("privacy", dict),
         ):
             if not isinstance(sessions.get(key), expected_type):
@@ -312,9 +330,15 @@ def _validate_evidence_contract(
             for key in (
                 "session_count", "user_turns", "tool_calls", "edit_calls",
                 "validation_calls", "tool_failures", "malformed_lines", "unsupported_lines",
+                "bytes_observed", "lines_observed", "truncated_session_count",
             ):
                 if not isinstance(summary.get(key), int) or int(summary[key]) < 0:
                     errors.append(f"evidence.sessions.summary.{key} must be a non-negative integer")
+        bounds = sessions.get("bounds")
+        if isinstance(bounds, dict):
+            for key in ("max_bytes_per_session", "max_lines_per_session", "max_line_bytes", "max_warnings"):
+                if not isinstance(bounds.get(key), int) or int(bounds[key]) < 1:
+                    errors.append(f"evidence.sessions.bounds.{key} must be a positive integer")
     elif isinstance(sessions, dict) and sessions.get("status") in {"not_authorized", "unavailable"}:
         if not isinstance(sessions.get("reason"), str) or not sessions.get("reason"):
             errors.append("evidence.sessions.reason is required")
@@ -323,6 +347,7 @@ def _validate_evidence_contract(
 
 def render_run(
     findings_path: Path,
+    target: Path,
     out_dir: Path,
     *,
     evidence_paths: list[Path] | None = None,
@@ -344,12 +369,18 @@ def render_run(
 
     scope = findings["scope"]
     assert isinstance(scope, dict)
+    resolved_target = target.expanduser().resolve()
+    validate_target_binding(scope, resolved_target)
     target_slug = slug(str(scope.get("target") or "target"))
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     resolved_run_id = run_id or f"{timestamp}-{target_slug}"
     if slug(resolved_run_id) != resolved_run_id:
         raise ValueError("run id must be a lowercase slug")
-    output_root = out_dir.expanduser().resolve()
+    output_root = require_canonical_artifact_path(
+        out_dir,
+        resolved_target,
+        ".agent-harness-review",
+    )
     output_root.mkdir(parents=True, exist_ok=True)
     run_dir = output_root / resolved_run_id
     lock_path = output_root / f".{resolved_run_id}.publish.lock"
@@ -404,6 +435,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--findings", required=True)
     parser.add_argument("--evidence", action="append", default=[])
+    parser.add_argument("--target", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--run-id")
     parser.add_argument("--json", action="store_true")
@@ -414,6 +446,7 @@ def main() -> int:
     args = parse_args()
     result = render_run(
         Path(args.findings),
+        Path(args.target),
         Path(args.out),
         evidence_paths=[Path(path) for path in args.evidence],
         run_id=args.run_id,

@@ -42,9 +42,11 @@ line number, date, severity, Session id, or transient branch name in the id.
   "overview": "The harness exposes task routes but does not close final-state verification.",
   "scope": {
     "target": "example-project",
+    "target_id": "local-sha256:<64 hex characters from the collector>",
     "snapshot": {
       "baseline": "current_checkout",
-      "target_relation": "exact_git_root"
+      "target_relation": "exact_git_root",
+      "id": "git-sha256:<64 hex characters from the collector>"
     },
     "mode": "static",
     "locale": "en",
@@ -139,6 +141,10 @@ The real document must contain all five dimensions exactly once. Valid values
 are enforced by `scripts/validate_findings.py`. It must also contain all 15
 stable checks exactly once. Each finding names one `primary_check`, and that
 check reverse-links the finding id through `finding_refs`.
+
+Copy `target_id` and the full `snapshot` object from the same collector
+envelope used for the review. They bind durable output to one concrete local
+directory and its frozen state; do not invent, reuse, or edit these digests.
 
 Each dimension requires `score` and `score_rationale`. The score cannot exceed
 the weakest applicable check's evidence ceiling from

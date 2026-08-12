@@ -64,6 +64,21 @@ def boundary_args(*, output_mode: str = "inline") -> tuple[str, ...]:
     )
 
 
+def bind_findings_to_evidence(
+    document: dict[str, object],
+    evidence: dict[str, object],
+) -> dict[str, object]:
+    """Copy the collector-owned target and snapshot binding into findings."""
+
+    scope = document["scope"]
+    evidence_scope = evidence["scope"]
+    assert isinstance(scope, dict) and isinstance(evidence_scope, dict)
+    scope["target"] = evidence_scope["target"]
+    scope["target_id"] = evidence_scope["target_id"]
+    scope["snapshot"] = evidence_scope["snapshot"]
+    return document
+
+
 def findings_document(*, include_finding: bool = True) -> dict[str, object]:
     dimensions = []
     checks = []
@@ -160,9 +175,11 @@ def findings_document(*, include_finding: bool = True) -> dict[str, object]:
         "overview": "The review resolves the full work loop while preserving unavailable evidence.",
         "scope": {
             "target": "fixture-project",
+            "target_id": f"local-sha256:{'0' * 64}",
             "snapshot": {
                 "baseline": "current_checkout",
                 "target_relation": "exact_git_root",
+                "id": f"git-sha256:{'0' * 64}",
             },
             "mode": "static",
             "locale": "en",
@@ -388,7 +405,6 @@ class ReviewAgentHarnessTests(unittest.TestCase):
             target = self.make_target(root)
             findings_path = root / "findings.json"
             evidence_path = root / "evidence.json"
-            self.write_json(findings_path, findings_document())
             collected = run_script(
                 "collect_evidence.py",
                 "--target",
@@ -398,6 +414,11 @@ class ReviewAgentHarnessTests(unittest.TestCase):
                 *boundary_args(output_mode="durable"),
             )
             evidence_path.write_text(collected.stdout, encoding="utf-8")
+            evidence = json.loads(collected.stdout)
+            self.write_json(
+                findings_path,
+                bind_findings_to_evidence(findings_document(), evidence),
+            )
 
             completed = run_script(
                 "render_report.py",
@@ -405,14 +426,16 @@ class ReviewAgentHarnessTests(unittest.TestCase):
                 str(findings_path),
                 "--evidence",
                 str(evidence_path),
+                "--target",
+                str(target),
                 "--out",
-                str(root / "reports"),
+                str(target / ".agent-harness-review"),
                 "--run-id",
                 "run-1",
                 "--json",
             )
             result = json.loads(completed.stdout)
-            run_dir = root / "reports" / result["run_id"]
+            run_dir = target / ".agent-harness-review" / result["run_id"]
 
             self.assertEqual(result["status"], "pass")
             self.assertEqual(sorted(path.name for path in run_dir.iterdir()), ["evidence.json", "findings.json", "report.md"])
@@ -426,7 +449,8 @@ class ReviewAgentHarnessTests(unittest.TestCase):
                 "render_report.py",
                 "--findings", str(findings_path),
                 "--evidence", str(evidence_path),
-                "--out", str(root / "reports"),
+                "--target", str(target),
+                "--out", str(target / ".agent-harness-review"),
                 "--run-id", "run-1",
                 "--json",
                 expect=1,
@@ -436,26 +460,61 @@ class ReviewAgentHarnessTests(unittest.TestCase):
     def test_ledger_requires_spot_check_and_tracks_regression(self) -> None:
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
+            target = root / "fixture-project"
+            target.mkdir()
             findings_path = root / "findings.json"
-            ledger_path = root / "ledger.json"
+            ledger_path = target / ".agent-harness-review" / "ledger.json"
             confirmations_path = root / "confirmations.json"
             finding_id = "verification-closure--test-owner--final-state-not-rechecked"
-            self.write_json(findings_path, findings_document())
+            collected = run_script(
+                "collect_evidence.py",
+                "--target", str(target),
+                "--mode", "static",
+                *boundary_args(output_mode="durable"),
+            )
+            document = bind_findings_to_evidence(findings_document(), json.loads(collected.stdout))
+            self.write_json(findings_path, document)
 
             first = run_script(
-                "update_ledger.py", "--findings", str(findings_path), "--ledger", str(ledger_path),
+                "update_ledger.py", "--findings", str(findings_path), "--target", str(target),
+                "--ledger", str(ledger_path),
                 "--date", "2026-08-01", "--json",
             )
             self.assertEqual(json.loads(first.stdout)["summary"]["new"], 1)
             second = run_script(
-                "update_ledger.py", "--findings", str(findings_path), "--ledger", str(ledger_path),
+                "update_ledger.py", "--findings", str(findings_path), "--target", str(target),
+                "--ledger", str(ledger_path),
                 "--date", "2026-08-02", "--json",
             )
             self.assertEqual(json.loads(second.stdout)["summary"]["still_open"], 1)
 
-            self.write_json(findings_path, findings_document(include_finding=False))
+            document["findings"] = []
+            document["priority_moves"] = []
+            document["verification_runs"] = []
+            verification = next(
+                row for row in document["dimensions"] if row["id"] == "verification-closure"
+            )
+            verification.update({
+                "status": "healthy",
+                "evidence_state": "reachable",
+                "confidence": "medium",
+                "score": 80,
+                "score_rationale": "All applicable checks expose reachable project-owned routes.",
+                "summary": "The inspected project exposes a supported route.",
+            })
+            for check in document["checks"]:
+                if check["id"] == "validate-again":
+                    check.update({
+                        "status": "healthy",
+                        "evidence_state": "reachable",
+                        "confidence": "medium",
+                        "summary": "The project exposes a reachable owner for this check.",
+                        "finding_refs": [],
+                    })
+            self.write_json(findings_path, document)
             missing = run_script(
-                "update_ledger.py", "--findings", str(findings_path), "--ledger", str(ledger_path),
+                "update_ledger.py", "--findings", str(findings_path), "--target", str(target),
+                "--ledger", str(ledger_path),
                 "--date", "2026-08-03", "--json",
             )
             self.assertEqual(json.loads(missing.stdout)["summary"]["recheck_required"], 1)
@@ -470,6 +529,7 @@ class ReviewAgentHarnessTests(unittest.TestCase):
             })
             run_script(
                 "update_ledger.py", "--findings", str(findings_path), "--ledger", str(ledger_path),
+                "--target", str(target),
                 "--date", "2026-08-04", "--resolution-confirmations", str(confirmations_path), "--json",
                 expect=1,
             )
@@ -484,6 +544,7 @@ class ReviewAgentHarnessTests(unittest.TestCase):
             })
             confirmed = run_script(
                 "update_ledger.py", "--findings", str(findings_path), "--ledger", str(ledger_path),
+                "--target", str(target),
                 "--date", "2026-08-04", "--resolution-confirmations", str(confirmations_path), "--json",
             )
             self.assertEqual(json.loads(confirmed.stdout)["summary"]["resolved"], 1)
@@ -491,9 +552,11 @@ class ReviewAgentHarnessTests(unittest.TestCase):
             self.assertEqual(ledger["target"], "fixture-project")
             self.assertEqual(ledger["findings"][0]["resolution_confirmation"]["evidence_ref"]["kind"], "command")
 
-            self.write_json(findings_path, findings_document())
+            fresh_document = bind_findings_to_evidence(findings_document(), json.loads(collected.stdout))
+            self.write_json(findings_path, fresh_document)
             regression = run_script(
-                "update_ledger.py", "--findings", str(findings_path), "--ledger", str(ledger_path),
+                "update_ledger.py", "--findings", str(findings_path), "--target", str(target),
+                "--ledger", str(ledger_path),
                 "--date", "2026-08-05", "--json",
             )
             self.assertEqual(json.loads(regression.stdout)["summary"]["regression"], 1)

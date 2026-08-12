@@ -9,7 +9,14 @@ import os
 from datetime import date
 from pathlib import Path
 
-from harness_common import all_strings, load_json, private_data_matches, write_json_atomic
+from harness_common import (
+    all_strings,
+    load_json,
+    private_data_matches,
+    require_canonical_artifact_path,
+    validate_target_binding,
+    write_json_atomic,
+)
 from validate_findings import (
     DIMENSION_IDS,
     FINDING_ID_RE,
@@ -64,12 +71,14 @@ def _validated_previous_ledger(
     previous: dict[str, object] | None,
     *,
     target: str,
+    target_id: str,
 ) -> dict[str, object]:
     if previous is None:
         return {
             "schema_version": 1,
             "kind": "agent-harness-ledger",
             "target": target,
+            "target_id": target_id,
             "runs": [],
             "findings": [],
         }
@@ -77,6 +86,8 @@ def _validated_previous_ledger(
         raise ValueError("unsupported ledger contract")
     if previous.get("target") != target:
         raise ValueError("ledger target does not match findings target")
+    if previous.get("target_id") != target_id:
+        raise ValueError("ledger target identity does not match findings target")
     privacy_hits = {
         rule_id
         for text in all_strings(previous)
@@ -95,7 +106,11 @@ def _validated_previous_ledger(
             date.fromisoformat(str(run.get("date")))
         except ValueError as error:
             raise ValueError(f"ledger.runs[{index}].date must be an ISO date") from error
-        if run.get("target") != target or run.get("mode") not in {"static", "episode", "longitudinal"}:
+        if (
+            run.get("target") != target
+            or run.get("target_id") != target_id
+            or run.get("mode") not in {"static", "episode", "longitudinal"}
+        ):
             raise ValueError(f"ledger.runs[{index}] has an invalid target or mode")
         for key in ("finding_count", "resolution_confirmation_count"):
             if not isinstance(run.get(key), int) or int(run[key]) < 0:
@@ -188,7 +203,8 @@ def update_ledger(
     scope = findings.get("scope")
     assert isinstance(scope, dict)
     target = str(scope["target"])
-    ledger = _validated_previous_ledger(previous, target=target)
+    target_id = str(scope["target_id"])
+    ledger = _validated_previous_ledger(previous, target=target, target_id=target_id)
     previous_items = ledger.get("findings")
     if not isinstance(previous_items, list):
         raise ValueError("ledger.findings must be an array")
@@ -276,6 +292,7 @@ def update_ledger(
     runs.append({
         "date": run_date,
         "target": scope.get("target"),
+        "target_id": scope.get("target_id"),
         "mode": scope.get("mode"),
         "finding_count": len(current_by_id),
         "resolution_confirmation_count": summary["resolved"],
@@ -288,6 +305,7 @@ def update_ledger(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--findings", required=True)
+    parser.add_argument("--target", required=True)
     parser.add_argument("--ledger", required=True)
     parser.add_argument("--date", default=date.today().isoformat())
     parser.add_argument("--resolution-confirmations")
@@ -298,7 +316,14 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    ledger_path = Path(args.ledger).expanduser().resolve()
+    target = Path(args.target).expanduser().resolve()
+    findings = load_json(Path(args.findings))
+    validate_target_binding(findings.get("scope"), target)
+    ledger_path = require_canonical_artifact_path(
+        Path(args.ledger),
+        target,
+        ".agent-harness-review/ledger.json",
+    )
     ledger_path.parent.mkdir(parents=True, exist_ok=True)
     lock_path = ledger_path.with_name(f".{ledger_path.name}.lock")
     try:
@@ -308,7 +333,7 @@ def main() -> int:
     try:
         previous = load_json(ledger_path) if ledger_path.exists() else None
         updated, summary = update_ledger(
-            load_json(Path(args.findings)),
+            findings,
             previous,
             run_date=args.date,
             resolution_confirmations=load_resolution_confirmations(

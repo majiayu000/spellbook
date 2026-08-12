@@ -11,15 +11,26 @@ from harness_common import sanitize_text
 
 
 SUPPORTED_PROVIDERS = ("codex", "claude")
+MAX_SESSION_BYTES = 16 * 1024 * 1024
+MAX_SESSION_LINES = 100_000
+MAX_SESSION_LINE_BYTES = 1024 * 1024
+MAX_SESSION_WARNINGS = 200
 _EDIT_TOOL_RE = re.compile(r"(?:apply_patch|edit|write|create_file|replace|str_replace)", re.IGNORECASE)
 _VALIDATION_RE = re.compile(
     r"(?:^|\b)(?:pytest|cargo\s+(?:check|test)|go\s+(?:build|test)|npm\s+(?:test|run)|pnpm\s+(?:test|run)|yarn\s+(?:test|run)|tsc|lint|check|test|build)(?:\b|$)",
     re.IGNORECASE,
 )
 _FAILURE_RE = re.compile(
-    r"(?:exit(?:ed with)?(?:_code| code)?[\s\"':=]+[1-9]\d*|\bfailed\b|\berror\b)",
+    r"(?:exit(?:ed with)?(?:_code| code)?[\s\"':=]+[1-9]\d*|\bfailed\b|\bfailure\b|\berror\b|\btraceback\b|\bpanic\b)",
     re.IGNORECASE,
 )
+_BENIGN_FAILURE_RE = re.compile(
+    r"\b(?:no\s+errors?(?:\s+detected)?|errors?\s*(?:count)?\s*[:=]\s*0|"
+    r"failed\s+tests?\s*[:=]\s*0|0\s+(?:tests?\s+)?failed)\b",
+    re.IGNORECASE,
+)
+_FAILED_STATUSES = {"cancelled", "error", "failed", "failure", "timed_out", "timeout"}
+_PASSED_STATUSES = {"completed", "ok", "pass", "passed", "success", "succeeded"}
 
 
 def discover_jsonl_files(roots: list[Path], *, limit: int) -> tuple[list[Path], int]:
@@ -94,8 +105,73 @@ def _empty_session(alias: str) -> dict[str, object]:
         "tool_failures": 0,
         "malformed_lines": 0,
         "unsupported_lines": 0,
+        "bytes_observed": 0,
+        "lines_observed": 0,
+        "input_truncated": False,
+        "truncation_reasons": [],
         "evidence_state": "present",
     }
+
+
+def _structured_failure(value: object) -> bool | None:
+    """Prefer explicit tool-result status fields over prose heuristics."""
+
+    if isinstance(value, dict):
+        decisions: list[bool] = []
+        for key, item in value.items():
+            normalized = str(key).casefold().replace("-", "_")
+            if normalized in {"exit_code", "return_code", "returncode"}:
+                if isinstance(item, int) and not isinstance(item, bool):
+                    decisions.append(item != 0)
+                elif isinstance(item, str) and item.strip().lstrip("-").isdigit():
+                    decisions.append(int(item.strip()) != 0)
+            elif normalized in {"is_error", "failed"} and isinstance(item, bool):
+                decisions.append(item)
+            elif normalized == "success" and isinstance(item, bool):
+                decisions.append(not item)
+            elif normalized in {"status", "result"} and isinstance(item, str):
+                status = item.strip().casefold().replace(" ", "_").replace("-", "_")
+                if status in _FAILED_STATUSES:
+                    decisions.append(True)
+                elif status in _PASSED_STATUSES:
+                    decisions.append(False)
+        if any(decisions):
+            return True
+        if decisions:
+            return False
+        nested = [_structured_failure(item) for item in value.values()]
+        if any(item is True for item in nested):
+            return True
+        if any(item is False for item in nested):
+            return False
+        return None
+    if isinstance(value, list):
+        nested = [_structured_failure(item) for item in value]
+        if any(item is True for item in nested):
+            return True
+        if any(item is False for item in nested):
+            return False
+    return None
+
+
+def _tool_result_failed(value: object) -> bool:
+    structured = _structured_failure(value)
+    if structured is not None:
+        return structured
+    text = " ".join(_content_text(value)) if isinstance(value, list) else str(value or "")
+    return bool(_FAILURE_RE.search(_BENIGN_FAILURE_RE.sub(" ", text)))
+
+
+def _append_warning(
+    warnings: list[dict[str, object]],
+    warning: dict[str, object],
+    *,
+    limit: int,
+) -> bool:
+    if len(warnings) >= limit:
+        return False
+    warnings.append(warning)
+    return True
 
 
 def _parse_codex_event(event: dict[str, object], session: dict[str, object], requests: list[str]) -> bool:
@@ -108,7 +184,8 @@ def _parse_codex_event(event: dict[str, object], session: dict[str, object], req
         recognized = False
         for text in content_values:
             if text.strip():
-                requests.append(text)
+                if not requests:
+                    requests.append(text)
                 session["user_turns"] = int(session["user_turns"]) + 1
                 recognized = True
         return recognized
@@ -124,8 +201,8 @@ def _parse_codex_event(event: dict[str, object], session: dict[str, object], req
         session["validation_calls"] = int(session["validation_calls"]) + validation
         return True
     if item_type in {"function_call_output", "custom_tool_call_output"}:
-        output = str(payload.get("output") or payload.get("content") or "")
-        if _FAILURE_RE.search(output):
+        output = payload.get("output") if "output" in payload else payload.get("content")
+        if _tool_result_failed(output):
             session["tool_failures"] = int(session["tool_failures"]) + 1
         return True
     return False
@@ -148,15 +225,15 @@ def _parse_claude_event(event: dict[str, object], session: dict[str, object], re
         recognized = False
         for text in _content_text(request_content):
             if text.strip():
-                requests.append(text)
+                if not requests:
+                    requests.append(text)
                 session["user_turns"] = int(session["user_turns"]) + 1
                 recognized = True
         if isinstance(content, list):
             for item in content:
-                if isinstance(item, dict) and item.get("type") == "tool_result" and item.get("is_error") is True:
-                    session["tool_failures"] = int(session["tool_failures"]) + 1
-                    recognized = True
-                elif isinstance(item, dict) and item.get("type") == "tool_result":
+                if isinstance(item, dict) and item.get("type") == "tool_result":
+                    if _tool_result_failed(item):
+                        session["tool_failures"] = int(session["tool_failures"]) + 1
                     recognized = True
         return recognized
     if event_type != "assistant" or not isinstance(content, list):
@@ -188,13 +265,20 @@ def parse_sessions(
     paths: list[Path],
     *,
     include_request_summaries: bool = False,
+    max_bytes: int = MAX_SESSION_BYTES,
+    max_lines: int = MAX_SESSION_LINES,
+    max_line_bytes: int = MAX_SESSION_LINE_BYTES,
+    max_warnings: int = MAX_SESSION_WARNINGS,
 ) -> dict[str, object]:
     """Parse bounded explicit session files into a sanitized facts envelope."""
 
     if provider not in SUPPORTED_PROVIDERS:
         raise ValueError(f"unsupported provider: {provider}")
+    if min(max_bytes, max_lines, max_line_bytes, max_warnings) < 1:
+        raise ValueError("session parse bounds must be positive")
     sessions: list[dict[str, object]] = []
     warnings: list[dict[str, object]] = []
+    warnings_omitted = 0
     for index, path in enumerate(paths, start=1):
         resolved = path.expanduser().resolve()
         if not resolved.is_file():
@@ -202,27 +286,46 @@ def parse_sessions(
         session = _empty_session(f"session-{index}")
         requests: list[str] = []
         recognized_lines = 0
-        with resolved.open("r", encoding="utf-8", errors="replace") as handle:
-            for line_number, line in enumerate(handle, start=1):
+        file_size = resolved.stat().st_size
+        with resolved.open("rb") as handle:
+            while int(session["lines_observed"]) < max_lines and int(session["bytes_observed"]) < max_bytes:
+                remaining = max_bytes - int(session["bytes_observed"])
+                raw_line = handle.readline(min(max_line_bytes, remaining) + 1)
+                if not raw_line:
+                    break
+                if len(raw_line) > max_line_bytes:
+                    session["input_truncated"] = True
+                    session["truncation_reasons"].append("line-byte-limit")
+                    break
+                if len(raw_line) > remaining:
+                    session["input_truncated"] = True
+                    session["truncation_reasons"].append("session-byte-limit")
+                    break
+                session["bytes_observed"] = int(session["bytes_observed"]) + len(raw_line)
+                session["lines_observed"] = int(session["lines_observed"]) + 1
+                line_number = int(session["lines_observed"])
+                line = raw_line.decode("utf-8", errors="replace")
                 if not line.strip():
                     continue
                 try:
                     event = json.loads(line)
                 except json.JSONDecodeError:
                     session["malformed_lines"] = int(session["malformed_lines"]) + 1
-                    warnings.append({
+                    if not _append_warning(warnings, {
                         "code": "malformed-jsonl",
                         "source": session["alias"],
                         "line": line_number,
-                    })
+                    }, limit=max_warnings):
+                        warnings_omitted += 1
                     continue
                 if not isinstance(event, dict):
                     session["unsupported_lines"] = int(session["unsupported_lines"]) + 1
-                    warnings.append({
+                    if not _append_warning(warnings, {
                         "code": "unsupported-event-shape",
                         "source": session["alias"],
                         "line": line_number,
-                    })
+                    }, limit=max_warnings):
+                        warnings_omitted += 1
                     continue
                 if provider == "codex":
                     recognized = _parse_codex_event(event, session, requests)
@@ -232,23 +335,38 @@ def parse_sessions(
                     recognized_lines += 1
                 else:
                     session["unsupported_lines"] = int(session["unsupported_lines"]) + 1
-                    warnings.append({
+                    if not _append_warning(warnings, {
                         "code": "unsupported-event-shape",
                         "source": session["alias"],
                         "line": line_number,
-                    })
+                    }, limit=max_warnings):
+                        warnings_omitted += 1
+        if int(session["lines_observed"]) >= max_lines and int(session["bytes_observed"]) < file_size:
+            session["input_truncated"] = True
+            session["truncation_reasons"].append("session-line-limit")
+        if int(session["bytes_observed"]) >= max_bytes and int(session["bytes_observed"]) < file_size:
+            session["input_truncated"] = True
+            session["truncation_reasons"].append("session-byte-limit")
+        session["truncation_reasons"] = sorted(set(session["truncation_reasons"]))
         if include_request_summaries and requests:
             session["request_summary"] = sanitize_text(requests[0], limit=220)
         if recognized_lines == 0:
             session["evidence_state"] = "unobserved"
             if int(session["malformed_lines"]) == 0 and int(session["unsupported_lines"]) == 0:
-                warnings.append({
+                if not _append_warning(warnings, {
                     "code": "no-recognized-events",
                     "source": session["alias"],
                     "line": 0,
-                })
+                }, limit=max_warnings):
+                    warnings_omitted += 1
         else:
-            session["evidence_state"] = "exercised" if int(session["tool_calls"]) > 0 else "present"
+            session["evidence_state"] = (
+                "constrained"
+                if session["input_truncated"]
+                else "exercised"
+                if int(session["tool_calls"]) > 0
+                else "present"
+            )
         sessions.append(session)
 
     totals = {
@@ -261,12 +379,17 @@ def parse_sessions(
             "tool_failures",
             "malformed_lines",
             "unsupported_lines",
+            "bytes_observed",
+            "lines_observed",
         )
     }
+    totals["truncated_session_count"] = sum(bool(session["input_truncated"]) for session in sessions)
     return {
         "status": (
             "unavailable"
             if not sessions
+            else "constrained"
+            if any(session["input_truncated"] for session in sessions)
             else "unobserved"
             if all(session["evidence_state"] == "unobserved" for session in sessions)
             else "available"
@@ -275,6 +398,13 @@ def parse_sessions(
         "sessions": sessions,
         "summary": {"session_count": len(sessions), **totals},
         "warnings": warnings,
+        "warnings_omitted": warnings_omitted,
+        "bounds": {
+            "max_bytes_per_session": max_bytes,
+            "max_lines_per_session": max_lines,
+            "max_line_bytes": max_line_bytes,
+            "max_warnings": max_warnings,
+        },
         "privacy": {
             "source_paths_emitted": False,
             "stable_session_ids_emitted": False,

@@ -8,8 +8,10 @@ explicit roots and emit the same privacy-safe facts envelope.
 
 The adapter recognizes `response_item` message, function-call, custom-tool-call,
 and tool-output records. It counts user turns, tool calls, edit calls,
-validation calls, failures, malformed lines, and unsupported lines. It never emits call ids,
-arguments, raw outputs, or source paths.
+validation calls, failures, malformed lines, and unsupported lines. Structured
+exit codes and explicit status fields take precedence over prose; benign text
+such as `failed tests: 0` is not a failure. It never emits call ids, arguments,
+raw outputs, or source paths.
 
 ## Claude Code
 
@@ -24,6 +26,11 @@ counts as the Codex adapter and never emits tool-use ids or raw inputs.
 - Use `--session-root` only for an explicitly authorized recursive boundary.
 - The root adapter caps discovery with `--max-session-files`; omitted files
   remain counted.
+- Each file is also bounded by bytes, lines, line bytes, and retained warnings.
+  Defaults are 16 MiB, 100,000 lines, 1 MiB per line, and 200 warnings. A hit
+  emits `status: constrained`, `input_truncated`, and explicit truncation
+  reasons; test fixtures may lower the bounds with matching
+  `--max-session-*` flags.
 - Use `--include-request-summaries` only when the decision requires task intent.
 
 These adapters are evidence collectors, not outcome classifiers. Counts and

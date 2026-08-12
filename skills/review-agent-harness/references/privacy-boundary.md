@@ -25,6 +25,11 @@ The adapters may retain bounded counts, anonymous aliases, sanitized first
 request summaries when explicitly enabled, and coarse tool categories such as
 edit or validation. They must not retain raw commands.
 
+Durable target binding uses only collector-produced hashes of local directory
+identity and bounded target metadata. It never persists the absolute target
+path. Rendering and ledger updates require the caller to supply `--target` so
+the scripts can recompute the binding before writing.
+
 ## Redaction And Failure
 
 Redact secrets, home paths, UUIDs, stable ids, Markdown destinations, and

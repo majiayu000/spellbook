@@ -88,10 +88,14 @@ be `available`, `constrained`, `not_authorized`, `not_applicable`, `unavailable`
 or `unobserved`. A depth-limited scan is `constrained`, never silently complete.
 Stop on malformed output or an unexplained missing stage.
 
-Freeze `scope.snapshot.baseline` and `scope.snapshot.target_relation` in the
-findings document. A previous report, ledger row, branch name, or remembered
-result is a historical lead only. Recheck any retained claim against the frozen
-current snapshot and label genuinely historical evidence as such.
+Copy the collector-owned `scope.target_id` and complete `scope.snapshot`
+(`baseline`, `target_relation`, and `id`) into the findings document. Never
+author these values manually. The renderer and ledger updater recompute the
+binding from `--target` and reject a different local directory or any target
+state that changed after collection. A previous report, ledger row, branch
+name, or remembered result is a historical lead only. Recheck any retained
+claim against the frozen current snapshot and label genuinely historical
+evidence as such.
 
 ## Step 2: Run Three Isolated Evidence Passes
 
@@ -169,6 +173,7 @@ When durable output is explicitly requested, render atomically:
 python3 scripts/render_report.py \
   --findings /temporary/findings.json \
   --evidence /temporary/evidence.json \
+  --target /absolute/target \
   --out /absolute/target/.agent-harness-review \
   --json
 ```
@@ -181,6 +186,7 @@ For longitudinal mode, update the ledger after a fresh review:
 ```bash
 python3 scripts/update_ledger.py \
   --findings /temporary/findings.json \
+  --target /absolute/target \
   --ledger /absolute/target/.agent-harness-review/ledger.json \
   --json
 ```
@@ -257,6 +263,9 @@ owner in the collector, validator, renderer, or written contract.
   overall score. Scores summarize the 15 evidence-bounded checks only.
 - Do not inherit a finding from an older report. Treat it as a lead and rerun
   its mapped check on the frozen snapshot.
+- Do not redirect durable output to a sibling directory. The renderer accepts
+  only `/absolute/target/.agent-harness-review`, and the ledger updater accepts
+  only its `ledger.json` below that directory.
 - Do not attribute a generated or aggregate failure to the nearest file. Trace
   the caller, configuration, and output owner before choosing the smallest
   repair owner.
