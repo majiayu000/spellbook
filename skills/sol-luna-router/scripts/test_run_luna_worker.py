@@ -130,7 +130,14 @@ class RunnerTests(unittest.TestCase):
             for line in self.run_log.read_text(encoding="utf-8").splitlines()
         ]
 
-    def annotate(self, run_id: str, outcome: str) -> Invocation:
+    def annotate(
+        self,
+        run_id: str,
+        outcome: str,
+        *,
+        checks_passed: int = 0,
+        checks_failed: int = 0,
+    ) -> Invocation:
         argv = [
             str(SCRIPT),
             "annotate",
@@ -138,6 +145,10 @@ class RunnerTests(unittest.TestCase):
             run_id,
             "--outcome",
             outcome,
+            "--checks-passed",
+            str(checks_passed),
+            "--checks-failed",
+            str(checks_failed),
             "--run-log",
             str(self.run_log),
         ]
@@ -322,22 +333,44 @@ class RunnerTests(unittest.TestCase):
         )
         self.assertEqual(run_result.returncode, 0, run_result.stderr)
         run_id = json.loads(run_result.stdout)["telemetry"]["run_id"]
-        annotation = self.annotate(run_id, "verified")
+        annotation = self.annotate(run_id, "verified", checks_passed=2)
         self.assertEqual(annotation.returncode, 0, annotation.stderr)
         payload = json.loads(annotation.stdout)
         self.assertEqual(payload["record_type"], "evaluation")
         self.assertEqual(payload["run_id"], run_id)
         self.assertEqual(payload["outcome"], "verified")
+        self.assertEqual(payload["checks_passed"], 2)
+        self.assertEqual(payload["checks_failed"], 0)
         records = self.read_records()
         self.assertEqual([record["record_type"] for record in records], ["run", "evaluation"])
 
     def test_annotation_rejects_an_unknown_run_id(self) -> None:
         self.run_log.parent.mkdir(parents=True)
         self.run_log.write_text("", encoding="utf-8")
-        annotation = self.annotate("00000000-0000-4000-8000-000000000000", "verified")
+        annotation = self.annotate(
+            "00000000-0000-4000-8000-000000000000",
+            "verified",
+            checks_passed=1,
+        )
         self.assertEqual(annotation.returncode, 1)
         self.assertIn("was not found", annotation.stderr)
         self.assertEqual(self.run_log.read_text(encoding="utf-8"), "")
+
+    def test_verified_annotation_requires_fresh_passing_checks(self) -> None:
+        run_result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+        )
+        run_id = json.loads(run_result.stdout)["telemetry"]["run_id"]
+
+        annotation = self.annotate(run_id, "verified")
+
+        self.assertEqual(annotation.returncode, 1)
+        self.assertIn("at least one passed check", annotation.stderr)
+        self.assertEqual(len(self.read_records()), 1)
 
     def test_non_git_target_requires_explicit_override(self) -> None:
         non_git = self.root / "plain"
