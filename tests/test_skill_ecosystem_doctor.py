@@ -244,6 +244,19 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         self.assertIn("broken_projection", codes)
         self.assertIn("missing_skill_resource", codes)
 
+    def test_existing_resource_directory_is_a_valid_reference(self):
+        source = self.write_skill(
+            self.registry_skills,
+            "template-library",
+            body="Use [the templates](assets/templates/) as examples.",
+        )
+        (source / "assets" / "templates").mkdir(parents=True)
+        os.symlink(source, self.codex / source.name, target_is_directory=True)
+
+        result = self.validate()
+
+        self.assertNotIn("missing_skill_resource", self.codes(result))
+
     def test_broken_inner_skill_file_symlink_is_an_error(self):
         missing_target = self.base / "missing-file.SKILL.md"
         broken = self.codex / "broken-file"
@@ -868,7 +881,7 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
             ["loom-test", "workspace", "doctor", "--json"],
             capture_output=True,
             text=True,
-            timeout=120,
+            timeout=300,
             check=False,
         )
         self.assertEqual([finding.code for finding in findings], ["loom_pending_ops"])

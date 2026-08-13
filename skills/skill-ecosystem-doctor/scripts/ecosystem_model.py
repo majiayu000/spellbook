@@ -11,10 +11,37 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+# Single source of truth for governed runtimes.
+#
+# Key = runtime id used by the governance policy (managed_global_sources.runtimes,
+# projection_runtimes). Value = the runtime's home directory name, used both for
+# the global home (``~/<dir>``) and for the per-project projection directory
+# (``<project>/<dir>/skills``). Every runtime whitelist, home mapping, directory
+# tuple, and Loom target id in the doctor is derived from this mapping; do not
+# duplicate the list anywhere else.
+RUNTIME_HOME_DIRS: dict[str, str] = {
+    "codex": ".codex",
+    "claude": ".claude",
+    "agents": ".agents",
+    "gemini": ".gemini",
+    "cursor": ".cursor",
+}
+SUPPORTED_RUNTIMES = frozenset(RUNTIME_HOME_DIRS)
+# Runtimes projected automatically when a policy does not say otherwise. Kept at
+# the historical two-runtime set so existing policy files behave exactly as before.
+DEFAULT_PROJECTION_RUNTIMES: tuple[str, ...] = ("codex", "claude")
+
 IGNORED_DIRS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache"}
 IGNORED_FILES = {".DS_Store"}
 ACTIVE_ROOT_KINDS = {"projection", "managed_projection"}
 SOURCE_ROOT_KINDS = {"registry", "canonical_source", "repository_source"}
+INVENTORY_ROOT_KINDS = {
+    "canonical_source",
+    "repository_source",
+    "managed_projection",
+    "managed_cache",
+    "archive",
+}
 NAME_LINE = re.compile(r"^name\s*:\s*(.+?)\s*$", re.MULTILINE)
 SUPPORT_DIR_PATTERN = r"(?:agents|assets|evals|reference|references|scripts|templates)"
 RESOURCE_LINK = re.compile(
@@ -82,6 +109,39 @@ class EcosystemFinding:
 def expand_path(raw_path: str) -> Path:
     """Expand environment and user markers without invoking a shell."""
     return Path(os.path.expandvars(raw_path)).expanduser()
+
+
+def runtime_home_flag(runtime: str) -> str:
+    """CLI flag name that overrides one runtime home."""
+    return f"--{runtime}-home"
+
+
+def runtime_home_dest(runtime: str) -> str:
+    """argparse destination for :func:`runtime_home_flag`."""
+    return f"{runtime}_home"
+
+
+def default_runtime_homes(base: Path | None = None) -> dict[str, Path]:
+    """Default home directory per governed runtime.
+
+    Homes are derived from the user's home directory exactly the way the
+    original ``--codex-home``/``--claude-home`` defaults were: no absolute path
+    is hardcoded, and every runtime stays overridable through its own
+    ``--<runtime>-home`` flag.
+    """
+    root = base if base is not None else Path.home()
+    return {runtime: root / directory for runtime, directory in RUNTIME_HOME_DIRS.items()}
+
+
+def runtime_project_dir(runtime: str) -> str:
+    """Per-project projection directory name for a runtime (e.g. ``.codex``)."""
+    return RUNTIME_HOME_DIRS[runtime]
+
+
+def runtime_target_id(runtime: str) -> str:
+    """Loom registry target id for a runtime's global skills directory."""
+    directory = RUNTIME_HOME_DIRS[runtime].lstrip(".")
+    return f"target_{runtime}_{directory}_skills"
 
 
 def frontmatter_name(skill_file: Path) -> str | None:

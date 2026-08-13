@@ -5,11 +5,18 @@ from __future__ import annotations
 from pathlib import Path
 
 from ecosystem_exposure import expand_profile_scopes
-from ecosystem_model import expand_path
+from ecosystem_model import (
+    INVENTORY_ROOT_KINDS,
+    RUNTIME_HOME_DIRS,
+    SUPPORTED_RUNTIMES,
+    expand_path,
+)
 from ecosystem_plugins import PLUGIN_ID_RE
+from ecosystem_runtimes import RuntimePolicyError, projection_runtimes
 
 
 LEGACY_FIELDS = {
+    "projection_runtimes",
     "schema_version",
     "default_scope",
     "trigger_boundary",
@@ -33,6 +40,7 @@ LEGACY_FIELDS = {
     "frontmatter_extension_exceptions",
     "splits",
     "managed_physical_skills",
+    "inventory_roots",
     "retired_reference_allowlist",
 }
 
@@ -94,6 +102,37 @@ def _inventory_roots(data: dict, registry: Path) -> list[dict[str, str]]:
         seen.add(normalized)
         roots.append({"path": normalized, "kind": kind, "owner": owner})
 
+    configured_roots = data.get("inventory_roots", [])
+    if not isinstance(configured_roots, list):
+        raise ValueError("legacy policy inventory_roots must be an array")
+    configured_paths: set[str] = set()
+    for index, item in enumerate(configured_roots):
+        context = f"legacy policy inventory_roots[{index}]"
+        if not isinstance(item, dict):
+            raise ValueError(f"{context} must be an object")
+        unknown = sorted(set(item) - {"path", "kind", "owner"})
+        if unknown:
+            raise ValueError(f"{context} has unknown fields: {', '.join(unknown)}")
+        raw_path = item.get("path")
+        kind = item.get("kind")
+        owner = item.get("owner")
+        if not isinstance(raw_path, str) or not raw_path.strip():
+            raise ValueError(f"{context}.path must be a non-empty string")
+        if kind not in INVENTORY_ROOT_KINDS:
+            allowed = ", ".join(sorted(INVENTORY_ROOT_KINDS))
+            raise ValueError(f"{context}.kind must be one of: {allowed}")
+        if not isinstance(owner, str) or not owner.strip():
+            raise ValueError(f"{context}.owner must be a non-empty string")
+        normalized = str(expand_path(raw_path).resolve(strict=False))
+        if normalized == str(registry_skills) or Path(normalized).is_relative_to(
+            registry_skills
+        ):
+            raise ValueError(f"{context}.path overlaps the canonical registry")
+        if normalized in configured_paths:
+            raise ValueError(f"duplicate legacy inventory root: {normalized}")
+        configured_paths.add(normalized)
+        add(raw_path, kind, owner)
+
     source_roots = data.get("project_source_roots", {})
     if not isinstance(source_roots, dict):
         raise ValueError("legacy policy project_source_roots must be an object")
@@ -124,7 +163,7 @@ def _inventory_roots(data: dict, registry: Path) -> list[dict[str, str]]:
             or not source.strip()
             or not isinstance(runtimes, list)
             or not runtimes
-            or not all(runtime in {"codex", "claude"} for runtime in runtimes)
+            or not all(runtime in SUPPORTED_RUNTIMES for runtime in runtimes)
         ):
             raise ValueError(f"legacy managed global source is invalid: {name}")
         add(source, "repository_source", f"managed-global:{name}")
@@ -229,11 +268,16 @@ def normalize_legacy_policy(data: dict, path: Path) -> dict:
             "legacy governance file must live in a registry containing skills/"
         )
 
+    try:
+        runtimes = projection_runtimes(data)
+    except RuntimePolicyError as exc:
+        raise ValueError(f"legacy policy {exc}") from exc
+
     projection_globs: list[str] = []
     for raw_root in [*project_scopes, *project_globs]:
         root = str(expand_path(raw_root))
-        for runtime_dir in (".codex", ".claude"):
-            candidate = str(Path(root) / runtime_dir / "skills")
+        for runtime in runtimes:
+            candidate = str(Path(root) / RUNTIME_HOME_DIRS[runtime] / "skills")
             if candidate not in projection_globs:
                 projection_globs.append(candidate)
 
@@ -241,7 +285,9 @@ def normalize_legacy_policy(data: dict, path: Path) -> dict:
         "schema_version": 1,
         "source_policy": {
             "local_only_canonical_registry": str(registry),
-            "projection_roots": ["~/.codex/skills", "~/.claude/skills"],
+            "projection_roots": [
+                f"~/{RUNTIME_HOME_DIRS[runtime]}/skills" for runtime in runtimes
+            ],
             "projection_globs": projection_globs,
             "inventory_roots": _inventory_roots(data, registry),
             "managed_physical_skills": managed_physical,

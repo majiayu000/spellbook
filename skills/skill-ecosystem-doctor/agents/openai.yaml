@@ -1,4 +1,4 @@
 interface:
   display_name: "Skill Ecosystem Doctor"
-  short_description: "Audit and repair cross-runtime skill ecosystems"
-  default_prompt: "Use $skill-ecosystem-doctor to audit this machine's Skill sources, projections, retired entries, and security risks before proposing repairs."
+  short_description: "Govern cross-runtime skill sources and projections"
+  default_prompt: "Use $skill-ecosystem-doctor only for an explicit cross-runtime or cross-scope Skill governance request. Audit canonical sources, projections, exposure, lifecycle, and security risks before proposing repairs."

@@ -64,6 +64,13 @@
       "prompt": "升级后一些老 Skill 不触发了，也不知道外部依赖还活不活，帮我做生命周期检查。",
       "expected_behavior": "Identify canonical sources and active projections, use current runtime, Git, test and authoritative dependency evidence, mark missing metadata as unknown rather than unhealthy, separate stale from externally blocked facts, and propose the smallest verified repair without inventing trigger rules or dependency status.",
       "type": "objective"
+    },
+    {
+      "id": 10,
+      "name": "Project-local runtime loading does not trigger governance",
+      "prompt": "Studio 里的 product-photoshoot 和 amazon-product-listing 到底有没有启动？是不是 Skill 放错位置了？",
+      "expected_behavior": "Do not invoke cross-runtime Skill ecosystem governance. Inspect Studio's own configuration, projection paths, and runtime Skill inventory directly. Use the Doctor only if the user explicitly broadens the request to cross-runtime or cross-scope ownership, exposure, lifecycle, or repair governance.",
+      "type": "objective"
     }
   ]
 }

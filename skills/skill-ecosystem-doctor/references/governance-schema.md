@@ -12,6 +12,7 @@ the deterministic validator. Keep facts in the document and workflow rules in
 | `source_policy` | object | Canonical local registry, active projections, and additional inventory roots. |
 | `source_policy.local_only_canonical_registry` | string | Registry root that contains a `skills/` directory. `~` is expanded. |
 | `source_policy.projection_roots` | string array | Existing runtime directories to audit. Include only in-scope roots. |
+| `projection_runtimes` | string array | Optional (legacy schema). Runtimes receiving automatic global/project projections, from `codex`, `claude`, `agents`, `gemini`, `cursor`. Defaults to `["codex", "claude"]`, so omitting it preserves existing behaviour. Set it explicitly to `[]` to disable automatic links; `managed_global_sources` remain explicit per-Skill exceptions. Drives `projection_roots` and the per-project `<dir>/skills` globs. |
 | `source_policy.projection_globs` | string array | Optional absolute path patterns for dynamic project/worktree projection roots. A pattern matching nothing is an error. |
 | `source_policy.inventory_roots` | object array | Additional roots with explicit `path`, `kind`, and `owner`. |
 | `source_policy.managed_physical_skills` | object | Exact physical runtime Skills mapped to the installer or source owner that manages them. |
@@ -39,6 +40,12 @@ controls cannot silently become no-ops.
 worktree globs, cold storage, retired names, runtime mirrors, managed global
 sources, and split declarations. It normalizes that document in memory for
 auditing; it does not rewrite or migrate the file.
+
+Legacy policy may also declare top-level `inventory_roots` using the same
+`path`/`kind`/`owner` objects as `source_policy.inventory_roots`. Use this with
+`projection_runtimes: []` to audit a package-managed physical catalog such as
+`~/.agents/skills` without turning it into a symlink destination. Leave
+`managed_global_sources` empty as well when the required plan is zero-link.
 
 Deployed exposure fields are:
 
