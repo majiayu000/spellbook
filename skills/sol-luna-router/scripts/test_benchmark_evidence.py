@@ -8,12 +8,14 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import subprocess
 import tempfile
 import unittest
 from typing import cast
 
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
+REPO_ROOT = SKILL_DIR.parents[1]
 EVIDENCE_PATH = SKILL_DIR / "evals" / "transport-warning-benchmark-2026-08-12.json"
 TASK_PATH = SKILL_DIR / "evals" / "transport-warning-benchmark-2026-08-12-task.md"
 RATE_CARD_PATH = SKILL_DIR / "references" / "rate-card-2026-08-05.json"
@@ -220,10 +222,73 @@ def _check_privacy(value: object, context: str = "evidence") -> None:
         return
     if isinstance(value, str):
         stripped = value.strip()
-        if (stripped.startswith("/") and not stripped.startswith("//")) or (
-            WINDOWS_PATH_RE.search(value) is not None
-        ) or KNOWN_POSIX_ROOT_RE.search(value) is not None:
+        if (
+            (stripped.startswith("/") and not stripped.startswith("//"))
+            or WINDOWS_PATH_RE.search(value) is not None
+            or KNOWN_POSIX_ROOT_RE.search(value) is not None
+            or CONCRETE_LOCAL_PATH_RE.search(value) is not None
+        ):
             raise EvidenceValidationError(f"absolute local path: {context}")
+        for pattern, label in (
+            (AUTH_MATERIAL_RE, "auth or credential material"),
+            (UUID_RE, "UUID-like execution id"),
+            (RAW_EXECUTION_MARKER_RE, "raw execution/session marker"),
+            (RAW_TRANSCRIPT_MARKER_RE, "raw transcript marker"),
+        ):
+            if pattern.search(value) is not None:
+                raise EvidenceValidationError(f"{label}: {context}")
+
+
+def _git_output(*args: str) -> str:
+    try:
+        completed = subprocess.run(
+            ["git", "--no-replace-objects", "-C", str(REPO_ROOT), *args],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as exc:
+        raise EvidenceValidationError(f"unable to run git: {exc}") from exc
+    if completed.returncode != 0:
+        detail = completed.stderr.strip() or completed.stdout.strip() or "unknown git error"
+        raise EvidenceValidationError(f"git {' '.join(args)} failed: {detail}")
+    return completed.stdout.strip()
+
+
+def _check_published_source(value: object, implementation_paths: list[object]) -> None:
+    source = _mapping(value, "published_source")
+    _keys(
+        source,
+        {"baseline_commit", "baseline_tree", "implementation_commit", "implementation_tree"},
+        "published_source",
+    )
+    for name in ("baseline_commit", "baseline_tree", "implementation_commit", "implementation_tree"):
+        _check_hash(source[name], SHA1_RE, f"published_source.{name}")
+
+    baseline_commit = _string(source["baseline_commit"], "published_source.baseline_commit")
+    implementation_commit = _string(
+        source["implementation_commit"], "published_source.implementation_commit"
+    )
+    _equal(
+        _git_output("show", "-s", "--format=%T", baseline_commit),
+        source["baseline_tree"],
+        "published source baseline tree",
+    )
+    _equal(
+        _git_output("show", "-s", "--format=%T", implementation_commit),
+        source["implementation_tree"],
+        "published source implementation tree",
+    )
+    _equal(
+        _git_output("show", "-s", "--format=%P", implementation_commit).split(),
+        [baseline_commit],
+        "published source implementation parent",
+    )
+    _equal(
+        _git_output("diff", "--name-only", baseline_commit, implementation_commit, "--").splitlines(),
+        implementation_paths,
+        "published source changed paths",
+    )
 
 
 def _check_rate_card(card: dict[str, object]) -> None:
@@ -377,13 +442,23 @@ def validate_evidence(
     provenance = _mapping(evidence["provenance"], "provenance")
     _keys(
         provenance,
-        {"baseline_commit", "baseline_tree", "task_artifact_sha256", "held_out_evaluator_sha256", "held_out_evaluator_source_included"},
+        {
+            "published_source",
+            "isolated_snapshot",
+            "task_artifact_sha256",
+            "held_out_evaluator_sha256",
+            "held_out_evaluator_source_included",
+        },
         "provenance",
     )
-    _equal(provenance["baseline_commit"], "bc9e6fb2dfa7e035a1dabcce0d347a1c121b1237", "baseline commit")
-    _equal(provenance["baseline_tree"], "80a082fa823225fd9d50ac60f2d74d9757242b13", "baseline tree")
-    _check_hash(provenance["baseline_commit"], SHA1_RE, "baseline commit")
-    _check_hash(provenance["baseline_tree"], SHA1_RE, "baseline tree")
+    _check_published_source(provenance["published_source"], paths)
+    isolated = _mapping(provenance["isolated_snapshot"], "isolated_snapshot")
+    _keys(isolated, {"baseline_commit", "baseline_tree", "git_objects_included"}, "isolated_snapshot")
+    _equal(isolated["baseline_commit"], "bc9e6fb2dfa7e035a1dabcce0d347a1c121b1237", "isolated baseline commit")
+    _equal(isolated["baseline_tree"], "80a082fa823225fd9d50ac60f2d74d9757242b13", "isolated baseline tree")
+    _check_hash(isolated["baseline_commit"], SHA1_RE, "isolated baseline commit")
+    _check_hash(isolated["baseline_tree"], SHA1_RE, "isolated baseline tree")
+    _equal(isolated["git_objects_included"], False, "isolated Git object inclusion")
     _equal(provenance["task_artifact_sha256"], "9f18469a288f95bde73705c307051e8be051619904674cfd8c9403585b57a903", "task artifact SHA-256")
     _equal(provenance["held_out_evaluator_sha256"], "837ffa015b88d70d9f591711e61e81226ee0aad64debd7cb2c8326808c52dd9c", "held-out evaluator SHA-256")
     _check_hash(provenance["task_artifact_sha256"], SHA256_RE, "task artifact SHA-256")
@@ -481,7 +556,7 @@ def validate_evidence(
         comparator = _mapping(value, context)
         _keys(
             comparator,
-            {"name", "label", "variant", "date", "baseline_tree", "estimated_credits", "duration_seconds", "held_out_tests", "claim_boundary"},
+            {"name", "label", "variant", "date", "isolated_baseline_tree", "estimated_credits", "duration_seconds", "held_out_tests", "claim_boundary"},
             context,
             optional={"arithmetic"},
         )
@@ -490,8 +565,8 @@ def validate_evidence(
         _equal(comparator["label"], "historical comparator; not current pricing", f"{context}.label")
         _equal(comparator["variant"], variant, f"{context}.variant")
         _equal(comparator["date"], "2026-08-05", f"{context}.date")
-        _equal(comparator["baseline_tree"], "80a082fa823225fd9d50ac60f2d74d9757242b13", f"{context}.baseline_tree")
-        _check_hash(comparator["baseline_tree"], SHA1_RE, f"{context}.baseline_tree")
+        _equal(comparator["isolated_baseline_tree"], "80a082fa823225fd9d50ac60f2d74d9757242b13", f"{context}.isolated_baseline_tree")
+        _check_hash(comparator["isolated_baseline_tree"], SHA1_RE, f"{context}.isolated_baseline_tree")
         _equal(_decimal(comparator["estimated_credits"], f"{context}.estimated_credits"), credits, f"{context}.estimated_credits")
         _equal(_decimal(comparator["duration_seconds"], f"{context}.duration_seconds"), duration, f"{context}.duration_seconds")
         _check_test_gate(comparator["held_out_tests"], f"{context}.held_out_tests", 4, 4)
@@ -508,6 +583,8 @@ def validate_evidence(
         "Root-session preflight and dispatch, two invalid nested-CLI transport failures, and one invalid read-only verification attempt are excluded from the measured sequential stages.",
         "Credits use references/rate-card-2026-08-05.json as a historical estimate, not current pricing.",
         "The held-out evaluator is represented only by its SHA-256; its source and contents are not included.",
+        "The isolated snapshot commit and tree are historical run identifiers whose Git objects are not included; published_source is the repository-verifiable implementation provenance.",
+        "The validator checks record integrity, arithmetic, published code provenance, and privacy; excluded raw ledgers and held-out evaluator contents prevent independent replay of the historical usage and quality results.",
         "The listed implementation paths are benchmark result metadata, not current PR changed files.",
         "The 2026-08-05 comparators are historical controlled comparators and do not establish global optimality or prove the scoped Max two-stage cost is a complete end-to-end result.",
     ]
@@ -547,6 +624,36 @@ class BenchmarkEvidenceTests(unittest.TestCase):
             "Use skills/sol-luna-router/scripts/run_luna_worker.py.\n",
             "generic markdown fixture",
         )
+        _check_privacy(
+            {
+                "note": "Credentials and raw transcripts are excluded.",
+                "path": "skills/sol-luna-router/scripts/run_luna_worker.py",
+            }
+        )
+
+    def test_json_string_privacy_leaks_are_rejected(self) -> None:
+        leaks = (
+            ("artifact at /custom/project/private/file.json", "absolute local path"),
+            ("Authorization: Bearer " + "A" * 24, "auth or credential material"),
+            ("run UUID 00000000-0000-0000-0000-000000000000", "UUID-like execution id"),
+            ('"session_id": "abc12345"', "raw execution/session marker"),
+            ("BEGIN RAW TRANSCRIPT", "raw transcript marker"),
+        )
+        for content, message in leaks:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(EvidenceValidationError, message):
+                    _check_privacy({"note": content})
+
+    def test_published_source_tree_drift_is_rejected(self) -> None:
+        evidence = _load_json(EVIDENCE_PATH)
+        provenance = _mapping(evidence["provenance"], "provenance")
+        source = _mapping(provenance["published_source"], "published_source")
+        source["implementation_tree"] = "0" * 40
+        with tempfile.TemporaryDirectory(prefix="benchmark-evidence-test-") as directory:
+            drifted_evidence = Path(directory) / EVIDENCE_PATH.name
+            drifted_evidence.write_text(json.dumps(evidence), encoding="utf-8")
+            with self.assertRaisesRegex(EvidenceValidationError, "published source implementation tree"):
+                validate_evidence(evidence_path=drifted_evidence)
 
     def test_privacy_sensitive_key_is_rejected(self) -> None:
         with self.assertRaisesRegex(EvidenceValidationError, "privacy-sensitive key"):
