@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "benchmark": {
+    "id": "luna-max-transport-warning-2026-08-12",
+    "date": "2026-08-12",
+    "rate_card": "references/rate-card-2026-08-05.json",
+    "rate_card_status": "historical estimate; not current pricing",
+    "implementation_paths": [
+      "skills/sol-luna-router/SKILL.md",
+      "skills/sol-luna-router/scripts/run_luna_worker.py",
+      "skills/sol-luna-router/scripts/test_run_luna_worker.py"
+    ]
+  },
+  "provenance": {
+    "published_source": {
+      "baseline_commit": "f3a68b17159ccf14b75d1c074380971a93c55901",
+      "baseline_tree": "21735b7bb4fd982dc8919269dda9209c5caf3014",
+      "implementation_commit": "3aef0df62c7739ae3c568b594f37c7bbcda36117",
+      "implementation_tree": "5ed15a2cc66859547c1334e6dc3b708da04d9f53"
+    },
+    "isolated_snapshot": {
+      "baseline_commit": "bc9e6fb2dfa7e035a1dabcce0d347a1c121b1237",
+      "baseline_tree": "80a082fa823225fd9d50ac60f2d74d9757242b13",
+      "git_objects_included": false
+    },
+    "task_artifact_sha256": "9f18469a288f95bde73705c307051e8be051619904674cfd8c9403585b57a903",
+    "held_out_evaluator_sha256": "837ffa015b88d70d9f591711e61e81226ee0aad64debd7cb2c8326808c52dd9c",
+    "held_out_evaluator_source_included": false
+  },
+  "scope": {
+    "included": [
+      "Luna worker",
+      "isolated Sol verification"
+    ],
+    "complete_routed_task_cost": false,
+    "excluded": [
+      "root-session preflight and dispatch",
+      "two invalid nested-CLI transport failures",
+      "one invalid read-only verification attempt"
+    ],
+    "stages": [
+      {
+        "name": "luna_worker",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "max",
+        "duration_seconds": 259.353,
+        "usage": {
+          "input_tokens": 371636,
+          "cached_input_tokens": 302080,
+          "uncached_input_tokens": 69556,
+          "output_tokens": 12210,
+          "reasoning_output_tokens": 7108
+        },
+        "estimated_credits": 0.865120
+      },
+      {
+        "name": "isolated_sol_verifier",
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "medium",
+        "duration_seconds": 38.940,
+        "usage": {
+          "input_tokens": 39922,
+          "cached_input_tokens": 30208,
+          "uncached_input_tokens": 9714,
+          "output_tokens": 341,
+          "reasoning_output_tokens": 38
+        },
+        "estimated_credits": 1.847600
+      }
+    ],
+    "measured_sequential": {
+      "duration_seconds": 298.293,
+      "estimated_credits": 2.712720
+    }
+  },
+  "invalid_attempts": {
+    "total": 3,
+    "classes": {
+      "nested_cli_transport_failure": 2,
+      "read_only_verification_attempt": 1
+    }
+  },
+  "quality": {
+    "worker_tests": {
+      "passed": 10,
+      "total": 10
+    },
+    "held_out_tests": {
+      "passed": 4,
+      "total": 4
+    },
+    "python_compile": "pass",
+    "git_diff_check": "pass",
+    "scope_violations": 0,
+    "correction_cycles": 0
+  },
+  "historical_comparators": [
+    {
+      "name": "sol_only_2026-08-05",
+      "label": "historical comparator; not current pricing",
+      "variant": "Sol-only",
+      "date": "2026-08-05",
+      "isolated_baseline_tree": "80a082fa823225fd9d50ac60f2d74d9757242b13",
+      "estimated_credits": 12.766250,
+      "duration_seconds": 147.01,
+      "held_out_tests": {
+        "passed": 4,
+        "total": 4
+      },
+      "claim_boundary": "Historical comparator only; not proof that the scoped Max two-stage cost is a complete end-to-end result."
+    },
+    {
+      "name": "thin_sol_luna_high_2026-08-05",
+      "label": "historical comparator; not current pricing",
+      "variant": "thin Sol+Luna High",
+      "date": "2026-08-05",
+      "isolated_baseline_tree": "80a082fa823225fd9d50ac60f2d74d9757242b13",
+      "estimated_credits": 4.534795,
+      "duration_seconds": 132.29,
+      "held_out_tests": {
+        "passed": 4,
+        "total": 4
+      },
+      "claim_boundary": "Historical comparator only; not proof that the scoped Max two-stage cost is a complete end-to-end result."
+    }
+  ],
+  "claim_boundaries": [
+    "Measured scope is the Luna worker plus isolated Sol verification; complete_routed_task_cost is false.",
+    "Root-session preflight and dispatch, two invalid nested-CLI transport failures, and one invalid read-only verification attempt are excluded from the measured sequential stages.",
+    "Credits use references/rate-card-2026-08-05.json as a historical estimate, not current pricing.",
+    "The held-out evaluator is represented only by its SHA-256; its source and contents are not included.",
+    "The isolated snapshot commit and tree are historical run identifiers whose Git objects are not included; published_source is the repository-verifiable implementation provenance.",
+    "The validator checks record integrity, arithmetic, published code provenance, and privacy; excluded raw ledgers and held-out evaluator contents prevent independent replay of the historical usage and quality results.",
+    "The listed implementation paths are benchmark result metadata, not current PR changed files.",
+    "The 2026-08-05 comparators are historical controlled comparators and do not establish global optimality or prove the scoped Max two-stage cost is a complete end-to-end result."
+  ]
+}
