@@ -722,6 +722,84 @@
     ]
   },
   {
+    "name": "idea-analogist",
+    "category": "Product Lifecycle",
+    "format": "directory",
+    "path": "skills/idea-analogist/SKILL.md",
+    "description": "想法群聊室 — 类比者角色。被 idea-team 主编排器调用，或用户单独说\"类比一下\"、\"别的行业有没有\"、\"yes-and 扩展\"、\"X 让你想到什么\"、\"跨界启示\"时触发。**专门做跨界类比 + yes-and 扩展——不评判、不挑刺、不要求事实证据**。Do NOT use when 用户要数据（用 /idea-research）、要反方意见（用 /idea-devils-advocate）、或要严谨论证（类比是启发，不是论证）。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": []
+  },
+  {
+    "name": "idea-devils-advocate",
+    "category": "Product Lifecycle",
+    "format": "directory",
+    "path": "skills/idea-devils-advocate/SKILL.md",
+    "description": "想法群聊室 — 反方角色。被 idea-team 主编排器调用，或用户单独说\"反方意见\"、\"挑这个想法的刺\"、\"为什么会失败\"、\"找漏洞 / 反例\"、\"devil's advocate\"时触发。**专门挑漏洞、找隐藏假设、给反例——不安慰、不\"也许可以这样\"、不全盘否定**。Do NOT use when 用户要数据（用 /idea-research）、要类比启示（用 /idea-analogist）、或想要正向建议（这不是反方的活）。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": []
+  },
+  {
+    "name": "idea-research",
+    "category": "Product Lifecycle",
+    "format": "directory",
+    "path": "skills/idea-research/SKILL.md",
+    "description": "想法群聊室 — 调研员角色。被 idea-team 主编排器调用，或用户单独说\"调研一下 X\"、\"X 的现状/竞品/数据\"、\"找 2026 数据\"、\"事实底\"时触发。**用 WebSearch 拉真实 2026 数据、列竞品、引来源——只给事实，不评判，不建议**。Do NOT use when 用户要评价想法好坏（那是反方）、或要跨界启示（那是类比者）、或已有 PRD 在跑（不需要这种调研）。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "documentation"
+    ]
+  },
+  {
+    "name": "idea-team",
+    "category": "Product Lifecycle",
+    "format": "directory",
+    "path": "skills/idea-team/SKILL.md",
+    "description": "想法群聊室主持人 — 把一句话想法丢给多角色 AI 团队（调研员/反方/类比者）做查漏补缺。每个角色有自己的 voice，他们互相 @ 接话；你随时插话。**这是创意扩展工具，不打分、不否决、不堵路**。Use when 用户说\"组个团队聊一下\"、\"开会讨论这个想法\"、\"找几个角度看看\"、\"群聊一下 X\"、\"team review X\"，或调用 `/idea-team`。Do NOT use when 用户已决定做这个想法只要 PRD（用 /idea）、或用户要单独某个角色（直接用 /idea-research 等）、或用户只想自由 brainstorm（不需要 team 结构）。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "code-review",
+      "documentation"
+    ]
+  },
+  {
+    "name": "idea-to-product",
+    "category": "Product Lifecycle",
+    "format": "directory",
+    "path": "skills/idea-to-product/SKILL.md",
+    "description": "端到端产品教练 — 把一句话想法走到 PRD + 可点击 HTML 原型。会顶嘴、强制砍功能、用 Nielsen + Norman 做友好性硬检。Use when user 说\"我有一个想法\"、\"想做一个产品\"、\"做 MVP\"、\"写 PRD\"、\"做用户友好的产品\"，或调用 `/idea`。Do NOT use when 用户已有完整 PRD 在跑、明确说\"只 brainstorm 不决策\"、只想要 UI 设计（用 design-shotgun）、或只想起项目骨架（用 /init）。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "documentation",
+      "frontend"
+    ]
+  },
+  {
     "name": "incident-slo-runbook",
     "category": "Operations & Deploy",
     "format": "directory",
