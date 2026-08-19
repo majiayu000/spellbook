@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{product_name}} — 原型</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #111827;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #4f46e5;
+    --accent-fg: #ffffff;
+    --surface: #f9fafb;
+    --success: #10b981;
+    --danger: #ef4444;
+    --radius: 8px;
+    --space-1: 8px;
+    --space-2: 16px;
+    --space-3: 24px;
+    --space-4: 32px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a0a0a;
+      --fg: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #27272a;
+      --accent: #818cf8;
+      --surface: #18181b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--space-3) var(--space-2);
+  }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+  h1 { font-size: 24px; margin: 0 0 var(--space-1); }
+  .tagline { color: var(--muted); margin: 0; font-size: 14px; }
+  .step-indicator {
+    display: flex;
+    gap: var(--space-1);
+    margin-bottom: var(--space-3);
+  }
+  .step-dot {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    transition: background 0.3s;
+  }
+  .step-dot.active { background: var(--accent); }
+  .step-dot.done { background: var(--success); }
+  section[data-step] { display: none; }
+  section[data-step].active { display: block; animation: fadein 0.3s; }
+  @keyframes fadein {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+  h2 { font-size: 20px; margin: 0 0 var(--space-2); }
+  p { margin: 0 0 var(--space-2); }
+  .btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.05s;
+    font-family: inherit;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn:active { transform: scale(0.98); }
+  .btn.secondary {
+    background: transparent;
+    color: var(--fg);
+    border: 1px solid var(--border);
+  }
+  .btn-row {
+    display: flex;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
+  }
+  input, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 15px;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+  }
+  textarea { min-height: 100px; resize: vertical; }
+  .label { font-size: 13px; color: var(--muted); margin-bottom: 4px; display: block; }
+  .empty-state {
+    text-align: center;
+    padding: var(--space-4) var(--space-2);
+    color: var(--muted);
+  }
+  .loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast {
+    position: fixed;
+    bottom: var(--space-3);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--fg);
+    color: var(--bg);
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .toast.show { opacity: 1; }
+  @media (max-width: 640px) {
+    h1 { font-size: 20px; }
+    .container { padding: var(--space-2) var(--space-1); }
+    .card { padding: var(--space-2); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>{{product_name}}</h1>
+    <p class="tagline">{{value_prop}}</p>
+  </header>
+
+  <div class="step-indicator" aria-label="进度">
+    {{#each journey_steps}}
+    <div class="step-dot" data-step-dot="{{@index_plus_1}}"></div>
+    {{/each}}
+  </div>
+
+  <!-- 每个 journey step 生成一个 section -->
+  {{#each journey_steps}}
+  <section data-step="{{@index_plus_1}}" {{#if first}}class="active"{{/if}}>
+    <div class="card">
+      <h2>{{step_title}}</h2>
+      <p>{{step_description}}</p>
+      <!-- 这里按 step 类型生成具体 UI（input/button/list 等） -->
+      {{step_ui}}
+      <div class="btn-row">
+        {{#if not_first}}
+        <button class="btn secondary" data-action="prev">← 返回</button>
+        {{/if}}
+        <button class="btn" data-action="next">{{step_cta}} →</button>
+      </div>
+    </div>
+  </section>
+  {{/each}}
+
+  <!-- Aha 时刻屏 -->
+  <section data-step="aha">
+    <div class="card" style="text-align: center;">
+      <h2>✨ {{aha_moment.observation}}</h2>
+      <p style="font-size: 16px; color: var(--muted);">{{aha_moment.trigger}}</p>
+      <div class="btn-row" style="justify-content: center;">
+        <button class="btn" data-action="restart">再试一次</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  let currentStep = 1;
+  const totalSteps = {{total_steps}};
+  const sections = document.querySelectorAll('section[data-step]');
+  const dots = document.querySelectorAll('[data-step-dot]');
+
+  function showStep(step) {
+    sections.forEach(s => s.classList.remove('active'));
+    const target = document.querySelector(`section[data-step="${step}"]`);
+    if (target) target.classList.add('active');
+    dots.forEach((d, i) => {
+      d.classList.remove('active', 'done');
+      const n = parseInt(d.dataset.stepDot, 10);
+      if (n < step) d.classList.add('done');
+      else if (n === step) d.classList.add('active');
+    });
+    currentStep = step;
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  document.addEventListener('click', e => {
+    const action = e.target.dataset.action;
+    if (!action) return;
+    if (action === 'next') {
+      if (currentStep < totalSteps) showStep(currentStep + 1);
+      else showStep('aha');
+    } else if (action === 'prev') {
+      if (currentStep > 1) showStep(currentStep - 1);
+    } else if (action === 'restart') {
+      showStep(1);
+      toast('已重置');
+    }
+  });
+
+  // 错误恢复友好示例（Nielsen N9）
+  window.addEventListener('error', () => {
+    toast('出错了，已恢复。再试一次？');
+  });
+})();
+</script>
+</body>
+</html>

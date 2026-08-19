@@ -1,0 +1,20 @@
+{
+  "name": "idea-coach",
+  "version": "1.0.0",
+  "description": "Idea coaching toolkit: an opinionated end-to-end product coach (idea -> PRD -> clickable HTML prototype) plus a multi-role idea group chat for blind-spot discovery",
+  "author": {
+    "name": "majiayu000",
+    "url": "https://github.com/majiayu000"
+  },
+  "repository": "https://github.com/majiayu000/spellbook",
+  "license": "MIT",
+  "keywords": [
+    "product",
+    "prd",
+    "mvp",
+    "brainstorming",
+    "idea-validation",
+    "product-manager",
+    "prototyping"
+  ]
+}

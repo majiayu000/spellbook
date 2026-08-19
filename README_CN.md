@@ -310,6 +310,25 @@ python3 scripts/audit_skill_quality.py skill-creator
 
 ---
 
+## 插件（Plugins）
+
+Spellbook 同时是一个 Claude Code 插件 marketplace。把仓库加为 marketplace 后即可安装插件：
+
+```
+/plugin marketplace add majiayu000/spellbook
+/plugin install idea-coach
+/plugin install rust-dev
+```
+
+| 插件 | 说明 |
+|--------|-------------|
+| [`idea-coach`](./plugins/idea-coach/) | 会顶嘴的产品教练（想法 → PRD → 可点击 HTML 原型）+ 多角色想法群聊室；提供 `/idea` 和 `/idea-team` 命令 |
+| [`rust-dev`](./plugins/rust-dev/) | Rust 最佳实践、代码评审、性能与 async 模式 |
+
+插件内 skill 是 catalog skill 的打包副本；catalog（由 `install.sh` 安装）仍是跨 runtime 的唯一事实来源。
+
+---
+
 ## 技能设计理念
 
 Spellbook 中的每个技能都遵循以下原则：
