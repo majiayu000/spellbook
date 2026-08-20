@@ -35,10 +35,10 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 
 1. 抽取 `raw_idea`
 2. 派生 kebab-case `slug`
-3. `mkdir -p .idea-team/<slug>/`
-4. 写 `state.json`：
+3. 检查 `.idea-team/<slug>/`：若已有 `state.json` 或 `chat.md`，先让用户选择 **resume** 或创建带递增后缀的唯一 slug（如 `<slug>-2`）；选择前不得覆盖或 append
+4. 确认目录唯一后 `mkdir -p .idea-team/<slug>/`，写 `state.json`：
    ```json
-   { "slug": "...", "raw_idea": "...", "round": 1, "speakers": [], "created_at": "<ISO 8601>", "active_roles": ["research", "devils-advocate", "analogist"] }
+   { "slug": "...", "raw_idea": "...", "round": 1, "speakers": [], "round_complete": false, "status": "active", "created_at": "<ISO 8601>", "updated_at": "<ISO 8601>", "active_roles": ["research", "devils-advocate", "analogist"] }
    ```
 5. **依次 Read 3 个角色 SKILL.md**
 6. 进入群聊：主持人开场
@@ -47,7 +47,9 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 
 ### 输出格式
 
-每条发言独立一段（不要一口气输出多个角色）：
+每条发言独立一段，但一个回合的 3 个角色必须在**同一次 assistant response**
+中按顺序输出为 3 个独立 block。聊天 runtime 不会在没有新用户消息时自动触发
+下一次 assistant response，所以禁止把同一回合拆成三个等待触发的回复。
 
 ```
 🔍 调研员: <内容，≤ 80 字>。[来源: <来源, 日期>]
@@ -68,6 +70,9 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 - 调研员开口给事实底
 - 反方挑刺（可质疑调研员的数据 + 挑想法本身）
 - 类比者 yes-and（可接反方的话 + 跨界类比）
+- 生成每个角色 block 后，先把该发言 append 到 `chat.md`，再把角色 id append
+  到 `state.json.speakers` 并更新 `updated_at`；三个角色全部持久化后设置
+  `round_complete = true`
 - 一回合结束，**主持人邀请用户插话**：
   ```
   🎬 主持人: 第 N 回合结束。你想 @ 谁继续？说 "@反方 多说点"，或 "下一轮"，或 "汇总"。
@@ -78,7 +83,7 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 | 用户输入 | 行为 |
 |---|---|
 | `@角色 ...` | 该角色直接回应用户的话（不走回合） |
-| "继续" / "下一轮" | 开新回合（调研员 → 反方 → 类比者） |
+| "继续" / "下一轮" | 先 `round += 1`、清空 `speakers`、设置 `round_complete = false` 并持久化，再在一次 response 内完成三角色新回合 |
 | "够了" / "汇总" | 进入汇总环节，写 `team-report.md` |
 | 自由文本 | 主持人判断哪个角色最相关，邀请他接话 |
 
@@ -94,6 +99,12 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 - 每回合结束邀请用户插话（**不许连跑 2 回合不问用户**）
 - 检测到 voice 越界时拉回（例：类比者开始挑刺 → 主持人提醒 "类比者只 yes-and"）
 - 用户说"汇总"时主持总结
+
+### Resume 规则
+
+读取 `round`、`speakers`、`round_complete` 和 `chat.md`。若当前回合未完成，只输出
+`speakers` 中缺失的剩余角色 block，并在每个 block 后持久化；不得重复已记录角色。
+若当前回合已完成，先邀请用户选择下一轮或汇总，不得擅自递增回合。
 
 ## 6. 输出物
 
@@ -139,7 +150,7 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 
 | 你脑里的借口 | 反驳 |
 |---|---|
-| "3 个角色一口气说完，效率高" | ❌ 一次一条发言，让用户跟得上节奏 |
+| "每个角色等下一次用户消息再说" | ❌ runtime 不会自动续答；同一回合必须在一次 response 内输出 3 个独立角色 block |
 | "调研员说完，反方接的内容不用 @ 他" | 鼓励互相 @，让对话有"群聊感" |
 | "类比者觉得反方说错了，挑刺反驳" | ❌ 类比者只 yes-and。voice 越界由主持人拉回 |
 | "连跑 2 个回合再问用户" | ❌ 每回合后必须邀请插话 |
@@ -151,9 +162,15 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 
 1. **不打分、不否决、不堵路** — 这是查漏补缺，不是 judge。
 2. **voice 边界硬隔离** — 调研员不评判、反方不安慰、类比者不挑刺。越界由主持人拉回。
-3. **一次一条发言** — 不一口气输出多角色，让用户跟得上。
+3. **一回合一条 response、三段角色 block** — 固定顺序输出，视觉上分段，不依赖不存在的自动续答。
 4. **每回合后邀请插话** — 不许连跑 2 回合不问。
 5. **每条 ≤ 80 字** — 群聊节奏 > 长篇大论。
 6. **来源必引** — 调研员说事实必须 [来源: xxx, 日期]。
 7. **chat.md 实时追写** — 每条发言 append 一行，不等汇总。
 8. **角色未安装不替补** — 提醒用户跑 spellbook 根目录 install.sh，不让 main agent 自己 cosplay 缺席的角色。
+9. **状态逐条持久化** — 每条发言后更新 `speakers`；轮次转换先写 `round` 再输出，Resume 不重复角色。
+
+## 10. 维护者验证
+
+回合触发、断点续聊和 slug 冲突场景见 `evals/evals.json`。修改回合或持久化
+语义时，必须同步更新这些 eval。

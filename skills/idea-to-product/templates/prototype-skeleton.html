@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{product_name}} — 原型</title>
+<!-- *_html fields MUST be HTML-escaped before interpolation. step_ui is trusted generated markup only. -->
+<title>{{product_name_html}} — 原型</title>
 <style>
   :root {
     --bg: #ffffff;
@@ -164,8 +165,8 @@
 <body>
 <div class="container">
   <header>
-    <h1>{{product_name}}</h1>
-    <p class="tagline">{{value_prop}}</p>
+    <h1>{{product_name_html}}</h1>
+    <p class="tagline">{{value_prop_html}}</p>
   </header>
 
   <div class="step-indicator" aria-label="进度">
@@ -178,15 +179,15 @@
   {{#each journey_steps}}
   <section data-step="{{@index_plus_1}}" {{#if first}}class="active"{{/if}}>
     <div class="card">
-      <h2>{{step_title}}</h2>
-      <p>{{step_description}}</p>
+      <h2>{{step_title_html}}</h2>
+      <p>{{step_description_html}}</p>
       <!-- 这里按 step 类型生成具体 UI（input/button/list 等） -->
       {{step_ui}}
       <div class="btn-row">
         {{#if not_first}}
         <button class="btn secondary" data-action="prev">← 返回</button>
         {{/if}}
-        <button class="btn" data-action="next">{{step_cta}} →</button>
+        <button class="btn" data-action="next">{{step_cta_html}} →</button>
       </div>
     </div>
   </section>
@@ -195,8 +196,8 @@
   <!-- Aha 时刻屏 -->
   <section data-step="aha">
     <div class="card" style="text-align: center;">
-      <h2>✨ {{aha_moment.observation}}</h2>
-      <p style="font-size: 16px; color: var(--muted);">{{aha_moment.trigger}}</p>
+      <h2>✨ {{aha_moment_observation_html}}</h2>
+      <p style="font-size: 16px; color: var(--muted);">{{aha_moment_trigger_html}}</p>
       <div class="btn-row" style="justify-content: center;">
         <button class="btn" data-action="restart">再试一次</button>
       </div>
@@ -220,7 +221,7 @@
     dots.forEach((d, i) => {
       d.classList.remove('active', 'done');
       const n = parseInt(d.dataset.stepDot, 10);
-      if (n < step) d.classList.add('done');
+      if (step === 'aha' || n < step) d.classList.add('done');
       else if (n === step) d.classList.add('active');
     });
     currentStep = step;
@@ -247,9 +248,9 @@
     }
   });
 
-  // 错误恢复友好示例（Nielsen N9）
+  // 诚实的错误反馈示例（Nielsen N9）；这里不声称已自动恢复状态。
   window.addEventListener('error', () => {
-    toast('出错了，已恢复。再试一次？');
+    toast('出现错误，当前操作未完成。请刷新或重试。');
   });
 })();
 </script>

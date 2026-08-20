@@ -322,7 +322,7 @@ Spellbook 同时是一个 Claude Code 插件 marketplace。把仓库加为 marke
 
 | 插件 | 说明 |
 |--------|-------------|
-| [`idea-coach`](./plugins/idea-coach/) | 会顶嘴的产品教练（想法 → PRD → 可点击 HTML 原型）+ 多角色想法群聊室；提供 `/idea` 和 `/idea-team` 命令 |
+| [`idea-coach`](./plugins/idea-coach/) | 会顶嘴的产品教练（想法 → PRD → 可点击 HTML 原型）+ 多角色想法群聊室；插件命令为 `/idea-coach:idea` 和 `/idea-coach:idea-team` |
 | [`rust-dev`](./plugins/rust-dev/) | Rust 最佳实践、代码评审、性能与 async 模式 |
 
 插件内 skill 是 catalog skill 的打包副本；catalog（由 `install.sh` 安装）仍是跨 runtime 的唯一事实来源。

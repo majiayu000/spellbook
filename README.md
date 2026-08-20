@@ -323,7 +323,7 @@ marketplace, then install plugins from it:
 
 | Plugin | Description |
 |--------|-------------|
-| [`idea-coach`](./plugins/idea-coach/) | Opinionated product coach (idea -> PRD -> clickable HTML prototype) + multi-role idea group chat; provides `/idea` and `/idea-team` commands |
+| [`idea-coach`](./plugins/idea-coach/) | Opinionated product coach (idea -> PRD -> clickable HTML prototype) + multi-role idea group chat; plugin commands are `/idea-coach:idea` and `/idea-coach:idea-team` |
 | [`rust-dev`](./plugins/rust-dev/) | Rust best practices, code review, performance, and async patterns |
 
 Plugin skills are packaged copies of catalog skills; the catalog (installed by

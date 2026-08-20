@@ -16,6 +16,14 @@
 
 ### Step 1. 读 state.json + templates/prototype-skeleton.html
 
+### Step 1.5. 转义用户派生文本
+
+所有来自 `raw_idea`、value_prop、journey、CTA、Aha 文案或其他用户输入的
+文本，在进入 HTML text node 或 attribute 前必须把 `& < > " '` 分别转义为
+HTML entity。将转义结果映射到模板的 `*_html` 字段。`step_ui` 只允许放 agent
+生成的受控 UI markup；其中若混入用户文本，也必须先转义。不得把原始用户
+字符串直接拼进 HTML 或事件处理器。
+
 ### Step 2. 决定原型类型
 基于 state.stages.6.tech_stack.frontend 和 mvp_features 数量：
 - **single-screen**：1 个核心动作 → 单屏原型
@@ -124,10 +132,11 @@ Stage 7/7 | 阶段: {Read skeleton → 决定类型 → 生成 sections → 自�
 ## 最终交付 checklist（必须全勾才算完）
 
 - [ ] `.idea/<slug>/prototype.html` 文件存在
-- [ ] `grep -E 'script src=|link rel="stylesheet" href=' prototype.html` **无任何外链**
+- [ ] `grep -E 'script src=|link rel="stylesheet" href=' .idea/<slug>/prototype.html` **无任何外链**
 - [ ] 包含 `@media (prefers-color-scheme: dark)` 块
-- [ ] 文件大小 ≤ 80KB（`wc -c prototype.html`）
+- [ ] 文件大小 ≤ 80KB（`wc -c .idea/<slug>/prototype.html`）
 - [ ] 至少一个 `addEventListener` 让原型可交互
 - [ ] 包含 `@media (max-width: 640px)` 响应式块
-- [ ] `state.stages.7` 已写入，`state.current_stage` = 7（已完成）
+- [ ] 所有用户派生文本已 HTML-escape，受控 `step_ui` 与文本字段分离
+- [ ] `state.stages.7` 已写入，`state.current_stage` = 7 且 `state.status` = `"completed"`
 - [ ] 向用户输出 4 个产物路径 + 下一步建议

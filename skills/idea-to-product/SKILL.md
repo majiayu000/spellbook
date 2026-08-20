@@ -44,20 +44,25 @@ description: 端到端产品教练 — 把一句话想法走到 PRD + 可点击 
 4. `mkdir -p .idea/<slug>/`
 5. 写初始 `state.json`：
    ```json
-   { "slug": "...", "raw_idea": "...", "current_stage": 1, "created_at": "<ISO 8601>", "stages": {} }
+   { "slug": "...", "raw_idea": "...", "current_stage": 1, "status": "active", "created_at": "<ISO 8601>", "stages": {}, "pivot_history": [] }
    ```
 6. Read `stages/1-clarify.md`，进入 Stage 1
 
 ## 5. 状态管理与进度报数
 
-每个 stage 完成后：写入 `state.json` 的 `stages.<n>`、`current_stage++`、向用户展示 stage 总结、等用户确认再进下一阶段。
+每个 stage 完成后：先写入 `state.json` 的 `stages.<n>`，再按阶段结果做显式转换，向用户展示 stage 总结，并等用户确认后继续。禁止无条件 `current_stage++`：
+
+- Stage 1、3、4、5、6 完成：`current_stage = n + 1`
+- Stage 2 `Go`：`current_stage = 3`
+- Stage 2 `Pivot` / `No-Go`：按 Stage 2 文件的分支规则处理，不走递增
+- Stage 7 完成：保持 `current_stage = 7`，并写 `status = "completed"`
 
 **每答完一题都打印进度行**（仿 deep-interview 的 quantified pacing）：
 ```
 Stage {n}/7 | 完成度: {x}/{y} 必答 | 当前阻塞: <一句话>
 ```
 
-**Resume**：`/idea resume` 时读 cwd 下所有 `.idea/*/state.json`，按 `created_at` 倒序列出供选；用户选定后从 `current_stage` 续。
+**Resume**：`/idea resume` 时读 cwd 下所有 `.idea/*/state.json`，按 `created_at` 倒序列出供选；`status = "completed"` 的会话只展示产物，不再进入阶段；其他会话从 `current_stage` 续。
 
 ## 6. 输出物与命令变体
 
@@ -101,3 +106,8 @@ Stage {n}/7 | 完成度: {x}/{y} 必答 | 当前阻塞: <一句话>
 7. **想法烂就说烂** — No-Go / Pivot 不是失败，是产品教练的诚实。
 8. **HTML 原型零依赖** — 文件 ≤ 80KB，无 CDN，双击可开。
 9. **不依赖其它 skill** — 本 skill 自包含，不调 design-html / design-shotgun。
+
+## 10. 维护者验证
+
+客观状态机、安全渲染和硬门槛场景见 `evals/evals.json`。修改阶段转换、
+模板插值或完成条件时，必须同步更新这些 eval。

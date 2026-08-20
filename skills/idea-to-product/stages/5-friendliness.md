@@ -57,7 +57,7 @@ D7 [Pass/Risk/Fail] — <一句话理由>
 
 ### Step 3. 硬门槛检查
 - 0 个 Fail → 进 Stage 6
-- ≥1 个 Fail → **回炉**。明确告诉用户：「这些 Fail 不修，PRD 不会生成。要么改设计，要么明确接受是 v2 才补的妥协（写入 known_compromises）」
+- ≥1 个 Fail → **回炉**。明确告诉用户：「这些 Fail 不修并重新评为 Pass，PRD 不会生成。」Fail 不得通过延期到 v2 绕过硬门槛；`known_compromises` 只用于已接受的 Risk。
 
 ## 输出 schema
 
@@ -83,7 +83,8 @@ D7 [Pass/Risk/Fail] — <一句话理由>
 ## 完成判定
 
 - [ ] 17 条全部标了 status
-- [ ] 所有 Fail 要么有 fix 要么明确写入 known_compromises
+- [ ] 所有 Fail 都有 fix，且修复已回填对应阶段并重新评估为 Pass
+- [ ] known_compromises 只包含 Risk，不包含任何 Fail
 - [ ] overall = "pass" 才允许进 Stage 6
 
 ## 完成话术
@@ -91,14 +92,14 @@ D7 [Pass/Risk/Fail] — <一句话理由>
 > ✅ 友好性自检：
 > - Pass: {N} 条
 > - Risk: {N} 条（已记录待迭代）
-> - Fail: {N} 条 → 已修复 / 已接受为 v2 补丁
+> - Fail: 0 条（所有原 Fail 已修复并重新评为 Pass）
 >
 > 进 Stage 6（PRD 生成）。
 
 ## 反模式
 
 - ❌ 给所有条目都 Pass——这就是没认真做
-- ❌ 用户说"这个不重要"就改 Pass——必须写入 known_compromises 留档
+- ❌ 用户说"这个不重要"就改 Pass——只能把 Risk 写入 known_compromises；Fail 必须真修并复测
 - ❌ 跳过这一阶段直接出 PRD——本 skill 的核心差异化就是这道门
 - ❌ 把"未来会做"当作 Pass——v2 计划必须明确，不是模糊承诺
 
@@ -118,8 +119,9 @@ Stage 5/7 | 完成度: {x}/17 已评估 | Pass {p} / Risk {r} / Fail {f} | 当�
 
 - [ ] Nielsen 10 全部已标 status
 - [ ] Norman 7 全部已标 status
-- [ ] 所有 `Fail` 已有 `fix` **或** 写入 `known_compromises`（含 v2_plan）
+- [ ] 当前 `Fail` 数量为 0；每个历史 Fail 都已有 fix、已回填并重新评估为 Pass
+- [ ] `known_compromises` 只记录 Risk（含 v2_plan），没有 Fail
 - [ ] `overall` == `"pass"`（**不准为了进 Stage 6 而把 Fail 改 Pass**）
-- [ ] `state.stages.5` 已写入，`state.current_stage` 已 +1
+- [ ] `state.stages.5` 已写入，`state.current_stage` = 6
 
-> ⚠️ Red Flag：如果你觉得"6/10 也差不多"或"用户说不重要就 Pass"——回头读 SKILL.md §8。任何一条 Fail 必须真修或真接受为 v2 妥协，没有第三种选项。
+> ⚠️ Red Flag：如果你觉得"6/10 也差不多"或"先放进 v2"——回头读 SKILL.md §8。任何一条 Fail 必须真修并复测为 Pass；延期不能通过硬门槛。

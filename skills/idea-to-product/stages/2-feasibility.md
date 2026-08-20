@@ -87,6 +87,12 @@
 - [ ] verdict 三选一，不允许 "TBD"
 - [ ] 如果 verdict = Pivot，pivot_suggestion 必填
 
+## 判决后的状态转换
+
+- **Go**：写入 `state.stages.2`，设置 `state.current_stage = 3`。
+- **Pivot**：把本次 Stage 1/2 判断追加到顶层 `pivot_history`（含旧 JTBD、判决理由、pivot_suggestion、时间）；清空 `state.stages` 以失效所有下游派生状态，设置 `state.current_stage = 1`、`state.status = "active"`，再用 pivot_suggestion 重走 Stage 1。不得执行通用递增。
+- **No-Go**：写入 `state.stages.2`，设置 `state.status = "stopped"`、`state.current_stage = 2`，停止流程。除非用户明确提出新想法，否则不得继续 Stage 3。
+
 ## 反模式
 
 - ❌ 看到 1 个竞品就说"有对手了，No-Go"——竞品多反而说明市场存在
@@ -106,6 +112,7 @@ Stage 2/7 | 完成度: {x}/3 必答 | 当前阻塞: <一句话>
 - [ ] `competitors` ≥ 3（或明确解释为何搜不到 + 引发警惕）
 - [ ] `risks` ≥ 3，覆盖 ≥ 2 个不同维度
 - [ ] `verdict` ∈ {Go, No-Go, Pivot}，不允许 TBD
-- [ ] verdict = Pivot 时 `pivot_suggestion` 已填
+- [ ] verdict = Pivot 时 `pivot_suggestion` 已填，旧阶段状态已归档到 `pivot_history`，`state.stages` 已清空且 `state.current_stage = 1`
 - [ ] verdict = No-Go 时不允许继续，提示用户换想法或承认结束
-- [ ] `state.stages.2` 已写入，`state.current_stage` 已 +1
+- [ ] verdict = Go 时 `state.stages.2` 已写入且 `state.current_stage = 3`
+- [ ] verdict = No-Go 时 `state.status = "stopped"` 且 `state.current_stage = 2`

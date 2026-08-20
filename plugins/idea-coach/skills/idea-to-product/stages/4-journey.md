@@ -81,7 +81,7 @@
 
 - [ ] entry_point 是具体场景，不是"在网上推广"
 - [ ] first_screen.clicks_to_core_action ≤ 3
-- [ ] journey 步骤 ≤ 7
+- [ ] journey 步骤在 5-7
 - [ ] aha_moment.seconds_from_launch ≤ 60
 - [ ] dropoff_risks ≥ 2
 
@@ -116,9 +116,9 @@ Stage 4/7 | 完成度: {x}/5 必答 | 当前阻塞: <一句话>
 
 - [ ] `entry_point` 是具体场景（拒绝"会做营销"）
 - [ ] `first_screen.clicks_to_core_action` ≤ 3
-- [ ] `journey` 步骤 ≤ 7
+- [ ] `journey` 步骤在 5-7（少于 5 或多于 7 都阻塞）
 - [ ] `aha_moment.seconds_from_launch` ≤ 60
 - [ ] `aha_moment.observation` 是可观察的具体瞬间（非"感受到价值"）
 - [ ] `dropoff_risks` ≥ 2，每个有 mitigation
 - [ ] 已生成 `journey.md` 的 ASCII 旅程图（写入文件，不仅在对话里）
-- [ ] `state.stages.4` 已写入，`state.current_stage` 已 +1
+- [ ] `state.stages.4` 已写入，`state.current_stage` = 5

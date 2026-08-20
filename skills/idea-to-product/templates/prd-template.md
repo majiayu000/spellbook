@@ -57,7 +57,7 @@ Verify: <60 秒内可跑的命令或可观察现象>
 > ⚠️ AI Coding Agent 注意：以下功能 **明确不实现**，请勿"顺手加上"。
 
 {{#each out_of_scope}}
-- {{this}}
+- [{{category}}] {{feature}}
 {{/each}}
 
 ## 6. 用户旅程
@@ -108,7 +108,9 @@ Verify: <60 秒内可跑的命令或可观察现象>
 
 | 模块 | 拥有文件 | 不可越界 |
 |---|---|---|
-| {{module_1_name}} | {{module_1_files}} | {{module_1_forbidden}} |
+{{#each file_ownership}}
+| {{module}} | {{files}} | {{forbidden}} |
+{{/each}}
 
 （如 MVP 单文件，此节可只有一行）
 

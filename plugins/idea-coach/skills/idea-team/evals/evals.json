@@ -1,0 +1,33 @@
+{
+  "skill_name": "idea-team",
+  "evals": [
+    {
+      "id": 1,
+      "name": "Complete round in one response",
+      "prompt": "/idea-team 做一个本地 AI 账单分析器",
+      "expected_behavior": "Emits researcher, devil's advocate, and analogist as three separate blocks in one assistant response, persists chat and speaker state after each block, then invites user input.",
+      "type": "objective"
+    },
+    {
+      "id": 2,
+      "name": "Resume partial round without duplicates",
+      "prompt": "恢复 round=2、speakers=[research]、round_complete=false 的群聊。",
+      "expected_behavior": "Reads state and chat, emits only devil's advocate and analogist, persists each remaining speaker, and marks the round complete without repeating research.",
+      "type": "objective"
+    },
+    {
+      "id": 3,
+      "name": "Round transition is durable",
+      "prompt": "上一轮已完成，我说下一轮。",
+      "expected_behavior": "Increments round, clears speakers, persists round_complete=false before speaking, completes all three role blocks, and then persists round_complete=true.",
+      "type": "objective"
+    },
+    {
+      "id": 4,
+      "name": "Slug collision preserves prior session",
+      "prompt": "同一个想法再开一次群聊，但 .idea-team/<slug>/ 已有 state.json 和 chat.md。",
+      "expected_behavior": "Does not overwrite or append; asks the user to resume or chooses a confirmed unique suffixed slug before creating state.",
+      "type": "objective"
+    }
+  ]
+}

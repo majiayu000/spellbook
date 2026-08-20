@@ -28,7 +28,7 @@ W (Won't)   — 这个版本明确不做（任意数量）
 ```
 
 **硬约束**：
-- Must 列必须 ≤ 3 个
+- Must 列必须有 1-3 个
 - 如果用户坚持 4+ Must，agent 必须挑战：「这 4 个里去掉哪 1 个，产品还能存活？如果都不能去，那这不是 MVP，是 v1.0。」
 - 任何「登录系统」「用户管理」「权限」「设置页」默认进 Should/Could，除非用户能证明 Must
 
@@ -72,7 +72,7 @@ agent 必须追问到具体数字：「『涨』不是指标。第一个月跑�
 ## 完成判定
 
 - [ ] all_features ≥ 5（确保砍得有内容）
-- [ ] must ≤ 3
+- [ ] 1 ≤ must ≤ 3
 - [ ] mvp_features 与 must 一致
 - [ ] north_star.metric 不是通用词
 - [ ] north_star.target 含具体数字 + 时间窗口
@@ -81,10 +81,8 @@ agent 必须追问到具体数字：「『涨』不是指标。第一个月跑�
 
 > ✅ Stage 3 锁定：
 >
-> **MVP 三件套**：
-> 1. {must[0]}
-> 2. {must[1]}
-> 3. {must[2]}
+> **MVP 核心功能**（按实际选择数量逐条渲染，不补空项）：
+> {for each must: "{index}. {feature}"}
 >
 > **北极星**：{north_star.target}（{north_star.metric}）
 >
@@ -111,14 +109,14 @@ agent 必须追问到具体数字：「『涨』不是指标。第一个月跑�
 ```
 Stage 3/7 | 完成度: {x}/4 必答 | 当前阻塞: <一句话>
 ```
-4 必答 = all_features ≥5 / must ≤3 / north_star.metric / north_star.target
+4 必答 = all_features ≥5 / 1≤must≤3 / north_star.metric / north_star.target
 
 ## Pre-Stage 4 checklist（必须全勾才能进 Stage 4）
 
 - [ ] `all_features` ≥ 5（确保砍得有内容）
-- [ ] `moscow.must` ≤ 3（硬上限，不允许 4+）
+- [ ] `moscow.must` 数量在 1-3（不得为空，硬上限不允许 4+）
 - [ ] `mvp_features` == `moscow.must`
 - [ ] `north_star.metric` 非通用词（拒绝 "DAU / 用户数 / 留存率"）
 - [ ] `north_star.target` 含具体数字 + 时间窗口
 - [ ] `cut_reasoning` 已写明为何砍这几个
-- [ ] `state.stages.3` 已写入，`state.current_stage` 已 +1
+- [ ] `state.stages.3` 已写入，`state.current_stage` = 4
