@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from ecosystem_legacy import is_legacy_policy, normalize_legacy_policy
-from ecosystem_model import expand_path
+from ecosystem_model import INVENTORY_ROOT_KINDS, expand_path
 
 
 TOP_LEVEL_FIELDS = {
@@ -34,13 +34,6 @@ SOURCE_POLICY_FIELDS = {
     "projection_rule",
 }
 INVENTORY_ROOT_FIELDS = {"path", "kind", "owner"}
-INVENTORY_ROOT_KINDS = {
-    "canonical_source",
-    "repository_source",
-    "managed_projection",
-    "managed_cache",
-    "archive",
-}
 DECISION_FIELDS = {
     "name",
     "decision",

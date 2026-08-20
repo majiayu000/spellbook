@@ -16,10 +16,29 @@ from pathlib import Path
 import yaml
 
 from ecosystem_exposure import ExposureError, classify_exposure, expand_profile_scopes
+from ecosystem_model import (
+    RUNTIME_HOME_DIRS,
+    SUPPORTED_RUNTIMES,
+    default_runtime_homes,
+    runtime_home_dest,
+    runtime_home_flag,
+    runtime_project_dir,
+    runtime_target_ids,
+)
 from ecosystem_plugins import PluginPolicyError, plan_plugin_states
+from ecosystem_runtimes import (
+    MIRROR_RUNTIME,
+    RuntimePolicyError,
+    governed_runtimes,
+    parse_managed_global_sources,
+    parse_runtime_mirrors,
+    projection_runtimes,
+)
 
 
-CODEX_TARGET = "target_codex_codex_skills"
+# Plugin enablement is genuinely Codex-specific: it edits Codex's config.toml.
+# It stays bound to the Codex home instead of fanning out per runtime.
+PLUGIN_RUNTIME = "codex"
 QUOTED_CONTEXT_RE = re.compile(r"quoted|trace|tool output|引用|引述|日志记录", re.I)
 GOVERNANCE_CONTEXT_RE = re.compile(r"governance|audit|skill 治理|技能治理|审计", re.I)
 FRONTMATTER_KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*:")
@@ -278,44 +297,6 @@ def _project_sources(
     return result
 
 
-def _runtime_mirrors(policy: dict) -> tuple[Path | None, set[str]]:
-    config = policy.get("runtime_mirrors", {})
-    if not isinstance(config, dict):
-        raise ReconcileError("runtime_mirrors must be an object")
-    names = config.get("claude_only", [])
-    root = config.get("authoritative_root")
-    if not isinstance(names, list) or not all(isinstance(name, str) for name in names):
-        raise ReconcileError("runtime_mirrors.claude_only must be a string array")
-    if names and not isinstance(root, str):
-        raise ReconcileError("runtime_mirrors.authoritative_root is required")
-    return (Path(root).expanduser() if isinstance(root, str) else None, set(names))
-
-
-def _managed_global_sources(policy: dict) -> dict[str, tuple[Path, frozenset[str]]]:
-    configured = policy.get("managed_global_sources", {})
-    if not isinstance(configured, dict):
-        raise ReconcileError("managed_global_sources must be an object")
-    result: dict[str, tuple[Path, frozenset[str]]] = {}
-    for name, raw in configured.items():
-        if not isinstance(name, str) or not isinstance(raw, dict):
-            raise ReconcileError("managed_global_sources entries must be objects")
-        source = raw.get("source")
-        runtimes = raw.get("runtimes")
-        if not isinstance(source, str) or not source:
-            raise ReconcileError(f"managed global source is missing for {name}")
-        if (
-            not isinstance(runtimes, list)
-            or not runtimes
-            or not all(runtime in {"codex", "claude"} for runtime in runtimes)
-        ):
-            raise ReconcileError(f"managed global runtimes are invalid for {name}")
-        source_path = Path(source).expanduser()
-        if not (source_path / "SKILL.md").is_file():
-            raise ReconcileError(f"managed global source is missing: {source_path}")
-        result[name] = (source_path, frozenset(runtimes))
-    return result
-
-
 def _validate_frontmatter_extensions(policy: dict, sources: dict[str, Path]) -> None:
     configured = policy.get("frontmatter_extension_exceptions", {})
     if not isinstance(configured, dict):
@@ -398,7 +379,8 @@ def _filtered_state(
     path: Path,
     collection: str,
     hidden: set[str],
-    codex_only_mirrors: set[str],
+    runtime_mirrors: set[str],
+    mirror_target_ids: frozenset[str],
 ) -> tuple[dict, int]:
     data = _load_json(path)
     values = data.get(collection)
@@ -409,8 +391,8 @@ def _filtered_state(
         remove = isinstance(item, dict) and (
             item.get("skill_id") in hidden
             or (
-                item.get("skill_id") in codex_only_mirrors
-                and item.get("target_id") == CODEX_TARGET
+                item.get("skill_id") in runtime_mirrors
+                and item.get("target_id") in mirror_target_ids
             )
         )
         if not remove:
@@ -424,16 +406,33 @@ def build_plan(
     registry: Path,
     policy: dict,
     *,
-    codex_home: Path,
-    claude_home: Path,
+    runtime_homes: dict[str, Path],
+    codex_config_home: Path | None = None,
 ) -> tuple[ReconcilePlan, dict[Path, str], dict[Path, dict]]:
+    unknown_homes = sorted(set(runtime_homes) - SUPPORTED_RUNTIMES)
+    if unknown_homes:
+        raise ReconcileError(f"unsupported runtime homes: {unknown_homes}")
     skills_root = registry / "skills"
     policy, profile_names = expand_profile_scopes(policy)
     scope_map = _scope_map(policy)
     scope_roots = _scope_roots(policy, scope_map)
     declared_project_roots = _declared_project_roots(policy)
     project_sources = _project_sources(policy, scope_map, registry)
-    managed_globals = _managed_global_sources(policy)
+    managed_globals = parse_managed_global_sources(policy)
+    # Runtimes that receive automatic projections, and the wider set the policy
+    # governs (projection runtimes plus any runtime named by a managed global).
+    policy_runtimes = projection_runtimes(policy)
+    governed = governed_runtimes(policy_runtimes, managed_globals)
+    missing_homes = [runtime for runtime in governed if runtime not in runtime_homes]
+    if missing_homes or PLUGIN_RUNTIME not in runtime_homes:
+        raise ReconcileError(
+            "missing runtime homes: "
+            f"{sorted({*missing_homes, PLUGIN_RUNTIME} - set(runtime_homes))}"
+        )
+    projection_homes = tuple(runtime_homes[runtime] for runtime in policy_runtimes)
+    governed_homes = tuple(runtime_homes[runtime] for runtime in governed)
+    projection_dirs = tuple(runtime_project_dir(runtime) for runtime in policy_runtimes)
+    governed_dirs = tuple(runtime_project_dir(runtime) for runtime in governed)
     retired = _policy_name_set(policy, "retired")
     quarantined = _policy_name_set(policy, "quarantined")
     blocked = retired | quarantined
@@ -459,7 +458,7 @@ def build_plan(
     if not isinstance(duplicate_resolution, dict):
         raise ReconcileError("duplicate_resolution must be an object")
     retired_mirrors = set(duplicate_resolution.get("retire_registry_mirror", []))
-    mirror_root, runtime_mirrors = _runtime_mirrors(policy)
+    mirror_root, runtime_mirrors = parse_runtime_mirrors(policy)
     managed_names = set(managed_globals)
     canonical_sources = {
         skill_file.parent.name: skill_file
@@ -573,12 +572,12 @@ def build_plan(
     project_replacements: list[tuple[str, str]] = []
     for skill in sorted(blocked):
         source = skills_root / skill
-        for home in (codex_home, claude_home):
+        for home in governed_homes:
             global_path = home / "skills" / skill
             if _validate_removable_link(global_path, source):
                 global_links.append(str(global_path))
         for owner in declared_project_roots:
-            for runtime_dir in (".codex", ".claude"):
+            for runtime_dir in governed_dirs:
                 project_path = owner / runtime_dir / "skills" / skill
                 if _validate_removable_link(project_path, source):
                     project_removals.append(str(project_path))
@@ -587,12 +586,12 @@ def build_plan(
         source = project_sources.get(skill, skills_root / skill)
         if not (source / "SKILL.md").is_file():
             raise ReconcileError(f"policy references missing skill source: {skill}")
-        for home in (codex_home, claude_home):
+        for home in governed_homes:
             global_path = home / "skills" / skill
             if _validate_removable_link(global_path, source):
                 global_links.append(str(global_path))
         for owner in scope_roots.get(skill, ()):
-            for runtime_dir in (".codex", ".claude"):
+            for runtime_dir in projection_dirs:
                 project_path = owner / runtime_dir / "skills" / skill
                 action = _project_link_action(project_path, source, skills_root / skill)
                 pair = (str(project_path), str(source))
@@ -601,7 +600,6 @@ def build_plan(
                 elif action == "replace":
                     project_replacements.append(pair)
 
-    runtime_homes = {"codex": codex_home, "claude": claude_home}
     for skill, (source, runtimes) in sorted(managed_globals.items()):
         for runtime in sorted(runtimes):
             global_path = runtime_homes[runtime] / "skills" / skill
@@ -614,7 +612,7 @@ def build_plan(
 
     for skill in sorted(classification.global_names):
         source = canonical_sources[skill].parent
-        for home in (codex_home, claude_home):
+        for home in projection_homes:
             global_path = home / "skills" / skill
             action = _project_link_action(global_path, source, skills_root / skill)
             pair = (str(global_path), str(source))
@@ -623,25 +621,50 @@ def build_plan(
             elif action == "replace":
                 global_replacements.append(pair)
 
+    # A runtime mirror lives in MIRROR_RUNTIME only: strip its projection from
+    # every other projected runtime, both on disk and in registry state.
+    mirror_runtimes = tuple(
+        runtime for runtime in policy_runtimes if runtime != MIRROR_RUNTIME
+    )
     for skill in sorted(runtime_mirrors):
-        global_path = codex_home / "skills" / skill
-        if _validate_removable_link(global_path, skills_root / skill):
-            global_links.append(str(global_path))
+        for runtime in mirror_runtimes:
+            global_path = runtime_homes[runtime] / "skills" / skill
+            if _validate_removable_link(global_path, skills_root / skill):
+                global_links.append(str(global_path))
 
     state_updates: dict[Path, dict] = {}
+    mirror_target_ids = frozenset(
+        target_id
+        for runtime in mirror_runtimes
+        for target_id in runtime_target_ids(runtime)
+    )
     rules_path = registry / "state" / "registry" / "rules.json"
     projections_path = registry / "state" / "registry" / "projections.json"
+    hidden_state_names = hidden | blocked | managed_names
     rules, removed_rules = _filtered_state(
-        rules_path, "rules", hidden | blocked | managed_names, runtime_mirrors
+        rules_path, "rules", hidden_state_names, runtime_mirrors, mirror_target_ids
     )
     projections, removed_projections = _filtered_state(
-        projections_path, "projections", hidden | blocked | managed_names, runtime_mirrors
+        projections_path,
+        "projections",
+        hidden_state_names,
+        runtime_mirrors,
+        mirror_target_ids,
     )
     state_updates[rules_path] = rules
     state_updates[projections_path] = projections
-    plugin_changes, plugin_text = plan_plugin_states(codex_home / "config.toml", policy)
+    # Codex Skills use ~/.agents/skills, while plugin configuration remains in
+    # ~/.codex/config.toml. Require programmatic callers that change plugin state
+    # to provide the configuration home explicitly instead of guessing from the
+    # Skill home.
+    if policy.get("plugin_states") and codex_config_home is None:
+        raise ReconcileError(
+            "codex_config_home is required when plugin_states are configured"
+        )
+    plugin_config = (codex_config_home or Path.home() / ".codex") / "config.toml"
+    plugin_changes, plugin_text = plan_plugin_states(plugin_config, policy)
     if plugin_text is not None:
-        text_updates[codex_home / "config.toml"] = plugin_text
+        text_updates[plugin_config] = plugin_text
     return (
         ReconcilePlan(
             hardened=tuple(hardened),
@@ -706,10 +729,23 @@ def build_reconcile_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--policy", type=Path, required=True)
-    parser.add_argument("--codex-home", type=Path, default=Path.home() / ".codex")
-    parser.add_argument("--claude-home", type=Path, default=Path.home() / ".claude")
+    for runtime, home in default_runtime_homes().items():
+        parser.add_argument(runtime_home_flag(runtime), type=Path, default=home)
+    parser.add_argument(
+        "--codex-config-home",
+        type=Path,
+        default=Path.home() / ".codex",
+        help="Codex configuration home containing config.toml",
+    )
     parser.add_argument("--apply", action="store_true")
     return parser
+
+
+def _runtime_homes(args: argparse.Namespace) -> dict[str, Path]:
+    return {
+        runtime: getattr(args, runtime_home_dest(runtime)).expanduser()
+        for runtime in RUNTIME_HOME_DIRS
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -720,12 +756,18 @@ def main(argv: list[str] | None = None) -> int:
         plan, text_updates, state_updates = build_plan(
             registry,
             policy,
-            codex_home=args.codex_home.expanduser(),
-            claude_home=args.claude_home.expanduser(),
+            runtime_homes=_runtime_homes(args),
+            codex_config_home=args.codex_config_home.expanduser(),
         )
         if args.apply:
             apply_plan(plan, text_updates, state_updates)
-    except (OSError, ExposureError, PluginPolicyError, ReconcileError) as exc:
+    except (
+        OSError,
+        ExposureError,
+        PluginPolicyError,
+        ReconcileError,
+        RuntimePolicyError,
+    ) as exc:
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False))
         return 2
     print(
