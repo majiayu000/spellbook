@@ -89,8 +89,8 @@
 
 ## 判决后的状态转换
 
-- **Go**：写入 `state.stages.2`，保持 `current_stage = 2` 并设置 `pending_confirmation.next_stage = 3`；用户明确确认后才清空 pending、进入 Stage 3。
-- **Pivot**：先把 `pivot_suggestion` 作为候选新想法展示给用户，保持 Stage 2 并写 pending pivot。用户确认或改写新方向后，把旧 `raw_idea`、Stage 1/2 判断、判决理由、最终新想法和时间追加到顶层 `pivot_history`；把 `raw_idea` 更新为用户确认的新想法，清空 `state.stages` 以失效所有派生状态，清空 pending，设置 `state.current_stage = 1`、`state.status = "active"`，再重走 Stage 1。不得执行通用递增。
+- **Go**：写入 `state.stages.2`，保持 `current_stage = 2` 并设置 `pending_confirmation = {"kind":"advance","completed_stage":2,"next_stage":3,"action":"advance"}`；用户明确确认后才清空 pending、进入 Stage 3。
+- **Pivot**：先把 `pivot_suggestion` 作为候选新想法展示给用户，保持 Stage 2 并持久化 `pending_confirmation = {"kind":"pivot","completed_stage":2,"next_stage":1,"action":"reset_to_stage_1","proposed_raw_idea":"<pivot_suggestion>"}`。用户确认或改写新方向后，把旧 `raw_idea`、Stage 1/2 判断、判决理由、最终新想法和时间追加到顶层 `pivot_history`；把 `raw_idea` 更新为用户确认的新想法，清空 `state.stages` 以失效所有派生状态，清空 pending，设置 `state.current_stage = 1`、`state.status = "active"`，再重走 Stage 1。不得执行通用递增。
 - **No-Go**：写入 `state.stages.2`，设置 `state.status = "stopped"`、`state.current_stage = 2`，停止流程。除非用户明确提出新想法，否则不得继续 Stage 3。
 
 ## 反模式

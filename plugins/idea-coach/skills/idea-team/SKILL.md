@@ -39,7 +39,7 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 3. 检查 `.idea-team/<slug>/`：若已有 `state.json` 或 `chat.md`，先让用户选择 **resume** 或创建带递增后缀的唯一 slug（如 `<slug>-2`）；选择前不得覆盖或 append
 4. 确认目录唯一后 `mkdir -p .idea-team/<slug>/`，写 `state.json`：
    ```json
-   { "slug": "...", "raw_idea": "...", "round": 1, "speakers": [], "round_complete": false, "status": "active", "utterances": [], "created_at": "<ISO 8601>", "updated_at": "<ISO 8601>", "active_roles": ["research", "devils-advocate", "analogist"] }
+   { "slug": "...", "raw_idea": "...", "round": 1, "speakers": [], "round_complete": false, "status": "active", "utterances": [], "report_markdown": null, "created_at": "<ISO 8601>", "updated_at": "<ISO 8601>", "active_roles": ["research", "devils-advocate", "analogist"] }
    ```
 5. **依次 Read 3 个角色 SKILL.md**
 6. 进入群聊：主持人开场
@@ -75,9 +75,11 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
   写入 `state.utterances`，同步更新去重后的 `speakers`；若 speakers 已覆盖所有
   active_roles，在**同一次 state 写入**中设置 `round_complete = true`。state 必须
   写到同目录临时文件并原子 rename，作为事实来源。
-- 再把 `<!-- utterance:<id> -->` + 发言投影到 `chat.md`；append 前先查 marker，
-  已存在则跳过。若 state 已有 utterance 而 chat 缺 marker，Resume 补投影；若
-  chat 有 marker 而 state 缺记录，Resume 从 marker/文本修复 state 后再继续。
+- 每次 state 提交成功后，从 `state.utterances` **完整重建** `chat.tmp.md`（每条含
+  `<!-- utterance:<id> -->` marker），校验条目数/marker 唯一后原子 rename 为
+  `chat.md`。不得分两次 append marker 和正文。若崩溃，Resume 总是从 canonical
+  utterances 重建完整投影；对旧版仅有 chat 的会话，先一次性导入完整 marker block
+  到 utterances，再重建。
 - 一回合结束，**主持人邀请用户插话**：
   ```
   🎬 主持人: 第 N 回合结束。你想 @ 谁继续？说 "@反方 多说点"，或 "下一轮"，或 "汇总"。
@@ -107,8 +109,8 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 
 ### Resume 规则
 
-读取 `round`、`speakers`、`round_complete`、`utterances` 和 `chat.md`，先按
-utterance marker 双向修复投影。`round_complete` 必须从
+读取 `round`、`speakers`、`round_complete`、`utterances` 和 `chat.md`，先从
+canonical utterances 原子重建 chat 投影。`round_complete` 必须从
 `set(speakers) == set(active_roles)` 派生并修复，不能把旧布尔值当唯一事实。若当前
 回合未完成，只输出缺失角色 block；不得重复已记录角色。
 若当前回合已完成，先邀请用户选择下一轮或汇总，不得擅自递增回合。
@@ -153,9 +155,12 @@ utterance marker 双向修复投影。`round_complete` 必须从
 - `/idea-coach:idea-team resume [slug]` — 插件：续上次未完成的
 - `/idea-coach:idea-team list` — 插件：列 cwd 下所有群聊
 
-Catalog 用户直接调用 `idea-team` skill 并传相同参数。生成 `team-report.md` 后必须
-原子写 `state.status = "completed"` 和 `completed_at`；Resume 对 completed 会话只
-展示报告路径。
+Catalog 用户直接调用 `idea-team` skill 并传相同参数。汇总时先生成完整报告文本，
+再在**同一次原子 state 写入**中设置 `report_markdown`、`status = "completed"` 和
+`completed_at`，之后从 `report_markdown` 写 `team-report.tmp.md` 并原子 rename。
+Resume 对 completed 会话先用 canonical report_markdown 修复缺失/截断的报告投影，
+再只展示报告路径；若迁移旧会话时发现完整 team-report 但 state 仍 active，先导入
+报告并标 completed，不得重入对话。
 
 ## 8. Red Flags — 主持人在本 skill 里最容易跑偏的偷懒
 

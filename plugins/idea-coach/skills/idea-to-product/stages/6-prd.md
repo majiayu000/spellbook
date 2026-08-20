@@ -78,6 +78,12 @@ Verify: <60 秒内可跑的命令或可观察的现象>
 > PRD 已生成在 `.idea/<slug>/prd.md`。
 > 看一眼？如果要调整任何章节告诉我。否则进 Stage 7（HTML 原型）。
 
+展示摘要前先写 `state.stages.6.user_approved = false`，保持
+`current_stage = 6`，并设置
+`pending_confirmation = {"kind":"prd_approval","completed_stage":6,"next_stage":7,"action":"approve_prd"}`。
+用户要求修改时更新 PRD 和 Stage 6 派生字段但保留 pending；只有明确批准后才把
+`user_approved` 改为 true、清空 pending 并设置 `current_stage = 7`。
+
 ## 输出 schema（写入 state.stages.6）
 
 ```json
@@ -106,7 +112,7 @@ Verify: <60 秒内可跑的命令或可观察的现象>
     { "module": "<模块>", "files": ["<path>"], "forbidden": ["<不得修改的边界>"] }
   ],
   "out_of_scope_count": <Should + Could + Won't 总数>,
-  "user_approved": true,
+  "user_approved": false,
   "completed_at": "<ISO 8601>"
 }
 ```
@@ -146,4 +152,5 @@ Stage 6/7 | 阶段: {读 state → Read template → 填占位 → 生成验收 
 - [ ] `out_of_scope` 完整包含 `moscow.should + could + wont`
 - [ ] `file_ownership` 已确认，每个路径仅有一个 owner 且无 "TBD"
 - [ ] 用户已明确确认 PRD（在对话里收到 "OK" / "进下一步" 等）
-- [ ] `state.stages.6` 已写入，确认前 `current_stage` = 6 且 pending 指向 7；确认后才进入 7
+- [ ] `state.stages.6` 已写入且 `user_approved = false`，确认前 `current_stage` = 6 且 pending.kind = `prd_approval`
+- [ ] 用户明确批准后 `user_approved = true`、pending 已清空，才进入 7

@@ -18,7 +18,7 @@ def valid_html(extra_head: str = "", extra_body: str = "") -> str:
 @media (prefers-color-scheme: dark) {{ body {{ color: white; }} }}
 @media (max-width: 640px) {{ body {{ width: auto; }} }}
 {extra_head}
-</style></head><body>{extra_body}<script>
+</style></head><body><button data-action="next">Next</button>{extra_body}<script>
 document.addEventListener('click', () => {{}});
 function showStep() {{}}
 showStep(1);
@@ -41,7 +41,7 @@ def test_rejects_external_attributes_regardless_of_order_or_quotes(
     )
     errors = verify_prototype.verify(prototype)
     assert any("script src" in error for error in errors)
-    assert any("remote src" in error for error in errors)
+    assert any("non-embedded src" in error for error in errors)
 
 
 def test_rejects_remote_css_and_network_calls(tmp_path: Path) -> None:
@@ -54,8 +54,8 @@ def test_rejects_remote_css_and_network_calls(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     errors = verify_prototype.verify(prototype)
-    assert "remote CSS @import" in errors
-    assert "remote fetch" in errors
+    assert "CSS @import" in errors
+    assert "external URL literal" in errors
 
 
 def test_rejects_placeholders_and_missing_initial_progress(tmp_path: Path) -> None:
@@ -81,3 +81,27 @@ def test_rejects_inline_handlers_and_javascript_urls(tmp_path: Path) -> None:
     errors = verify_prototype.verify(prototype)
     assert any("inline event handler" in error for error in errors)
     assert any("javascript URL" in error for error in errors)
+
+
+def test_comments_do_not_satisfy_interaction_or_progress(tmp_path: Path) -> None:
+    prototype = tmp_path / "prototype.html"
+    text = valid_html().replace(
+        "document.addEventListener('click', () => {});",
+        "/* document.addEventListener('click', () => {}); */",
+    ).replace("showStep(1);", "/* showStep(1); */")
+    prototype.write_text(text, encoding="utf-8")
+    errors = verify_prototype.verify(prototype)
+    assert "missing interactive event listener" in errors
+    assert "missing initial progress state" in errors
+
+
+def test_rejects_variable_remote_url_and_extra_script(tmp_path: Path) -> None:
+    prototype = tmp_path / "prototype.html"
+    text = valid_html(extra_body="<script>alert(1)</script>").replace(
+        "function showStep() {}",
+        'function showStep() {} const endpoint = "https://api.example/data"; fetch(endpoint);',
+    )
+    prototype.write_text(text, encoding="utf-8")
+    errors = verify_prototype.verify(prototype)
+    assert "external URL literal" in errors
+    assert any("exactly one inline script" in error for error in errors)

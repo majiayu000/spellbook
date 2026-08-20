@@ -53,7 +53,7 @@ description: 端到端产品教练 — 把一句话想法走到 PRD + 可点击 
 
 每个 stage 完成后：先写入 `state.json` 的 `stages.<n>`，保持
 `current_stage = n`，并写
-`pending_confirmation = {"completed_stage": n, "next_stage": n + 1}`。展示
+`pending_confirmation = {"kind": "advance", "completed_stage": n, "next_stage": n + 1, "action": "advance"}`。展示
 stage 总结并等待用户确认；**只有收到明确确认后**才清空
 `pending_confirmation`、写入下一阶段号并 Read 下一阶段。禁止提前递增：
 
@@ -72,7 +72,9 @@ Stage {n}/7 | 完成度: {x}/{y} 必答 | 当前阻塞: <一句话>
 
 - `status = "completed"`：只展示产物，不进入阶段。
 - `status = "stopped"`：展示 No-Go 结论；只有用户提交新想法才新建/重置会话。
-- `pending_confirmation != null`：重放已完成阶段摘要并重新询问，不进入 next_stage。
+- `pending_confirmation.kind = "advance"`：重放已完成阶段摘要并重新询问，不进入 next_stage。
+- `pending_confirmation.kind = "pivot"`：展示持久化的 `proposed_raw_idea`，确认/修改后执行 `action = "reset_to_stage_1"`。
+- `pending_confirmation.kind = "prd_approval"`：展示 PRD 摘要，保持 Stage 6 和 `user_approved = false`，直到用户批准。
 - 其他 active 会话：从 `current_stage` 续。
 
 ## 6. 输出物与命令变体
