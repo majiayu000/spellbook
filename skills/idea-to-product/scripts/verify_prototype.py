@@ -16,6 +16,10 @@ JS_NOISE = re.compile(
     r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|`(?:\\.|[^`\\])*`|//[^\n]*|/\*.*?\*/',
     flags=re.DOTALL,
 )
+IIFE = re.compile(
+    r"^\s*\(\s*function\s*\([^)]*\)\s*\{(?P<body>.*)\}\s*\)\s*\(\s*\)\s*;?\s*$",
+    flags=re.DOTALL,
+)
 
 
 class PrototypeParser(HTMLParser):
@@ -69,6 +73,32 @@ def executable_js(source: str) -> str:
     return JS_NOISE.sub(" ", source)
 
 
+def top_level_js(source: str) -> str:
+    """Keep only statements outside brace-delimited callbacks/functions."""
+    depth = 0
+    result: list[str] = []
+    for char in source:
+        if char == "{":
+            depth += 1
+            result.append(" ")
+        elif char == "}":
+            depth = max(0, depth - 1)
+            # A completed top-level block is also a safe statement boundary.
+            result.append(";\n" if depth == 0 else " ")
+        elif depth == 0:
+            result.append(char)
+        else:
+            # Preserve line boundaries so diagnostics and anchored checks stay stable.
+            result.append("\n" if char == "\n" else " ")
+    return "".join(result)
+
+
+def entrypoint_js(source: str) -> str:
+    """Return statements executed at script load, including a whole-script IIFE."""
+    match = IIFE.fullmatch(source)
+    return top_level_js(match.group("body") if match else source)
+
+
 def verify(path: Path) -> list[str]:
     errors: list[str] = []
     if not path.is_file():
@@ -109,24 +139,34 @@ def verify(path: Path) -> list[str]:
         if needle not in text:
             errors.append(f"missing {label}")
 
-    js = executable_js("\n".join(parser.script_chunks))
+    script_source = "\n".join(parser.script_chunks)
+    js = executable_js(script_source)
+    entrypoint = entrypoint_js(js)
     required_js = {
-        "interactive event listener": r"\bdocument\s*\.\s*addEventListener\s*\(",
-        "initial progress state": r"\bshowStep\s*\(\s*1\s*\)\s*;",
+        "interactive event listener": (
+            r"(?:^|;)\s*document\s*\.\s*addEventListener\s*\("
+        ),
+        "initial progress state": r"(?:^|;)\s*showStep\s*\(\s*1\s*\)\s*;",
     }
     for label, pattern in required_js.items():
-        if not re.search(pattern, js):
+        if not re.search(pattern, entrypoint, flags=re.MULTILINE):
             errors.append(f"missing {label}")
 
     dangerous_js = {
-        "eval() is forbidden": r"\beval\s*\(",
-        "Function() constructor is forbidden": r"\bFunction\s*\(",
+        "eval() is forbidden": r"\beval\b",
+        "Function() constructor is forbidden": r"\bFunction\b",
         "document.write is forbidden": r"\bdocument\s*\.\s*write\s*\(",
-        "innerHTML assignment is forbidden": r"\.\s*innerHTML\s*=",
-        "insertAdjacentHTML is forbidden": r"\.\s*insertAdjacentHTML\s*\(",
+        "innerHTML assignment is forbidden": r"\binnerHTML\b",
+        "insertAdjacentHTML is forbidden": r"\binsertAdjacentHTML\b",
+        "fetch() is forbidden": r"\bfetch\b",
+        "XMLHttpRequest is forbidden": r"\bXMLHttpRequest\b",
+        "WebSocket is forbidden": r"\bWebSocket\b",
+        "EventSource is forbidden": r"\bEventSource\b",
+        "sendBeacon is forbidden": r"\bsendBeacon\b",
+        "dynamic import() is forbidden": r"\bimport\s*\(",
     }
     for label, pattern in dangerous_js.items():
-        if re.search(pattern, js):
+        if re.search(pattern, script_source):
             errors.append(label)
     return errors
 

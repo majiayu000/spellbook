@@ -31,6 +31,20 @@ def test_accepts_bounded_offline_prototype(tmp_path: Path) -> None:
     assert verify_prototype.verify(prototype) == []
 
 
+def test_accepts_required_behavior_in_whole_script_iife(tmp_path: Path) -> None:
+    prototype = tmp_path / "prototype.html"
+    text = valid_html().replace(
+        "document.addEventListener('click', () => {});\nfunction showStep() {}\nshowStep(1);",
+        """(function() {
+document.addEventListener('click', () => {});
+function showStep() {}
+showStep(1);
+})();""",
+    )
+    prototype.write_text(text, encoding="utf-8")
+    assert verify_prototype.verify(prototype) == []
+
+
 def test_rejects_external_attributes_regardless_of_order_or_quotes(
     tmp_path: Path,
 ) -> None:
@@ -105,3 +119,85 @@ def test_rejects_variable_remote_url_and_extra_script(tmp_path: Path) -> None:
     errors = verify_prototype.verify(prototype)
     assert "external URL literal" in errors
     assert any("exactly one inline script" in error for error in errors)
+
+
+def test_rejects_dynamic_network_apis_without_literal_urls(tmp_path: Path) -> None:
+    prototype = tmp_path / "prototype.html"
+    text = valid_html().replace(
+        "function showStep() {}",
+        """function showStep() {}
+const host = location.hash.slice(1);
+fetch(host + '/data');
+const socket = new WebSocket(host);
+const stream = new EventSource(host);
+const xhr = new XMLHttpRequest();
+navigator.sendBeacon(host, 'x');
+import(host);""",
+    )
+    prototype.write_text(text, encoding="utf-8")
+    errors = verify_prototype.verify(prototype)
+    for api in (
+        "fetch()",
+        "XMLHttpRequest",
+        "WebSocket",
+        "EventSource",
+        "sendBeacon",
+        "dynamic import()",
+    ):
+        assert any(api in error for error in errors)
+
+
+def test_unreachable_calls_do_not_satisfy_required_behavior(tmp_path: Path) -> None:
+    prototype = tmp_path / "prototype.html"
+    text = valid_html().replace(
+        "document.addEventListener('click', () => {});",
+        "function neverCalled() { document.addEventListener('click', () => {}); }",
+    ).replace("showStep(1);", "if (false) { showStep(1); }")
+    prototype.write_text(text, encoding="utf-8")
+    errors = verify_prototype.verify(prototype)
+    assert "missing interactive event listener" in errors
+    assert "missing initial progress state" in errors
+
+
+def test_unbraced_and_expression_callback_calls_are_not_entrypoint_behavior(
+    tmp_path: Path,
+) -> None:
+    prototype = tmp_path / "prototype.html"
+    text = valid_html().replace(
+        "document.addEventListener('click', () => {});",
+        "const never = () => document.addEventListener('click', () => {});",
+    ).replace("showStep(1);", "if (false) showStep(1);")
+    prototype.write_text(text, encoding="utf-8")
+    errors = verify_prototype.verify(prototype)
+    assert "missing interactive event listener" in errors
+    assert "missing initial progress state" in errors
+
+
+def test_rejects_dangerous_dom_injection_apis(tmp_path: Path) -> None:
+    prototype = tmp_path / "prototype.html"
+    text = valid_html().replace(
+        "function showStep() {}",
+        """function showStep() {}
+document.body.innerHTML = '<p>unsafe</p>';
+document.body.insertAdjacentHTML('beforeend', '<p>unsafe</p>');""",
+    )
+    prototype.write_text(text, encoding="utf-8")
+    errors = verify_prototype.verify(prototype)
+    assert "innerHTML assignment is forbidden" in errors
+    assert "insertAdjacentHTML is forbidden" in errors
+
+
+def test_rejects_computed_dangerous_api_names(tmp_path: Path) -> None:
+    prototype = tmp_path / "prototype.html"
+    text = valid_html().replace(
+        "function showStep() {}",
+        """function showStep() {}
+window['fetch'](location.hash);
+navigator[`sendBeacon`](location.hash, 'x');
+document.body['innerHTML'] = '<p>unsafe</p>';
+document.body["insertAdjacentHTML"]('beforeend', '<p>unsafe</p>');""",
+    )
+    prototype.write_text(text, encoding="utf-8")
+    errors = verify_prototype.verify(prototype)
+    for api in ("fetch()", "sendBeacon", "innerHTML", "insertAdjacentHTML"):
+        assert any(api in error for error in errors)
