@@ -119,4 +119,4 @@ Stage 3/7 | 完成度: {x}/4 必答 | 当前阻塞: <一句话>
 - [ ] `north_star.metric` 非通用词（拒绝 "DAU / 用户数 / 留存率"）
 - [ ] `north_star.target` 含具体数字 + 时间窗口
 - [ ] `cut_reasoning` 已写明为何砍这几个
-- [ ] `state.stages.3` 已写入，`state.current_stage` = 4
+- [ ] `state.stages.3` 已写入，确认前 `current_stage` = 3 且 pending 指向 4；确认后才进入 4

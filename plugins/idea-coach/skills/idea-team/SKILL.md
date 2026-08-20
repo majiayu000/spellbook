@@ -1,22 +1,23 @@
 ---
 name: idea-team
-description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI 团队（调研员/反方/类比者）做查漏补缺。每个角色有自己的 voice，他们互相 @ 接话；你随时插话。**这是创意扩展工具，不打分、不否决、不堵路**。Use when 用户说"组个团队聊一下"、"开会讨论这个想法"、"找几个角度看看"、"群聊一下 X"、"team review X"，或调用 `/idea-team`。Do NOT use when 用户已决定做这个想法只要 PRD（用 /idea）、或用户要单独某个角色（直接用 /idea-research 等）、或用户只想自由 brainstorm（不需要 team 结构）。
+description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI 团队（调研员/反方/类比者）做查漏补缺。每个角色有自己的 voice，他们互相 @ 接话；你随时插话。**这是创意扩展工具，不打分、不否决、不堵路**。Use when 用户说"组个团队聊一下"、"开会讨论这个想法"、"找几个角度看看"、"群聊一下 X"、"team review X"，或调用插件命令 `/idea-coach:idea-team`。Do NOT use when 用户已决定做这个想法只要 PRD（用 `idea-to-product`）、或用户要单独某个角色 skill、或用户只想自由 brainstorm（不需要 team 结构）。
 ---
 
-# /idea-team — 想法群聊室
+# idea-team — 想法群聊室
 
 把一句话想法丢给 3 人小组（调研员/反方/类比者），按回合说话，你随时插话。
 **这是查漏补缺工具，不是 judge** — 他们帮你看你没想到的，不堵你的路。
 
 ## 1. 何时触发
 
-- 斜杠：`/idea-team <想法>`
+- 插件命令：`/idea-coach:idea-team <想法>`
+- Catalog 安装：直接调用 `idea-team` skill；不承诺插件外的别名
 - 自然语："组个团队聊一下 X"、"开个会讨论 X"、"找几个角度看 X"、"group review X"
 
 ## 2. 何时**不要**触发
 
-- 用户要单独某个角色 → 直接用 `/idea-research` / `/idea-devils-advocate` / `/idea-analogist`
-- 用户已决定做这个想法、要做 PRD → 用 `/idea`（idea-to-product 顶嘴版）
+- 用户要单独某个角色 → 直接调用对应 catalog skill；插件内由 namespaced skill 自动路由
+- 用户已决定做这个想法、要做 PRD → 插件用 `/idea-coach:idea`，catalog 调用 `idea-to-product`
 - 用户只要自由 brainstorm 不要团队结构 → 直接对话即可
 
 ## 3. 团队成员（MVP 3 人）
@@ -38,7 +39,7 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 3. 检查 `.idea-team/<slug>/`：若已有 `state.json` 或 `chat.md`，先让用户选择 **resume** 或创建带递增后缀的唯一 slug（如 `<slug>-2`）；选择前不得覆盖或 append
 4. 确认目录唯一后 `mkdir -p .idea-team/<slug>/`，写 `state.json`：
    ```json
-   { "slug": "...", "raw_idea": "...", "round": 1, "speakers": [], "round_complete": false, "status": "active", "created_at": "<ISO 8601>", "updated_at": "<ISO 8601>", "active_roles": ["research", "devils-advocate", "analogist"] }
+   { "slug": "...", "raw_idea": "...", "round": 1, "speakers": [], "round_complete": false, "status": "active", "utterances": [], "created_at": "<ISO 8601>", "updated_at": "<ISO 8601>", "active_roles": ["research", "devils-advocate", "analogist"] }
    ```
 5. **依次 Read 3 个角色 SKILL.md**
 6. 进入群聊：主持人开场
@@ -70,9 +71,13 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 - 调研员开口给事实底
 - 反方挑刺（可质疑调研员的数据 + 挑想法本身）
 - 类比者 yes-and（可接反方的话 + 跨界类比）
-- 生成每个角色 block 后，先把该发言 append 到 `chat.md`，再把角色 id append
-  到 `state.json.speakers` 并更新 `updated_at`；三个角色全部持久化后设置
-  `round_complete = true`
+- 每个角色使用稳定 `utterance_id = "<round>:<role>"`。先把 id、role、完整文本
+  写入 `state.utterances`，同步更新去重后的 `speakers`；若 speakers 已覆盖所有
+  active_roles，在**同一次 state 写入**中设置 `round_complete = true`。state 必须
+  写到同目录临时文件并原子 rename，作为事实来源。
+- 再把 `<!-- utterance:<id> -->` + 发言投影到 `chat.md`；append 前先查 marker，
+  已存在则跳过。若 state 已有 utterance 而 chat 缺 marker，Resume 补投影；若
+  chat 有 marker 而 state 缺记录，Resume 从 marker/文本修复 state 后再继续。
 - 一回合结束，**主持人邀请用户插话**：
   ```
   🎬 主持人: 第 N 回合结束。你想 @ 谁继续？说 "@反方 多说点"，或 "下一轮"，或 "汇总"。
@@ -102,8 +107,10 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 
 ### Resume 规则
 
-读取 `round`、`speakers`、`round_complete` 和 `chat.md`。若当前回合未完成，只输出
-`speakers` 中缺失的剩余角色 block，并在每个 block 后持久化；不得重复已记录角色。
+读取 `round`、`speakers`、`round_complete`、`utterances` 和 `chat.md`，先按
+utterance marker 双向修复投影。`round_complete` 必须从
+`set(speakers) == set(active_roles)` 派生并修复，不能把旧布尔值当唯一事实。若当前
+回合未完成，只输出缺失角色 block；不得重复已记录角色。
 若当前回合已完成，先邀请用户选择下一轮或汇总，不得擅自递增回合。
 
 ## 6. 输出物
@@ -142,9 +149,13 @@ description: 想法群聊室主持人 — 把一句话想法丢给多角色 AI �
 
 ## 7. 命令变体
 
-- `/idea-team <想法>` — 启动新群聊
-- `/idea-team resume [slug]` — 续上次未完成的
-- `/idea-team list` — 列 cwd 下所有群聊
+- `/idea-coach:idea-team <想法>` — 插件：启动新群聊
+- `/idea-coach:idea-team resume [slug]` — 插件：续上次未完成的
+- `/idea-coach:idea-team list` — 插件：列 cwd 下所有群聊
+
+Catalog 用户直接调用 `idea-team` skill 并传相同参数。生成 `team-report.md` 后必须
+原子写 `state.status = "completed"` 和 `completed_at`；Resume 对 completed 会话只
+展示报告路径。
 
 ## 8. Red Flags — 主持人在本 skill 里最容易跑偏的偷懒
 

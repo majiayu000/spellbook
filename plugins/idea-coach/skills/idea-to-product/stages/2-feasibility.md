@@ -89,8 +89,8 @@
 
 ## 判决后的状态转换
 
-- **Go**：写入 `state.stages.2`，设置 `state.current_stage = 3`。
-- **Pivot**：把本次 Stage 1/2 判断追加到顶层 `pivot_history`（含旧 JTBD、判决理由、pivot_suggestion、时间）；清空 `state.stages` 以失效所有下游派生状态，设置 `state.current_stage = 1`、`state.status = "active"`，再用 pivot_suggestion 重走 Stage 1。不得执行通用递增。
+- **Go**：写入 `state.stages.2`，保持 `current_stage = 2` 并设置 `pending_confirmation.next_stage = 3`；用户明确确认后才清空 pending、进入 Stage 3。
+- **Pivot**：先把 `pivot_suggestion` 作为候选新想法展示给用户，保持 Stage 2 并写 pending pivot。用户确认或改写新方向后，把旧 `raw_idea`、Stage 1/2 判断、判决理由、最终新想法和时间追加到顶层 `pivot_history`；把 `raw_idea` 更新为用户确认的新想法，清空 `state.stages` 以失效所有派生状态，清空 pending，设置 `state.current_stage = 1`、`state.status = "active"`，再重走 Stage 1。不得执行通用递增。
 - **No-Go**：写入 `state.stages.2`，设置 `state.status = "stopped"`、`state.current_stage = 2`，停止流程。除非用户明确提出新想法，否则不得继续 Stage 3。
 
 ## 反模式
@@ -112,7 +112,7 @@ Stage 2/7 | 完成度: {x}/3 必答 | 当前阻塞: <一句话>
 - [ ] `competitors` ≥ 3（或明确解释为何搜不到 + 引发警惕）
 - [ ] `risks` ≥ 3，覆盖 ≥ 2 个不同维度
 - [ ] `verdict` ∈ {Go, No-Go, Pivot}，不允许 TBD
-- [ ] verdict = Pivot 时 `pivot_suggestion` 已填，旧阶段状态已归档到 `pivot_history`，`state.stages` 已清空且 `state.current_stage = 1`
+- [ ] verdict = Pivot 时 `pivot_suggestion` 已填；确认后旧状态已归档、`raw_idea` 已更新为新方向、`state.stages` 已清空且 `state.current_stage = 1`
 - [ ] verdict = No-Go 时不允许继续，提示用户换想法或承认结束
-- [ ] verdict = Go 时 `state.stages.2` 已写入且 `state.current_stage = 3`
+- [ ] verdict = Go 时确认前 `current_stage = 2` 且 pending 指向 3；确认后才进入 3
 - [ ] verdict = No-Go 时 `state.status = "stopped"` 且 `state.current_stage = 2`

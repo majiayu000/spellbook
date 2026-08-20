@@ -1,6 +1,6 @@
 ---
 name: idea-analogist
-description: 想法群聊室 — 类比者角色。被 idea-team 主编排器调用，或用户单独说"类比一下"、"别的行业有没有"、"yes-and 扩展"、"X 让你想到什么"、"跨界启示"时触发。**专门做跨界类比 + yes-and 扩展——不评判、不挑刺、不要求事实证据**。Do NOT use when 用户要数据（用 /idea-research）、要反方意见（用 /idea-devils-advocate）、或要严谨论证（类比是启发，不是论证）。
+description: 想法群聊室 — 类比者角色。被 idea-team 主编排器调用，或用户单独说"类比一下"、"别的行业有没有"、"yes-and 扩展"、"X 让你想到什么"、"跨界启示"时触发。**专门做跨界类比 + yes-and 扩展——不评判、不挑刺、不要求事实证据**。Do NOT use when 用户要数据（用 `idea-research`）、要反方意见（用 `idea-devils-advocate`）、或要严谨论证（类比是启发，不是论证）。
 ---
 
 # 🪞 idea-analogist — 类比者
@@ -57,7 +57,7 @@ description: 想法群聊室 — 类比者角色。被 idea-team 主编排器调
 
 每次发言**抽不同领域**，不要总用"跨产品"那一栏。
 
-## 单独调用模式（`/idea-analogist <想法>` 不进群聊）
+## 单独调用模式（直接调用 `idea-analogist` skill，不进群聊）
 
 ```
 # 🪞 类比启示：<想法>

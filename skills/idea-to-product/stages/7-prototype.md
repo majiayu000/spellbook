@@ -67,18 +67,26 @@ journey 中 aha_moment 那一步要"有戏"：
 | 暗色模式 | @media (prefers-color-scheme: dark) 内嵌支持 |
 | 移动端 | @media (max-width: 640px) 重排 |
 
-### Step 5. 写文件
-落盘到 `.idea/<slug>/prototype.html`。
+### Step 5. 写候选文件
+
+先写 `.idea/<slug>/prototype.tmp.html`，不得直接覆盖最终产物。
 
 ### Step 6. 自检
-在落盘前自检：
-- [ ] 无任何 `<script src="...">` 外链
-- [ ] 无任何 `<link rel="stylesheet" href="...">` 外链
-- [ ] 至少一个 `addEventListener` 让原型可交互
-- [ ] 包含 `@media (prefers-color-scheme: dark)` 块
-- [ ] 文件大小 ≤ 80KB（防止 AI 失控生成几百 KB 的怪物）
 
-如果自检失败 → 修复后再写，不允许带病落盘。
+运行本 skill 自带的确定性验证器：
+
+```bash
+python3 <resolved-skill-dir>/scripts/verify_prototype.py \
+  .idea/<slug>/prototype.tmp.html
+```
+
+它会解析 HTML attribute（不依赖引号或属性顺序），拒绝外部 script/link/media、
+远程 CSS `@import` / `url()`、远程 `fetch` / XHR / WebSocket / EventSource、残留
+模板占位符和缺失的交互/响应式/暗色/初始化信号，并检查 ≤80KB。
+
+验证失败时修复 tmp 并重跑；通过后才原子 rename 为
+`.idea/<slug>/prototype.html`，再对最终路径重跑一次。已有可用 prototype 不得被
+失败候选覆盖。
 
 ### Step 7. 给用户的最终交付话术
 
@@ -132,11 +140,7 @@ Stage 7/7 | 阶段: {Read skeleton → 决定类型 → 生成 sections → 自�
 ## 最终交付 checklist（必须全勾才算完）
 
 - [ ] `.idea/<slug>/prototype.html` 文件存在
-- [ ] `grep -E 'script src=|link rel="stylesheet" href=' .idea/<slug>/prototype.html` **无任何外链**
-- [ ] 包含 `@media (prefers-color-scheme: dark)` 块
-- [ ] 文件大小 ≤ 80KB（`wc -c .idea/<slug>/prototype.html`）
-- [ ] 至少一个 `addEventListener` 让原型可交互
-- [ ] 包含 `@media (max-width: 640px)` 响应式块
+- [ ] `python3 <resolved-skill-dir>/scripts/verify_prototype.py .idea/<slug>/prototype.html` 退出 0
 - [ ] 所有用户派生文本已 HTML-escape，受控 `step_ui` 与文本字段分离
 - [ ] `state.stages.7` 已写入，`state.current_stage` = 7 且 `state.status` = `"completed"`
 - [ ] 向用户输出 4 个产物路径 + 下一步建议

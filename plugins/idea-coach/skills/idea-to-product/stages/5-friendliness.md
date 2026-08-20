@@ -94,7 +94,7 @@ D7 [Pass/Risk/Fail] — <一句话理由>
 > - Risk: {N} 条（已记录待迭代）
 > - Fail: 0 条（所有原 Fail 已修复并重新评为 Pass）
 >
-> 进 Stage 6（PRD 生成）。
+> 当前 Fail 已清零。是否确认这份评估并进 Stage 6（PRD 生成）？
 
 ## 反模式
 
@@ -122,6 +122,6 @@ Stage 5/7 | 完成度: {x}/17 已评估 | Pass {p} / Risk {r} / Fail {f} | 当�
 - [ ] 当前 `Fail` 数量为 0；每个历史 Fail 都已有 fix、已回填并重新评估为 Pass
 - [ ] `known_compromises` 只记录 Risk（含 v2_plan），没有 Fail
 - [ ] `overall` == `"pass"`（**不准为了进 Stage 6 而把 Fail 改 Pass**）
-- [ ] `state.stages.5` 已写入，`state.current_stage` = 6
+- [ ] `state.stages.5` 已写入，确认前 `current_stage` = 5 且 pending 指向 6；确认后才进入 6
 
 > ⚠️ Red Flag：如果你觉得"6/10 也差不多"或"先放进 v2"——回头读 SKILL.md §8。任何一条 Fail 必须真修并复测为 Pass；延期不能通过硬门槛。

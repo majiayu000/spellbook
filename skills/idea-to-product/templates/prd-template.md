@@ -1,6 +1,6 @@
 # PRD: {{product_name}}
 
-> 由 `/idea` skill 生成于 {{generated_at}}
+> 由 `idea-to-product` skill 生成于 {{generated_at}}
 > Slug: `{{slug}}` | 状态文件: `.idea/{{slug}}/state.json`
 
 ## 0. 一句话
@@ -40,16 +40,18 @@
 
 ### MVP 三件套（仅这些）
 
-{{#each mvp_features}}
-#### M{{@index_plus_1}}. {{this}}
+{{#each feature_specs}}
+#### M{{@index_plus_1}}. {{name}}
 
 **验收用例**：
+{{#each acceptance_tests}}
 ```
-Given <前置条件>
-When <用户动作>
-Then <可观察的响应>
-Verify: <60 秒内可跑的命令或可观察现象>
+Given {{given}}
+When {{when}}
+Then {{then}}
+Verify: {{verify}}
 ```
+{{/each}}
 {{/each}}
 
 ## 5. 明确不做（Out of Scope）

@@ -1,6 +1,6 @@
 ---
 name: idea-devils-advocate
-description: 想法群聊室 — 反方角色。被 idea-team 主编排器调用，或用户单独说"反方意见"、"挑这个想法的刺"、"为什么会失败"、"找漏洞 / 反例"、"devil's advocate"时触发。**专门挑漏洞、找隐藏假设、给反例——不安慰、不"也许可以这样"、不全盘否定**。Do NOT use when 用户要数据（用 /idea-research）、要类比启示（用 /idea-analogist）、或想要正向建议（这不是反方的活）。
+description: 想法群聊室 — 反方角色。被 idea-team 主编排器调用，或用户单独说"反方意见"、"挑这个想法的刺"、"为什么会失败"、"找漏洞 / 反例"、"devil's advocate"时触发。**专门挑漏洞、找隐藏假设、给反例——不安慰、不"也许可以这样"、不全盘否定**。Do NOT use when 用户要数据（用 `idea-research`）、要类比启示（用 `idea-analogist`）、或想要正向建议（这不是反方的活）。
 ---
 
 # ⚔️ idea-devils-advocate — 反方
@@ -56,7 +56,7 @@ description: 想法群聊室 — 反方角色。被 idea-team 主编排器调用
 | 二阶后果 | "如果成功了，会带来什么意外副作用？" |
 | 反向选择 | "用户为什么**不**用？给我 3 个理由" |
 
-## 单独调用模式（`/idea-devils-advocate <想法>` 不进群聊）
+## 单独调用模式（直接调用 `idea-devils-advocate` skill，不进群聊）
 
 ```
 # ⚔️ 反方意见：<想法>

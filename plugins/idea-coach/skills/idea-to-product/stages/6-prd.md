@@ -49,20 +49,26 @@ Verify: <60 秒内可跑的命令或可观察的现象>
 
 ### Step 6. 填充模板
 
-按 template 的占位符，从 state 和已确认的派生值填入：
+按 template 的全部占位符，从 state 和已确认的派生值填入；以下是完整映射，
+不得只填部分字段：
+- `{{product_name}}` ← 用户确认后的 current `raw_idea` 派生名称
+- `{{generated_at}}` / `{{slug}}` ← 当前时间 / state 顶层字段
 - `{{value_prop}}` ← state.stages.1.value_prop
 - `{{target_user}}` ← state.stages.1.target_user
 - `{{jtbd}}` ← state.stages.1.jtbd
-- `{{mvp_features}}` ← state.stages.3.mvp_features
+- `{{current_workaround}}` / `{{differentiator}}` ← state.stages.1
+- `{{feature_specs}}` ← 每个 mvp_feature + Step 5 生成的具体 acceptance_tests
 - `{{north_star}}` ← state.stages.3.north_star
-- `{{journey}}` ← state.stages.4.journey
+- `{{ascii_journey}}` ← 已写入 journey.md 的 ASCII 图
 - `{{aha_moment}}` ← state.stages.4.aha_moment
 - `{{dropoff_risks}}` ← state.stages.4.dropoff_risks
 - `{{out_of_scope}}` ← state.stages.3.moscow.should + could + wont（保留原 MoSCoW 分类）
 - `{{known_compromises}}` ← state.stages.5.known_compromises
+- `{{nielsen_pass_summary}}` / `{{norman_pass_summary}}` ← Stage 5 当前 Pass 汇总
 - `{{competitors}}` ← state.stages.2.competitors
 - `{{risks}}` ← state.stages.2.risks
 - `{{file_ownership}}` ← Step 4 用户确认后的所有权数组
+- `{{tech_stack.*}}`（含三个 reason 与 `third_party_list`）← Step 3 的具体决策；`third_party_list` 是明确 API 名称的连接字符串，无第三方时写 `none`
 
 ### Step 7. 写文件
 落盘到 `.idea/<slug>/prd.md`。
@@ -79,11 +85,22 @@ Verify: <60 秒内可跑的命令或可观察的现象>
   "prd_path": ".idea/<slug>/prd.md",
   "sections_count": <数字>,
   "acceptance_tests_count": <数字>,
+  "feature_specs": [
+    {
+      "name": "<Must 功能>",
+      "acceptance_tests": [
+        { "given": "...", "when": "...", "then": "...", "verify": "..." }
+      ]
+    }
+  ],
   "tech_stack": {
     "frontend": "<选择>",
+    "frontend_reason": "<理由>",
     "backend": "<选择 / none>",
+    "backend_reason": "<理由>",
     "storage": "<选择>",
-    "third_party": ["<API 1>"]
+    "storage_reason": "<理由>",
+    "third_party_list": "<API 1, API 2 / none>"
   },
   "file_ownership": [
     { "module": "<模块>", "files": ["<path>"], "forbidden": ["<不得修改的边界>"] }
@@ -123,10 +140,10 @@ Stage 6/7 | 阶段: {读 state → Read template → 填占位 → 生成验收 
 ## Pre-Stage 7 checklist（必须全勾才能进 Stage 7）
 
 - [ ] `.idea/<slug>/prd.md` 文件存在
-- [ ] `grep '{{' .idea/<slug>/prd.md` **无任何残留占位符**
+- [ ] `grep -En '\{\{|<前置条件>|<用户动作>|<可观察的响应>|<60 秒内' .idea/<slug>/prd.md` **无任何残留占位符**
 - [ ] 每个 `mvp_features` 至少有 1 条验收用例（Given/When/Then/Verify 完整）
 - [ ] `tech_stack` 明确指定（无 "TBD" / "看情况"）
 - [ ] `out_of_scope` 完整包含 `moscow.should + could + wont`
 - [ ] `file_ownership` 已确认，每个路径仅有一个 owner 且无 "TBD"
 - [ ] 用户已明确确认 PRD（在对话里收到 "OK" / "进下一步" 等）
-- [ ] `state.stages.6` 已写入，`state.current_stage` = 7
+- [ ] `state.stages.6` 已写入，确认前 `current_stage` = 6 且 pending 指向 7；确认后才进入 7

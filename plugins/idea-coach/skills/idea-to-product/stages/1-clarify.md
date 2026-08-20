@@ -99,4 +99,5 @@ Stage 1/7 | 完成度: {x}/3 必答 | 当前阻塞: <一句话>
 - [ ] `state.stages.1.jtbd` 句式完整
 - [ ] `state.stages.1.value_prop` ≤ 30 字
 - [ ] `state.stages.1.agent_confidence` 已填
-- [ ] `state.current_stage` = 2
+- [ ] `state.stages.1` 已写入，`current_stage` 仍为 1，`pending_confirmation.next_stage` = 2
+- [ ] 用户明确确认后才清空 pending 并设置 `state.current_stage` = 2
