@@ -26,6 +26,9 @@ from ecosystem_model import (
 )
 
 
+LOOM_DOCTOR_TIMEOUT_SECONDS = 300
+
+
 def scan_root(
     root: Path,
     root_kind: str,
@@ -466,7 +469,10 @@ def scan_resource_references(
                     )
                 )
                 continue
-            if not candidate.is_file() and normalized not in (provided_resources or set()):
+            resource_exists = candidate.is_file() or (
+                reference.endswith("/") and candidate.is_dir()
+            )
+            if not resource_exists and normalized not in (provided_resources or set()):
                 findings.append(
                     EcosystemFinding(
                         "error" if active else "warning",
@@ -479,6 +485,77 @@ def scan_resource_references(
             if not candidate.is_file():
                 continue
             pending.append(candidate)
+
+
+# Retired-entry detection must key on syntax that denotes a Skill reference.
+# A bare word-boundary match over prose flags ordinary vocabulary that happens to
+# collide with a retired Skill name (for example the noun "wallpaper" against a
+# retired entry with that name), which produced false gate failures.
+_REFERENCE_FORMS: tuple[tuple[str, str], ...] = (
+    # Structural forms: the name sits in a position that can only mean a Skill.
+    ("slash_command", r"(?<![\w./-])/{name}(?![\w-])"),
+    ("dollar_command", r"(?<![\w$-])\${name}(?![\w-])"),
+    ("wiki_link", r"\[\[\s*{name}\s*\]\]"),
+    ("skill_path", r"(?<![\w-])skills?/{name}(?![\w-])"),
+    ("skill_file", r"(?<![\w-]){name}/SKILL\.md\b"),
+    ("code_span", r"`\s*/?{name}\s*`"),
+    ("skill_call", r"\bskill\s*\(\s*[\"']?{name}[\"']?\s*\)"),
+    ("skill_field", r"\bskill[_-]?(?:name)?\s*[:=]\s*[\"']?{name}(?![\w-])"),
+    ("markdown_link", r"\]\([^)]*(?<![\w-]){name}(?![\w-])[^)]*\)"),
+    # Invocation phrasing: an imperative aimed at the name.
+    (
+        "invocation",
+        r"\b(?:call|calls|called|invoke|invokes|invoking|run|runs|use|uses|using"
+        r"|load|loads|loading|trigger|triggers|see|via|replace[sd]?|delegate to"
+        r"|hand off to|defer to)\s+(?:the\s+)?{name}(?![\w-])",
+    ),
+    ("qualified_noun", r"(?<![\w-]){name}\s+(?:skill|workflow|command|entrypoint)\b"),
+)
+
+_REFERENCE_CACHE: dict[str, tuple[tuple[str, re.Pattern[str]], ...]] = {}
+
+
+def _redact_secrets(fragment: str) -> str:
+    """Strip credential-shaped values so evidence never republishes a secret."""
+    for rule_name, pattern in SECRET_RULES:
+        fragment = pattern.sub(f"[redacted:{rule_name}]", fragment)
+    return fragment
+
+
+def _reference_patterns(retired: str) -> tuple[tuple[str, re.Pattern[str]], ...]:
+    cached = _REFERENCE_CACHE.get(retired)
+    if cached is None:
+        name = re.escape(retired)
+        cached = tuple(
+            (kind, re.compile(template.format(name=name), re.IGNORECASE))
+            for kind, template in _REFERENCE_FORMS
+        )
+        _REFERENCE_CACHE[retired] = cached
+    return cached
+
+
+def _find_retired_reference_in_lines(
+    lines: list[str], retired: str
+) -> tuple[int, str, str] | None:
+    """Locate an explicit retired reference in already-split text lines."""
+    patterns = _reference_patterns(retired)
+    for index, line in enumerate(lines, start=1):
+        for kind, pattern in patterns:
+            match = pattern.search(line)
+            if match:
+                return index, _redact_secrets(match.group(0)[:200]), kind
+    return None
+
+
+def find_retired_reference(text: str, retired: str) -> tuple[int, str, str] | None:
+    """Locate an explicit reference to a retired Skill name.
+
+    Returns ``(line_number, evidence, match_kind)`` for the first line carrying a
+    Skill-denoting reference, or ``None`` when the name only appears as prose.
+    The line number is reported so findings cite a verifiable location instead of
+    leaving callers to guess one.
+    """
+    return _find_retired_reference_in_lines(text.splitlines(), retired)
 
 
 def scan_retired_references(
@@ -514,21 +591,32 @@ def scan_retired_references(
                 )
             )
             continue
+        lines = text.splitlines()
+        folded_text = text.casefold()
         for retired in sorted(retired_names):
             if (instance.name, retired) in allowlist:
                 continue
-            if re.search(
-                rf"(?<![A-Za-z0-9_-]){re.escape(retired)}(?![A-Za-z0-9_-])",
-                text,
-            ):
-                findings.append(
-                    EcosystemFinding(
-                        "error" if active else "warning",
-                        "retired_skill_reference",
-                        f"active Skill still references retired entry '{retired}'",
-                        str(file_path),
-                    )
+            if retired.casefold() not in folded_text:
+                continue
+            hit = _find_retired_reference_in_lines(lines, retired)
+            if hit is None:
+                continue
+            line_number, evidence, kind = hit
+            findings.append(
+                EcosystemFinding(
+                    "error" if active else "warning",
+                    "retired_skill_reference",
+                    f"active Skill still references retired entry '{retired}'"
+                    f" ({kind}) at line {line_number}",
+                    str(file_path),
+                    {
+                        "retired": retired,
+                        "line": line_number,
+                        "match_kind": kind,
+                        "evidence": evidence,
+                    },
                 )
+            )
 
 
 def scan_secrets(instance: SkillInstance, findings: list[EcosystemFinding]) -> None:
@@ -590,14 +678,20 @@ def run_loom_doctor(findings: list[EcosystemFinding], loom_binary: str) -> None:
             [loom_binary, "workspace", "doctor", "--json"],
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=LOOM_DOCTOR_TIMEOUT_SECONDS,
             check=False,
         )
     except FileNotFoundError:
         findings.append(EcosystemFinding("error", "loom_missing", "Loom CLI is not available"))
         return
     except subprocess.TimeoutExpired:
-        findings.append(EcosystemFinding("error", "loom_timeout", "Loom doctor exceeded 60 seconds"))
+        findings.append(
+            EcosystemFinding(
+                "error",
+                "loom_timeout",
+                f"Loom doctor exceeded {LOOM_DOCTOR_TIMEOUT_SECONDS} seconds",
+            )
+        )
         return
     if process.returncode != 0:
         findings.append(

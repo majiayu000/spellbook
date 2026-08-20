@@ -3,11 +3,11 @@
   "source_policy": {
     "local_only_canonical_registry": "~/.loom-registry",
     "projection_roots": [
-      "~/.codex/skills",
+      "~/.agents/skills",
       "~/.claude/skills"
     ],
     "projection_globs": [
-      "~/src/project-*/.codex/skills"
+      "~/src/project-*/.agents/skills"
     ],
     "inventory_roots": [
       {
@@ -21,7 +21,7 @@
         "owner": "independent-git"
       },
       {
-        "path": "~/.agents/skills",
+        "path": "~/.gemini/skills",
         "kind": "managed_projection",
         "owner": "skill-installer"
       }

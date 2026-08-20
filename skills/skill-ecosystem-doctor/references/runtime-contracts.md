@@ -15,10 +15,35 @@ installer behavior on the current machine.
 
 ## Common discovery candidates
 
-- Codex: user Skill roots reported by the current installation, commonly
-  `~/.codex/skills` or `~/.agents/skills`.
+- Codex: the current user Skill root is `~/.agents/skills`; `~/.codex` remains
+  the configuration home and `~/.codex/skills` is a legacy projection path.
 - Claude Code: the active user or project Skill roots, commonly
   `~/.claude/skills`.
+- Gemini CLI: commonly `~/.gemini/skills`.
+- Cursor: commonly `~/.cursor/skills`.
+
+The governed runtime ids and their home directories are defined once, in
+`scripts/ecosystem_model.py::RUNTIME_HOME_DIRS`. The same mapping supplies each
+runtime's per-project projection directory (`<project>/<dir>/skills`), its
+`--<runtime>-home` CLI override, and its Loom target id. Add a runtime there and
+nowhere else.
+
+During migration, reconciliation recognizes both the current Codex Loom target
+id (`target_codex_agents_skills`) and the retired
+`target_codex_codex_skills` id so stale mirror rules and projections are removed.
+
+A policy projects into `codex` and `claude` unless it sets
+`projection_runtimes`; `managed_global_sources[].runtimes` may name any governed
+runtime independently of that list. Plugin enablement stays Codex-only because
+it edits Codex's `config.toml`.
+
+An explicit empty `projection_runtimes` list disables automatic projections;
+leave `managed_global_sources` empty too for a zero-link contract. In that
+mode, declare active physical roots such as `~/.agents/skills` as
+`managed_projection` inventory roots. The reconciler may still validate
+classification, frontmatter, state, and plugin policy, but it must not create
+global or project links. Remove obsolete Loom bindings and projection records
+through Loom's own commands; never satisfy their drift by recreating links.
 - Loom: its configured workspace, commonly `~/.loom-registry`, plus registered
   targets, bindings, projections, provenance locks, and `workspace doctor`.
 - VibeGuard: installed snapshot, source revision, manifest, rules, workflows,

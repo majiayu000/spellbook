@@ -1,6 +1,6 @@
 ---
 name: skill-ecosystem-doctor
-description: "Audit and safely repair cross-runtime Skill ownership, loading, duplication, scopes, budgets, lifecycle, quarantine, and retirement. Usage statistics alone belong to skill-usage-stats. Use when explicitly governing the Skill ecosystem; ignore mentions/traces."
+description: "Audit and safely repair cross-runtime Skill governance: canonical-source ownership, divergent or duplicate projections, exposure scopes and budgets, lifecycle drift, quarantine, and retirement. Use when the user explicitly requests cross-runtime or cross-scope Skill governance; ignore project-local Skill inventory, product/runtime loading or enablement checks, usage statistics, and mentions/traces."
 ---
 
 # Skill Ecosystem Doctor
@@ -11,6 +11,14 @@ cross-runtime verification and a durable handoff.
 
 This workflow is at `skill` maturity, not unattended `automation` maturity. Do
 not schedule or silently apply repairs.
+
+## Trigger boundary
+
+Questions such as “Did Studio load or start these Skills?” belong to Studio's
+own configuration, projections, and runtime inventory. Inspect that
+project/runtime directly. Invoke this Doctor only when the user explicitly asks
+for cross-runtime or cross-scope ownership, projection, exposure, lifecycle, or
+repair governance.
 
 ## Select the mode
 
@@ -198,7 +206,14 @@ Run verification from the current session:
    reach a clean count.
 6. Start a fresh Codex session and confirm the active Skill catalog stays within
    its declared count/description budget without truncation warnings.
-7. Confirm Codex and Claude resolve the intended source or exact pin.
+7. Confirm every runtime the policy governs — Codex, Claude, and any of
+   `gemini`/`cursor` named in `projection_runtimes` or
+   `managed_global_sources[].runtimes` — resolves the intended source or exact
+   pin. Check each runtime's Skill home: Codex uses `~/.agents/skills` while
+   Codex configuration remains under `~/.codex`.
+   When `projection_runtimes` is explicitly empty, verify every declared
+   `managed_projection` inventory root instead and require a zero-link
+   reconciliation plan.
 8. For retired Skills, scan all active paths and test the relevant installer so
    reinstall does not restore them.
 9. Run `git diff --check` in every changed Git worktree.

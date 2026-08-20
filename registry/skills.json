@@ -1345,7 +1345,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/skill-ecosystem-doctor/SKILL.md",
-    "description": "Audit and safely repair cross-runtime Skill ownership, loading, duplication, scopes, budgets, lifecycle, quarantine, and retirement. Usage statistics alone belong to skill-usage-stats. Use when explicitly governing the Skill ecosystem; ignore mentions/traces.",
+    "description": "Audit and safely repair cross-runtime Skill governance: canonical-source ownership, divergent or duplicate projections, exposure scopes and budgets, lifecycle drift, quarantine, and retirement. Use when the user explicitly requests cross-runtime or cross-scope Skill governance; ignore project-local Skill inventory, product/runtime loading or enablement checks, usage statistics, and mentions/traces.",
     "language": "en",
     "compatibility": {
       "runtimes": [

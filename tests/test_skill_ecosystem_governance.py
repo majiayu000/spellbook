@@ -15,7 +15,9 @@ sys.path.insert(0, str(SCRIPTS))
 
 import ecosystem_checks as checks
 import ecosystem_governance as governance
+import ecosystem_model as model
 import ecosystem_reconcile as reconcile
+import ecosystem_runtimes as runtimes_mod
 import ecosystem_split as split
 
 
@@ -243,7 +245,7 @@ def test_legacy_policy_normalizes_without_second_config(tmp_path: Path) -> None:
     assert normalized["retired_reference_allowlist"] == [
         {"skill": "stats", "retired_name": "retired-skill"}
     ]
-    assert str(project / ".codex" / "skills") in normalized["source_policy"][
+    assert str(project / ".agents" / "skills") in normalized["source_policy"][
         "projection_globs"
     ]
     assert str(project / ".claude" / "skills") in normalized["source_policy"][
@@ -291,6 +293,28 @@ def test_legacy_policy_rejects_invalid_evidence_threshold(tmp_path: Path) -> Non
         governance.read_governance(policy)
 
 
+def test_legacy_policy_rejects_non_string_managed_runtime(tmp_path: Path) -> None:
+    registry = tmp_path / "registry"
+    (registry / "skills").mkdir(parents=True)
+    managed = write_skill(tmp_path, "managed")
+    policy = registry / "SKILL_GOVERNANCE_POLICY.json"
+    policy.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "project_scopes": {},
+                "managed_global_sources": {
+                    "managed": {"source": str(managed), "runtimes": [{}]}
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="legacy managed global source is invalid"):
+        governance.read_governance(policy)
+
+
 def test_reconcile_hardens_scopes_and_is_idempotent(tmp_path: Path) -> None:
     registry = tmp_path / "registry"
     registry_skills = registry / "skills"
@@ -319,8 +343,7 @@ def test_reconcile_hardens_scopes_and_is_idempotent(tmp_path: Path) -> None:
     plan, text_updates, state_updates = reconcile.build_plan(
         registry,
         policy,
-        codex_home=codex_home,
-        claude_home=claude_home,
+        runtime_homes={"codex": codex_home, "claude": claude_home},
     )
     assert set(plan.hardened) == {"global-skill", "project-skill"}
     assert len(plan.global_links_to_remove) == 4
@@ -330,13 +353,58 @@ def test_reconcile_hardens_scopes_and_is_idempotent(tmp_path: Path) -> None:
     repeated, repeated_text, _ = reconcile.build_plan(
         registry,
         policy,
-        codex_home=codex_home,
-        claude_home=claude_home,
+        runtime_homes={"codex": codex_home, "claude": claude_home},
     )
     assert repeated.hardened == ()
     assert repeated_text == {}
     assert repeated.project_links_to_create == ()
     assert "explicit request" in global_skill.joinpath("SKILL.md").read_text()
+
+
+def test_reconcile_preserves_complete_description_and_applies_override(
+    tmp_path: Path,
+) -> None:
+    registry = tmp_path / "registry"
+    registry_skills = registry / "skills"
+    registry_skills.mkdir(parents=True)
+    description = (
+        "Run the named daily discovery workflow and publish its formal report. "
+        "Do not use this workflow for one-off web searches, competitor research, "
+        "generic recommendations, or borrowing its search style."
+    )
+    skill = write_skill(registry_skills, "tool-scout", description)
+    write_state(registry, ["tool-scout"])
+    generic_clause = " Use when explicitly requested; ignore mentions/traces."
+    precise_clause = (
+        " Use only for an explicit Tool Scout workflow request; "
+        "ignore generic research and mentions/traces."
+    )
+    policy = {
+        "trigger_boundary": {
+            "clause": generic_clause,
+            "overrides": {"tool-scout": precise_clause},
+            "max_description_length": 1024,
+        },
+        "project_scopes": {},
+        "cold_storage": [],
+        "duplicate_resolution": {"retire_registry_mirror": []},
+    }
+
+    plan, text_updates, state_updates = reconcile.build_plan(
+        registry,
+        policy,
+        runtime_homes={
+            "codex": tmp_path / "codex",
+            "claude": tmp_path / "claude",
+        },
+    )
+    reconcile.apply_plan(plan, text_updates, state_updates)
+
+    hardened = skill.joinpath("SKILL.md").read_text(encoding="utf-8")
+    assert description in hardened
+    assert precise_clause.strip() in hardened
+    assert generic_clause.strip() not in hardened
+    assert "…" not in hardened
 
 
 def test_managed_physical_skill_does_not_require_a_pin(tmp_path: Path) -> None:
@@ -388,12 +456,14 @@ def test_reconcile_discovers_new_project_worktree(tmp_path: Path) -> None:
     plan, _, _ = reconcile.build_plan(
         registry,
         policy,
-        codex_home=tmp_path / "codex",
-        claude_home=tmp_path / "claude",
+        runtime_homes={
+            "codex": tmp_path / "codex",
+            "claude": tmp_path / "claude",
+        },
     )
 
     paths = {Path(path) for path, _ in plan.project_links_to_create}
-    assert worktree / ".codex" / "skills" / "prod-skill" in paths
+    assert worktree / ".agents" / "skills" / "prod-skill" in paths
     assert worktree / ".claude" / "skills" / "prod-skill" in paths
 
 
@@ -414,7 +484,7 @@ def test_reconcile_removes_quarantined_and_retired_links(tmp_path: Path) -> None
         (home / "skills" / "unsafe-skill").symlink_to(unsafe)
         (home / "skills" / "retired-skill").symlink_to(retired)
     for target in (project, worktree):
-        for runtime_dir in (".codex", ".claude"):
+        for runtime_dir in (".agents", ".claude"):
             skills = target / runtime_dir / "skills"
             skills.mkdir(parents=True)
             (skills / "unsafe-skill").symlink_to(unsafe)
@@ -432,8 +502,7 @@ def test_reconcile_removes_quarantined_and_retired_links(tmp_path: Path) -> None
     plan, text_updates, state_updates = reconcile.build_plan(
         registry,
         policy,
-        codex_home=codex_home,
-        claude_home=claude_home,
+        runtime_homes={"codex": codex_home, "claude": claude_home},
     )
 
     assert len(plan.global_links_to_remove) == 4
@@ -447,12 +516,11 @@ def test_reconcile_removes_quarantined_and_retired_links(tmp_path: Path) -> None
     repeated, _, _ = reconcile.build_plan(
         registry,
         policy,
-        codex_home=codex_home,
-        claude_home=claude_home,
+        runtime_homes={"codex": codex_home, "claude": claude_home},
     )
     assert repeated.global_links_to_remove == ()
     assert repeated.project_links_to_remove == ()
-    assert (project / ".codex" / "skills" / "project-skill").is_symlink()
+    assert (project / ".agents" / "skills" / "project-skill").is_symlink()
 
 
 def test_split_is_idempotent(tmp_path: Path) -> None:
@@ -536,3 +604,300 @@ def test_split_apply_rechecks_symlink_containment(tmp_path: Path) -> None:
         split.apply_split_plan(registry, updates)
 
     assert not (outside / "details.md").exists()
+
+
+def _multi_runtime_fixture(tmp_path: Path) -> tuple[Path, dict[str, Path], Path]:
+    """Registry plus one home per supported runtime, and a managed source."""
+    registry = tmp_path / "registry"
+    write_skill(registry / "skills", "keeper")
+    write_state(registry, ["keeper"])
+    managed_root = tmp_path / "managed"
+    write_skill(managed_root, "lark-doc")
+    homes = {
+        runtime: tmp_path / runtime for runtime in runtimes_mod.RUNTIME_HOME_DIRS
+    }
+    for home in homes.values():
+        (home / "skills").mkdir(parents=True)
+    return registry, homes, managed_root / "lark-doc"
+
+
+def _base_policy() -> dict:
+    return {
+        "trigger_boundary": {
+            "clause": " Trigger only for an explicit request; ignore quoted traces and governance.",
+            "max_description_length": 1024,
+        },
+        "duplicate_resolution": {"retire_registry_mirror": []},
+    }
+
+
+def test_codex_runtime_uses_agents_skills_and_codex_config_home(
+    tmp_path: Path,
+) -> None:
+    homes = model.default_runtime_homes(tmp_path)
+
+    assert homes["codex"] == tmp_path / ".agents"
+    assert model.runtime_project_dir("codex") == ".agents"
+    assert model.runtime_target_id("codex") == "target_codex_agents_skills"
+    assert model.runtime_target_ids("codex") == frozenset(
+        {"target_codex_agents_skills", "target_codex_codex_skills"}
+    )
+
+    parser = reconcile.build_reconcile_parser()
+    args = parser.parse_args(
+        ["--registry", str(tmp_path / "registry"), "--policy", str(tmp_path / "policy.json")]
+    )
+    assert args.codex_home == Path.home() / ".agents"
+    assert args.codex_config_home == Path.home() / ".codex"
+
+
+def test_plugin_changes_use_explicit_codex_config_home(tmp_path: Path) -> None:
+    registry, homes, _ = _multi_runtime_fixture(tmp_path)
+    config_home = tmp_path / ".codex"
+    config_home.mkdir()
+    config_path = config_home / "config.toml"
+    config_path.write_text(
+        '[plugins."browser@openai-bundled"]\nenabled = false\n',
+        encoding="utf-8",
+    )
+    policy = _base_policy()
+    policy["plugin_states"] = {"browser@openai-bundled": True}
+
+    with pytest.raises(reconcile.ReconcileError, match="codex_config_home is required"):
+        reconcile.build_plan(registry, policy, runtime_homes=homes)
+
+    plan, text_updates, _ = reconcile.build_plan(
+        registry,
+        policy,
+        runtime_homes=homes,
+        codex_config_home=config_home,
+    )
+
+    assert plan.plugin_state_changes == (("browser@openai-bundled", False, True),)
+    assert config_path in text_updates
+    assert homes["codex"] / "config.toml" not in text_updates
+
+
+def test_runtime_mirror_removes_current_and_legacy_codex_target_ids(
+    tmp_path: Path,
+) -> None:
+    registry, homes, _ = _multi_runtime_fixture(tmp_path)
+    mirror_root = tmp_path / "claude-mirror"
+    write_skill(mirror_root, "claude-only")
+    write_skill(registry / "skills", "claude-only")
+    state = registry / "state" / "registry"
+    records = [
+        {"skill_id": "claude-only", "target_id": "target_codex_agents_skills"},
+        {"skill_id": "claude-only", "target_id": "target_codex_codex_skills"},
+        {"skill_id": "claude-only", "target_id": "target_claude_claude_skills"},
+    ]
+    (state / "rules.json").write_text(
+        json.dumps({"schema_version": 1, "rules": records}), encoding="utf-8"
+    )
+    (state / "projections.json").write_text(
+        json.dumps({"schema_version": 1, "projections": records}), encoding="utf-8"
+    )
+    policy = _base_policy()
+    policy["runtime_mirrors"] = {
+        "authoritative_root": str(mirror_root),
+        "claude_only": ["claude-only"],
+    }
+
+    plan, _, state_updates = reconcile.build_plan(
+        registry, policy, runtime_homes=homes
+    )
+
+    assert plan.state_rules_to_remove == 2
+    assert plan.state_projections_to_remove == 2
+    assert state_updates[state / "rules.json"]["rules"] == [records[-1]]
+    assert state_updates[state / "projections.json"]["projections"] == [records[-1]]
+
+
+def test_managed_global_source_accepts_gemini_runtime(tmp_path: Path) -> None:
+    registry, homes, managed_source = _multi_runtime_fixture(tmp_path)
+    policy = _base_policy()
+    policy["managed_global_sources"] = {
+        "lark-doc": {"source": str(managed_source), "runtimes": ["gemini"]}
+    }
+
+    plan, _, _ = reconcile.build_plan(registry, policy, runtime_homes=homes)
+
+    created = {path for path, _ in plan.global_links_to_create}
+    assert str(homes["gemini"] / "skills" / "lark-doc") in created
+    # The managed entry lands only in the runtime it names.
+    lark_links = {path for path in created if path.endswith("lark-doc")}
+    assert lark_links == {str(homes["gemini"] / "skills" / "lark-doc")}
+
+
+def test_reconcile_sees_skill_projected_into_codex_agents_home(tmp_path: Path) -> None:
+    """A retired Codex skill linked into ~/.agents is planned for removal."""
+    registry, homes, managed_source = _multi_runtime_fixture(tmp_path)
+    stale = write_skill(registry / "skills", "stale-skill")
+    (homes["codex"] / "skills" / "stale-skill").symlink_to(stale)
+    policy = _base_policy()
+    policy["retired"] = ["stale-skill"]
+    policy["managed_global_sources"] = {
+        "lark-doc": {"source": str(managed_source), "runtimes": ["codex"]}
+    }
+
+    plan, _, _ = reconcile.build_plan(registry, policy, runtime_homes=homes)
+
+    assert str(homes["codex"] / "skills" / "stale-skill") in plan.global_links_to_remove
+
+
+def test_projection_runtimes_fan_out_into_gemini_home(tmp_path: Path) -> None:
+    registry, homes, _ = _multi_runtime_fixture(tmp_path)
+    policy = _base_policy()
+    policy["projection_runtimes"] = ["codex", "claude", "gemini"]
+
+    plan, _, _ = reconcile.build_plan(registry, policy, runtime_homes=homes)
+
+    created = {path for path, _ in plan.global_links_to_create}
+    assert str(homes["gemini"] / "skills" / "keeper") in created
+    assert str(homes["codex"] / "skills" / "keeper") in created
+    assert str(homes["cursor"] / "skills" / "keeper") not in created
+
+
+def test_managed_global_source_rejects_unknown_runtime(tmp_path: Path) -> None:
+    registry, homes, managed_source = _multi_runtime_fixture(tmp_path)
+    policy = _base_policy()
+    policy["managed_global_sources"] = {
+        "lark-doc": {"source": str(managed_source), "runtimes": ["windsurf"]}
+    }
+
+    with pytest.raises(
+        runtimes_mod.RuntimePolicyError, match="managed global runtimes are invalid"
+    ):
+        reconcile.build_plan(registry, policy, runtime_homes=homes)
+
+
+def test_projection_runtimes_rejects_unknown_runtime(tmp_path: Path) -> None:
+    registry, homes, _ = _multi_runtime_fixture(tmp_path)
+    policy = _base_policy()
+    policy["projection_runtimes"] = ["codex", "windsurf"]
+
+    with pytest.raises(
+        runtimes_mod.RuntimePolicyError, match="projection_runtimes must be"
+    ):
+        reconcile.build_plan(registry, policy, runtime_homes=homes)
+
+
+@pytest.mark.parametrize("value", [[{}], [""]])
+def test_projection_runtimes_rejects_non_string_or_empty_runtime(
+    tmp_path: Path, value: list[object]
+) -> None:
+    registry, homes, _ = _multi_runtime_fixture(tmp_path)
+    policy = _base_policy()
+    policy["projection_runtimes"] = value
+
+    with pytest.raises(
+        runtimes_mod.RuntimePolicyError, match="projection_runtimes must be"
+    ):
+        reconcile.build_plan(registry, policy, runtime_homes=homes)
+
+
+@pytest.mark.parametrize("value", [[{}], [""]])
+def test_managed_global_source_rejects_non_string_or_empty_runtime(
+    tmp_path: Path, value: list[object]
+) -> None:
+    registry, homes, managed_source = _multi_runtime_fixture(tmp_path)
+    policy = _base_policy()
+    policy["managed_global_sources"] = {
+        "lark-doc": {"source": str(managed_source), "runtimes": value}
+    }
+
+    with pytest.raises(
+        runtimes_mod.RuntimePolicyError, match="managed global runtimes are invalid"
+    ):
+        reconcile.build_plan(registry, policy, runtime_homes=homes)
+
+
+def test_projection_runtimes_allows_explicit_no_projection_mode(
+    tmp_path: Path,
+) -> None:
+    registry, homes, _ = _multi_runtime_fixture(tmp_path)
+    policy = _base_policy()
+    policy["projection_runtimes"] = []
+
+    plan, _, _ = reconcile.build_plan(registry, policy, runtime_homes=homes)
+
+    assert runtimes_mod.projection_runtimes(policy) == ()
+    assert plan.global_links_to_create == ()
+    assert plan.global_links_to_replace == ()
+    assert plan.project_links_to_create == ()
+    assert plan.project_links_to_replace == ()
+
+
+def test_legacy_policy_projection_roots_follow_projection_runtimes(
+    tmp_path: Path,
+) -> None:
+    registry = tmp_path / "registry"
+    (registry / "skills").mkdir(parents=True)
+    project = tmp_path / "project"
+    project.mkdir()
+    policy = registry / "SKILL_GOVERNANCE_POLICY.json"
+    policy.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "project_scopes": {str(project): ["scoped"]},
+                "projection_runtimes": ["codex", "claude", "gemini"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    normalized = governance.read_governance(policy)
+
+    source_policy = normalized["source_policy"]
+    assert source_policy["projection_roots"] == [
+        "~/.agents/skills",
+        "~/.claude/skills",
+        "~/.gemini/skills",
+    ]
+    assert str(project / ".gemini" / "skills") in source_policy["projection_globs"]
+
+
+def test_legacy_policy_manages_physical_agents_catalog_without_projecting(
+    tmp_path: Path,
+) -> None:
+    registry = tmp_path / "registry"
+    (registry / "skills").mkdir(parents=True)
+    agents_catalog = tmp_path / ".agents" / "skills"
+    write_skill(agents_catalog, "physical-skill")
+    policy = registry / "SKILL_GOVERNANCE_POLICY.json"
+    policy.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "project_scopes": {},
+                "projection_runtimes": [],
+                "inventory_roots": [
+                    {
+                        "path": str(agents_catalog),
+                        "kind": "managed_projection",
+                        "owner": "agents-physical-catalog",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    normalized = governance.read_governance(policy)
+    result = checks.validate_ecosystem(policy, run_loom=False)
+
+    assert normalized["source_policy"]["projection_roots"] == []
+    assert normalized["source_policy"]["projection_globs"] == []
+    assert normalized["source_policy"]["inventory_roots"] == [
+        {
+            "path": str(agents_catalog.resolve()),
+            "kind": "managed_projection",
+            "owner": "agents-physical-catalog",
+        }
+    ]
+    assert result["ok"] is True
+    assert result["summary"]["declared_names"] == 1
+    assert "physical_projection_unpinned" not in {
+        finding["code"] for finding in result["findings"]
+    }
