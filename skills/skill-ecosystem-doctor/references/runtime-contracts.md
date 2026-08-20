@@ -15,12 +15,10 @@ installer behavior on the current machine.
 
 ## Common discovery candidates
 
-- Codex: user Skill roots reported by the current installation, commonly
-  `~/.codex/skills`.
+- Codex: the current user Skill root is `~/.agents/skills`; `~/.codex` remains
+  the configuration home and `~/.codex/skills` is a legacy projection path.
 - Claude Code: the active user or project Skill roots, commonly
   `~/.claude/skills`.
-- Agents: the shared cross-tool root, commonly `~/.agents/skills`. This is its
-  own runtime, not a Codex alias.
 - Gemini CLI: commonly `~/.gemini/skills`.
 - Cursor: commonly `~/.cursor/skills`.
 
@@ -29,6 +27,10 @@ The governed runtime ids and their home directories are defined once, in
 runtime's per-project projection directory (`<project>/<dir>/skills`), its
 `--<runtime>-home` CLI override, and its Loom target id. Add a runtime there and
 nowhere else.
+
+During migration, reconciliation recognizes both the current Codex Loom target
+id (`target_codex_agents_skills`) and the retired
+`target_codex_codex_skills` id so stale mirror rules and projections are removed.
 
 A policy projects into `codex` and `claude` unless it sets
 `projection_runtimes`; `managed_global_sources[].runtimes` may name any governed

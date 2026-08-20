@@ -494,6 +494,7 @@ def scan_resource_references(
 _REFERENCE_FORMS: tuple[tuple[str, str], ...] = (
     # Structural forms: the name sits in a position that can only mean a Skill.
     ("slash_command", r"(?<![\w./-])/{name}(?![\w-])"),
+    ("dollar_command", r"(?<![\w$-])\${name}(?![\w-])"),
     ("wiki_link", r"\[\[\s*{name}\s*\]\]"),
     ("skill_path", r"(?<![\w-])skills?/{name}(?![\w-])"),
     ("skill_file", r"(?<![\w-]){name}/SKILL\.md\b"),

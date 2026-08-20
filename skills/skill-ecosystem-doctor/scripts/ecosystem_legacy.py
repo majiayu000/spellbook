@@ -163,7 +163,12 @@ def _inventory_roots(data: dict, registry: Path) -> list[dict[str, str]]:
             or not source.strip()
             or not isinstance(runtimes, list)
             or not runtimes
-            or not all(runtime in SUPPORTED_RUNTIMES for runtime in runtimes)
+            or not all(
+                isinstance(runtime, str)
+                and runtime
+                and runtime in SUPPORTED_RUNTIMES
+                for runtime in runtimes
+            )
         ):
             raise ValueError(f"legacy managed global source is invalid: {name}")
         add(source, "repository_source", f"managed-global:{name}")

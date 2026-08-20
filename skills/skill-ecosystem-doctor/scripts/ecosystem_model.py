@@ -14,21 +14,27 @@ from pathlib import Path
 # Single source of truth for governed runtimes.
 #
 # Key = runtime id used by the governance policy (managed_global_sources.runtimes,
-# projection_runtimes). Value = the runtime's home directory name, used both for
-# the global home (``~/<dir>``) and for the per-project projection directory
-# (``<project>/<dir>/skills``). Every runtime whitelist, home mapping, directory
-# tuple, and Loom target id in the doctor is derived from this mapping; do not
-# duplicate the list anywhere else.
+# projection_runtimes). Value = the runtime's Skill directory name, used both
+# for the global Skill home (``~/<dir>``) and for the per-project projection
+# directory (``<project>/<dir>/skills``). Codex configuration still lives under
+# ``~/.codex``; its current Skill catalog is ``~/.agents/skills``. Every runtime
+# whitelist, Skill-home mapping, project directory, and Loom target id in the
+# doctor is derived from this mapping; do not duplicate the list elsewhere.
 RUNTIME_HOME_DIRS: dict[str, str] = {
-    "codex": ".codex",
+    "codex": ".agents",
     "claude": ".claude",
-    "agents": ".agents",
     "gemini": ".gemini",
     "cursor": ".cursor",
 }
+# State written by earlier Doctor releases may still name Codex's retired Skill
+# target. Keep migration aliases beside the runtime mapping so reconciliation can
+# remove stale mirror records without treating the legacy path as active.
+LEGACY_RUNTIME_TARGET_IDS: dict[str, frozenset[str]] = {
+    "codex": frozenset({"target_codex_codex_skills"}),
+}
 SUPPORTED_RUNTIMES = frozenset(RUNTIME_HOME_DIRS)
-# Runtimes projected automatically when a policy does not say otherwise. Kept at
-# the historical two-runtime set so existing policy files behave exactly as before.
+# Runtimes projected automatically when a policy does not say otherwise. Keep
+# the historical runtime set while resolving Codex through its current Skill path.
 DEFAULT_PROJECTION_RUNTIMES: tuple[str, ...] = ("codex", "claude")
 
 IGNORED_DIRS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache"}
@@ -134,7 +140,7 @@ def default_runtime_homes(base: Path | None = None) -> dict[str, Path]:
 
 
 def runtime_project_dir(runtime: str) -> str:
-    """Per-project projection directory name for a runtime (e.g. ``.codex``)."""
+    """Per-project projection directory name for a runtime (e.g. ``.agents``)."""
     return RUNTIME_HOME_DIRS[runtime]
 
 
@@ -142,6 +148,13 @@ def runtime_target_id(runtime: str) -> str:
     """Loom registry target id for a runtime's global skills directory."""
     directory = RUNTIME_HOME_DIRS[runtime].lstrip(".")
     return f"target_{runtime}_{directory}_skills"
+
+
+def runtime_target_ids(runtime: str) -> frozenset[str]:
+    """Current and retired Loom target ids recognized during state migration."""
+    return frozenset({runtime_target_id(runtime)}) | LEGACY_RUNTIME_TARGET_IDS.get(
+        runtime, frozenset()
+    )
 
 
 def frontmatter_name(skill_file: Path) -> str | None:

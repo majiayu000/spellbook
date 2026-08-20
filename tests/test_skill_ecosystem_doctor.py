@@ -494,6 +494,7 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
     def test_explicit_reference_forms_are_still_detected(self):
         forms = {
             "slash_command": "Run /wallpaper to continue.",
+            "dollar_command": "Use $wallpaper to continue.",
             "wiki_link": "See [[wallpaper]] for details.",
             "skill_path": "Read skills/wallpaper/SKILL.md first.",
             "code_span": "Invoke `wallpaper` at this point.",

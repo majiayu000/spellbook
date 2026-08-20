@@ -57,7 +57,12 @@ def parse_managed_global_sources(policy: dict) -> dict[str, tuple[Path, frozense
         if (
             not isinstance(runtimes, list)
             or not runtimes
-            or not all(runtime in SUPPORTED_RUNTIMES for runtime in runtimes)
+            or not all(
+                isinstance(runtime, str)
+                and runtime
+                and runtime in SUPPORTED_RUNTIMES
+                for runtime in runtimes
+            )
         ):
             raise RuntimePolicyError(f"managed global runtimes are invalid for {name}")
         source_path = Path(source).expanduser()
@@ -75,7 +80,7 @@ def projection_runtimes(policy: dict) -> tuple[str, ...]:
     """Runtimes that automatically receive global and project projections.
 
     When the policy omits ``projection_runtimes`` this stays at the historical
-    codex+claude pair, so existing policy files keep their exact behaviour.
+    codex+claude pair; runtime paths still follow the current central mapping.
     Naming the field opts a deployment into the wider runtime set.
     """
     configured = policy.get("projection_runtimes")
@@ -83,7 +88,12 @@ def projection_runtimes(policy: dict) -> tuple[str, ...]:
         return DEFAULT_PROJECTION_RUNTIMES
     if (
         not isinstance(configured, list)
-        or not all(runtime in SUPPORTED_RUNTIMES for runtime in configured)
+        or not all(
+            isinstance(runtime, str)
+            and runtime
+            and runtime in SUPPORTED_RUNTIMES
+            for runtime in configured
+        )
     ):
         raise RuntimePolicyError(
             "projection_runtimes must be an array of "

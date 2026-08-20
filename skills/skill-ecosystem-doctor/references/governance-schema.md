@@ -12,7 +12,7 @@ the deterministic validator. Keep facts in the document and workflow rules in
 | `source_policy` | object | Canonical local registry, active projections, and additional inventory roots. |
 | `source_policy.local_only_canonical_registry` | string | Registry root that contains a `skills/` directory. `~` is expanded. |
 | `source_policy.projection_roots` | string array | Existing runtime directories to audit. Include only in-scope roots. |
-| `projection_runtimes` | string array | Optional (legacy schema). Runtimes receiving automatic global/project projections, from `codex`, `claude`, `agents`, `gemini`, `cursor`. Defaults to `["codex", "claude"]`, so omitting it preserves existing behaviour. Set it explicitly to `[]` to disable automatic links; `managed_global_sources` remain explicit per-Skill exceptions. Drives `projection_roots` and the per-project `<dir>/skills` globs. |
+| `projection_runtimes` | string array | Optional (legacy schema). Runtimes receiving automatic global/project projections, from `codex`, `claude`, `gemini`, `cursor`. Defaults to `["codex", "claude"]`; Codex resolves to `.agents/skills`, not the legacy `.codex/skills` path. Set it explicitly to `[]` to disable automatic links; `managed_global_sources` remain explicit per-Skill exceptions. Drives `projection_roots` and the per-project `<dir>/skills` globs. |
 | `source_policy.projection_globs` | string array | Optional absolute path patterns for dynamic project/worktree projection roots. A pattern matching nothing is an error. |
 | `source_policy.inventory_roots` | object array | Additional roots with explicit `path`, `kind`, and `owner`. |
 | `source_policy.managed_physical_skills` | object | Exact physical runtime Skills mapped to the installer or source owner that manages them. |
@@ -130,7 +130,7 @@ Each item requires:
 ```json
 {
   "name": "example-skill",
-  "path": "~/.codex/skills/example-skill",
+  "path": "~/.agents/skills/example-skill",
   "source_path": "~/src/example/skills/example-skill",
   "reason": "Installed by a source-controlled generator."
 }
@@ -141,7 +141,7 @@ For composite installers, add exact file mappings:
 ```json
 {
   "name": "queue-skill",
-  "path": "~/.codex/skills/queue-skill",
+  "path": "~/.agents/skills/queue-skill",
   "source_path": "~/src/example/skills/queue-skill",
   "reason": "Skill plus a locked shared resource.",
   "resource_mappings": [

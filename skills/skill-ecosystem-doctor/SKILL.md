@@ -207,9 +207,10 @@ Run verification from the current session:
 6. Start a fresh Codex session and confirm the active Skill catalog stays within
    its declared count/description budget without truncation warnings.
 7. Confirm every runtime the policy governs — Codex, Claude, and any of
-   `agents`/`gemini`/`cursor` named in `projection_runtimes` or
+   `gemini`/`cursor` named in `projection_runtimes` or
    `managed_global_sources[].runtimes` — resolves the intended source or exact
-   pin. Check each runtime's own home, not just `~/.codex` and `~/.claude`.
+   pin. Check each runtime's Skill home: Codex uses `~/.agents/skills` while
+   Codex configuration remains under `~/.codex`.
    When `projection_runtimes` is explicitly empty, verify every declared
    `managed_projection` inventory root instead and require a zero-link
    reconciliation plan.

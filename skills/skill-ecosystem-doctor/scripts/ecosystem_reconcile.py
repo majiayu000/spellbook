@@ -23,7 +23,7 @@ from ecosystem_model import (
     runtime_home_dest,
     runtime_home_flag,
     runtime_project_dir,
-    runtime_target_id,
+    runtime_target_ids,
 )
 from ecosystem_plugins import PluginPolicyError, plan_plugin_states
 from ecosystem_runtimes import (
@@ -407,6 +407,7 @@ def build_plan(
     policy: dict,
     *,
     runtime_homes: dict[str, Path],
+    codex_config_home: Path | None = None,
 ) -> tuple[ReconcilePlan, dict[Path, str], dict[Path, dict]]:
     unknown_homes = sorted(set(runtime_homes) - SUPPORTED_RUNTIMES)
     if unknown_homes:
@@ -633,7 +634,9 @@ def build_plan(
 
     state_updates: dict[Path, dict] = {}
     mirror_target_ids = frozenset(
-        runtime_target_id(runtime) for runtime in mirror_runtimes
+        target_id
+        for runtime in mirror_runtimes
+        for target_id in runtime_target_ids(runtime)
     )
     rules_path = registry / "state" / "registry" / "rules.json"
     projections_path = registry / "state" / "registry" / "projections.json"
@@ -650,7 +653,15 @@ def build_plan(
     )
     state_updates[rules_path] = rules
     state_updates[projections_path] = projections
-    plugin_config = runtime_homes[PLUGIN_RUNTIME] / "config.toml"
+    # Codex Skills use ~/.agents/skills, while plugin configuration remains in
+    # ~/.codex/config.toml. Require programmatic callers that change plugin state
+    # to provide the configuration home explicitly instead of guessing from the
+    # Skill home.
+    if policy.get("plugin_states") and codex_config_home is None:
+        raise ReconcileError(
+            "codex_config_home is required when plugin_states are configured"
+        )
+    plugin_config = (codex_config_home or Path.home() / ".codex") / "config.toml"
     plugin_changes, plugin_text = plan_plugin_states(plugin_config, policy)
     if plugin_text is not None:
         text_updates[plugin_config] = plugin_text
@@ -720,6 +731,12 @@ def build_reconcile_parser() -> argparse.ArgumentParser:
     parser.add_argument("--policy", type=Path, required=True)
     for runtime, home in default_runtime_homes().items():
         parser.add_argument(runtime_home_flag(runtime), type=Path, default=home)
+    parser.add_argument(
+        "--codex-config-home",
+        type=Path,
+        default=Path.home() / ".codex",
+        help="Codex configuration home containing config.toml",
+    )
     parser.add_argument("--apply", action="store_true")
     return parser
 
@@ -740,6 +757,7 @@ def main(argv: list[str] | None = None) -> int:
             registry,
             policy,
             runtime_homes=_runtime_homes(args),
+            codex_config_home=args.codex_config_home.expanduser(),
         )
         if args.apply:
             apply_plan(plan, text_updates, state_updates)
