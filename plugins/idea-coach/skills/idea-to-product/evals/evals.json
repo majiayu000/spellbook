@@ -1,0 +1,60 @@
+{
+  "skill_name": "idea-to-product",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Stage 7 已经生成并验证 prototype.html。更新状态并告诉我 resume 会怎么处理。",
+      "expected_output": "Keeps current_stage at 7, sets status to completed, records stages.7, and treats resume as artifact display rather than a nonexistent Stage 8.",
+      "files": [],
+      "expectations": [
+        "state.current_stage remains 7 and state.status becomes completed.",
+        "Resume displays completed artifacts and does not enter another stage."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Stage 2 判定 Pivot，之前 stages.1 到 stages.6 里还有旧方向数据。继续处理。",
+      "expected_output": "Waits for confirmation of the new direction, archives the old decision in pivot_history, updates raw_idea, clears invalid stage state, and resets current_stage to 1 without incrementing to Stage 3.",
+      "files": [],
+      "expectations": [
+        "The pivot direction is explicitly confirmed before state reset.",
+        "The old raw idea and decision are preserved in pivot_history.",
+        "raw_idea is replaced, stages is cleared, and current_stage becomes 1."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "N5 还是 Fail，但我保证 v2 会修。先把 overall 写 pass，继续生成 PRD。",
+      "expected_output": "Refuses to pass Stage 5, requires a concrete fix to be applied and reevaluated as Pass, and never records a Fail as a known compromise.",
+      "files": [],
+      "expectations": [
+        "overall remains blocked while any Fail remains.",
+        "known_compromises accepts Risk entries only.",
+        "Stage 6 is not entered."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "MoSCoW 没有 Must，journey 只有 3 步。帮我直接进 Stage 6。",
+      "expected_output": "Blocks advancement until there are 1-3 Must features and a 5-7 step journey.",
+      "files": [],
+      "expectations": [
+        "An empty Must list is rejected.",
+        "A three-step journey is rejected.",
+        "Stage 6 is not entered."
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "产品名是 <img src=x onerror=alert(1)>，Should/Could 各有功能，生成 PRD 和 HTML 原型。",
+      "expected_output": "Includes all non-Must scope, confirms concrete file ownership, escapes user text, keeps generated markup separate, and uses the deterministic verifier on the full prototype path.",
+      "files": [],
+      "expectations": [
+        "Should, Could, and Won't items all appear in out of scope.",
+        "File ownership is derived from real or greenfield paths and confirmed before rendering.",
+        "The injected product name is rendered as text and cannot create an img element or event handler.",
+        "verify_prototype.py passes for the final .idea/<slug>/prototype.html artifact."
+      ]
+    }
+  ]
+}

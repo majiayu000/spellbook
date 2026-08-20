@@ -57,6 +57,11 @@ CATEGORY_BY_NAME = {
     "product-analytics": "Product Lifecycle",
     "product-manager-toolkit": "Product Lifecycle",
     "product-ux-expert": "Product Lifecycle",
+    "idea-to-product": "Product Lifecycle",
+    "idea-team": "Product Lifecycle",
+    "idea-research": "Product Lifecycle",
+    "idea-devils-advocate": "Product Lifecycle",
+    "idea-analogist": "Product Lifecycle",
     # API and backend
     "api-design": "API & Backend",
     "auth-security": "API & Backend",

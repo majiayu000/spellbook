@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>98 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>103 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-98-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-103-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -307,6 +307,25 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`kubernetes-specialist`](./agents/kubernetes-specialist.md) | 基础设施 | K8s、Helm、GitOps |
 | [`security-auditor`](./agents/security-auditor.md) | 安全 | OWASP Top 10、SAST |
 | [`opensource-contributor`](./agents/opensource-contributor.md) | 贡献 | 开源工作流 |
+
+---
+
+## 插件（Plugins）
+
+Spellbook 同时是一个 Claude Code 插件 marketplace。把仓库加为 marketplace 后即可安装插件：
+
+```
+/plugin marketplace add majiayu000/spellbook
+/plugin install idea-coach
+/plugin install rust-dev
+```
+
+| 插件 | 说明 |
+|--------|-------------|
+| [`idea-coach`](./plugins/idea-coach/) | 会顶嘴的产品教练（想法 → PRD → 可点击 HTML 原型）+ 多角色想法群聊室；插件命令为 `/idea-coach:idea` 和 `/idea-coach:idea-team` |
+| [`rust-dev`](./plugins/rust-dev/) | Rust 最佳实践、代码评审、性能与 async 模式 |
+
+插件内 skill 是 catalog skill 的打包副本；catalog（由 `install.sh` 安装）仍是跨 runtime 的唯一事实来源。
 
 ---
 

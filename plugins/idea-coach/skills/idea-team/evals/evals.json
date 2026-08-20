@@ -1,0 +1,58 @@
+{
+  "skill_name": "idea-team",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "用 idea-team 讨论：做一个本地 AI 账单分析器。",
+      "expected_output": "Emits all three role blocks in one assistant response, persists canonical utterances and speakers atomically, projects each utterance once to chat, then invites user input.",
+      "files": [],
+      "expectations": [
+        "Researcher, devil's advocate, and analogist appear as separate ordered blocks in one response.",
+        "Each utterance has a stable round:role id in state.",
+        "round_complete is written with the third speaker rather than in a later independent write."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "恢复 round=2、speakers=[research]、round_complete=false 的群聊。",
+      "expected_output": "Reconciles state and chat markers, emits only the missing two roles, persists each canonical utterance, and derives round_complete without repeating research.",
+      "files": [],
+      "expectations": [
+        "The existing research utterance is not repeated.",
+        "Missing chat projections are repaired idempotently.",
+        "round_complete is derived from the complete speaker set."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "上一轮已完成，我说下一轮。",
+      "expected_output": "Increments and persists the round with empty speakers before speaking, then completes all three role blocks and atomically marks the new round complete.",
+      "files": [],
+      "expectations": [
+        "The round transition is persisted before the first new utterance.",
+        "All three new utterance ids use the new round number.",
+        "The user is invited to respond after exactly one round."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "同一个想法再开一次群聊，但 .idea-team/<slug>/ 已有 state.json 和 chat.md。",
+      "expected_output": "Does not overwrite or append; asks to resume or uses a confirmed unique suffixed slug before creating state.",
+      "files": [],
+      "expectations": [
+        "Existing state and chat remain untouched before the user chooses.",
+        "A new session uses a unique slug such as <slug>-2."
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "群聊已经写完 team-report.md。现在恢复这个会话。",
+      "expected_output": "Persists status completed and completed_at when the report is generated, then resume only displays the report path.",
+      "files": [],
+      "expectations": [
+        "Report generation atomically transitions state.status to completed.",
+        "Resume does not start or repeat a round for a completed session."
+      ]
+    }
+  ]
+}

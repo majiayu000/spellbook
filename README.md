@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>98 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>103 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-98-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-103-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -307,6 +307,27 @@ Specialized agents for complex tasks.
 | [`kubernetes-specialist`](./agents/kubernetes-specialist.md) | Infrastructure | K8s, Helm, GitOps |
 | [`security-auditor`](./agents/security-auditor.md) | Security | OWASP Top 10, SAST |
 | [`opensource-contributor`](./agents/opensource-contributor.md) | Contribution | Open source workflow |
+
+---
+
+## Plugins
+
+Spellbook is also a Claude Code plugin marketplace. Install the repo as a
+marketplace, then install plugins from it:
+
+```
+/plugin marketplace add majiayu000/spellbook
+/plugin install idea-coach
+/plugin install rust-dev
+```
+
+| Plugin | Description |
+|--------|-------------|
+| [`idea-coach`](./plugins/idea-coach/) | Opinionated product coach (idea -> PRD -> clickable HTML prototype) + multi-role idea group chat; plugin commands are `/idea-coach:idea` and `/idea-coach:idea-team` |
+| [`rust-dev`](./plugins/rust-dev/) | Rust best practices, code review, performance, and async patterns |
+
+Plugin skills are packaged copies of catalog skills; the catalog (installed by
+`install.sh`) remains the cross-runtime source of truth.
 
 ---
 

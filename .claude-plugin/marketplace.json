@@ -1,0 +1,29 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "spellbook",
+  "description": "Cross-runtime skill library and Claude Code plugins: product coaching, development toolkits, and workflow skills",
+  "owner": {
+    "name": "majiayu000",
+    "url": "https://github.com/majiayu000"
+  },
+  "plugins": [
+    {
+      "name": "idea-coach",
+      "description": "Idea coaching toolkit: an opinionated end-to-end product coach (idea -> PRD -> clickable HTML prototype) plus a multi-role idea group chat for blind-spot discovery",
+      "author": {
+        "name": "majiayu000"
+      },
+      "category": "product",
+      "source": "./plugins/idea-coach"
+    },
+    {
+      "name": "rust-dev",
+      "description": "Rust development toolkit with best practices, code review, performance optimization, and async Rust patterns",
+      "author": {
+        "name": "majiayu000"
+      },
+      "category": "development",
+      "source": "./plugins/rust-dev"
+    }
+  ]
+}
