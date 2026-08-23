@@ -1,0 +1,83 @@
+<!doctype html>
+<!-- Optional visual reference. Replace the structure and placeholder count freely. -->
+<html lang="XRAY_LANG">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>XRAY_TITLE</title>
+  <style>
+    :root{color-scheme:light;--ink:#14213d;--muted:#536179;--paper:#f7f4ed;--card:#fff;--line:#d8d1c5;--blue:#2f5bea;--cyan:#16a3a3;--amber:#d77a13;--red:#b83252;--green:#27845d}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.6 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    main{width:min(1120px,calc(100% - 32px));margin:auto;padding:48px 0 72px}section{margin-top:56px}.eyebrow{font-size:.78rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--blue)}
+    h1{font-size:clamp(2.5rem,7vw,5.8rem);line-height:.95;letter-spacing:-.055em;margin:.2em 0}h2{font-size:clamp(1.6rem,4vw,2.7rem);line-height:1.1;letter-spacing:-.025em;margin:0 0 18px}h3{margin:.1em 0 .35em;font-size:1.05rem}p{max-width:68ch}.lede{font-size:clamp(1.15rem,2.6vw,1.55rem);max-width:50ch;color:var(--muted)}
+    .meta,.grid,.steps,.split{display:grid;gap:16px}.meta{grid-template-columns:repeat(3,1fr);margin-top:32px}.grid{grid-template-columns:1.5fr 1fr}.steps{grid-template-columns:repeat(3,1fr)}.split{grid-template-columns:1fr 1fr}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 12px 35px rgba(20,33,61,.06)}.label{display:block;color:var(--muted);font-size:.78rem;font-weight:750;text-transform:uppercase;letter-spacing:.09em}.value{font-weight:750}
+    .diagram{background:#101a31;border-radius:22px;padding:18px;overflow:auto}.diagram svg{display:block;min-width:720px;width:100%;height:auto}.mobile-flow{display:none}.mobile-node{background:#182848;border:2px solid #44618f;border-radius:14px;padding:16px;color:#fff}.mobile-node strong{display:block}.mobile-node span{color:#b9c7e5;font-size:.88rem}.mobile-arrow{text-align:center;color:#8da7d7;font-size:1.8rem;line-height:1}.node{fill:#182848;stroke:#44618f;stroke-width:2}.node.active{stroke:#63d6cd}.node.fail{stroke:#ff9f6e}.arrow{stroke:#8da7d7;stroke-width:3;fill:none;marker-end:url(#arrow)}.arrow.fail{stroke:#ff9f6e}.svg-title{fill:#fff;font:700 17px system-ui}.svg-copy{fill:#b9c7e5;font:14px system-ui}.badge{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:4px 10px;font-size:.78rem;font-weight:750;background:#e8edff;color:#2949b3}.badge::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+    .observed{background:#e5f5ed;color:var(--green)}.inferred{background:#fff0d8;color:#9a5a0d}.unknown{background:#fde8ee;color:var(--red)}code{font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;background:#f0ece3;border-radius:5px;padding:.12em .35em;overflow-wrap:anywhere}a{color:#244fc4;text-underline-offset:3px}a:focus-visible,input:focus-visible{outline:3px solid #f29c46;outline-offset:3px}.callout{border-left:5px solid var(--amber)}ol.sources{padding-left:1.25rem}footer{margin-top:64px;color:var(--muted);font-size:.9rem}
+    @media(max-width:760px){main{width:min(100% - 24px,680px);padding-top:30px}.meta,.grid,.steps,.split{grid-template-columns:1fr}section{margin-top:40px}.card{padding:18px}.diagram{display:none}.mobile-flow{display:grid;background:#101a31;border-radius:18px;padding:18px}.mobile-node:nth-of-type(2){border-color:#63d6cd}}
+  </style>
+</head>
+<body>
+<main>
+  <section>
+    <span class="eyebrow">X-Ray · XRAY_ROUTE</span>
+    <h1>XRAY_TITLE</h1>
+    <p class="lede">XRAY_ONE_SENTENCE_ANSWER</p>
+    <div class="meta">
+      <div class="card"><span class="label">Input</span><span class="value">XRAY_INPUT</span></div>
+      <div class="card"><span class="label">Key decision</span><span class="value">XRAY_DECISION</span></div>
+      <div class="card"><span class="label">Result</span><span class="value">XRAY_OUTPUT</span></div>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Mechanism</span><h2>The path that actually runs</h2>
+    <div class="diagram">
+      <svg role="img" aria-labelledby="flow-title flow-desc" viewBox="0 0 940 250">
+        <title id="flow-title">XRAY_FLOW_TITLE</title><desc id="flow-desc">XRAY_FLOW_DESCRIPTION</desc>
+        <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="context-stroke"/></marker></defs>
+        <rect class="node" x="20" y="55" rx="14" width="190" height="115"/><text class="svg-title" x="42" y="91">1 · XRAY_STEP_1_TITLE</text><text class="svg-copy" x="42" y="121">XRAY_STEP_1_LINE</text>
+        <path class="arrow" d="M210 112H365"/><rect class="node active" x="365" y="55" rx="14" width="210" height="115"/><text class="svg-title" x="387" y="91">2 · XRAY_STEP_2_TITLE</text><text class="svg-copy" x="387" y="121">XRAY_STEP_2_LINE</text>
+        <path class="arrow" d="M575 112H730"/><rect class="node" x="730" y="55" rx="14" width="190" height="115"/><text class="svg-title" x="752" y="91">3 · XRAY_STEP_3_TITLE</text><text class="svg-copy" x="752" y="121">XRAY_STEP_3_LINE</text>
+        <path class="arrow fail" d="M470 170V220H650"/><text class="svg-copy" x="485" y="210">XRAY_FAILURE_BOUNDARY</text>
+      </svg>
+    </div>
+    <div class="mobile-flow" aria-label="XRAY_FLOW_DESCRIPTION">
+      <div class="mobile-node"><strong>1 · XRAY_STEP_1_TITLE</strong><span>XRAY_STEP_1_LINE</span></div><div class="mobile-arrow" aria-hidden="true">↓</div>
+      <div class="mobile-node"><strong>2 · XRAY_STEP_2_TITLE</strong><span>XRAY_STEP_2_LINE</span></div><div class="mobile-arrow" aria-hidden="true">↓</div>
+      <div class="mobile-node"><strong>3 · XRAY_STEP_3_TITLE</strong><span>XRAY_STEP_3_LINE</span></div>
+    </div>
+    <div class="steps">
+      <article class="card"><span class="badge observed">Observed</span><h3>XRAY_STEP_1_TITLE</h3><p>XRAY_STEP_1_EXPLANATION</p></article>
+      <article class="card"><span class="badge observed">Observed</span><h3>XRAY_STEP_2_TITLE</h3><p>XRAY_STEP_2_EXPLANATION</p></article>
+      <article class="card"><span class="badge inferred">XRAY_STEP_3_STATUS</span><h3>XRAY_STEP_3_TITLE</h3><p>XRAY_STEP_3_EXPLANATION</p></article>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Evidence</span><h2>Why this model is credible</h2>
+    <div class="grid">
+      <article class="card"><span class="badge observed">Observed</span><h3>XRAY_EVIDENCE_1_CLAIM</h3><p>XRAY_EVIDENCE_1_DETAIL</p><p><code>XRAY_EVIDENCE_1_ANCHOR</code></p></article>
+      <article class="card"><span class="badge observed">Corroborated</span><h3>XRAY_EVIDENCE_2_CLAIM</h3><p>XRAY_EVIDENCE_2_DETAIL</p><p><code>XRAY_EVIDENCE_2_ANCHOR</code></p></article>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Limits</span><h2>Where certainty stops</h2>
+    <div class="split">
+      <article class="card callout"><span class="badge inferred">Inference</span><h3>XRAY_INFERENCE_TITLE</h3><p>XRAY_INFERENCE_DETAIL</p></article>
+      <article class="card"><span class="badge unknown">Unknown</span><h3>XRAY_UNKNOWN_TITLE</h3><p>XRAY_UNKNOWN_DETAIL</p></article>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Sources</span><h2>Trace the explanation</h2>
+    <ol class="sources">
+      <li><a href="XRAY_SOURCE_1_URL">XRAY_SOURCE_1_LABEL</a> — XRAY_SOURCE_1_SUPPORT</li>
+      <li><a href="XRAY_SOURCE_2_URL">XRAY_SOURCE_2_LABEL</a> — XRAY_SOURCE_2_SUPPORT</li>
+    </ol>
+  </section>
+  <footer>Generated with X-Ray · XRAY_REVISION_AND_DATE</footer>
+</main>
+</body>
+</html>

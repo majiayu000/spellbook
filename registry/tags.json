@@ -1,5 +1,5 @@
 {
-  "total_skills": 103,
+  "total_skills": 104,
   "total_tags": 35,
   "tag_counts": {
     "agent": 15,
@@ -14,8 +14,8 @@
     "deploy": 4,
     "design-system": 2,
     "devops": 2,
-    "documentation": 14,
-    "frontend": 15,
+    "documentation": 15,
+    "frontend": 16,
     "go": 3,
     "harmonyos": 1,
     "javascript": 5,
@@ -170,7 +170,8 @@
       "product-manager-toolkit",
       "skill-audit",
       "technical-spec",
-      "weekly"
+      "weekly",
+      "xray"
     ],
     "frontend": [
       "app-ui-design",
@@ -187,7 +188,8 @@
       "ui-ux-pro-max",
       "vscode-doctor",
       "web-artifacts-builder",
-      "web-asset-generator"
+      "web-asset-generator",
+      "xray"
     ],
     "go": [
       "architecture-foundation",
