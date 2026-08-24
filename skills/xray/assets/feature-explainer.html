@@ -12,9 +12,9 @@
     h1{font-size:clamp(2.5rem,7vw,5.8rem);line-height:.95;letter-spacing:-.055em;margin:.2em 0}h2{font-size:clamp(1.6rem,4vw,2.7rem);line-height:1.1;letter-spacing:-.025em;margin:0 0 18px}h3{margin:.1em 0 .35em;font-size:1.05rem}p{max-width:68ch}.lede{font-size:clamp(1.15rem,2.6vw,1.55rem);max-width:50ch;color:var(--muted)}
     .meta,.grid,.steps,.split{display:grid;gap:16px}.meta{grid-template-columns:repeat(3,1fr);margin-top:32px}.grid{grid-template-columns:1.5fr 1fr}.steps{grid-template-columns:repeat(3,1fr)}.split{grid-template-columns:1fr 1fr}
     .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 12px 35px rgba(20,33,61,.06)}.label{display:block;color:var(--muted);font-size:.78rem;font-weight:750;text-transform:uppercase;letter-spacing:.09em}.value{font-weight:750}
-    .diagram{background:#101a31;border-radius:22px;padding:18px;overflow:auto}.diagram svg{display:block;min-width:720px;width:100%;height:auto}.mobile-flow{display:none}.mobile-node{background:#182848;border:2px solid #44618f;border-radius:14px;padding:16px;color:#fff}.mobile-node strong{display:block}.mobile-node span{color:#b9c7e5;font-size:.88rem}.mobile-arrow{text-align:center;color:#8da7d7;font-size:1.8rem;line-height:1}.node{fill:#182848;stroke:#44618f;stroke-width:2}.node.active{stroke:#63d6cd}.node.fail{stroke:#ff9f6e}.arrow{stroke:#8da7d7;stroke-width:3;fill:none;marker-end:url(#arrow)}.arrow.fail{stroke:#ff9f6e}.svg-title{fill:#fff;font:700 17px system-ui}.svg-copy{fill:#b9c7e5;font:14px system-ui}.badge{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:4px 10px;font-size:.78rem;font-weight:750;background:#e8edff;color:#2949b3}.badge::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+    .diagram{background:#101a31;border-radius:22px;padding:18px;overflow:auto}.diagram svg{display:block;min-width:720px;width:100%;height:auto}.mobile-flow{display:none}.mobile-node{background:#182848;border:2px solid #44618f;border-radius:14px;padding:16px;color:#fff}.mobile-node strong{display:block}.mobile-node span{color:#b9c7e5;font-size:.88rem}.mobile-node.active{border-color:#63d6cd}.mobile-node.fail{border-color:#ff9f6e}.mobile-arrow{text-align:center;color:#8da7d7;font-size:1.8rem;line-height:1}.mobile-branch{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;color:#ff9f6e}.node{fill:#182848;stroke:#44618f;stroke-width:2}.node.active{stroke:#63d6cd}.node.fail{stroke:#ff9f6e}.arrow{stroke:#8da7d7;stroke-width:3;fill:none;marker-end:url(#arrow)}.arrow.fail{stroke:#ff9f6e}.svg-title{fill:#fff;font:700 17px system-ui}.svg-copy{fill:#b9c7e5;font:14px system-ui}.badge{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:4px 10px;font-size:.78rem;font-weight:750;background:#e8edff;color:#2949b3}.badge::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
     .observed{background:#e5f5ed;color:var(--green)}.inferred{background:#fff0d8;color:#9a5a0d}.unknown{background:#fde8ee;color:var(--red)}code{font:14px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;background:#f0ece3;border-radius:5px;padding:.12em .35em;overflow-wrap:anywhere}a{color:#244fc4;text-underline-offset:3px}a:focus-visible,input:focus-visible{outline:3px solid #f29c46;outline-offset:3px}.callout{border-left:5px solid var(--amber)}ol.sources{padding-left:1.25rem}footer{margin-top:64px;color:var(--muted);font-size:.9rem}
-    @media(max-width:760px){main{width:min(100% - 24px,680px);padding-top:30px}.meta,.grid,.steps,.split{grid-template-columns:1fr}section{margin-top:40px}.card{padding:18px}.diagram{display:none}.mobile-flow{display:grid;background:#101a31;border-radius:18px;padding:18px}.mobile-node:nth-of-type(2){border-color:#63d6cd}}
+    @media(max-width:760px){main{width:min(100% - 24px,680px);padding-top:30px}.meta,.grid,.steps,.split{grid-template-columns:1fr}section{margin-top:40px}.card{padding:18px}.diagram{display:none}.mobile-flow{display:grid;background:#101a31;border-radius:18px;padding:18px}}
   </style>
 </head>
 <body>
@@ -44,7 +44,9 @@
     </div>
     <div class="mobile-flow" aria-label="XRAY_FLOW_DESCRIPTION">
       <div class="mobile-node"><strong>1 · XRAY_STEP_1_TITLE</strong><span>XRAY_STEP_1_LINE</span></div><div class="mobile-arrow" aria-hidden="true">↓</div>
-      <div class="mobile-node"><strong>2 · XRAY_STEP_2_TITLE</strong><span>XRAY_STEP_2_LINE</span></div><div class="mobile-arrow" aria-hidden="true">↓</div>
+      <div class="mobile-node active"><strong>2 · XRAY_STEP_2_TITLE</strong><span>XRAY_STEP_2_LINE</span></div>
+      <div class="mobile-branch"><span aria-hidden="true">↳</span><div class="mobile-node fail"><strong>Failure boundary</strong><span>XRAY_FAILURE_BOUNDARY</span></div></div>
+      <div class="mobile-arrow" aria-hidden="true">↓</div>
       <div class="mobile-node"><strong>3 · XRAY_STEP_3_TITLE</strong><span>XRAY_STEP_3_LINE</span></div>
     </div>
     <div class="steps">
@@ -57,8 +59,8 @@
   <section>
     <span class="eyebrow">Evidence</span><h2>Why this model is credible</h2>
     <div class="grid">
-      <article class="card"><span class="badge observed">Observed</span><h3>XRAY_EVIDENCE_1_CLAIM</h3><p>XRAY_EVIDENCE_1_DETAIL</p><p><code>XRAY_EVIDENCE_1_ANCHOR</code></p></article>
-      <article class="card"><span class="badge observed">Corroborated</span><h3>XRAY_EVIDENCE_2_CLAIM</h3><p>XRAY_EVIDENCE_2_DETAIL</p><p><code>XRAY_EVIDENCE_2_ANCHOR</code></p></article>
+      <article class="card"><span class="badge observed">Observed</span><h3>XRAY_EVIDENCE_1_CLAIM</h3><p>XRAY_EVIDENCE_1_DETAIL</p><p><code>XRAY_EVIDENCE_1_ANCHOR</code></p><p><a href="XRAY_SOURCE_1_URL">[1] XRAY_SOURCE_1_LABEL</a></p></article>
+      <article class="card"><span class="badge observed">Corroborated</span><h3>XRAY_EVIDENCE_2_CLAIM</h3><p>XRAY_EVIDENCE_2_DETAIL</p><p><code>XRAY_EVIDENCE_2_ANCHOR</code></p><p><a href="XRAY_SOURCE_2_URL">[2] XRAY_SOURCE_2_LABEL</a></p></article>
     </div>
   </section>
 

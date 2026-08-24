@@ -8,9 +8,9 @@
   <style>
     :root{--ink:#142019;--muted:#536258;--paper:#f5f8f2;--card:#fff;--line:#cfd8cf;--green:#18855b;--lime:#b6e36f;--violet:#7357d8;--amber:#d07a14;--red:#b53b51}
     *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#e4f5cf 0,transparent 32rem),var(--paper);color:var(--ink);font:17px/1.6 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{width:min(1060px,calc(100% - 32px));margin:auto;padding:46px 0 72px}section{margin-top:56px}.eyebrow{font-size:.78rem;font-weight:850;letter-spacing:.14em;text-transform:uppercase;color:var(--green)}h1{font-size:clamp(2.6rem,7vw,5.7rem);line-height:.95;letter-spacing:-.055em;margin:.2em 0}h2{font-size:clamp(1.6rem,4vw,2.7rem);line-height:1.1;letter-spacing:-.03em;margin:0 0 18px}h3{font-size:1.05rem;margin:.1em 0 .4em}.lede{font-size:clamp(1.15rem,2.6vw,1.55rem);max-width:50ch;color:var(--muted)}
-    .lab{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(240px,.7fr);gap:18px}.stage,.panel,.card{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:20px;box-shadow:0 12px 34px rgba(40,70,48,.07)}.stage{padding:18px;overflow:auto}.stage svg{display:block;min-width:620px;width:100%;height:auto}.panel,.card{padding:22px}.control{margin:18px 0}.control label{display:flex;justify-content:space-between;font-weight:750}.control output{color:var(--violet)}input[type=range]{width:100%;accent-color:var(--violet)}button{border:0;border-radius:999px;background:var(--ink);color:#fff;padding:10px 16px;font:700 15px system-ui;cursor:pointer}button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #f0a548;outline-offset:3px}.node{fill:#f8fff2;stroke:#7ca16f;stroke-width:2}.active{fill:#e8ffd0;stroke:var(--green);stroke-width:4}.arrow{stroke:#8ca189;stroke-width:3;fill:none;marker-end:url(#arrow)}.svg-title{fill:#142019;font:700 16px system-ui}.svg-copy{fill:#536258;font:13px system-ui}.pulse{fill:var(--violet)}
+    .lab{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(240px,.7fr);gap:18px}.stage,.panel,.card{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:20px;box-shadow:0 12px 34px rgba(40,70,48,.07)}.stage{padding:18px;overflow:auto}.stage svg{display:block;min-width:620px;width:100%;height:auto}.mobile-model{display:none}.mobile-node{background:#f8fff2;border:2px solid #7ca16f;border-radius:14px;padding:15px}.mobile-node strong,.mobile-node span{display:block}.mobile-node span{color:var(--muted);font-size:.88rem}.mobile-node.active{background:#e8ffd0;border-color:var(--green)}.mobile-arrow{text-align:center;color:var(--green);font-size:1.6rem;line-height:1}.mobile-boundary{color:var(--muted);font-size:.88rem}.panel,.card{padding:22px}.control{margin:18px 0}.control label{display:flex;justify-content:space-between;font-weight:750}.control output{color:var(--violet)}input[type=range]{width:100%;accent-color:var(--violet)}button{border:0;border-radius:999px;background:var(--ink);color:#fff;padding:10px 16px;font:700 15px system-ui;cursor:pointer}button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #f0a548;outline-offset:3px}.node{fill:#f8fff2;stroke:#7ca16f;stroke-width:2}.active{fill:#e8ffd0;stroke:var(--green);stroke-width:4}.arrow{stroke:#8ca189;stroke-width:3;fill:none;marker-end:url(#arrow)}.svg-title{fill:#142019;font:700 16px system-ui}.svg-copy{fill:#536258;font:13px system-ui}.pulse{fill:var(--violet)}
     .steps,.split{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.split{grid-template-columns:1fr 1fr}.number{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--lime);font-weight:850}.badge{display:inline-block;border-radius:999px;background:#e6f5ec;color:var(--green);padding:4px 10px;font-size:.78rem;font-weight:800}.inferred{background:#fff0dc;color:#92580f}.unknown{background:#fde8ed;color:var(--red)}a{color:#3155b7;text-underline-offset:3px}ol{padding-left:1.25rem}footer{margin-top:64px;color:var(--muted);font-size:.9rem}
-    @media(max-width:760px){main{width:min(100% - 24px,680px);padding-top:28px}.lab,.steps,.split{grid-template-columns:1fr}section{margin-top:40px}.panel,.card{padding:18px}.stage{display:none}}
+    @media(max-width:760px){main{width:min(100% - 24px,680px);padding-top:28px}.lab,.steps,.split{grid-template-columns:1fr}section{margin-top:40px}.panel,.card{padding:18px}.stage{display:none}.mobile-model{display:grid;gap:10px}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
   </style>
 </head>
@@ -34,6 +34,14 @@
           <text class="svg-copy" x="20" y="285">XRAY_BOUNDARY_LINE</text>
         </svg>
       </div>
+      <div class="mobile-model" aria-label="XRAY_MODEL_DESCRIPTION">
+        <div class="mobile-node active"><strong>XRAY_INPUT_TITLE</strong><span>XRAY_INPUT_LINE</span></div>
+        <div class="mobile-arrow" aria-hidden="true">↓</div>
+        <div class="mobile-node"><strong>XRAY_TRANSFORM_TITLE</strong><span>XRAY_TRANSFORM_LINE</span></div>
+        <div class="mobile-arrow" aria-hidden="true">↓</div>
+        <div class="mobile-node"><strong>XRAY_OUTPUT_TITLE</strong><span>XRAY_OUTPUT_LINE</span></div>
+        <div class="mobile-boundary">XRAY_BOUNDARY_LINE</div>
+      </div>
       <aside class="panel">
         <span class="badge">Illustrative control</span>
         <div class="control"><label for="mechanism-input">XRAY_CONTROL_LABEL <output id="control-output">50</output></label><input id="mechanism-input" type="range" min="0" max="100" value="50"></div>
@@ -52,8 +60,8 @@
   <section>
     <span class="eyebrow">Evidence</span><h2>What is established</h2>
     <div class="split">
-      <article class="card"><span class="badge">Corroborated</span><h3>XRAY_EVIDENCE_1_CLAIM</h3><p>XRAY_EVIDENCE_1_DETAIL</p></article>
-      <article class="card"><span class="badge">Observed</span><h3>XRAY_EVIDENCE_2_CLAIM</h3><p>XRAY_EVIDENCE_2_DETAIL</p></article>
+      <article class="card"><span class="badge">Corroborated</span><h3>XRAY_EVIDENCE_1_CLAIM</h3><p>XRAY_EVIDENCE_1_DETAIL</p><p><a href="XRAY_SOURCE_1_URL">[1] XRAY_SOURCE_1_LABEL</a></p></article>
+      <article class="card"><span class="badge">Observed</span><h3>XRAY_EVIDENCE_2_CLAIM</h3><p>XRAY_EVIDENCE_2_DETAIL</p><p><a href="XRAY_SOURCE_2_URL">[2] XRAY_SOURCE_2_LABEL</a></p></article>
     </div>
   </section>
 

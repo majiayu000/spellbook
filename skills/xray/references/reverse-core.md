@@ -6,6 +6,7 @@ Use this reference only when ordinary source archaeology and safe package inspec
 
 - Keep X-Ray as the only user-facing workflow. Reverse Core returns evidence; it does not own the final explanation.
 - Load one matching adapter. Do not read or reproduce a full reverse-engineering pack when one tool or format can answer the question.
+- For native binaries and compiled CLIs, load `$claude-code-reverse` first and consume the identity, SHA-256-keyed cache, format inspection, and string evidence produced by its tested `extract.sh`. Do not recreate that baseline or its cache here.
 - Use tools already installed and discover their real paths and versions before calling them. Ask before installing or registering a tool or MCP server.
 - Default to a user-owned local artifact, an explicitly authorized sample, or supplied offline evidence. When ownership or authorization is unclear, stop before specialist action and ask.
 - Safe static inspection may proceed directly on an identified authorized artifact. Ask before execution, debugging, emulation, hook injection, traffic interception or decryption, patching, repackaging, protection bypass, credentials, or interaction with a third-party target.
@@ -27,7 +28,7 @@ If safe static evidence answers the teaching question, stop there. The existence
 
 ### 1. Triage
 
-Record the exact path, SHA-256, size, format, architecture, version, signature, and relevant packaging identity. Preserve the original and work read-only unless the user separately authorizes mutation.
+For a native binary, take the exact path, SHA-256, size, format, and cached static evidence from `$claude-code-reverse`. For APK, JavaScript, or supplied protocol artifacts outside that workflow, record the equivalent identity directly. Preserve the original and work read-only unless the user separately authorizes mutation.
 
 Inspect the cheapest high-signal surfaces already available:
 
@@ -73,10 +74,10 @@ meaning: how this changes the teaching question
 
 ### Native binary
 
-1. Use platform metadata tools for identity and linkage before opening a decompiler.
+1. Complete the `$claude-code-reverse` baseline before opening a decompiler.
 2. Prefer an existing IDA integration when exact decompilation, xrefs, callers, or data flow are needed and a licensed environment is already available.
 3. Prefer an existing Ghidra integration for open or headless analysis when IDA is unavailable.
-4. Prefer radare2 or equivalent CLI tools for fast reconnaissance, strings, imports, sections, and a small disassembly path.
+4. Prefer radare2 or equivalent CLI tools when one bounded disassembly path can close the gap left by the baseline.
 5. Do not run all three for reassurance. Cross-check with a second tool only when a pivotal interpretation is ambiguous.
 
 ### APK

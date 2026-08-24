@@ -1,0 +1,4 @@
+interface:
+  display_name: "活人感写作"
+  short_description: "写出有活人感、有中文韵律的现实文章、故事与其他作品"
+  default_prompt: "使用 $human-writing，把我的材料写成一篇有活人感和中文韵律的作品，现实部分站得住，虚构部分前后成立。"

@@ -11,7 +11,8 @@ Investigate first and explain second. The HTML is a projection of verified under
 
 - Directly perform read-only research, repository inspection, log/config examination, source archaeology, and creation of the requested explainer artifact.
 - When the user asks to analyze a clearly identified app, CLI, or local compiled artifact they are entitled to inspect, include safe read-only static inspection when it can answer the teaching question. Record identity and hash first; inspect metadata, signatures, dependencies, imports, recoverable symbols, strings, entitlements, and bundled resources without modifying or executing the target.
-- When static inspection cannot establish the requested mechanism and the target is an authorized binary, APK, JavaScript bundle, or protocol flow, read [reverse-core.md](references/reverse-core.md). Load only the matching adapter, use tools already available in the environment, and return its evidence to the ordinary X-Ray causal model. Reverse Core is an internal depth route, not a second user-facing skill or a reason to install a full security pack.
+- For an authorized native binary or compiled CLI, load `$claude-code-reverse` first and use its tested `extract.sh` workflow as the canonical identity, hash, cache, and safe static baseline. Do not duplicate that baseline inside X-Ray.
+- When the canonical static baseline cannot establish the requested mechanism, or the authorized target is an APK, JavaScript bundle, or protocol flow, read [reverse-core.md](references/reverse-core.md). Load only the matching specialist adapter, use tools already available in the environment, and return its evidence to the ordinary X-Ray causal model. Reverse Core is an internal depth route, not a second user-facing skill or a reason to install a full security pack.
 - Ask before executing an unknown binary, attaching a debugger, intercepting or decrypting traffic, patching an artifact, installing reverse-engineering tools, using a paid endpoint, touching production, accessing credentials, or changing product code.
 - Never bypass access controls, fabricate evidence, or treat agreement between models as corroboration.
 - If the target, revision, authorization, or intended audience would materially change the investigation, clarify that one fact before acting.
@@ -26,7 +27,7 @@ Read [research-routing.md](references/research-routing.md), then choose the narr
 | Current, niche, disputed, or unfamiliar topic | Search the web; prefer primary and authoritative sources |
 | Repository, module, app behavior, API path, or architecture | Trace the reachable path across code, network, persistence, and background work |
 | Incident or wrong runtime behavior | Inspect persisted state, logs, metrics, running revision, then code |
-| Clearly identified local app, CLI, or compiled artifact | Start with safe read-only static inspection; load only the matching Reverse Core adapter if specialist evidence is still needed |
+| Clearly identified local app, CLI, or compiled artifact | Use `$claude-code-reverse` for the native static baseline, then load one Reverse Core specialist adapter only if the question remains unresolved |
 
 Do not invoke extra agents or external AI systems by default. Add them only when the user requests delegation or a separate workflow explicitly requires it.
 
