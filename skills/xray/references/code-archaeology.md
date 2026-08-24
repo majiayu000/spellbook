@@ -68,6 +68,6 @@ When the user asks how a clearly identified local app, CLI, or compiled artifact
 5. Corroborate important clues against public source, official documentation, runtime-owned state, or multiple independent static observations before presenting them as behavior.
 6. Mark unreachable code, dormant feature names, endpoint literals, and decompiled fragments as clues or inference unless reachability is established.
 
-Ask separately before installing tooling, executing an unknown artifact, attaching a debugger, intercepting or decrypting traffic, patching the binary, bypassing protection, or accessing credentials. If the installed `claude-code-reverse` workflow applies, route invasive or binary-specialist work to it rather than duplicating its safety procedure here.
+Ask separately before installing tooling, executing an unknown artifact, attaching a debugger, intercepting or decrypting traffic, patching the binary, bypassing protection, or accessing credentials. When authorized specialist evidence is necessary, read [reverse-core.md](reverse-core.md), load only the matching adapter, and return its findings to this causal trace rather than expanding X-Ray into a general security suite.
 
 Refuse credential theft, access-control bypass, persistence, stealth, exploitation of third-party targets, or other harmful goals. A legitimate explanatory goal does not expand authorization.

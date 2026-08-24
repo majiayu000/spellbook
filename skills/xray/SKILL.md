@@ -11,6 +11,7 @@ Investigate first and explain second. The HTML is a projection of verified under
 
 - Directly perform read-only research, repository inspection, log/config examination, source archaeology, and creation of the requested explainer artifact.
 - When the user asks to analyze a clearly identified app, CLI, or local compiled artifact they are entitled to inspect, include safe read-only static inspection when it can answer the teaching question. Record identity and hash first; inspect metadata, signatures, dependencies, imports, recoverable symbols, strings, entitlements, and bundled resources without modifying or executing the target.
+- When static inspection cannot establish the requested mechanism and the target is an authorized binary, APK, JavaScript bundle, or protocol flow, read [reverse-core.md](references/reverse-core.md). Load only the matching adapter, use tools already available in the environment, and return its evidence to the ordinary X-Ray causal model. Reverse Core is an internal depth route, not a second user-facing skill or a reason to install a full security pack.
 - Ask before executing an unknown binary, attaching a debugger, intercepting or decrypting traffic, patching an artifact, installing reverse-engineering tools, using a paid endpoint, touching production, accessing credentials, or changing product code.
 - Never bypass access controls, fabricate evidence, or treat agreement between models as corroboration.
 - If the target, revision, authorization, or intended audience would materially change the investigation, clarify that one fact before acting.
@@ -25,7 +26,7 @@ Read [research-routing.md](references/research-routing.md), then choose the narr
 | Current, niche, disputed, or unfamiliar topic | Search the web; prefer primary and authoritative sources |
 | Repository, module, app behavior, API path, or architecture | Trace the reachable path across code, network, persistence, and background work |
 | Incident or wrong runtime behavior | Inspect persisted state, logs, metrics, running revision, then code |
-| Clearly identified local app, CLI, or compiled artifact | Start with safe read-only static inspection; escalate only if the useful next step becomes invasive |
+| Clearly identified local app, CLI, or compiled artifact | Start with safe read-only static inspection; load only the matching Reverse Core adapter if specialist evidence is still needed |
 
 Do not invoke extra agents or external AI systems by default. Add them only when the user requests delegation or a separate workflow explicitly requires it.
 
@@ -39,6 +40,7 @@ Read [evidence-contract.md](references/evidence-contract.md). For code or runtim
 
 - Establish the exact target and relevant version before explaining it.
 - For a compiled target, record the artifact path, cryptographic hash, architecture, and signature before drawing conclusions. Treat strings, imports, symbols, and decompiled fragments as clues until another observation establishes their role.
+- For authorized specialist reverse work, keep the reverse phase bounded to the teaching question. Prefer one reachable path over exhaustive decompilation, and bring exact addresses, symbols, tool versions, and uncertainty back into the same evidence model.
 - Search the local target before searching the web for explanations of it.
 - Use web research for current, niche, disputed, unfamiliar, or explicitly source-backed claims.
 - For incidents, prefer the actual persisted state and running revision over remembered browser behavior or design intent.
@@ -91,6 +93,7 @@ Open or render the page at a desktop and narrow viewport when a renderer is avai
 
 - Pivotal claims are traceable to current evidence or explicitly labeled inference/unknown.
 - Repository explanations include exact paths and symbols; web explanations include direct source URLs.
+- Specialist reverse explanations identify the exact artifact and tool, preserve address or symbol anchors, distinguish static clues from reachable behavior, and disclose any action that crossed the static-analysis boundary.
 - The mechanism is simpler than the source material without losing a behavior-changing fact.
 - A reader can understand and remember the central mechanism from the orientation layer alone, while the evidence layer still supports the technical claims.
 - Chinese prose has received a `$human-writing` revision pass without changing evidence or technical meaning.
@@ -106,6 +109,7 @@ Open or render the page at a desktop and narrow viewport when a renderer is avai
 - Multiple model answers are leads, not independent sources.
 - Local code and runtime evidence outrank generic web explanations of a similarly named system.
 - Do not turn the investigation into an exhaustive audit. Stop when further research would add detail without changing the causal model.
+- Do not dump a reverse-engineering tool inventory into the explainer. Load one matching adapter, collect the evidence that changes the causal model, then return to X-Ray.
 - Do not turn quality guidance into a hardcoded content validator. Use judgment for semantic quality and ordinary rendering or syntax checks for mechanical defects.
 - Do not let a prose rewrite strengthen a claim, erase a limitation, or detach a citation from the fact it supports.
 - Avoid decorative dashboards, excessive cards, and meaningless animation. Every visual element must teach a relationship.
