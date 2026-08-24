@@ -72,7 +72,7 @@ Keep the first layer visually quiet and low in terminology. Move implementation 
 
 ### 5. Write for a person
 
-- For a Chinese explainer, load and apply `$human-writing` after the evidence and causal model are stable. Use it to revise headings, body copy, captions, and the handoff so the prose sounds like a knowledgeable person walking the reader through what they found.
+- For a Chinese explainer, read and apply [chinese-writing.md](references/chinese-writing.md) after the evidence and causal model are stable. Use this built-in writing pass to revise headings, body copy, captions, and the handoff so the prose sounds like a knowledgeable person walking the reader through what they found.
 - Keep technical literals, code symbols, versions, direct quotations, uncertainty, and citation meaning unchanged during the prose pass. When naturalness and precision conflict, preserve precision and rewrite the surrounding sentence.
 - Let concrete observations carry the explanation. Remove report-like labels, repetitive summaries, symmetrical card copy, fake suspense, and generic insight phrases.
 - For other languages, match the same audience-aware standard without forcing Chinese writing rules onto the text.
@@ -97,7 +97,7 @@ Open or render the page at a desktop and narrow viewport when a renderer is avai
 - Specialist reverse explanations identify the exact artifact and tool, preserve address or symbol anchors, distinguish static clues from reachable behavior, and disclose any action that crossed the static-analysis boundary.
 - The mechanism is simpler than the source material without losing a behavior-changing fact.
 - A reader can understand and remember the central mechanism from the orientation layer alone, while the evidence layer still supports the technical claims.
-- Chinese prose has received a `$human-writing` revision pass without changing evidence or technical meaning.
+- Chinese prose has received the built-in Chinese writing pass without changing evidence or technical meaning.
 - The page has been checked in proportion to its complexity; when possible, it has been visually inspected at wide and narrow widths.
 - The final response links the artifact and briefly states sources, uncertainty, and any boundary that prevented deeper investigation.
 

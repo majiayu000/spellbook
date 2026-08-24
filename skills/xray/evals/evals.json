@@ -133,10 +133,10 @@
     {
       "id": 13,
       "prompt": "$xray 用中文解释这个应用怎样处理一次用户请求，读者懂一点技术，但不要写成产品白皮书或 AI 总结",
-      "expected_output": "Stabilizes the evidence, then uses human-writing for a natural Chinese two-depth explainer.",
+      "expected_output": "Stabilizes the evidence, then applies Xray's built-in Chinese writing pass for a natural two-depth explainer.",
       "expectations": [
         "stabilizes evidence and causal structure before rewriting prose",
-        "applies $human-writing to Chinese headings, body copy, captions, and handoff",
+        "loads references/chinese-writing.md and applies it to Chinese headings, body copy, captions, and handoff",
         "uses concrete observations and varied natural Chinese instead of repetitive summaries and symmetrical report copy",
         "preserves technical literals, uncertainty, and citation meaning through the prose pass",
         "lets a newcomer understand the main mechanism from the first visual while keeping technical evidence available below or on demand"

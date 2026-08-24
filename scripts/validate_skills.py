@@ -142,7 +142,6 @@ CATEGORY_BY_NAME = {
     "vscode-doctor": "Operations & Deploy",
     # Content and reporting
     "github-trending": "Content & Research",
-    "human-writing": "Content & Research",
     "humanizer": "Content & Research",
     "slides": "Content & Research",
     "trip-planner": "Content & Research",

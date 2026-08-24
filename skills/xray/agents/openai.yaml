@@ -1,4 +1,4 @@
 interface:
   display_name: "X-Ray Explainer"
   short_description: "See the big picture, then inspect the evidence"
-  default_prompt: "Use $xray to investigate how this actually works, loading only a matching lightweight reverse adapter when specialist evidence is necessary, then explain it in two depths: a dead-simple big-picture visual followed by source-backed technical evidence."
+  default_prompt: "Use $xray to investigate how this actually works, loading only a matching lightweight reverse adapter when specialist evidence is necessary, then explain it in two depths with a built-in natural Chinese writing pass when the output is Chinese."
