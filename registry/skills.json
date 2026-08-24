@@ -1727,6 +1727,23 @@
     ]
   },
   {
+    "name": "xray",
+    "category": "Content & Research",
+    "format": "directory",
+    "path": "skills/xray/SKILL.md",
+    "description": "Investigate how a concept, code path, application, network flow, system, incident, document, or local artifact actually works, then deliver a two-depth visual HTML explainer with a dead-simple big-picture first layer and source-backed technical depth behind it. Use when the user invokes $xray, asks how something works under the hood, wants a module or app behavior traced across boundaries, requests web, code, network, or safe static artifact research before explanation, or asks for an evidence-backed explainer. Do not use for answer-only definitions, general web design, full codebase audits, or invasive binary reverse engineering without explicit authorization.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "documentation",
+      "frontend"
+    ]
+  },
+  {
     "name": "zig-project",
     "category": "Development Architecture",
     "format": "directory",

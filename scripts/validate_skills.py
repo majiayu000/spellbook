@@ -146,6 +146,7 @@ CATEGORY_BY_NAME = {
     "slides": "Content & Research",
     "trip-planner": "Content & Research",
     "weekly": "Content & Research",
+    "xray": "Content & Research",
     "xiaohongshu": "Content & Research",
     "xiaohongshu-netfeel-guardian": "Content & Research",
 }

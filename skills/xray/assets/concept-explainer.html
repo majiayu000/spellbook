@@ -1,0 +1,104 @@
+<!doctype html>
+<!-- Optional visual reference. Replace the structure and placeholder count freely. -->
+<html lang="XRAY_LANG">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>XRAY_TITLE</title>
+  <style>
+    :root{--ink:#142019;--muted:#536258;--paper:#f5f8f2;--card:#fff;--line:#cfd8cf;--green:#18855b;--lime:#b6e36f;--violet:#7357d8;--amber:#d07a14;--red:#b53b51}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#e4f5cf 0,transparent 32rem),var(--paper);color:var(--ink);font:17px/1.6 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{width:min(1060px,calc(100% - 32px));margin:auto;padding:46px 0 72px}section{margin-top:56px}.eyebrow{font-size:.78rem;font-weight:850;letter-spacing:.14em;text-transform:uppercase;color:var(--green)}h1{font-size:clamp(2.6rem,7vw,5.7rem);line-height:.95;letter-spacing:-.055em;margin:.2em 0}h2{font-size:clamp(1.6rem,4vw,2.7rem);line-height:1.1;letter-spacing:-.03em;margin:0 0 18px}h3{font-size:1.05rem;margin:.1em 0 .4em}.lede{font-size:clamp(1.15rem,2.6vw,1.55rem);max-width:50ch;color:var(--muted)}
+    .lab{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(240px,.7fr);gap:18px}.stage,.panel,.card{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:20px;box-shadow:0 12px 34px rgba(40,70,48,.07)}.stage{padding:18px;overflow:auto}.stage svg{display:block;min-width:620px;width:100%;height:auto}.mobile-model{display:none}.mobile-node{background:#f8fff2;border:2px solid #7ca16f;border-radius:14px;padding:15px}.mobile-node strong,.mobile-node span{display:block}.mobile-node span{color:var(--muted);font-size:.88rem}.mobile-node.active{background:#e8ffd0;border-color:var(--green)}.mobile-arrow{text-align:center;color:var(--green);font-size:1.6rem;line-height:1}.mobile-boundary{color:var(--muted);font-size:.88rem}.panel,.card{padding:22px}.control{margin:18px 0}.control label{display:flex;justify-content:space-between;font-weight:750}.control output{color:var(--violet)}input[type=range]{width:100%;accent-color:var(--violet)}button{border:0;border-radius:999px;background:var(--ink);color:#fff;padding:10px 16px;font:700 15px system-ui;cursor:pointer}button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #f0a548;outline-offset:3px}.node{fill:#f8fff2;stroke:#7ca16f;stroke-width:2}.active{fill:#e8ffd0;stroke:var(--green);stroke-width:4}.arrow{stroke:#8ca189;stroke-width:3;fill:none;marker-end:url(#arrow)}.svg-title{fill:#142019;font:700 16px system-ui}.svg-copy{fill:#536258;font:13px system-ui}.pulse{fill:var(--violet)}
+    .steps,.split{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.split{grid-template-columns:1fr 1fr}.number{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--lime);font-weight:850}.badge{display:inline-block;border-radius:999px;background:#e6f5ec;color:var(--green);padding:4px 10px;font-size:.78rem;font-weight:800}.inferred{background:#fff0dc;color:#92580f}.unknown{background:#fde8ed;color:var(--red)}a{color:#3155b7;text-underline-offset:3px}ol{padding-left:1.25rem}footer{margin-top:64px;color:var(--muted);font-size:.9rem}
+    @media(max-width:760px){main{width:min(100% - 24px,680px);padding-top:28px}.lab,.steps,.split{grid-template-columns:1fr}section{margin-top:40px}.panel,.card{padding:18px}.stage{display:none}.mobile-model{display:grid;gap:10px}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+  </style>
+</head>
+<body>
+<main>
+  <section>
+    <span class="eyebrow">X-Ray · Concept</span><h1>XRAY_TITLE</h1><p class="lede">XRAY_ONE_SENTENCE_ANSWER</p>
+  </section>
+
+  <section>
+    <span class="eyebrow">Mechanism lab</span><h2>Change one input. Watch the mechanism respond.</h2>
+    <div class="lab">
+      <div class="stage">
+        <svg role="img" aria-labelledby="model-title model-desc" viewBox="0 0 760 330">
+          <title id="model-title">XRAY_MODEL_TITLE</title><desc id="model-desc">XRAY_MODEL_DESCRIPTION</desc>
+          <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="context-stroke"/></marker></defs>
+          <rect class="node active" id="input-node" x="20" y="90" rx="18" width="190" height="125"/><text class="svg-title" x="45" y="130">XRAY_INPUT_TITLE</text><text class="svg-copy" x="45" y="160">XRAY_INPUT_LINE</text><text class="svg-title" id="input-value" x="45" y="194">50</text>
+          <path class="arrow" d="M210 152H300"/><circle class="pulse" id="signal" cx="255" cy="152" r="8"/>
+          <rect class="node" x="300" y="90" rx="18" width="190" height="125"/><text class="svg-title" x="325" y="130">XRAY_TRANSFORM_TITLE</text><text class="svg-copy" x="325" y="160">XRAY_TRANSFORM_LINE</text>
+          <path class="arrow" d="M490 152H550"/><rect class="node" x="550" y="90" rx="18" width="190" height="125"/><text class="svg-title" x="575" y="130">XRAY_OUTPUT_TITLE</text><text class="svg-copy" x="575" y="160">XRAY_OUTPUT_LINE</text><text class="svg-title" id="output-value" x="575" y="194">50</text>
+          <text class="svg-copy" x="20" y="285">XRAY_BOUNDARY_LINE</text>
+        </svg>
+      </div>
+      <div class="mobile-model" aria-label="XRAY_MODEL_DESCRIPTION">
+        <div class="mobile-node active"><strong>XRAY_INPUT_TITLE</strong><span>XRAY_INPUT_LINE</span></div>
+        <div class="mobile-arrow" aria-hidden="true">↓</div>
+        <div class="mobile-node"><strong>XRAY_TRANSFORM_TITLE</strong><span>XRAY_TRANSFORM_LINE</span></div>
+        <div class="mobile-arrow" aria-hidden="true">↓</div>
+        <div class="mobile-node"><strong>XRAY_OUTPUT_TITLE</strong><span>XRAY_OUTPUT_LINE</span></div>
+        <div class="mobile-boundary">XRAY_BOUNDARY_LINE</div>
+      </div>
+      <aside class="panel">
+        <span class="badge">Illustrative control</span>
+        <div class="control"><label for="mechanism-input">XRAY_CONTROL_LABEL <output id="control-output">50</output></label><input id="mechanism-input" type="range" min="0" max="100" value="50"></div>
+        <p id="control-explanation">XRAY_CONTROL_EXPLANATION</p>
+        <p><strong>XRAY_OUTPUT_LABEL:</strong> <output id="panel-output-value">50</output></p>
+        <button id="reset-control" type="button">Reset</button>
+      </aside>
+    </div>
+    <div class="steps">
+      <article class="card"><span class="number">1</span><h3>XRAY_STEP_1_TITLE</h3><p>XRAY_STEP_1_EXPLANATION</p></article>
+      <article class="card"><span class="number">2</span><h3>XRAY_STEP_2_TITLE</h3><p>XRAY_STEP_2_EXPLANATION</p></article>
+      <article class="card"><span class="number">3</span><h3>XRAY_STEP_3_TITLE</h3><p>XRAY_STEP_3_EXPLANATION</p></article>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Evidence</span><h2>What is established</h2>
+    <div class="split">
+      <article class="card"><span class="badge">Corroborated</span><h3>XRAY_EVIDENCE_1_CLAIM</h3><p>XRAY_EVIDENCE_1_DETAIL</p><p><a href="XRAY_SOURCE_1_URL">[1] XRAY_SOURCE_1_LABEL</a></p></article>
+      <article class="card"><span class="badge">Observed</span><h3>XRAY_EVIDENCE_2_CLAIM</h3><p>XRAY_EVIDENCE_2_DETAIL</p><p><a href="XRAY_SOURCE_2_URL">[2] XRAY_SOURCE_2_LABEL</a></p></article>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Limits</span><h2>Do not stretch the model past here</h2>
+    <div class="split">
+      <article class="card"><span class="badge inferred">Analogy limit</span><h3>XRAY_LIMIT_TITLE</h3><p>XRAY_LIMIT_DETAIL</p></article>
+      <article class="card"><span class="badge unknown">Unknown</span><h3>XRAY_UNKNOWN_TITLE</h3><p>XRAY_UNKNOWN_DETAIL</p></article>
+    </div>
+  </section>
+
+  <section>
+    <span class="eyebrow">Sources</span><h2>Trace the explanation</h2>
+    <ol><li><a href="XRAY_SOURCE_1_URL">XRAY_SOURCE_1_LABEL</a> — XRAY_SOURCE_1_SUPPORT</li><li><a href="XRAY_SOURCE_2_URL">XRAY_SOURCE_2_LABEL</a> — XRAY_SOURCE_2_SUPPORT</li></ol>
+  </section>
+  <footer>Generated with X-Ray · XRAY_REVISION_AND_DATE</footer>
+</main>
+<script>
+  const control = document.querySelector('#mechanism-input');
+  const controlOutput = document.querySelector('#control-output');
+  const inputValue = document.querySelector('#input-value');
+  const outputValue = document.querySelector('#output-value');
+  const panelOutputValue = document.querySelector('#panel-output-value');
+  const signal = document.querySelector('#signal');
+  const reset = document.querySelector('#reset-control');
+  function render(value) {
+    const numeric = Number(value);
+    controlOutput.textContent = String(numeric);
+    inputValue.textContent = String(numeric);
+    const transformed = String(Math.round(numeric * XRAY_OUTPUT_MULTIPLIER));
+    outputValue.textContent = transformed;
+    panelOutputValue.textContent = transformed;
+    signal.setAttribute('cx', String(220 + numeric * 0.7));
+  }
+  control.addEventListener('input', event => render(event.currentTarget.value));
+  reset.addEventListener('click', () => { control.value = '50'; render(50); control.focus(); });
+  render(control.value);
+</script>
+</body>
+</html>
