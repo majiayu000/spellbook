@@ -63,10 +63,12 @@ Let the mechanism determine the page structure. A short concept may need one vis
 Inspect at a wide desktop viewport and a narrow mobile viewport. Confirm:
 
 - no horizontal clipping or overlapping labels;
+- every SVG or canvas label's rendered bounding box stays inside its own container and the viewBox — SVG text never reflows, and a page-level overflow check will not catch it;
+- full-bleed or negative-margin blocks are re-checked at the narrow width, the classic source of silent horizontal overflow;
 - the main causal path remains visually dominant;
 - text is legible without zooming;
 - controls work by keyboard and update visible state;
 - source links point to the recorded direct URLs; and
 - the page remains understandable if animation is disabled.
 
-Use ordinary browser, syntax, accessibility, or link checks when available. Do not infer semantic correctness from a custom validator or encode explanation quality as fixed HTML selectors.
+Use ordinary browser, syntax, accessibility, or link checks when available. When no interactive renderer is at hand, `scripts/render-check.sh` captures desktop and mobile screenshots with any installed headless Chromium. Do not infer semantic correctness from a custom validator or encode explanation quality as fixed HTML selectors.

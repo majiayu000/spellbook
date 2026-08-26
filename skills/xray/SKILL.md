@@ -31,6 +31,8 @@ Read [research-routing.md](references/research-routing.md), then choose the narr
 
 Do not invoke extra agents or external AI systems by default. Add them only when the user requests delegation or a separate workflow explicitly requires it.
 
+Announce each stage in one line as it begins: the stage name, what is being checked, and the next visible output. A long investigation must never go silent while the user waits.
+
 ### 1. Frame the teaching question
 
 Write one sentence naming what the reader must understand or decide after viewing the explainer. Default to a curious adult who is new to the topic; never infantilize the reader.
@@ -82,13 +84,14 @@ Keep the first layer visually quiet and low in terminology. Move implementation 
 - Produce one self-contained HTML file with inline CSS and SVG or canvas. Avoid remote fonts, scripts, images, and stylesheets; ordinary source links are allowed.
 - Create the artifact in a temporary task directory by default. Put it in a project only when the user requests a durable project artifact.
 - Organize the page around the teaching question. Do not force fixed sections, card counts, or diagram shapes.
+- State the teaching question in the reader's language at the top of the page. When the page uses evidence markers, put a short legend at their first use so a first-time reader can decode Observed, Corroborated, Inferred, and Unknown without leaving the page.
 - Keep the orientation layer visible before technical inventory, provenance, or methodology. Use progressive disclosure when the evidence layer would otherwise compete with the main explanation.
 - Keep source markers adjacent to the claim or diagram step they support.
 - Use JavaScript only when interaction materially teaches the mechanism.
 
 ### 7. Verify before delivery
 
-Open or render the page at a desktop and narrow viewport when a renderer is available. Inspect clipping, overflow, legibility, unresolved placeholders, source-link behavior, and whether the visual sequence still makes sense without narration. Exercise any interaction that carries explanatory meaning. If no renderer is available, report visual verification as incomplete instead of implying it passed.
+Open or render the page at a desktop and narrow viewport when a renderer is available. When no interactive renderer is at hand, [scripts/render-check.sh](scripts/render-check.sh) captures both widths with any installed headless Chromium. Re-check every full-bleed or negative-margin block at the narrow width; it is the classic source of silent horizontal overflow. Inspect clipping, overflow, legibility, unresolved placeholders, source-link behavior, and whether the visual sequence still makes sense without narration. Exercise any interaction that carries explanatory meaning. If no renderer is available at all, report visual verification as incomplete instead of implying it passed.
 
 ## Done When
 
@@ -99,6 +102,7 @@ Open or render the page at a desktop and narrow viewport when a renderer is avai
 - A reader can understand and remember the central mechanism from the orientation layer alone, while the evidence layer still supports the technical claims.
 - Chinese prose has received the built-in Chinese writing pass without changing evidence or technical meaning.
 - The page has been checked in proportion to its complexity; when possible, it has been visually inspected at wide and narrow widths.
+- The page opens with its teaching question and, when it uses evidence markers, carries a short legend a first-time reader can decode.
 - The final response links the artifact and briefly states sources, uncertainty, and any boundary that prevented deeper investigation.
 
 ## Gotchas
