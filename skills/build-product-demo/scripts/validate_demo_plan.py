@@ -14,6 +14,8 @@ from typing import Any
 TOLERANCE_SECONDS = 0.05
 BEAT_TYPES = {"normal", "title", "hold"}
 TRUTH_MODES = {"live", "deterministic", "composite", "title"}
+SURFACES = {"native", "composite", "title"}
+EVENT_KINDS = {"product_action", "input", "result", "reveal", "cut", "sound", "hold"}
 REQUIRED_TEXT_FIELDS = (
     "claim",
     "visible_action",
@@ -61,8 +63,8 @@ def validate_plan(plan: Any) -> list[str]:
     if not isinstance(plan, dict):
         return ["plan root must be an object"]
 
-    if plan.get("schema_version") != 1:
-        errors.append("schema_version must be 1")
+    if plan.get("schema_version") != 2:
+        errors.append("schema_version must be 2")
 
     product = plan.get("product")
     if not isinstance(product, dict):
@@ -73,8 +75,17 @@ def validate_plan(plan: Any) -> list[str]:
 
     require_text(plan.get("audience"), "audience", errors)
     require_text(plan.get("proof_proposition"), "proof_proposition", errors)
+    require_text(plan.get("reference_benchmark"), "reference_benchmark", errors)
     require_positive_number(plan.get("duration_seconds"), "duration_seconds", errors)
     require_positive_number(plan.get("max_information_gap_seconds"), "max_information_gap_seconds", errors)
+    require_positive_number(plan.get("max_attention_gap_seconds"), "max_attention_gap_seconds", errors)
+
+    native_target = plan.get("native_surface_target_ratio")
+    if not is_number(native_target) or not 0.6 <= native_target <= 1:
+        errors.append("native_surface_target_ratio must be between 0.6 and 1")
+    first_action_limit = plan.get("first_product_action_seconds")
+    if not is_number(first_action_limit) or not 0 <= first_action_limit <= 5:
+        errors.append("first_product_action_seconds must be between 0 and 5")
 
     delivery = plan.get("delivery")
     if not isinstance(delivery, dict):
@@ -100,6 +111,10 @@ def validate_plan(plan: Any) -> list[str]:
 
     seen_ids: set[str] = set()
     previous_end = 0.0
+    native_duration = 0.0
+    event_times: list[tuple[float, str, str]] = []
+    product_action_times: list[float] = []
+    hold_intervals: list[tuple[float, float]] = []
 
     for index, beat in enumerate(beats):
         prefix = f"beats[{index}]"
@@ -122,6 +137,10 @@ def validate_plan(plan: Any) -> list[str]:
         if truth_mode not in TRUTH_MODES:
             errors.append(f"{prefix}.truth_mode must be one of {sorted(TRUTH_MODES)}")
 
+        surface = beat.get("surface")
+        if surface not in SURFACES:
+            errors.append(f"{prefix}.surface must be one of {sorted(SURFACES)}")
+
         start = beat.get("start_seconds")
         end = beat.get("end_seconds")
         if not is_number(start) or start < 0:
@@ -136,6 +155,10 @@ def validate_plan(plan: Any) -> list[str]:
                 relation = "gap" if start > previous_end else "overlap"
                 errors.append(f"{prefix} has a {relation}: expected start {previous_end:.3f}, got {start:.3f}")
             beat_duration = end - start
+            if surface == "native":
+                native_duration += beat_duration
+            if beat_type == "hold":
+                hold_intervals.append((float(start), float(end)))
             if beat_type == "normal" and is_number(max_gap) and max_gap > 0 and beat_duration > max_gap + TOLERANCE_SECONDS:
                 errors.append(f"{prefix} lasts {beat_duration:.3f}s, above max_information_gap_seconds {max_gap}")
             previous_end = end
@@ -147,6 +170,33 @@ def validate_plan(plan: Any) -> list[str]:
 
         require_string_list(beat.get("evidence"), f"{prefix}.evidence", errors, allow_empty=truth_mode == "title")
 
+        events = beat.get("events")
+        if not isinstance(events, list) or (beat_type == "normal" and not events):
+            errors.append(f"{prefix}.events must be a non-empty array for normal beats")
+        elif isinstance(events, list):
+            previous_event = None
+            for event_index, event in enumerate(events):
+                event_prefix = f"{prefix}.events[{event_index}]"
+                if not isinstance(event, dict):
+                    errors.append(f"{event_prefix} must be an object")
+                    continue
+                at_seconds = event.get("at_seconds")
+                kind = event.get("kind")
+                require_text(event.get("description"), f"{event_prefix}.description", errors)
+                if kind not in EVENT_KINDS:
+                    errors.append(f"{event_prefix}.kind must be one of {sorted(EVENT_KINDS)}")
+                if not is_number(at_seconds):
+                    errors.append(f"{event_prefix}.at_seconds must be a number")
+                    continue
+                if is_number(start) and is_number(end) and not start <= at_seconds <= end:
+                    errors.append(f"{event_prefix}.at_seconds must fall inside its beat")
+                if previous_event is not None and at_seconds <= previous_event:
+                    errors.append(f"{event_prefix}.at_seconds must increase within the beat")
+                previous_event = at_seconds
+                event_times.append((float(at_seconds), str(kind), str(beat_type)))
+                if kind == "product_action":
+                    product_action_times.append(float(at_seconds))
+
         if beat_type == "hold":
             require_text(beat.get("hold_reason"), f"{prefix}.hold_reason", errors)
 
@@ -157,6 +207,36 @@ def validate_plan(plan: Any) -> list[str]:
 
     if is_number(duration) and abs(previous_end - duration) > TOLERANCE_SECONDS:
         errors.append(f"beats end at {previous_end:.3f}s but duration_seconds is {duration:.3f}s")
+
+    if is_number(duration) and duration > 0 and is_number(native_target):
+        native_ratio = native_duration / duration
+        if native_ratio + 1e-6 < native_target:
+            errors.append(
+                f"native surface ratio is {native_ratio:.3f}, below target {native_target:.3f}"
+            )
+
+    if not product_action_times:
+        errors.append("plan must contain at least one product_action event")
+    elif is_number(first_action_limit) and min(product_action_times) > first_action_limit + TOLERANCE_SECONDS:
+        errors.append(
+            f"first product action occurs at {min(product_action_times):.3f}s, after limit {first_action_limit:.3f}s"
+        )
+
+    max_attention_gap = plan.get("max_attention_gap_seconds")
+    if is_number(duration) and is_number(max_attention_gap) and max_attention_gap > 0:
+        active_times = sorted(time for time, kind, beat_type in event_times if kind != "hold" and beat_type != "hold")
+        boundaries = [0.0, *active_times, float(duration)]
+        for left, right in zip(boundaries, boundaries[1:]):
+            motivated_hold = sum(
+                max(0.0, min(right, hold_end) - max(left, hold_start))
+                for hold_start, hold_end in hold_intervals
+            )
+            gap = right - left - motivated_hold
+            if gap > max_attention_gap + TOLERANCE_SECONDS:
+                errors.append(
+                    f"unmotivated attention gap from {left:.3f}s to {right:.3f}s is "
+                    f"{gap:.3f}s after excluding holds, above {max_attention_gap:.3f}s"
+                )
 
     return errors
 
@@ -185,6 +265,8 @@ def main() -> int:
         "beats": len(plan["beats"]),
         "duration_seconds": plan["duration_seconds"],
         "max_information_gap_seconds": plan["max_information_gap_seconds"],
+        "max_attention_gap_seconds": plan["max_attention_gap_seconds"],
+        "native_surface_target_ratio": plan["native_surface_target_ratio"],
     }, indent=2))
     return 0
 

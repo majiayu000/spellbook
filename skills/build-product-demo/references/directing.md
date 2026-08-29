@@ -19,7 +19,22 @@ Cascade it through the production:
 | Sound | Does it redirect attention or register a result? |
 | Cut | Does the next image add, compare, compress, or resolve information? |
 
-## 2. Design the change
+## 2. Calibrate against a reference
+
+Choose one concrete artifact before designing. Compare it on:
+
+- native product surface versus explanatory graphics;
+- first meaningful product action;
+- observable events per ten seconds;
+- longest unchanged frame and longest audio void;
+- shot-scale, crop, and color progression;
+- real operator behavior, friction, response, and consequence;
+- sound continuity and landing energy.
+
+Extract two or three qualities to preserve. A genre label such as “Apple-like,”
+“cinematic,” or “high energy” is not calibration.
+
+## 3. Design the change
 
 Define:
 
@@ -36,7 +51,7 @@ Next action or call to action:
 If the opening and landing states are equivalent, the demo is structurally
 flat. A collection of unrelated finished screenshots does not create change.
 
-## 3. Select proof, not coverage
+## 4. Select proof, not coverage
 
 Use three depths:
 
@@ -55,7 +70,7 @@ For each feature ask:
 - What evidence proves it is not a staged animation?
 - What is the shortest truthful action chain?
 
-## 4. Build chapters and beats
+## 5. Build chapters and beats
 
 Use chapters when the user goal, proof question, or visual condition changes.
 Use beats when at least one changes:
@@ -70,7 +85,7 @@ Use beats when at least one changes:
 Record the audience state before and after every beat. Remove a beat when those
 states are identical and the product state does not change.
 
-## 5. Hook with a result
+## 6. Hook with native action
 
 For a promotional demo, prefer a legible result in the opening seconds, then
 return to the credible starting state. The hook should create a question the
@@ -87,7 +102,10 @@ Useful hook shapes:
 Avoid company history, logo animation, setup narration, or permission dialogs
 as the first meaningful image unless one of them is the product's value.
 
-## 6. Control attention
+For a promotional software demo, require a meaningful native product action by
+five seconds. A claim card about a result does not satisfy this requirement.
+
+## 7. Control attention
 
 Give every shot one primary job. Use the smallest device that makes it legible:
 
@@ -102,7 +120,12 @@ Give every shot one primary job. Use the smallest device that makes it legible:
 Do not stack zoom, cursor halo, caption, callout, and motion background around a
 simple result. Visual hierarchy should become clearer as proof accumulates.
 
-## 7. Align narration and action
+Count observable events inside the shot: input, response, reveal, result,
+motivated crop, sound cue, or cut. During the hook, aim for a new event every
+0.8–2 seconds; during the body, every 1.5–3 seconds. Do not count ambient drift,
+blinking cursors, progress spinners, or decorative particles.
+
+## 8. Align narration and action
 
 Assign each channel a job:
 
@@ -118,7 +141,7 @@ expectation. Land on the result as the sentence resolves. If processing takes
 time, show a readable state change, compress it transparently, or redesign the
 proof path.
 
-## 8. Shape pace
+## 9. Shape pace
 
 Choose `max_information_gap_seconds` for the audience and format rather than
 copying a universal number. Useful starting points:
@@ -134,7 +157,19 @@ or animated spinner is not new information. A held result is valid when the
 audience needs time to read, compare, judge, or absorb it; record that reason in
 the beat plan.
 
-## 9. Review the sequence
+## 10. Reject template signals
+
+Redesign when several of these appear together:
+
+- equal-duration beats unrelated to action length;
+- repeated centered headlines and symmetrical cards;
+- abstract benefit copy where behavior should be visible;
+- a single dark-gradient palette with decorative neon accents;
+- no cursor, typing, state transition, failure, latency, or consequence;
+- product output retyped into a fake terminal or presentation layer;
+- identical shot scale and composition across changing claims.
+
+## 11. Review the sequence
 
 For each planned cut complete:
 

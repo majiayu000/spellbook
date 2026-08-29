@@ -31,6 +31,8 @@ The skill must:
 - support planning-only, production, and diagnosis/re-cut modes;
 - produce a structured beat-plan JSON that can be mechanically validated;
 - verify final media with `ffprobe` when a video is produced;
+- require a concrete reference benchmark, native-surface ratio, early product
+  action, internal observable events, and silence/low-motion analysis;
 - define explicit autonomy and publishing boundaries.
 
 The skill must not:
@@ -57,6 +59,8 @@ The skill must not:
   structural and timing checks for the beat plan.
 - `skills/build-product-demo/scripts/probe_demo_media.py`: deterministic
   `ffprobe` wrapper with delivery assertions.
+- `skills/build-product-demo/scripts/analyze_demo_pacing.py`: deterministic
+  silence and low-motion gate for promotional pacing.
 - `skills/build-product-demo/evals/evals.json`: representative trigger and
   boundary cases.
 
@@ -69,8 +73,9 @@ audience knowledge before/after, entry/exit state, narration, evidence, and cut
 reason. Optional idle intervals must be explicitly marked and motivated.
 
 Validation fails for malformed timing, gaps or overlaps, empty state changes,
-missing evidence, unmotivated idle intervals, invalid delivery values, or a
-normal beat longer than the configured maximum information gap.
+missing evidence, insufficient native product footage, a late first product
+action, sparse observable events, unmotivated idle intervals, invalid delivery
+values, or a normal beat longer than the configured maximum information gap.
 
 ## Verification
 
@@ -81,6 +86,8 @@ python3 skills/build-product-demo/scripts/validate_demo_plan.py \
   <representative-plan.json>
 python3 skills/build-product-demo/scripts/probe_demo_media.py \
   <representative-video.mp4> --expect-width 1440 --expect-height 900
+python3 skills/build-product-demo/scripts/analyze_demo_pacing.py \
+  <representative-video.mp4>
 python3 scripts/validate_skills.py --write
 python3 scripts/validate_skills.py --check
 python3 scripts/audit_skill_quality.py build-product-demo

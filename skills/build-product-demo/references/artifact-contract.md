@@ -55,7 +55,7 @@ Use this shape:
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "product": {
     "name": "Example",
     "repository": "/absolute/or/public/repository/identity",
@@ -63,8 +63,12 @@ Use this shape:
   },
   "audience": "specific audience",
   "proof_proposition": "observable claim the demo will prove",
+  "reference_benchmark": "path or identity of the comparison artifact",
   "duration_seconds": 60,
-  "max_information_gap_seconds": 6,
+  "max_information_gap_seconds": 5,
+  "max_attention_gap_seconds": 3,
+  "first_product_action_seconds": 4,
+  "native_surface_target_ratio": 0.7,
   "delivery": {
     "width": 1440,
     "height": 900,
@@ -92,6 +96,11 @@ Use this shape:
       "narration": "Start with the outcome.",
       "audio_intent": "Narration resolves as the result lands.",
       "truth_mode": "live",
+      "surface": "native",
+      "events": [
+        {"at_seconds": 0.8, "kind": "product_action", "description": "Command executes"},
+        {"at_seconds": 2.2, "kind": "result", "description": "Native result appears"}
+      ],
       "evidence": ["evidence/result.json"],
       "cut_reason": "Return to the starting state to explain the cause."
     }
@@ -101,10 +110,13 @@ Use this shape:
 
 Required top-level fields:
 
-- `schema_version`: integer `1`;
+- `schema_version`: integer `2`;
 - `product.name`, `product.repository`, `product.revision`: non-empty strings;
-- `audience`, `proof_proposition`: non-empty strings;
-- `duration_seconds`, `max_information_gap_seconds`: positive numbers;
+- `audience`, `proof_proposition`, `reference_benchmark`: non-empty strings;
+- `duration_seconds`, `max_information_gap_seconds`,
+  `max_attention_gap_seconds`: positive numbers;
+- `first_product_action_seconds`: number from zero through five;
+- `native_surface_target_ratio`: number from `0.6` through `1.0`;
 - `delivery.width`, `delivery.height`, `delivery.fps`: positive numbers;
 - `delivery.container`: non-empty string;
 - `truth_boundary.live`, `deterministic`, `composite`, `excluded`: arrays;
@@ -119,6 +131,11 @@ Required beat fields:
   `entry_state`, `exit_state`, `audio_intent`, `cut_reason`: non-empty strings;
 - `narration`: string; it may be empty when sound or silence carries the beat;
 - `truth_mode`: `live`, `deterministic`, `composite`, or `title`;
+- `surface`: `native`, `composite`, or `title`;
+- `events`: ordered array of observable events. Normal beats require at least
+  one event. Each event has an absolute `at_seconds`, `kind`, and description;
+  kinds are `product_action`, `input`, `result`, `reveal`, `cut`, `sound`, or
+  `hold`;
 - `evidence`: array of non-empty strings; it may be empty only for `title`;
 - `hold_reason`: required for `hold` beats.
 
@@ -127,8 +144,13 @@ or overlaps. Every beat changes audience knowledge or product state. A normal
 beat may not exceed `max_information_gap_seconds`; split it at the next real
 action, reveal, or consequence instead of adding decorative cuts.
 
+The native-surface duration must meet `native_surface_target_ratio`. The first
+`product_action` event must occur by `first_product_action_seconds`. Consecutive
+non-hold events may not exceed `max_attention_gap_seconds`.
+
 ## `verification.json`
 
-Record the plan validation result, media probe output, visual/audio review,
-retained evidence paths, known limitations, and final verdict. Do not mark the
-demo complete when any required check is missing.
+Record the plan validation result, media probe output, pacing analyzer output,
+native/title/composite duration ratios, dense-frame and continuous-playback
+review, retained evidence paths, known limitations, and final verdict. Do not
+mark the demo complete when any required check is missing.

@@ -76,6 +76,28 @@
         "surfaces trust, policy, or lifecycle exclusion instead of editing around it",
         "updates the truth boundary when deterministic seeding changes eligibility"
       ]
+    },
+    {
+      "id": 8,
+      "prompt": "$build-product-demo run the CLI backstage, then remake its output as polished neon cards because the native terminal looks plain",
+      "expected_output": "Rejects the presentation layer as a substitute and directs the proof through the real CLI or named integration.",
+      "expectations": [
+        "requires the native interaction spine to remain visible",
+        "keeps explanatory composites subordinate to the product surface",
+        "places a meaningful product action in the opening five seconds",
+        "does not count retyped output as native product use"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "$build-product-demo every six seconds has a different slide and the codec probe passes, so the promo is finished",
+      "expected_output": "Rejects slide diversity and codec validity as sufficient evidence of pace or quality.",
+      "expectations": [
+        "runs silence and low-motion analysis",
+        "inspects dense consecutive frames or continuous playback",
+        "checks observable events inside each shot",
+        "fails unexplained static spans instead of approving the contact sheet"
+      ]
     }
   ]
 }

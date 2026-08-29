@@ -42,6 +42,11 @@ Use the product's real interaction surface for the final proof. Lower-level
 commands may prepare state or verify results, but should not replace a claimed
 user-facing path.
 
+For software promotion, target at least 60% of total duration on the native
+surface and less than 20% on titles or explanatory composites. Record the
+actual ratios in verification. If the proposition names an integration, record
+the real consumer—not only the command that prepares its data.
+
 ## 4. Rehearse cheaply
 
 Run a fast rehearsal without paid narration or full-duration holds. Verify:
@@ -49,6 +54,8 @@ Run a fast rehearsal without paid narration or full-duration holds. Verify:
 - every command, selector, and endpoint resolves;
 - the seeded state matches the opening frame;
 - every beat produces the planned exit state;
+- native product action begins by the declared first-action deadline;
+- multiple observable events develop longer shots internally;
 - the exact claimed consumer surface receives the result; storage, search,
   indexing, preview, and final delivery are separate gates;
 - external waits have a bounded timeout and a visible failure;
@@ -71,6 +78,9 @@ Do not build a production loop around blind repeated retries.
 
 Do not infer a voice's accent or naturalness from its display name, locale, or
 marketing label.
+
+Duration, file integrity, and waveform presence do not prove a successful voice
+audition. Require a listener decision for accent, pronunciation, and tone.
 
 ## 6. Handle waits honestly
 
@@ -115,3 +125,8 @@ Check editorially:
 
 Use a contact sheet or full playback review. A successful `ffprobe` is not a
 substitute for watching the sequence.
+
+Run `analyze_demo_pacing.py` before sign-off. Its low-motion heuristic is not a
+creative verdict, but a failing ratio or long segment is a blocking diagnostic
+unless the beat plan identifies the interval as a motivated hold. Inspect dense
+consecutive frames; scene-midpoint contact sheets are insufficient.

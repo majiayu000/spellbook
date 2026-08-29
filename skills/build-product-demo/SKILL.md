@@ -31,11 +31,14 @@ at a script while safe, in-scope production work remains.
    recorder or seed path.
 3. Separate immutable product facts, creative choices, and missing production
    facts. Do not turn an unknown into a visual claim.
-4. Choose one audience doubt and one proof proposition. Complete:
+4. Select one reference benchmark: the user's strongest previous demo, a
+   product-native launch video, or a clearly named quality bar. Record what to
+   preserve and what to avoid. Do not rely on generic taste words.
+5. Choose one audience doubt and one proof proposition. Complete:
 
    `The audience doubts whether [product claim]. The demo proves [outcome] by showing [observable change].`
 
-5. Define the opening and landing state. Reject a concept whose product or
+6. Define the opening and landing state. Reject a concept whose product or
    audience state is materially unchanged at the end.
 
 Read [directing.md](references/directing.md) before selecting features or
@@ -89,10 +92,26 @@ a credible starting state. Organize chapters by user outcome or proof question,
 not by toolbar location. Require each chapter to leave visible accumulated
 state or decisive new knowledge.
 
+Write the native interaction spine before any title, mockup, or compositing:
+
+`real starting state → user input → native product response → consequential result`
+
+For software demos, show the actual CLI, application, host integration, API
+consumer, or generated artifact named in the proposition. Evidence generated
+backstage and retyped into a presentation layer does not count as native use.
+Target at least 60% native product surface, place the first meaningful product
+action within five seconds, and keep explanatory/title surfaces below 20%
+unless the medium makes those ratios inapplicable and the plan records why.
+
 Write one beat for each meaningful tactic, product action, reveal, consequence,
 or attention shift. A click is not a beat unless it changes the proof. Pair
 narration about value or consequence with an observable action; do not read the
 interface aloud.
+
+Treat beats as actions and revelations, never equal time boxes. Record multiple
+observable events inside a longer beat. Default to no more than three seconds
+between visible or audible events for a promotional demo; a motivated hold is
+the only exception.
 
 Save the plan as `beat-plan.json` using
 [artifact-contract.md](references/artifact-contract.md), then run:
@@ -113,9 +132,13 @@ Fix plan failures before recording. Do not hide gaps in post-production.
 3. Use deterministic data only to stabilize inputs or external dependencies.
    Keep the real product path active and record the boundary in the plan.
 4. Run a fast, silent rehearsal. Confirm selectors, commands, product results,
-   duration, and exit states before paying for narration or a full recording.
-5. Audition narration with the actual language and script. Voice labels and
-   locale names are not evidence of accent, naturalness, or timing.
+   duration, native-surface ratio, event density, and exit states before paying
+   for narration or a full recording.
+5. Audition narration with the actual language and script. Measuring duration
+   is not an audition. If the agent cannot hear the sample, require a human
+   selection or use a non-voice treatment instead of claiming the accent is
+   approved. Voice labels and locale names are not evidence of accent,
+   naturalness, or timing.
 6. Record clean picture, UI/action sound, narration, and music as separable
    elements when practical. Retain raw evidence and logs.
 7. If a production path fails, report the failure and repair that path. Do not
@@ -158,6 +181,18 @@ unreadable type, secret leakage, missing chapters, broken focus, abrupt audio,
 and claims whose evidence is not visible. A playable file with valid codecs is
 necessary but not sufficient.
 
+Run the pacing analyzer for promotional video:
+
+```bash
+python3 <skill-dir>/scripts/analyze_demo_pacing.py <final-video> \
+  --json-out <demo-dir>/pacing-verification.json
+```
+
+Treat its default silence and low-motion limits as a fail-closed rehearsal
+gate. Change a threshold only when the plan names the exact motivated hold.
+Review continuous playback or dense consecutive frames as well as a contact
+sheet; one frame per scene can make a static slide deck look varied.
+
 Deliver the files defined in [artifact-contract.md](references/artifact-contract.md)
 and state which claims used live execution, deterministic fixtures, or
 compositing.
@@ -179,12 +214,17 @@ compositing.
 ## Done when
 
 - The exact product revision and truth boundary are recorded.
+- A reference benchmark is recorded with concrete qualities to preserve.
 - One audience doubt is answered by a visible opening-to-landing change.
 - Core claims have E1 or bounded E2 evidence; exclusions are explicit.
+- The native interaction spine is visible, the native-surface target is met,
+  and meaningful product action begins within five seconds.
 - The beat plan passes `validate_demo_plan.py` with no unexplained gap, overlap,
   idle interval, or missing state change.
 - A fresh rehearsal proves the complete path before the final capture.
 - The final media passes `probe_demo_media.py` and a visual/audio review.
+- The final media passes `analyze_demo_pacing.py`; silence and low-motion spans
+  stay inside the declared attention contract.
 - The delivery package includes the final artifact, plan, script, evidence,
   and verification result appropriate to the selected mode.
 
@@ -192,6 +232,8 @@ compositing.
 
 - A feature inventory is source material, not a script.
 - A mock that bypasses the product path cannot prove that path.
+- Using a product backstage while replacing its visible surface with cards,
+  fake terminals, or retyped output is not a product demo.
 - A deterministic provider is acceptable only when the surrounding real state,
   command, task, persistence, and result paths still execute and the boundary
   is disclosed.
@@ -201,6 +243,8 @@ compositing.
   exact surface named in the proposition.
 - A title card, cursor highlight, zoom, or music cue cannot repair an undefined
   product result.
+- Equal-duration beats and repeated dark-gradient cards are presentation
+  templates, not rhythm. Derive duration from action and consequence.
 - “No dead time” does not mean compressing every pause. A motivated hold lets
   the audience read a consequential result; an unmotivated hold is a defect.
 - Do not choose a voice from its advertised nationality or name. Audition the
