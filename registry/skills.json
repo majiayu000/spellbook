@@ -154,6 +154,23 @@
     ]
   },
   {
+    "name": "build-product-demo",
+    "category": "Content & Research",
+    "format": "directory",
+    "path": "skills/build-product-demo/SKILL.md",
+    "description": "Plan, produce, or diagnose evidence-backed product demo videos and screen-recorded promotional walkthroughs. Use when the user asks to make a product demo, launch video, feature showcase, app walkthrough, demo reel, or polished recording; wants every important capability shown without a slow feature tour; asks to remove dead time or fix narration-to-action pacing; or needs a repeatable script, capture plan, and verified final media. Do not use for fictional commercials with no real product proof, general-purpose video editing, or documentation-only tutorials that do not need a promotional narrative.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "content",
+      "debugging"
+    ]
+  },
+  {
     "name": "capability-distill",
     "category": "AI & Agent Workflow",
     "format": "directory",
@@ -165,11 +182,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "agent",
-      "documentation",
-      "prompt"
-    ]
+    "tags": []
   },
   {
     "name": "clash-doctor",
@@ -384,11 +397,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "architecture",
-      "code-review",
-      "refactoring"
-    ]
+    "tags": []
   },
   {
     "name": "contributor",
@@ -630,10 +639,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "code-review",
-      "documentation"
-    ]
+    "tags": []
   },
   {
     "name": "github-trending",
@@ -648,8 +654,6 @@
       ]
     },
     "tags": [
-      "content",
-      "research",
       "rust"
     ]
   },
@@ -682,10 +686,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "deploy",
-      "system"
-    ]
+    "tags": []
   },
   {
     "name": "harmonyos-app",
@@ -709,17 +710,14 @@
     "category": "Content & Research",
     "format": "directory",
     "path": "skills/humanizer/SKILL.md",
-    "description": "Remove signs of AI-generated writing from text. Use when editing or reviewing text to make it sound more natural and human-written. Based on Wikipedia's comprehensive \"Signs of AI writing\" guide. Detects and fixes patterns including: inflated symbolism, promotional language, superficial -ing analyses, vague attributions, em dash overuse, rule of three, AI vocabulary words, negative parallelisms, and excessive conjunctive phrases.",
+    "description": "Remove signs of AI-generated writing from text. Use when editing or reviewing text to make it sound more natural and human-written. Based on Wikipedia''s comprehensive \"Signs of AI writing\" guide. Detects and fixes patterns including: inflated symbolism, promotional language, superficial -ing analyses, vague attributions, em dash overuse, rule of three, AI vocabulary words, negative parallelisms, and excessive conjunctive phrases.",
     "language": "en",
     "compatibility": {
       "runtimes": [
         "unspecified"
       ]
     },
-    "tags": [
-      "content",
-      "writing"
-    ]
+    "tags": []
   },
   {
     "name": "idea-analogist",
@@ -826,10 +824,7 @@
       ]
     },
     "tags": [
-      "debugging",
-      "multi-ai",
-      "proxy",
-      "security"
+      "multi-ai"
     ]
   },
   {
@@ -981,10 +976,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "documentation",
-      "product-management"
-    ]
+    "tags": []
   },
   {
     "name": "product-discovery",
@@ -1049,10 +1041,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "architecture",
-      "code-review"
-    ]
+    "tags": []
   },
   {
     "name": "push-all",
@@ -1066,9 +1055,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "code-review"
-    ]
+    "tags": []
   },
   {
     "name": "python-project",
@@ -1268,10 +1255,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "debugging",
-      "system"
-    ]
+    "tags": []
   },
   {
     "name": "security-threat-model",
@@ -1319,9 +1303,7 @@
       ]
     },
     "tags": [
-      "agent",
-      "documentation",
-      "prompt"
+      "agent"
     ]
   },
   {
@@ -1352,10 +1334,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "agent",
-      "security"
-    ]
+    "tags": []
   },
   {
     "name": "skill-lifeguard",
@@ -1376,7 +1355,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/skill-usage-stats/SKILL.md",
-    "description": "只读统计 Claude/Codex 的 Skill 使用证据并检查 agent 配置健康。仅用于明确的健康检查、配置诊断、使用排行或低使用候选请求；会识别 enabled 插件并单列批量审计读取。不要用于规范源、触发、全局/项目/profile/冷存储、投影或退役治理，改用 skill-ecosystem-doctor。忽略引用日志和相邻任务。",
+    "description": ">- 只读统计 Claude/Codex 的 Skill 使用证据并检查 agent 配置健康。仅用于明确的健康检查、配置诊断、使用排行或低使用候选请求；会识别 enabled 插件并单列批量审计读取。不要用于规范源、触发、全局/项目/profile/冷存储、投影或退役治理，改用 skill-ecosystem-doctor。忽略引用日志和相邻任务。",
     "language": "zh",
     "compatibility": {
       "runtimes": [
@@ -1399,9 +1378,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "content"
-    ]
+    "tags": []
   },
   {
     "name": "sol-luna-router",
@@ -1465,9 +1442,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "debugging"
-    ]
+    "tags": []
   },
   {
     "name": "technical-spec",
@@ -1532,9 +1507,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "content"
-    ]
+    "tags": []
   },
   {
     "name": "typescript-project",
@@ -1689,10 +1662,7 @@
         "unspecified"
       ]
     },
-    "tags": [
-      "content",
-      "documentation"
-    ]
+    "tags": []
   },
   {
     "name": "xiaohongshu",
@@ -1715,7 +1685,7 @@
     "category": "Content & Research",
     "format": "directory",
     "path": "skills/xiaohongshu-netfeel-guardian/SKILL.md",
-    "description": "当用户用 Claude 写小红书、公众号、视频脚本等内容时，输出出现翻译腔、英文思考、西式框架，导致“像外国人假装写中文”时使用。 典型触发语句： - “Claude写小红书翻译腔太重”“英文思考输出灾难” - “帮我把这个笔记改成纯中文网感”“去除Claude翻译腔” - “公众号文章中途变英文了”“50 Skills内容生成翻车” - “强制Claude用中文思考写笔记”“小红书情绪化表达润色” 始终保护用户原有的 CLAUDE.md / AGENTS.md 中的人设与语气要求，只做最小必要干预。优先与 xiaohongshu 技能组合使用。",
+    "description": "| 当用户用 Claude 写小红书、公众号、视频脚本等内容时，输出出现翻译腔、英文思考、西式框架，导致“像外国人假装写中文”时使用。 典型触发语句： - “Claude写小红书翻译腔太重”“英文思考输出灾难” - “帮我把这个笔记改成纯中文网感”“去除Claude翻译腔” - “公众号文章中途变英文了”“50 Skills内容生成翻车” - “强制Claude用中文思考写笔记”“小红书情绪化表达润色” 始终保护用户原有的 CLAUDE.md / AGENTS.md 中的人设与语气要求，只做最小必要干预。优先与 xiaohongshu 技能组合使用。",
     "language": "zh",
     "compatibility": {
       "runtimes": [
