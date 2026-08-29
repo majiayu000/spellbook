@@ -1,20 +1,20 @@
 {
   "total_skills": 105,
-  "total_tags": 33,
+  "total_tags": 35,
   "tag_counts": {
-    "agent": 13,
-    "architecture": 12,
+    "agent": 15,
+    "architecture": 14,
     "auth": 3,
     "backend": 13,
     "browser": 5,
-    "code-review": 12,
-    "content": 3,
+    "code-review": 16,
+    "content": 8,
     "database": 4,
-    "debugging": 6,
-    "deploy": 3,
+    "debugging": 9,
+    "deploy": 4,
     "design-system": 2,
     "devops": 2,
-    "documentation": 10,
+    "documentation": 15,
     "frontend": 16,
     "go": 3,
     "harmonyos": 1,
@@ -22,24 +22,27 @@
     "multi-ai": 6,
     "observability": 3,
     "performance": 8,
-    "product-management": 3,
-    "proxy": 3,
+    "product-management": 4,
+    "prompt": 2,
+    "proxy": 4,
     "python": 2,
     "react": 7,
-    "refactoring": 3,
+    "refactoring": 4,
+    "research": 1,
     "rust": 4,
-    "security": 5,
-    "system": 5,
+    "security": 7,
+    "system": 7,
     "testing": 6,
     "typescript": 4,
     "ux": 4,
-    "writing": 1,
+    "writing": 2,
     "zig": 1
   },
   "index": {
     "agent": [
       "agentsmd-optimize",
       "agentsmd-scaffold",
+      "capability-distill",
       "codex-agent",
       "flowguard",
       "multi-model-orchestrator",
@@ -48,6 +51,7 @@
       "review-agent-harness",
       "review-gate",
       "skill-audit",
+      "skill-ecosystem-doctor",
       "skill-usage-stats",
       "sol-luna-router",
       "threads"
@@ -56,9 +60,11 @@
       "architecture-foundation",
       "brainstorming",
       "codebase-audit",
+      "contribution-architect",
       "dev-architecture-playbook",
       "elegant-architecture",
       "golang-web",
+      "project-health-auditor",
       "python-project",
       "rust-project",
       "structured-logging-lite",
@@ -97,8 +103,12 @@
       "codebase-audit",
       "codex-agent",
       "codex-retrospective",
+      "contribution-architect",
       "contributor",
+      "git-commit-smart",
       "idea-team",
+      "project-health-auditor",
+      "push-all",
       "repo-agent-context-audit",
       "review-agent-harness",
       "review-gate",
@@ -109,6 +119,11 @@
     ],
     "content": [
       "build-product-demo",
+      "github-trending",
+      "humanizer",
+      "slides",
+      "trip-planner",
+      "weekly",
       "xiaohongshu",
       "xiaohongshu-netfeel-guardian"
     ],
@@ -122,13 +137,17 @@
       "build-product-demo",
       "codex-log-guard",
       "css-debug",
+      "ip-check",
       "optimize-network",
       "performance-capacity",
+      "rustdesk-doctor",
+      "systematic-debugging",
       "vscode-doctor"
     ],
     "deploy": [
       "config-secrets-environments",
       "gemma4-local-deploy",
+      "gpu-use",
       "release-engineering"
     ],
     "design-system": [
@@ -141,14 +160,19 @@
     ],
     "documentation": [
       "auth-security",
+      "capability-distill",
       "dev-architecture-playbook",
+      "git-commit-smart",
       "idea-research",
       "idea-team",
       "idea-to-product",
       "multi-model-orchestrator",
       "prd-master",
+      "product-analytics",
       "product-manager-toolkit",
+      "skill-audit",
       "technical-spec",
+      "weekly",
       "xray"
     ],
     "frontend": [
@@ -209,12 +233,18 @@
     ],
     "product-management": [
       "prd-master",
+      "product-analytics",
       "product-discovery",
       "product-manager-toolkit"
+    ],
+    "prompt": [
+      "capability-distill",
+      "skill-audit"
     ],
     "proxy": [
       "clash-doctor",
       "clash-routes",
+      "ip-check",
       "optimize-network"
     ],
     "python": [
@@ -232,8 +262,12 @@
     ],
     "refactoring": [
       "architecture-foundation",
+      "contribution-architect",
       "test-driven-development",
       "ui-ux-pro-max"
+    ],
+    "research": [
+      "github-trending"
     ],
     "rust": [
       "architecture-foundation",
@@ -244,14 +278,18 @@
     "security": [
       "auth-security",
       "dev-architecture-playbook",
+      "ip-check",
       "npm-supply-chain-check",
       "security-threat-model",
-      "server-security"
+      "server-security",
+      "skill-ecosystem-doctor"
     ],
     "system": [
       "disk-cleaner",
+      "gpu-use",
       "performance-capacity",
       "review-agent-harness",
+      "rustdesk-doctor",
       "system-doctor",
       "vscode-doctor"
     ],
@@ -276,6 +314,7 @@
       "ui-ux-pro-max"
     ],
     "writing": [
+      "humanizer",
       "ui-ux-pro-max"
     ],
     "zig": [
