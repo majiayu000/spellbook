@@ -229,6 +229,30 @@ def test_explanatory_surface_limit_requires_a_declared_exception() -> None:
     assert any("explanatory surface ratio is 0.400" in error for error in errors)
 
 
+def test_title_beat_cannot_claim_the_native_surface() -> None:
+    plan = _valid_plan()
+    title = _beat(
+        "title",
+        0,
+        4,
+        beat_type="title",
+        truth_mode="title",
+        surface="native",
+        events=[
+            {
+                "at_seconds": 0.5,
+                "kind": "reveal",
+                "description": "A title appears.",
+            }
+        ],
+    )
+    plan["beats"] = [title]
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert "beats[0].surface must be 'title' for a title beat" in errors
+
+
 def test_plan_validation_report_uses_plan_basename(tmp_path: Path) -> None:
     plan_path = tmp_path / "client-name" / "beat-plan.json"
     plan_path.parent.mkdir()
@@ -376,6 +400,46 @@ def test_pacing_report_uses_media_basename(tmp_path: Path) -> None:
     report = json.loads(stdout.getvalue())
     assert result == 0
     assert report["media"] == "demo.mp4"
+
+
+def test_pacing_validates_every_audio_stream_duration(tmp_path: Path) -> None:
+    media = tmp_path / "demo.mp4"
+    media.write_bytes(b"video")
+    args = argparse.Namespace(
+        media=media,
+        plan=None,
+        silence_noise="-35dB",
+        silence_min_duration=0.45,
+        freeze_noise="-50dB",
+        freeze_min_duration=1.0,
+        max_silence_ratio=0.18,
+        max_silence_segment=1.75,
+        max_low_motion_ratio=0.40,
+        max_low_motion_segment=4.0,
+        json_out=None,
+    )
+    probe_payload = json.dumps(
+        {
+            "format": {"duration": "60"},
+            "streams": [
+                {"index": 0, "codec_type": "video", "duration": "60"},
+                {"index": 1, "codec_type": "audio", "duration": "12"},
+                {"index": 2, "codec_type": "audio", "duration": "60"},
+            ],
+        }
+    )
+    stdout = io.StringIO()
+    with (
+        mock.patch.object(PACING, "parse_args", return_value=args),
+        mock.patch.object(PACING.shutil, "which", return_value="/usr/bin/tool"),
+        mock.patch.object(PACING, "run", side_effect=[probe_payload, "", ""]),
+        mock.patch.object(sys, "stdout", stdout),
+    ):
+        result = PACING.main()
+
+    report = json.loads(stdout.getvalue())
+    assert result == 1
+    assert any("audio stream 1 duration 12.000s" in error for error in report["errors"])
 
 
 def _freeze_output(*segments: tuple[float, float]) -> str:

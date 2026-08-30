@@ -8,7 +8,7 @@ import json
 import math
 import sys
 from pathlib import Path
-from typing import Any
+from typing import TypeGuard
 
 
 TOLERANCE_SECONDS = 0.05
@@ -34,31 +34,31 @@ def parse_cli_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def is_number(value: Any) -> bool:
+def is_number(value: object) -> TypeGuard[int | float]:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
 
-def require_text(value: Any, path: str, errors: list[str]) -> None:
+def require_text(value: object, path: str, errors: list[str]) -> None:
     if not isinstance(value, str) or not value.strip():
         errors.append(f"{path} must be a non-empty string")
 
 
-def require_positive_number(value: Any, path: str, errors: list[str]) -> None:
+def require_positive_number(value: object, path: str, errors: list[str]) -> None:
     if not is_number(value) or value <= 0:
         errors.append(f"{path} must be a positive number")
 
 
-def require_positive_integer(value: Any, path: str, errors: list[str]) -> None:
+def require_positive_integer(value: object, path: str, errors: list[str]) -> None:
     if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
         errors.append(f"{path} must be a positive integer")
 
 
-def require_enum(value: Any, allowed: set[str], path: str, errors: list[str]) -> None:
+def require_enum(value: object, allowed: set[str], path: str, errors: list[str]) -> None:
     if not isinstance(value, str) or value not in allowed:
         errors.append(f"{path} must be one of {sorted(allowed)}")
 
 
-def require_string_list(value: Any, path: str, errors: list[str], *, allow_empty: bool = True) -> None:
+def require_string_list(value: object, path: str, errors: list[str], *, allow_empty: bool = True) -> None:
     if not isinstance(value, list):
         errors.append(f"{path} must be an array")
         return
@@ -68,7 +68,7 @@ def require_string_list(value: Any, path: str, errors: list[str], *, allow_empty
         require_text(item, f"{path}[{index}]", errors)
 
 
-def validate_plan(plan: Any) -> list[str]:
+def validate_plan(plan: object) -> list[str]:
     errors: list[str] = []
     if not isinstance(plan, dict):
         return ["plan root must be an object"]
@@ -157,6 +157,8 @@ def validate_plan(plan: Any) -> list[str]:
 
         surface = beat.get("surface")
         require_enum(surface, SURFACES, f"{prefix}.surface", errors)
+        if beat_type == "title" and surface != "title":
+            errors.append(f"{prefix}.surface must be 'title' for a title beat")
 
         start = beat.get("start_seconds")
         end = beat.get("end_seconds")
@@ -172,7 +174,9 @@ def validate_plan(plan: Any) -> list[str]:
                 relation = "gap" if start > previous_end else "overlap"
                 errors.append(f"{prefix} has a {relation}: expected start {previous_end:.3f}, got {start:.3f}")
             beat_duration = end - start
-            if surface == "native":
+            if beat_type == "title":
+                explanatory_duration += beat_duration
+            elif surface == "native":
                 native_duration += beat_duration
             elif surface == "title" or surface == "composite":
                 explanatory_duration += beat_duration

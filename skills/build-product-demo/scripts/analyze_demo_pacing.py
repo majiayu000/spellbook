@@ -124,17 +124,26 @@ def main() -> int:
     try:
         hold_intervals = load_hold_intervals(args.plan)
         probe = json.loads(run([
-            "ffprobe", "-v", "error", "-show_entries", "format=duration:stream=codec_type,duration",
+            "ffprobe", "-v", "error", "-show_entries", "format=duration:stream=index,codec_type,duration",
             "-of", "json", str(args.media)
         ]))
         duration = float(probe["format"]["duration"])
         streams = probe.get("streams", [])
-        stream_types = {stream.get("codec_type") for stream in streams}
-        stream_durations = {
-            stream.get("codec_type"): float(stream["duration"])
-            for stream in streams
-            if stream.get("codec_type") in {"audio", "video"} and stream.get("duration")
-        }
+        stream_details: list[tuple[str, object, float | None]] = []
+        for position, stream in enumerate(streams):
+            if not isinstance(stream, dict):
+                continue
+            stream_type = stream.get("codec_type")
+            if stream_type not in {"audio", "video"}:
+                continue
+            stream_index = stream.get("index", position)
+            raw_duration = stream.get("duration")
+            try:
+                stream_duration = float(raw_duration) if raw_duration is not None else None
+            except (TypeError, ValueError):
+                stream_duration = None
+            stream_details.append((stream_type, stream_index, stream_duration))
+        stream_types = {stream_type for stream_type, _, _ in stream_details}
         silence_output = run([
             "ffmpeg", "-hide_banner", "-nostats", "-i", str(args.media),
             "-af", f"silencedetect=noise={args.silence_noise}:d={args.silence_min_duration}",
@@ -173,13 +182,13 @@ def main() -> int:
         errors.append("media has no video stream")
     if "audio" not in stream_types:
         errors.append("media has no audio stream")
-    for stream_type in ("video", "audio"):
-        stream_duration = stream_durations.get(stream_type)
-        if stream_type in stream_types and stream_duration is None:
-            errors.append(f"{stream_type} stream duration is unavailable")
+    for stream_type, stream_index, stream_duration in stream_details:
+        stream_label = f"{stream_type} stream {stream_index}"
+        if stream_duration is None:
+            errors.append(f"{stream_label} duration is unavailable")
         elif stream_duration is not None and abs(stream_duration - duration) > 0.2:
             errors.append(
-                f"{stream_type} stream duration {stream_duration:.3f}s differs from "
+                f"{stream_label} duration {stream_duration:.3f}s differs from "
                 f"container duration {duration:.3f}s"
             )
     if silence_ratio > args.max_silence_ratio:
@@ -196,9 +205,14 @@ def main() -> int:
         "media": args.media.name,
         "duration_seconds": duration,
         "checked_duration_seconds": round(checked_duration, 3),
-        "stream_durations_seconds": {
-            key: round(value, 3) for key, value in sorted(stream_durations.items())
-        },
+        "stream_durations_seconds": [
+            {
+                "index": stream_index,
+                "type": stream_type,
+                "duration_seconds": None if stream_duration is None else round(stream_duration, 3),
+            }
+            for stream_type, stream_index, stream_duration in stream_details
+        ],
         "silence": {
             "total_seconds": round(silence_total, 3),
             "checked_seconds": round(checked_silence_total, 3),
