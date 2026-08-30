@@ -137,6 +137,8 @@ def validate_plan(plan: object) -> list[str]:
     previous_end = 0.0
     native_duration = 0.0
     explanatory_duration = 0.0
+    cumulative_gap = 0.0
+    cumulative_overlap = 0.0
     event_times: list[tuple[float, str, str]] = []
     product_action_times: list[float] = []
     hold_intervals: list[tuple[float, float]] = []
@@ -179,8 +181,13 @@ def validate_plan(plan: object) -> list[str]:
         if is_number(start) and is_number(end):
             if end <= start:
                 errors.append(f"{prefix} must end after it starts")
-            if abs(start - previous_end) > TOLERANCE_SECONDS:
-                relation = "gap" if start > previous_end else "overlap"
+            boundary_delta = start - previous_end
+            if boundary_delta > 0:
+                cumulative_gap += boundary_delta
+            elif boundary_delta < 0:
+                cumulative_overlap -= boundary_delta
+            if abs(boundary_delta) > TOLERANCE_SECONDS:
+                relation = "gap" if boundary_delta > 0 else "overlap"
                 errors.append(f"{prefix} has a {relation}: expected start {previous_end:.3f}, got {start:.3f}")
             beat_duration = end - start
             if beat_type == "title":
@@ -225,7 +232,10 @@ def validate_plan(plan: object) -> list[str]:
                     errors.append(f"{event_prefix}.at_seconds must increase within the beat")
                 previous_event = at_seconds
                 event_times.append((float(at_seconds), str(kind), str(beat_type)))
-                if kind == "product_action" and beat_type == "normal" and surface == "native":
+                qualifying_product_surface = surface == "native" or (
+                    has_native_exception and surface == "composite"
+                )
+                if kind == "product_action" and beat_type == "normal" and qualifying_product_surface:
                     product_action_times.append(float(at_seconds))
 
         if beat_type == "hold":
@@ -236,6 +246,16 @@ def validate_plan(plan: object) -> list[str]:
         if not audience_changed and not product_changed:
             errors.append(f"{prefix} changes neither audience knowledge nor product state")
 
+    if cumulative_gap > TOLERANCE_SECONDS:
+        errors.append(
+            f"aggregate beat gaps total {cumulative_gap:.3f}s, "
+            f"above tolerance {TOLERANCE_SECONDS:.3f}s"
+        )
+    if cumulative_overlap > TOLERANCE_SECONDS:
+        errors.append(
+            f"aggregate beat overlaps total {cumulative_overlap:.3f}s, "
+            f"above tolerance {TOLERANCE_SECONDS:.3f}s"
+        )
     if is_number(duration) and abs(previous_end - duration) > TOLERANCE_SECONDS:
         errors.append(f"beats end at {previous_end:.3f}s but duration_seconds is {duration:.3f}s")
 

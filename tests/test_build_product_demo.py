@@ -210,6 +210,59 @@ def test_declared_native_surface_exception_allows_a_lower_target() -> None:
     assert VALIDATOR.validate_plan(plan) == []
 
 
+def test_zero_native_exception_allows_composite_product_action() -> None:
+    plan = _valid_plan()
+    plan["native_surface_target_ratio"] = 0
+    plan["native_surface_exception"] = "The physical installation is the proof surface."
+    plan["beats"] = [
+        _beat(
+            "installation",
+            0,
+            4,
+            truth_mode="composite",
+            surface="composite",
+        )
+    ]
+
+    assert VALIDATOR.validate_plan(plan) == []
+
+
+def test_validator_bounds_cumulative_boundary_gaps() -> None:
+    plan = _valid_plan()
+    plan["duration_seconds"] = 0.3
+    plan["native_surface_target_ratio"] = 0.6
+    plan["beats"] = [
+        _beat(
+            "first",
+            0,
+            0.06,
+            events=[
+                {"at_seconds": 0.01, "kind": "product_action", "description": "First action."}
+            ],
+        ),
+        _beat(
+            "second",
+            0.10,
+            0.16,
+            events=[
+                {"at_seconds": 0.11, "kind": "result", "description": "Second result."}
+            ],
+        ),
+        _beat(
+            "third",
+            0.20,
+            0.30,
+            events=[
+                {"at_seconds": 0.21, "kind": "result", "description": "Third result."}
+            ],
+        ),
+    ]
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert "aggregate beat gaps total 0.080s, above tolerance 0.050s" in errors
+
+
 def test_explanatory_surface_limit_requires_a_declared_exception() -> None:
     plan = _valid_plan()
     plan["first_product_action_seconds"] = 3
