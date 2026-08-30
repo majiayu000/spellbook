@@ -63,10 +63,13 @@ Let the mechanism determine the page structure. A short concept may need one vis
 Inspect at a wide desktop viewport and a narrow mobile viewport. Confirm:
 
 - no horizontal clipping or overlapping labels;
+- every SVG label's `getBBox()` stays inside its container and `viewBox` — SVG text never reflows, and a page-level overflow check will not catch it;
+- every canvas label's intended origin and `measureText()` metrics fit within the canvas dimensions; visually inspect glyph edges when the browser cannot expose exact drawing bounds;
+- full-bleed or negative-margin blocks are re-checked at the narrow width, the classic source of silent horizontal overflow;
 - the main causal path remains visually dominant;
 - text is legible without zooming;
 - controls work by keyboard and update visible state;
 - source links point to the recorded direct URLs; and
 - the page remains understandable if animation is disabled.
 
-Use ordinary browser, syntax, accessibility, or link checks when available. Do not infer semantic correctness from a custom validator or encode explanation quality as fixed HTML selectors.
+Use ordinary browser, syntax, accessibility, or link checks when available. When no interactive renderer is at hand, `scripts/render-check.sh <page.html> [new-output-directory]` uses an installed Playwright CLI to capture the complete page at desktop and mobile widths. It creates a fresh temporary output directory by default and refuses to reuse an explicitly named directory. Playwright owns Chromium startup, including the root-container sandbox arguments needed by its bundled browser. Do not infer semantic correctness from a custom validator or encode explanation quality as fixed HTML selectors.

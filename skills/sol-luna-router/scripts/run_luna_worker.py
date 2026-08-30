@@ -260,34 +260,21 @@ def build_codex_args(
 ) -> list[str]:
     command = [codex_bin, "exec", "--json", "--strict-config"]
     fixed_worker_options = [
-        "-m",
-        MODEL,
-        "-c",
-        f'model_reasoning_effort="{REASONING_EFFORT}"',
-        "-c",
-        "features.multi_agent_v2.enabled=false",
-        "-c",
-        "agents.enabled=false",
+        "-m", MODEL,
+        "-c", f'model_reasoning_effort="{REASONING_EFFORT}"',
+        "-c", "features.apps=false",
+        "-c", "features.plugins=false",
+        "-c", "features.multi_agent_v2.enabled=false",
+        "-c", "agents.enabled=false",
     ]
     if args.command == "resume":
         return [
-            *command,
-            "resume",
-            *fixed_worker_options,
-            "-c",
-            f'sandbox_mode="{sandbox}"',
-            args.thread_id,
-            prompt,
+            *command, "resume", *fixed_worker_options, "-c",
+            f'sandbox_mode="{sandbox}"', args.thread_id, prompt,
         ]
 
     command.extend(
-        [
-            *fixed_worker_options,
-            "--sandbox",
-            sandbox,
-            "-C",
-            str(cwd),
-        ]
+        [*fixed_worker_options, "--sandbox", sandbox, "-C", str(cwd)]
     )
     if args.allow_non_git:
         command.append("--skip-git-repo-check")
@@ -614,6 +601,13 @@ def classify_failure(error: BaseException) -> str:
     )
     if any(marker in message for marker in capacity_markers):
         return "capacity_exhausted"
+    if (
+        isinstance(error, WorkerRunError) and error.code == "codex_exit"
+        and error.details.get("event_count") == 0
+        and "error loading config.toml" in message
+        and ("unknown field" in message or "unknown configuration field" in message)
+    ):
+        return "config_incompatible"
     if isinstance(error, WorkerRunError):
         return error.code
     return "os_error"
