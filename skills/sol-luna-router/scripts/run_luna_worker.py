@@ -260,34 +260,22 @@ def build_codex_args(
 ) -> list[str]:
     command = [codex_bin, "exec", "--json", "--strict-config"]
     fixed_worker_options = [
-        "-m",
-        MODEL,
-        "-c",
-        f'model_reasoning_effort="{REASONING_EFFORT}"',
-        "-c",
-        "features.multi_agent_v2.enabled=false",
-        "-c",
-        "agents.enabled=false",
+        "-m", MODEL,
+        "-c", f'model_reasoning_effort="{REASONING_EFFORT}"',
+        "-c", "features.apps=false",
+        "-c", "features.plugins=false",
+        "-c", "features.recommended_plugins=false",
+        "-c", "features.multi_agent_v2.enabled=false",
+        "-c", "agents.enabled=false",
     ]
     if args.command == "resume":
         return [
-            *command,
-            "resume",
-            *fixed_worker_options,
-            "-c",
-            f'sandbox_mode="{sandbox}"',
-            args.thread_id,
-            prompt,
+            *command, "resume", *fixed_worker_options, "-c",
+            f'sandbox_mode="{sandbox}"', args.thread_id, prompt,
         ]
 
     command.extend(
-        [
-            *fixed_worker_options,
-            "--sandbox",
-            sandbox,
-            "-C",
-            str(cwd),
-        ]
+        [*fixed_worker_options, "--sandbox", sandbox, "-C", str(cwd)]
     )
     if args.allow_non_git:
         command.append("--skip-git-repo-check")
@@ -531,7 +519,7 @@ def parse_events(stdout: str, stderr: str, returncode: int) -> dict[str, object]
         elif event_type == "error":
             warnings.append(extract_error(event))
 
-    details = {"worker_thread_id": thread_id, "event_count": len(events)}
+    details = {"worker_thread_id": thread_id, "event_count": len(events), "strict_config": True}
     usage_for_failure = failure_usage if fatal_error is not None else usage
     normalized_usage = normalize_usage(usage_for_failure)
     if normalized_usage:
@@ -614,6 +602,15 @@ def classify_failure(error: BaseException) -> str:
     )
     if any(marker in message for marker in capacity_markers):
         return "capacity_exhausted"
+    if (
+        isinstance(error, WorkerRunError) and error.code == "codex_exit"
+        and error.details.get("strict_config") is True
+        and any(
+            marker in message
+            for marker in ("unknown field", "unknown configuration field")
+        )
+    ):
+        return "config_incompatible"
     if isinstance(error, WorkerRunError):
         return error.code
     return "os_error"

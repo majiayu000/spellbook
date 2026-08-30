@@ -10,7 +10,7 @@
     "code-review": 16,
     "content": 7,
     "database": 4,
-    "debugging": 8,
+    "debugging": 9,
     "deploy": 4,
     "design-system": 2,
     "devops": 2,
@@ -139,6 +139,7 @@
       "optimize-network",
       "performance-capacity",
       "rustdesk-doctor",
+      "sol-luna-router",
       "systematic-debugging",
       "vscode-doctor"
     ],
