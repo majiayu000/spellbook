@@ -496,7 +496,7 @@ If the user asked for “review then merge,” the merge reviewer should be a se
 
 ## Run Log
 
-For non-trivial runs, validate a `run_phase: preflight` record before dispatch and append a `run_phase: final` record after collection. For GitHub queues, multi-lane runs, or any run that may push/comment/merge, append the final JSON object locally with `scripts/append_run_log.py` unless the user opts out; record `no_log_reason` when final-report-only is used. Read [run-log.md](references/run-log.md) before writing or validating records.
+For runs that will dispatch native lanes, validate a `run_phase: preflight` record before dispatch. Append a `run_phase: final` record after collection for GitHub queues, multi-lane runs, or any run that may push/comment/merge, unless the user opts out; record `no_log_reason` when final-report-only is used. Read [run-log.md](references/run-log.md) before writing or validating records.
 
 Run logs are observational. Do not record secrets, credentials, full prompts, or private user data. Prefer short summaries, file paths, PR/issue numbers, command names, failure codes, and verification outcomes.
 

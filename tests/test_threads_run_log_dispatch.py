@@ -396,6 +396,38 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertIn("queue_bounds is required", result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_rejects_multi_lane_list_without_queue_bounds(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "multi-lane-list-no-budget.jsonl"
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "lanes": [{"role": "worker"}, {"role": "reviewer"}],
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("queue_bounds is required", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_rejects_multi_lane_map_without_queue_bounds(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "multi-lane-map-no-budget.jsonl"
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "lane_map": {
+                        "lanes": [{"role": "worker"}, {"role": "reviewer"}],
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("queue_bounds is required", result.stderr)
+            self.assertFalse(log_path.exists())
+
     def test_rejects_free_text_time_budget(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "preflight-free-text.jsonl"

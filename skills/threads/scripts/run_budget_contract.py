@@ -3,19 +3,19 @@
 from __future__ import annotations
 
 import re
-from typing import Any
 
 
 ALLOWED_RUN_PHASES = {"preflight", "final"}
 CONCRETE_DURATION = re.compile(r"^[1-9][0-9]*(?:s|m|h)$")
 
 
-def _positive_int(value: Any, field: str) -> None:
+def _positive_int(value: object, field: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         raise ValueError(f"{field} must be a positive integer")
+    return value
 
 
-def _planned_threads(record: dict[str, Any]) -> list[Any]:
+def _planned_threads(record: dict[str, object]) -> list[object]:
     gate = record.get("thread_dispatch_gate")
     if not isinstance(gate, dict):
         return []
@@ -23,16 +23,23 @@ def _planned_threads(record: dict[str, Any]) -> list[Any]:
     return planned if isinstance(planned, list) else []
 
 
-def _multi_lane(record: dict[str, Any]) -> bool:
+def _multi_lane(record: dict[str, object]) -> bool:
     lanes_total = record.get("lanes_total")
+    lanes = record.get("lanes")
+    lane_map = record.get("lane_map")
+    mapped_lanes = lane_map.get("lanes") if isinstance(lane_map, dict) else None
     return (
         isinstance(lanes_total, int)
         and not isinstance(lanes_total, bool)
         and lanes_total > 1
+    ) or (
+        isinstance(lanes, list) and len(lanes) > 1
+    ) or (
+        isinstance(mapped_lanes, list) and len(mapped_lanes) > 1
     ) or len(_planned_threads(record)) > 1
 
 
-def _validate_bounds(bounds: Any, field: str) -> None:
+def _validate_bounds(bounds: object, field: str) -> None:
     if not isinstance(bounds, dict):
         raise ValueError(f"{field} must be an object")
     for name in (
@@ -45,10 +52,12 @@ def _validate_bounds(bounds: Any, field: str) -> None:
         if name not in bounds:
             raise ValueError(f"{field}.{name} is required")
 
-    _positive_int(bounds["max_items"], f"{field}.max_items")
+    max_items = _positive_int(bounds["max_items"], f"{field}.max_items")
     _positive_int(bounds["max_model_calls"], f"{field}.max_model_calls")
-    _positive_int(bounds["checkpoint_every_items"], f"{field}.checkpoint_every_items")
-    if bounds["checkpoint_every_items"] > bounds["max_items"]:
+    checkpoint = _positive_int(
+        bounds["checkpoint_every_items"], f"{field}.checkpoint_every_items"
+    )
+    if checkpoint > max_items:
         raise ValueError(f"{field}.checkpoint_every_items must not exceed {field}.max_items")
     if not isinstance(bounds["time_budget"], str) or not CONCRETE_DURATION.fullmatch(
         bounds["time_budget"].strip()
@@ -58,7 +67,7 @@ def _validate_bounds(bounds: Any, field: str) -> None:
         raise ValueError(f"{field}.queue_tranche must be a non-empty string")
 
 
-def validate_run_budget(record: dict[str, Any]) -> None:
+def validate_run_budget(record: dict[str, object]) -> None:
     phase = record.get("run_phase")
     if phase not in ALLOWED_RUN_PHASES:
         raise ValueError(f"unknown run_phase: {phase}")
@@ -86,5 +95,5 @@ def validate_run_budget(record: dict[str, Any]) -> None:
             if not isinstance(lane, dict) or not (lane.get("id") or lane.get("lane_id")):
                 raise ValueError("preflight planned_native_threads entries require id")
         bounds = top_level if top_level is not None else nested
-        if bounds["max_model_calls"] < len(planned):
+        if _positive_int(bounds["max_model_calls"], "queue_bounds.max_model_calls") < len(planned):
             raise ValueError("queue_bounds.max_model_calls cannot be lower than planned lanes")
