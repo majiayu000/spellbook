@@ -45,7 +45,7 @@ Claude will activate the Codex skill and:
   command -v jq >/dev/null 2>&1 || exit 1
   command -v perl >/dev/null 2>&1 || exit 1
   codex_artifacts=$(mktemp -d) || exit 1
-  if perl -e 'alarm shift; exec @ARGV' 1800 codex exec \
+  if perl -e 'alarm shift; exec @ARGV; exit 127' 1800 codex exec \
     --config model_reasoning_effort="high" \
     --sandbox read-only \
     --json \

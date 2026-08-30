@@ -35,7 +35,7 @@ Do not build Codex commands with `echo "user prompt" | ...`; user text can conta
 (
 command -v perl >/dev/null 2>&1 || exit 1
 codex_artifacts=$(mktemp -d) || exit 1
-if perl -e 'alarm shift; exec @ARGV' 1800 codex exec resume --last \
+if perl -e 'alarm shift; exec @ARGV; exit 127' 1800 codex exec resume --last \
   2>"$codex_artifacts/stderr.log" <<'EOF'
 Your follow-up prompt goes here.
 EOF
