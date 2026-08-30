@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 
 
@@ -65,6 +66,9 @@ def validate_semantic_array_limits(record: dict[str, object], limit: int) -> Non
         )
     if len(_spawned_threads(record)) > limit:
         raise ValueError(f"native_thread_evidence.spawned_agents exceeds {limit} items")
+    queue_ledger = record.get("queue_ledger")
+    if isinstance(queue_ledger, list) and len(queue_ledger) > limit:
+        raise ValueError(f"queue_ledger exceeds {limit} items")
 
 
 def _validate_bounds(bounds: object, field: str) -> None:
@@ -93,8 +97,9 @@ def _validate_bounds(bounds: object, field: str) -> None:
         isinstance(elapsed_seconds, bool)
         or not isinstance(elapsed_seconds, (int, float))
         or elapsed_seconds < 0
+        or (isinstance(elapsed_seconds, float) and not math.isfinite(elapsed_seconds))
     ):
-        raise ValueError(f"{field}.elapsed_seconds must be a non-negative number")
+        raise ValueError(f"{field}.elapsed_seconds must be a finite non-negative number")
     if not isinstance(bounds["queue_tranche"], str) or not bounds["queue_tranche"].strip():
         raise ValueError(f"{field}.queue_tranche must be a non-empty string")
     if bounds["queue_tranche"].strip().lower() in {
@@ -142,9 +147,12 @@ def validate_run_budget(record: dict[str, object]) -> None:
                 "queue_bounds.max_model_calls cannot be lower than spawned agents"
             )
         queue_ledger = record.get("queue_ledger")
-        items_closed = queue_ledger.get("items_closed", 0) if isinstance(queue_ledger, dict) else 0
-        items_deferred = queue_ledger.get("items_deferred", 0) if isinstance(queue_ledger, dict) else 0
-        processed_items = items_closed + items_deferred
+        if isinstance(queue_ledger, list):
+            processed_items = len(queue_ledger)
+        else:
+            items_closed = queue_ledger.get("items_closed", 0) if isinstance(queue_ledger, dict) else 0
+            items_deferred = queue_ledger.get("items_deferred", 0) if isinstance(queue_ledger, dict) else 0
+            processed_items = items_closed + items_deferred
         if processed_items > _positive_int(bounds["max_items"], "queue_bounds.max_items"):
             raise ValueError(
                 "queue_bounds.max_items cannot be lower than processed queue_ledger items"

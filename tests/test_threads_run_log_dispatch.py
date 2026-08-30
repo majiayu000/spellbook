@@ -504,6 +504,44 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertIn("elapsed_seconds exceeds time_budget", result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_rejects_list_queue_ledger_above_item_ceiling(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "list-ledger-budget.jsonl"
+            bounds = self.queue_bounds()
+            bounds["max_items"] = 1
+            bounds["checkpoint_every_items"] = 1
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "lanes_total": 2,
+                    "queue_bounds": bounds,
+                    "queue_ledger": [{"id": index} for index in range(100)],
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("max_items cannot be lower than processed queue_ledger items", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_rejects_non_finite_elapsed_seconds(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "non-finite-elapsed.jsonl"
+            bounds = self.queue_bounds()
+            bounds["elapsed_seconds"] = float("nan")
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "lanes_total": 2,
+                    "queue_bounds": bounds,
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("elapsed_seconds must be a finite non-negative number", result.stderr)
+            self.assertFalse(log_path.exists())
+
     def test_rejects_spawned_agents_truncated_before_budget_validation(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "too-many-spawned-agents.jsonl"
