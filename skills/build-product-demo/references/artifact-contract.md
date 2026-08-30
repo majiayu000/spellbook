@@ -26,7 +26,8 @@ Do not create empty placeholder directories.
 
 Record:
 
-- exact product repository, revision, runtime, and date;
+- public or sanitized product repository identity, exact revision, runtime, and
+  date; keep the operational checkout path outside the production package;
 - audience, distribution channel, duration, aspect ratio, and language;
 - audience doubt and proof proposition;
 - opening, turning, and landing state;
@@ -58,7 +59,7 @@ Use this shape:
   "schema_version": 2,
   "product": {
     "name": "Example",
-    "repository": "/absolute/or/public/repository/identity",
+    "repository": "public URL or sanitized repository identity",
     "revision": "exact revision"
   },
   "audience": "specific audience",

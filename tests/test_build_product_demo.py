@@ -253,6 +253,18 @@ def test_title_beat_cannot_claim_the_native_surface() -> None:
     assert "beats[0].surface must be 'title' for a title beat" in errors
 
 
+def test_title_truth_mode_requires_a_title_beat_and_surface() -> None:
+    plan = _valid_plan()
+    beat = _beat("fake-native-proof", 0, 4, truth_mode="title", surface="native")
+    beat["evidence"] = []
+    plan["beats"] = [beat]
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert "beats[0].type must be 'title' when truth_mode is 'title'" in errors
+    assert "beats[0].surface must be 'title' when truth_mode is 'title'" in errors
+
+
 def test_plan_validation_report_uses_plan_basename(tmp_path: Path) -> None:
     plan_path = tmp_path / "client-name" / "beat-plan.json"
     plan_path.parent.mkdir()
