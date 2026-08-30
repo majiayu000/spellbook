@@ -176,11 +176,13 @@ python3 <skill-dir>/scripts/probe_demo_media.py <final-video> \
   --expect-width <width> --expect-height <height> --expect-fps <fps> \
   --expect-duration <duration_seconds> --expect-container <container> \
   --expect-video-codec <video_codec> --expect-audio-codec <audio_codec> \
+  --duration-tolerance <duration_tolerance_seconds> \
   --require-audio
 ```
 
-The duration check allows 0.25 seconds of encoding variance by default. Change
-`--duration-tolerance` only when the plan records why the delivery needs it.
+Set `delivery.duration_tolerance_seconds` to `0.25` normally. A larger encoding
+variance requires `delivery.duration_tolerance_reason`; pass the same declared
+tolerance to the probe. The pacing analyzer derives it from the plan.
 
 Also inspect the full video or a contact sheet for frozen frames, clipped UI,
 unreadable type, secret leakage, missing chapters, broken focus, abrupt audio,

@@ -76,7 +76,8 @@ Use this shape:
     "fps": 30,
     "container": "mp4",
     "video_codec": "h264",
-    "audio_codec": "aac"
+    "audio_codec": "aac",
+    "duration_tolerance_seconds": 0.25
   },
   "truth_boundary": {
     "live": ["real product paths shown"],
@@ -128,6 +129,9 @@ Required top-level fields:
 - `delivery.fps`: positive number;
 - `delivery.container`, `delivery.video_codec`, `delivery.audio_codec`: non-empty
   strings matching the target channel's delivery requirements;
+- `delivery.duration_tolerance_seconds`: positive number, normally `0.25`;
+- `delivery.duration_tolerance_reason`: required non-empty string when the
+  tolerance exceeds `0.25`;
 - `truth_boundary.live`, `deterministic`, `composite`, `excluded`: arrays;
 - `beats`: non-empty ordered array.
 

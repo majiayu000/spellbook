@@ -93,6 +93,7 @@ def _valid_plan() -> dict[str, object]:
             "container": "mp4",
             "video_codec": "h264",
             "audio_codec": "aac",
+            "duration_tolerance_seconds": 0.25,
         },
         "truth_boundary": {
             "live": ["real product path"],
@@ -154,6 +155,43 @@ def test_validator_requires_delivery_codecs(field: str) -> None:
     errors = VALIDATOR.validate_plan(plan)
 
     assert f"delivery.{field} must be a non-empty string" in errors
+
+
+def test_validator_requires_reason_for_duration_tolerance_override() -> None:
+    plan = _valid_plan()
+    plan["delivery"]["duration_tolerance_seconds"] = 0.5  # type: ignore[index]
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert "delivery.duration_tolerance_reason must be a non-empty string" in errors
+
+
+@pytest.mark.parametrize("truth_mode", ["live", "deterministic", "composite"])
+def test_validator_requires_disclosure_for_used_truth_mode(truth_mode: str) -> None:
+    plan = _valid_plan()
+    plan["truth_boundary"][truth_mode] = []  # type: ignore[index]
+    plan["beats"] = [
+        _beat(
+            "proof",
+            0,
+            4,
+            truth_mode=truth_mode,
+            surface="native" if truth_mode != "composite" else "composite",
+        )
+    ]
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert f"truth_boundary.{truth_mode} must disclose the used truth mode" in errors
+
+
+def test_validator_rejects_unbounded_integer_without_traceback() -> None:
+    plan = _valid_plan()
+    plan["duration_seconds"] = 10**1000
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert "duration_seconds must be a positive number" in errors
 
 
 def test_validator_rejects_event_at_final_media_endpoint() -> None:
@@ -220,6 +258,7 @@ def test_title_or_composite_events_do_not_satisfy_first_native_product_action() 
 
 def test_declared_native_surface_exception_allows_a_lower_target() -> None:
     plan = _valid_plan()
+    plan["truth_boundary"]["composite"] = ["physical installation composite"]  # type: ignore[index]
     plan["native_surface_target_ratio"] = 0.25
     plan["native_surface_exception"] = (
         "The physical installation is the proof surface; native UI appears only for setup."
@@ -247,6 +286,7 @@ def test_declared_native_surface_exception_allows_a_lower_target() -> None:
 
 def test_zero_native_exception_allows_composite_product_action() -> None:
     plan = _valid_plan()
+    plan["truth_boundary"]["composite"] = ["physical installation composite"]  # type: ignore[index]
     plan["native_surface_target_ratio"] = 0
     plan["native_surface_exception"] = "The physical installation is the proof surface."
     plan["beats"] = [
@@ -895,6 +935,7 @@ def _run_pacing_with_freezes(
         json.dumps(
             {
                 "duration_seconds": 60,
+                "delivery": {"duration_tolerance_seconds": 0.25},
                 "beats": [
                     {
                         "type": "hold",
@@ -996,6 +1037,7 @@ def test_hold_plan_duration_must_match_media(tmp_path: Path) -> None:
         json.dumps(
             {
                 "duration_seconds": 100,
+                "delivery": {"duration_tolerance_seconds": 0.25},
                 "beats": [
                     {
                         "type": "hold",

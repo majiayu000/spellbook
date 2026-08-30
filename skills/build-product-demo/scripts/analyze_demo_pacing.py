@@ -82,11 +82,23 @@ def load_hold_intervals(
     if not isinstance(plan, dict) or not isinstance(plan.get("beats"), list):
         raise RuntimeError("beat plan must contain a beats array")
     if media_duration is not None:
+        delivery = plan.get("delivery")
+        duration_tolerance = (
+            delivery.get("duration_tolerance_seconds")
+            if isinstance(delivery, dict)
+            else None
+        )
+        if (
+            isinstance(duration_tolerance, bool)
+            or not isinstance(duration_tolerance, (int, float))
+            or duration_tolerance <= 0
+        ):
+            raise RuntimeError("beat plan must declare a positive duration tolerance")
         plan_duration = plan.get("duration_seconds")
         if (
             isinstance(plan_duration, bool)
             or not isinstance(plan_duration, (int, float))
-            or abs(float(plan_duration) - media_duration) > 0.25
+            or abs(float(plan_duration) - media_duration) > duration_tolerance
         ):
             raise RuntimeError("beat plan duration does not match media duration")
     intervals: list[tuple[float, float]] = []

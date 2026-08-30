@@ -35,7 +35,11 @@ def parse_cli_args() -> argparse.Namespace:
 
 
 def is_number(value: object) -> TypeGuard[int | float]:
-    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, int):
+        return abs(value) <= sys.float_info.max
+    return isinstance(value, float) and math.isfinite(value)
 
 
 def require_text(value: object, path: str, errors: list[str]) -> None:
@@ -124,6 +128,16 @@ def validate_plan(plan: object) -> list[str]:
         require_positive_number(delivery.get("fps"), "delivery.fps", errors)
         for field in ("container", "video_codec", "audio_codec"):
             require_text(delivery.get(field), f"delivery.{field}", errors)
+        duration_tolerance = delivery.get("duration_tolerance_seconds")
+        require_positive_number(
+            duration_tolerance, "delivery.duration_tolerance_seconds", errors
+        )
+        if is_number(duration_tolerance) and duration_tolerance > 0.25:
+            require_text(
+                delivery.get("duration_tolerance_reason"),
+                "delivery.duration_tolerance_reason",
+                errors,
+            )
 
     truth_boundary = plan.get("truth_boundary")
     if not isinstance(truth_boundary, dict):
@@ -148,6 +162,7 @@ def validate_plan(plan: object) -> list[str]:
     event_times: list[tuple[float, str, str]] = []
     product_action_times: list[float] = []
     hold_intervals: list[tuple[float, float]] = []
+    used_truth_modes: set[str] = set()
 
     for index, beat in enumerate(beats):
         prefix = f"beats[{index}]"
@@ -167,6 +182,12 @@ def validate_plan(plan: object) -> list[str]:
 
         truth_mode = beat.get("truth_mode")
         require_enum(truth_mode, TRUTH_MODES, f"{prefix}.truth_mode", errors)
+        if isinstance(truth_mode, str) and truth_mode in {
+            "live",
+            "deterministic",
+            "composite",
+        }:
+            used_truth_modes.add(truth_mode)
 
         surface = beat.get("surface")
         require_enum(surface, SURFACES, f"{prefix}.surface", errors)
@@ -258,6 +279,13 @@ def validate_plan(plan: object) -> list[str]:
         product_changed = beat.get("entry_state") != beat.get("exit_state")
         if not audience_changed and not product_changed:
             errors.append(f"{prefix} changes neither audience knowledge nor product state")
+
+    if isinstance(truth_boundary, dict):
+        for truth_mode in sorted(used_truth_modes):
+            if not truth_boundary.get(truth_mode):
+                errors.append(
+                    f"truth_boundary.{truth_mode} must disclose the used truth mode"
+                )
 
     if is_number(duration):
         terminal_delta = duration - previous_end
