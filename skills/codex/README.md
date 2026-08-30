@@ -43,9 +43,9 @@ Claude will activate the Codex skill and:
 ```bash
 (
   command -v jq >/dev/null 2>&1 || exit 1
-  command -v perl >/dev/null 2>&1 || exit 1
+  codex_skill_dir=${CODEX_SKILL_DIR:?set CODEX_SKILL_DIR to the installed codex skill}
   codex_artifacts=$(mktemp -d) || exit 1
-  if perl -e 'alarm shift; exec @ARGV; exit 127' 1800 codex exec \
+  if python3 "$codex_skill_dir/scripts/run_with_timeout.py" 1800 codex exec \
     --config model_reasoning_effort="high" \
     --sandbox read-only \
     --json \
@@ -57,14 +57,21 @@ Claude will activate the Codex skill and:
     codex_status=$?
   fi
 
+  extract_status=0
   jq -sr \
     '[.[] | select(.type == "item.completed" and .item.type == "agent_message") | .item.text] | last // "" | .[0:4000]' \
-    "$codex_artifacts/events.jsonl" || exit $?
+    "$codex_artifacts/events.jsonl" || extract_status=$?
   jq -cs \
     '[.[] | select(.type == "turn.completed") | .usage] | last // {}' \
-    "$codex_artifacts/events.jsonl" || exit $?
-  tail -n 20 -- "$codex_artifacts/stderr.log" || exit $?
-  exit "$codex_status"
+    "$codex_artifacts/events.jsonl" || extract_status=$?
+  tail -n 20 -- "$codex_artifacts/stderr.log" || extract_status=$?
+  if [ "$codex_status" -eq 0 ] && [ "$extract_status" -eq 0 ]; then
+    rm -R -- "$codex_artifacts" || exit $?
+  else
+    printf 'Codex artifacts retained: %s\n' "$codex_artifacts" >&2
+  fi
+  if [ "$codex_status" -ne 0 ]; then exit "$codex_status"; fi
+  exit "$extract_status"
 )
 ```
 

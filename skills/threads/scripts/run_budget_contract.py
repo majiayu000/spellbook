@@ -29,23 +29,35 @@ def _planned_threads(record: dict[str, object]) -> list[object]:
     gate = record.get("thread_dispatch_gate")
     if not isinstance(gate, dict):
         return []
-    planned = gate.get("planned_native_threads")
-    return planned if isinstance(planned, list) else []
+    if "planned_native_threads" not in gate:
+        return []
+    planned = gate["planned_native_threads"]
+    if not isinstance(planned, list):
+        raise ValueError("thread_dispatch_gate.planned_native_threads must be a list")
+    return planned
 
 
 def _spawned_threads(record: dict[str, object]) -> list[object]:
-    evidence = record.get("native_thread_evidence")
-    if not isinstance(evidence, dict):
-        gate = record.get("thread_dispatch_gate")
-        evidence = gate.get("native_thread_evidence") if isinstance(gate, dict) else None
-    if not isinstance(evidence, dict):
-        return []
-    if "spawned_agents" not in evidence:
-        return []
-    spawned = evidence["spawned_agents"]
-    if not isinstance(spawned, list):
-        raise ValueError("native_thread_evidence.spawned_agents must be a list")
-    return spawned
+    gate = record.get("thread_dispatch_gate")
+    containers = [
+        record.get("native_thread_evidence"),
+        gate.get("native_thread_evidence") if isinstance(gate, dict) else None,
+    ]
+    spawned_values: list[list[object]] = []
+    for evidence in containers:
+        if evidence is None:
+            continue
+        if not isinstance(evidence, dict):
+            raise ValueError("native_thread_evidence must be an object")
+        if "spawned_agents" not in evidence:
+            continue
+        spawned = evidence["spawned_agents"]
+        if not isinstance(spawned, list):
+            raise ValueError("native_thread_evidence.spawned_agents must be a list")
+        spawned_values.append(spawned)
+    if len(spawned_values) == 2 and spawned_values[0] != spawned_values[1]:
+        raise ValueError("conflicting spawned_agents evidence containers")
+    return spawned_values[0] if spawned_values else []
 
 
 def _multi_lane(record: dict[str, object]) -> bool:

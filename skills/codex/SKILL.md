@@ -33,9 +33,10 @@ Do not build Codex commands with `echo "user prompt" | ...`; user text can conta
 
 ```bash
 (
-command -v perl >/dev/null 2>&1 || exit 1
+codex_skill_dir=${CODEX_SKILL_DIR:?set CODEX_SKILL_DIR to the installed codex skill}
 codex_artifacts=$(mktemp -d) || exit 1
-if perl -e 'alarm shift; exec @ARGV; exit 127' 1800 codex exec resume --last \
+if python3 "$codex_skill_dir/scripts/run_with_timeout.py" 1800 \
+  codex exec resume --last \
   2>"$codex_artifacts/stderr.log" <<'EOF'
 Your follow-up prompt goes here.
 EOF
@@ -45,7 +46,14 @@ else
   codex_status=$?
 fi
 tail -n 20 -- "$codex_artifacts/stderr.log"
-exit "$codex_status"
+tail_status=$?
+if [ "$codex_status" -eq 0 ] && [ "$tail_status" -eq 0 ]; then
+  rm -R -- "$codex_artifacts" || exit $?
+else
+  printf 'Codex artifacts retained: %s\n' "$codex_artifacts" >&2
+fi
+if [ "$codex_status" -ne 0 ]; then exit "$codex_status"; fi
+exit "$tail_status"
 )
 ```
 

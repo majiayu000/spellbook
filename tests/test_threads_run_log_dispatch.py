@@ -702,6 +702,62 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("native_thread_evidence.spawned_agents must be a list", result.stderr)
 
+    def test_validates_nested_spawned_evidence_when_top_level_is_empty(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "nested-spawned-overflow.jsonl"
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "native_thread_evidence": {},
+                    "thread_dispatch_gate": {
+                        "native_thread_evidence": {
+                            "spawned_agents": [
+                                {"lane_id": f"lane-{index}"} for index in range(101)
+                            ]
+                        }
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("spawned_agents exceeds 100 items", result.stderr)
+
+    def test_rejects_conflicting_spawned_evidence_containers(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "conflicting-spawned-evidence.jsonl"
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "native_thread_evidence": {"spawned_agents": []},
+                    "thread_dispatch_gate": {
+                        "native_thread_evidence": {
+                            "spawned_agents": [{"lane_id": "review"}]
+                        }
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("conflicting spawned_agents evidence", result.stderr)
+
+    def test_rejects_non_array_final_dispatch_plan(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "malformed-final-plan.jsonl"
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "thread_dispatch_gate": {
+                        "planned_native_threads": {"id": "review"},
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("planned_native_threads must be a list", result.stderr)
+
     def test_preflight_requires_intent_contract(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "missing-intent-preflight.jsonl"
