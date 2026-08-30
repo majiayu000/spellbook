@@ -122,7 +122,8 @@ def validate_plan(plan: object) -> list[str]:
         for field in ("width", "height"):
             require_positive_integer(delivery.get(field), f"delivery.{field}", errors)
         require_positive_number(delivery.get("fps"), "delivery.fps", errors)
-        require_text(delivery.get("container"), "delivery.container", errors)
+        for field in ("container", "video_codec", "audio_codec"):
+            require_text(delivery.get(field), f"delivery.{field}", errors)
 
     truth_boundary = plan.get("truth_boundary")
     if not isinstance(truth_boundary, dict):

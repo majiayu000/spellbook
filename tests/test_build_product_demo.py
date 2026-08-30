@@ -91,6 +91,8 @@ def _valid_plan() -> dict[str, object]:
             "height": 1080,
             "fps": 29.97,
             "container": "mp4",
+            "video_codec": "h264",
+            "audio_codec": "aac",
         },
         "truth_boundary": {
             "live": ["real product path"],
@@ -142,6 +144,16 @@ def test_validator_requires_integer_dimensions(field: str, value: float) -> None
     errors = VALIDATOR.validate_plan(plan)
 
     assert f"delivery.{field} must be a positive integer" in errors
+
+
+@pytest.mark.parametrize("field", ["video_codec", "audio_codec"])
+def test_validator_requires_delivery_codecs(field: str) -> None:
+    plan = _valid_plan()
+    del plan["delivery"][field]  # type: ignore[index]
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert f"delivery.{field} must be a non-empty string" in errors
 
 
 def test_title_or_composite_events_do_not_satisfy_first_native_product_action() -> None:
@@ -535,6 +547,10 @@ def test_probe_parser_accepts_all_plan_delivery_constraints(monkeypatch: pytest.
             "60",
             "--expect-container",
             "mp4",
+            "--expect-video-codec",
+            "h264",
+            "--expect-audio-codec",
+            "aac",
         ],
     )
 
@@ -542,6 +558,8 @@ def test_probe_parser_accepts_all_plan_delivery_constraints(monkeypatch: pytest.
 
     assert args.expect_duration == 60
     assert args.expect_container == "mp4"
+    assert args.expect_video_codec == "h264"
+    assert args.expect_audio_codec == "aac"
 
 
 def test_pacing_report_uses_media_basename(tmp_path: Path) -> None:

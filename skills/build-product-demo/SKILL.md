@@ -175,6 +175,7 @@ the final video with:
 python3 <skill-dir>/scripts/probe_demo_media.py <final-video> \
   --expect-width <width> --expect-height <height> --expect-fps <fps> \
   --expect-duration <duration_seconds> --expect-container <container> \
+  --expect-video-codec <video_codec> --expect-audio-codec <audio_codec> \
   --require-audio
 ```
 

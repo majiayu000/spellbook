@@ -74,7 +74,9 @@ Use this shape:
     "width": 1440,
     "height": 900,
     "fps": 30,
-    "container": "mp4"
+    "container": "mp4",
+    "video_codec": "h264",
+    "audio_codec": "aac"
   },
   "truth_boundary": {
     "live": ["real product paths shown"],
@@ -124,7 +126,8 @@ Required top-level fields:
   the documented lower-target exception;
 - `delivery.width`, `delivery.height`: positive integers;
 - `delivery.fps`: positive number;
-- `delivery.container`: non-empty string;
+- `delivery.container`, `delivery.video_codec`, `delivery.audio_codec`: non-empty
+  strings matching the target channel's delivery requirements;
 - `truth_boundary.live`, `deterministic`, `composite`, `excluded`: arrays;
 - `beats`: non-empty ordered array.
 
