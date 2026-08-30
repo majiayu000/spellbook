@@ -21,20 +21,33 @@ def positive_seconds(value: str) -> float:
     return seconds
 
 
-def process_group_has_live_members(group_id: int) -> bool:
-    result = subprocess.run(
-        ["ps", "-axo", "pgid=,stat="],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+def ps_reports_live_members(group_id: int) -> bool:
+    try:
+        result = subprocess.run(
+            ["ps", "-axo", "pgid=,stat="],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        return True
     if result.returncode != 0:
-        raise RuntimeError(f"cannot inspect process group {group_id}: {result.stderr.strip()}")
+        return True
     for line in result.stdout.splitlines():
         fields = line.split()
         if len(fields) >= 2 and fields[0] == str(group_id) and not fields[1].startswith("Z"):
             return True
     return False
+
+
+def process_group_has_live_members(group_id: int) -> bool:
+    try:
+        os.killpg(group_id, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return ps_reports_live_members(group_id)
+    return ps_reports_live_members(group_id)
 
 
 def stop_process_group(process: subprocess.Popen[bytes]) -> None:
@@ -85,7 +98,7 @@ def main() -> int:
             if remaining_seconds <= 0:
                 raise subprocess.TimeoutExpired(args.command, args.timeout_seconds)
             time.sleep(min(0.05, remaining_seconds))
-        return return_code
+        return 128 - return_code if return_code < 0 else return_code
     except subprocess.TimeoutExpired:
         stop_process_group(process)
         print(

@@ -22,6 +22,7 @@ def test_process_group_inspection_ignores_zombies(monkeypatch: pytest.MonkeyPatc
     def zombie_processes(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(args=[], returncode=0, stdout="123 Z\n123 Z+\n", stderr="")
 
+    monkeypatch.setattr(os, "killpg", lambda group_id, sent_signal: None)
     monkeypatch.setattr(subprocess, "run", zombie_processes)
     assert not has_live_members(123)
 
@@ -35,7 +36,22 @@ def test_process_group_inspection_finds_non_zombie_member(
     def live_processes(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(args=[], returncode=0, stdout="123 Z\n123 S\n", stderr="")
 
+    monkeypatch.setattr(os, "killpg", lambda group_id, sent_signal: None)
     monkeypatch.setattr(subprocess, "run", live_processes)
+    assert has_live_members(123)
+
+
+def test_process_group_inspection_is_conservative_without_ps(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    timeout_module = runpy.run_path(str(SUPERVISOR))
+    has_live_members = timeout_module["process_group_has_live_members"]
+
+    def missing_ps(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise FileNotFoundError("ps")
+
+    monkeypatch.setattr(os, "killpg", lambda group_id, sent_signal: None)
+    monkeypatch.setattr(subprocess, "run", missing_ps)
     assert has_live_members(123)
 
 
@@ -48,6 +64,24 @@ def test_supervisor_returns_child_status() -> None:
     )
 
     assert result.returncode == 7
+
+
+def test_supervisor_translates_child_signal_to_shell_status() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SUPERVISOR),
+            "5",
+            sys.executable,
+            "-c",
+            "import os, signal; os.kill(os.getpid(), signal.SIGTERM)",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 128 + signal.SIGTERM
 
 
 def test_supervisor_reports_missing_command() -> None:

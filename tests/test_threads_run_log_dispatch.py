@@ -407,7 +407,7 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
     def test_rejects_preflight_usage_above_declared_ceilings(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "exhausted-preflight.jsonl"
-            bounds = self.queue_bounds()
+            bounds = self.preflight_bounds()
             bounds.update(
                 {
                     "max_items": 1,
@@ -833,6 +833,33 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("conflicting queue_bounds", result.stderr)
 
+    def test_rejects_missing_planning_field_before_comparing_duplicate_bounds(self):
+        with TemporaryDirectory() as temp_dir:
+            top_level_bounds = self.preflight_bounds()
+            del top_level_bounds["planned_items"]
+            nested_bounds = self.preflight_bounds()
+            for field in ("elapsed_seconds", "items_processed", "model_calls_used"):
+                del nested_bounds[field]
+            intent = self.intent_contract()
+            intent["queue_bounds"] = nested_bounds
+            result = self.run_script(
+                {
+                    "run_phase": "preflight",
+                    "skill": "threads",
+                    "intent_contract": intent,
+                    "thread_dispatch_gate": {
+                        "planned_native_threads": [{"id": "calibration"}],
+                    },
+                    "queue_bounds": top_level_bounds,
+                },
+                Path(temp_dir) / "missing-plan-field.jsonl",
+                "--validate-only",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("queue_bounds.planned_items is required", result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+
     def test_rejects_action_in_both_authorization_lists(self):
         with TemporaryDirectory() as temp_dir:
             intent = self.intent_contract()
@@ -1176,7 +1203,7 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
                     "thread_dispatch_gate": {
                         "planned_native_threads": [{"id": 123}],
                     },
-                    "queue_bounds": self.queue_bounds(),
+                    "queue_bounds": self.preflight_bounds(),
                 },
                 log_path,
                 "--validate-only",
@@ -1219,7 +1246,7 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
                             {"id": "review"},
                         ],
                     },
-                    "queue_bounds": self.queue_bounds(),
+                    "queue_bounds": self.preflight_bounds(),
                 },
                 log_path,
                 "--validate-only",

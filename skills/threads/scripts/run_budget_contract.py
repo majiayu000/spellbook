@@ -16,11 +16,11 @@ BOUND_CONTRACT_FIELDS = {
     "checkpoint_every_items",
     "queue_tranche",
 }
-PREFLIGHT_PLANNING_FIELDS = {
+PREFLIGHT_PLANNING_FIELDS = (
     "planned_items",
     "planned_model_calls",
     "planned_seconds",
-}
+)
 
 
 def _positive_int(value: object, field: str) -> int:
@@ -115,7 +115,7 @@ def validate_semantic_array_limits(record: dict[str, object], limit: int) -> Non
                 raise ValueError(f"intent_contract.{field} exceeds {limit} items")
 
 
-def _validate_bounds(bounds: object, field: str) -> None:
+def _validate_bounds(bounds: object, field: str, *, require_planning: bool = False) -> None:
     if not isinstance(bounds, dict):
         raise ValueError(f"{field} must be an object")
     for name in (
@@ -127,7 +127,6 @@ def _validate_bounds(bounds: object, field: str) -> None:
     ):
         if name not in bounds:
             raise ValueError(f"{field}.{name} is required")
-
     max_items = _positive_int(bounds["max_items"], f"{field}.max_items")
     _positive_int(bounds["max_model_calls"], f"{field}.max_model_calls")
     checkpoint = _positive_int(
@@ -169,6 +168,10 @@ def _validate_bounds(bounds: object, field: str) -> None:
         "not pre-budgeted",
     }:
         raise ValueError(f"{field}.queue_tranche must describe a bounded tranche")
+    if require_planning:
+        for name in PREFLIGHT_PLANNING_FIELDS:
+            if name not in bounds:
+                raise ValueError(f"{field}.{name} is required for preflight")
 
 
 def validate_run_budget(record: dict[str, object]) -> None:
@@ -206,9 +209,15 @@ def validate_run_budget(record: dict[str, object]) -> None:
                 raise ValueError("intent_contract authorization lists must be disjoint")
     nested = intent.get("queue_bounds") if isinstance(intent, dict) else None
     if top_level is not None:
-        _validate_bounds(top_level, "queue_bounds")
+        _validate_bounds(
+            top_level, "queue_bounds", require_planning=phase == "preflight"
+        )
     if nested is not None:
-        _validate_bounds(nested, "intent_contract.queue_bounds")
+        _validate_bounds(
+            nested,
+            "intent_contract.queue_bounds",
+            require_planning=phase == "preflight",
+        )
         if FINAL_USAGE_FIELDS.intersection(nested):
             raise ValueError(
                 "intent_contract.queue_bounds must not contain final usage fields"
