@@ -1,6 +1,6 @@
 ---
 name: sol-luna-router
-description: Route coding or repository-review work so GPT-5.6 Sol remains the commander and verifier while a separate GPT-5.6 Luna Max Codex CLI session performs bounded implementation or read-only investigation. Use when the user asks for Sol to direct, plan, supervise, or review Luna work; when native Sol-to-Luna spawning is unavailable or incompatible; or when a task needs auditable agent ownership, budgeted verification, live progress, timeout recovery, usage telemetry, and a Sol review loop.
+description: Route substantial coding or repository-review work through a two-stage Sol commander/verifier and separate Luna Max CLI worker. Use when the user explicitly asks Sol to direct or supervise Luna, explicitly requests this router, needs an isolated auditable Luna-owned implementation with a Sol review loop, or asks to diagnose or measure the router itself. Do not use merely because a task involves coding, verification, progress reporting, or token saving. For small or straightforward tasks, keep work in Sol unless the user explicitly requests Luna; router configuration, usage, and efficiency questions should use read-only inspection without launching a worker.
 ---
 
 # Sol-Luna Router
@@ -11,6 +11,11 @@ implementation or read-only investigation. Use the bundled runner instead of nat
 
 ## Boundaries
 
+- Distinguish Skill activation from worker dispatch: inspect router configuration,
+  usage, telemetry, and efficiency questions read-only without launching Luna;
+  keep small or straightforward tasks Sol-only unless the user explicitly
+  requests Luna; launch Luna only for explicit delegation or when isolated,
+  auditable two-stage execution is substantively needed.
 - Treat the current Sol thread as commander and reviewer. Do not edit target product files from
   this thread.
 - Delegate concrete implementation, fixes, worker-owned tests, or bounded read-only investigation
@@ -20,6 +25,9 @@ implementation or read-only investigation. Use the bundled runner instead of nat
   use isolated worktrees with explicit, disjoint file ownership.
 - Keep the parent approval and sandbox boundary intact. Never add bypass, full-access, force-push,
   credential, or secret-handling flags.
+- For delegated coding tasks, fix Apps, Plugins, and recommended-plugin context off for every worker
+  `run` and `resume` so the task stays self-contained. Keep `--strict-config` fail closed; report a
+  stale user configuration as `config_incompatible` and fix it instead of bypassing it.
 - Stop after three failed correction cycles on the same root cause and reassess the hypothesis.
 - Never claim completion from the worker summary alone. Verify from the current session.
 - Do not use worker timeout as a test budget. Select a profile and give every potentially expensive
