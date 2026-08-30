@@ -50,6 +50,15 @@ def _multi_lane(record: dict[str, object]) -> bool:
     ) or len(_planned_threads(record)) > 1
 
 
+def validate_semantic_array_limits(record: dict[str, object], limit: int) -> None:
+    if len(_planned_threads(record)) > limit:
+        raise ValueError(
+            f"thread_dispatch_gate.planned_native_threads exceeds {limit} items"
+        )
+    if len(_spawned_threads(record)) > limit:
+        raise ValueError(f"native_thread_evidence.spawned_agents exceeds {limit} items")
+
+
 def _validate_bounds(bounds: object, field: str) -> None:
     if not isinstance(bounds, dict):
         raise ValueError(f"{field} must be an object")
@@ -76,6 +85,12 @@ def _validate_bounds(bounds: object, field: str) -> None:
         raise ValueError(f"{field}.time_budget must be a concrete duration such as 30m or 2h")
     if not isinstance(bounds["queue_tranche"], str) or not bounds["queue_tranche"].strip():
         raise ValueError(f"{field}.queue_tranche must be a non-empty string")
+    if bounds["queue_tranche"].strip().lower() in {
+        "unbounded",
+        "as needed",
+        "not pre-budgeted",
+    }:
+        raise ValueError(f"{field}.queue_tranche must describe a bounded tranche")
 
 
 def validate_run_budget(record: dict[str, object]) -> None:
@@ -113,4 +128,14 @@ def validate_run_budget(record: dict[str, object]) -> None:
         if _positive_int(bounds["max_model_calls"], "queue_bounds.max_model_calls") < len(spawned):
             raise ValueError(
                 "queue_bounds.max_model_calls cannot be lower than spawned agents"
+            )
+        queue_ledger = record.get("queue_ledger")
+        items_closed = queue_ledger.get("items_closed") if isinstance(queue_ledger, dict) else None
+        if (
+            isinstance(items_closed, int)
+            and not isinstance(items_closed, bool)
+            and items_closed > _positive_int(bounds["max_items"], "queue_bounds.max_items")
+        ):
+            raise ValueError(
+                "queue_bounds.max_items cannot be lower than queue_ledger.items_closed"
             )

@@ -6,7 +6,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-from run_budget_contract import validate_run_budget
+from run_budget_contract import validate_run_budget, validate_semantic_array_limits
 
 
 SENSITIVE_KEY_PARTS = (
@@ -206,16 +206,7 @@ def normalize_record(raw: Any, allow_extra: bool = False) -> dict[str, Any]:
     unknown_fields = sorted(set(raw) - ALLOWED_TOP_LEVEL_FIELDS)
     if unknown_fields and not allow_extra:
         raise ValueError("unknown top-level field(s): " + ", ".join(unknown_fields))
-    dispatch_gate = raw.get("thread_dispatch_gate")
-    planned_threads = (
-        dispatch_gate.get("planned_native_threads")
-        if isinstance(dispatch_gate, dict)
-        else None
-    )
-    if isinstance(planned_threads, list) and len(planned_threads) > MAX_ARRAY_ITEMS:
-        raise ValueError(
-            f"thread_dispatch_gate.planned_native_threads exceeds {MAX_ARRAY_ITEMS} items"
-        )
+    validate_semantic_array_limits(raw, MAX_ARRAY_ITEMS)
 
     record = redact(raw)
     record.setdefault("run_phase", "final")
