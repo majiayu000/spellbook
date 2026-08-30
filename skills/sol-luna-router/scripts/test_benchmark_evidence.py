@@ -8,6 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -268,44 +269,9 @@ def _git_output(*args: str) -> str:
 
 
 def _repository_git_context_available() -> bool:
-    try:
-        top_level = subprocess.run(
-            ["git", "-C", str(REPO_ROOT), "rev-parse", "--show-toplevel"],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-    except OSError:
-        return False
-    if top_level.returncode != 0:
-        return False
-    try:
-        if Path(top_level.stdout.strip()).resolve() != REPO_ROOT.resolve():
-            return False
-    except OSError:
-        return False
-
-    for marker in REPOSITORY_MARKERS:
-        try:
-            completed = subprocess.run(
-                [
-                    "git",
-                    "-C",
-                    str(REPO_ROOT),
-                    "ls-files",
-                    "--error-unmatch",
-                    "--",
-                    marker,
-                ],
-                check=False,
-                capture_output=True,
-                text=True,
-            )
-        except OSError:
-            return False
-        if completed.returncode != 0:
-            return False
-    return True
+    return shutil.which("git") is not None and all(
+        (REPO_ROOT / marker).is_file() for marker in REPOSITORY_MARKERS
+    )
 
 
 def _check_published_source_metadata(value: object) -> dict[str, object]:
@@ -678,6 +644,7 @@ class BenchmarkEvidenceTests(unittest.TestCase):
             ):
                 validate_evidence(include_repository_provenance=False)
 
+    @unittest.skipUnless(shutil.which("git"), "Git executable is required for this fixture")
     def test_unrelated_consumer_git_checkout_is_not_repository_context(self) -> None:
         with tempfile.TemporaryDirectory(prefix="benchmark-evidence-consumer-") as directory:
             consumer_root = Path(directory)
@@ -690,6 +657,7 @@ class BenchmarkEvidenceTests(unittest.TestCase):
             with mock.patch.object(sys.modules[__name__], "REPO_ROOT", consumer_root):
                 self.assertFalse(_repository_git_context_available())
 
+    @unittest.skipUnless(shutil.which("git"), "Git executable is required for this fixture")
     def test_shallow_spellbook_checkout_does_not_skip_provenance(self) -> None:
         evidence = _load_json(EVIDENCE_PATH)
         provenance = _mapping(evidence["provenance"], "provenance")
@@ -722,6 +690,24 @@ class BenchmarkEvidenceTests(unittest.TestCase):
                 self.assertTrue(_repository_git_context_available())
                 with self.assertRaisesRegex(EvidenceValidationError, "git show"):
                     _check_published_source(provenance["published_source"], [])
+
+    def test_source_checkout_detection_does_not_run_git(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="benchmark-evidence-owned-") as directory:
+            checkout = Path(directory)
+            for marker in REPOSITORY_MARKERS:
+                path = checkout / marker
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("# repository marker\n", encoding="utf-8")
+            with (
+                mock.patch.object(sys.modules[__name__], "REPO_ROOT", checkout),
+                mock.patch.object(shutil, "which", return_value="/usr/bin/git"),
+                mock.patch.object(
+                    subprocess,
+                    "run",
+                    side_effect=AssertionError("source detection must not invoke Git"),
+                ),
+            ):
+                self.assertTrue(_repository_git_context_available())
 
     def test_standalone_validation_rejects_arbitrary_published_source_hashes(self) -> None:
         evidence = _load_json(EVIDENCE_PATH)
@@ -822,12 +808,18 @@ class BenchmarkEvidenceTests(unittest.TestCase):
         evidence = _load_json(EVIDENCE_PATH)
         provenance = _mapping(evidence["provenance"], "provenance")
         source = _mapping(provenance["published_source"], "published_source")
-        source["implementation_tree"] = "0" * 40
-        with tempfile.TemporaryDirectory(prefix="benchmark-evidence-test-") as directory:
-            drifted_evidence = Path(directory) / EVIDENCE_PATH.name
-            drifted_evidence.write_text(json.dumps(evidence), encoding="utf-8")
+        def drifted_git_output(*args: str) -> str:
+            if args == ("show", "-s", "--format=%T", PUBLISHED_SOURCE["baseline_commit"]):
+                return PUBLISHED_SOURCE["baseline_tree"]
+            if args == ("show", "-s", "--format=%T", PUBLISHED_SOURCE["implementation_commit"]):
+                return "0" * 40
+            raise AssertionError(f"unexpected Git command: {args}")
+
+        with mock.patch.object(
+            sys.modules[__name__], "_git_output", side_effect=drifted_git_output
+        ):
             with self.assertRaisesRegex(EvidenceValidationError, "published source implementation tree"):
-                validate_evidence(evidence_path=drifted_evidence)
+                _check_published_source(source, [])
 
     def test_privacy_sensitive_key_is_rejected(self) -> None:
         with self.assertRaisesRegex(EvidenceValidationError, "privacy-sensitive key"):
