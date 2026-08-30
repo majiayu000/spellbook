@@ -9,9 +9,11 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 from typing import cast
+from unittest import mock
 
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
@@ -255,7 +257,26 @@ def _git_output(*args: str) -> str:
     return completed.stdout.strip()
 
 
-def _check_published_source(value: object, implementation_paths: list[object]) -> None:
+def _repository_git_context_available() -> bool:
+    try:
+        completed = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(REPO_ROOT),
+                "rev-parse",
+                "--is-inside-work-tree",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return False
+    return completed.returncode == 0 and completed.stdout.strip() == "true"
+
+
+def _check_published_source_metadata(value: object) -> dict[str, object]:
     source = _mapping(value, "published_source")
     _keys(
         source,
@@ -264,6 +285,15 @@ def _check_published_source(value: object, implementation_paths: list[object]) -
     )
     for name in ("baseline_commit", "baseline_tree", "implementation_commit", "implementation_tree"):
         _check_hash(source[name], SHA1_RE, f"published_source.{name}")
+    return source
+
+
+def _check_published_source(value: object, implementation_paths: list[object]) -> None:
+    source = _check_published_source_metadata(value)
+    if not _repository_git_context_available():
+        raise EvidenceValidationError(
+            "published-source provenance requires a Git checkout"
+        )
 
     baseline_commit = _string(source["baseline_commit"], "published_source.baseline_commit")
     implementation_commit = _string(
@@ -407,6 +437,7 @@ def validate_evidence(
     rate_card_path: Path = RATE_CARD_PATH,
     task_path: Path = TASK_PATH,
     reference_path: Path = REFERENCE_PATH,
+    include_repository_provenance: bool = True,
 ) -> None:
     evidence = _load_json(evidence_path)
     rate_card = _load_json(rate_card_path)
@@ -451,7 +482,10 @@ def validate_evidence(
         },
         "provenance",
     )
-    _check_published_source(provenance["published_source"], paths)
+    if include_repository_provenance:
+        _check_published_source(provenance["published_source"], paths)
+    else:
+        _check_published_source_metadata(provenance["published_source"])
     isolated = _mapping(provenance["isolated_snapshot"], "isolated_snapshot")
     _keys(isolated, {"baseline_commit", "baseline_tree", "git_objects_included"}, "isolated_snapshot")
     _equal(isolated["baseline_commit"], "bc9e6fb2dfa7e035a1dabcce0d347a1c121b1237", "isolated baseline commit")
@@ -592,15 +626,45 @@ def validate_evidence(
 
 
 class BenchmarkEvidenceTests(unittest.TestCase):
-    def test_checked_in_evidence_is_valid(self) -> None:
-        validate_evidence()
+    def test_package_evidence_is_valid(self) -> None:
+        validate_evidence(include_repository_provenance=False)
+
+    def test_standalone_package_validation_does_not_invoke_git_provenance(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="benchmark-evidence-standalone-") as directory:
+            with (
+                mock.patch.object(sys.modules[__name__], "REPO_ROOT", Path(directory)),
+                mock.patch.object(
+                    sys.modules[__name__],
+                    "_git_output",
+                    side_effect=AssertionError("Git provenance must be skipped"),
+                ),
+            ):
+                validate_evidence(include_repository_provenance=False)
+
+    @unittest.skipUnless(
+        _repository_git_context_available(),
+        "published-source provenance requires the Spellbook Git checkout",
+    )
+    def test_published_source_check_rejects_missing_git_context(self) -> None:
+        evidence = _load_json(EVIDENCE_PATH)
+        provenance = _mapping(evidence["provenance"], "provenance")
+        with tempfile.TemporaryDirectory(prefix="benchmark-evidence-no-git-") as directory:
+            with mock.patch.object(sys.modules[__name__], "REPO_ROOT", Path(directory)):
+                with self.assertRaisesRegex(
+                    EvidenceValidationError,
+                    "published-source provenance requires a Git checkout",
+                ):
+                    _check_published_source(provenance["published_source"], [])
 
     def test_task_hash_drift_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory(prefix="benchmark-evidence-test-") as directory:
             drifted_task = Path(directory) / TASK_PATH.name
             drifted_task.write_bytes(TASK_PATH.read_bytes() + b"\n")
             with self.assertRaisesRegex(EvidenceValidationError, "task artifact SHA-256"):
-                validate_evidence(task_path=drifted_task)
+                validate_evidence(
+                    task_path=drifted_task,
+                    include_repository_provenance=False,
+                )
 
     def test_markdown_privacy_leaks_are_rejected(self) -> None:
         leaks = (
@@ -644,6 +708,17 @@ class BenchmarkEvidenceTests(unittest.TestCase):
                 with self.assertRaisesRegex(EvidenceValidationError, message):
                     _check_privacy({"note": content})
 
+    @unittest.skipUnless(
+        _repository_git_context_available(),
+        "published-source provenance requires the Spellbook Git checkout",
+    )
+    def test_published_source_provenance_is_valid(self) -> None:
+        validate_evidence()
+
+    @unittest.skipUnless(
+        _repository_git_context_available(),
+        "published-source provenance requires the Spellbook Git checkout",
+    )
     def test_published_source_tree_drift_is_rejected(self) -> None:
         evidence = _load_json(EVIDENCE_PATH)
         provenance = _mapping(evidence["provenance"], "provenance")
