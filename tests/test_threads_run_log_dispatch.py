@@ -43,6 +43,17 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             "queue_tranche": "bounded test tranche",
         }
 
+    def preflight_bounds(self):
+        bounds = self.queue_bounds()
+        bounds.update(
+            {
+                "items_processed": 0,
+                "model_calls_used": 0,
+                "elapsed_seconds": 0,
+            }
+        )
+        return bounds
+
     def test_rejects_required_native_threads_without_spawned_agent(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "native-missing.jsonl"
@@ -381,7 +392,7 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
                             {"id": "calibration", "role": "researcher"}
                         ],
                     },
-                    "queue_bounds": self.queue_bounds(),
+                    "queue_bounds": self.preflight_bounds(),
                 },
                 log_path,
                 "--validate-only",
@@ -422,6 +433,55 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("items_processed exceeds max_items", result.stderr)
 
+    def test_rejects_preflight_at_any_exhausted_ceiling(self):
+        cases = [
+            ({"max_items": 2, "checkpoint_every_items": 2, "items_processed": 2}, "item"),
+            ({"max_model_calls": 2, "model_calls_used": 2}, "model-call"),
+            ({"time_budget": "2s", "elapsed_seconds": 2}, "time"),
+        ]
+        for updates, ceiling_name in cases:
+            with self.subTest(ceiling=ceiling_name), TemporaryDirectory() as temp_dir:
+                bounds = self.preflight_bounds()
+                bounds.update(updates)
+                result = self.run_script(
+                    {
+                        "run_phase": "preflight",
+                        "skill": "threads",
+                        "thread_dispatch_gate": {
+                            "planned_native_threads": [{"id": "calibration"}],
+                        },
+                        "queue_bounds": bounds,
+                    },
+                    Path(temp_dir) / "exhausted-preflight.jsonl",
+                    "--validate-only",
+                )
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("preflight budget is exhausted", result.stderr)
+
+    def test_rejects_preflight_lanes_above_remaining_model_calls(self):
+        with TemporaryDirectory() as temp_dir:
+            bounds = self.preflight_bounds()
+            bounds["model_calls_used"] = 1
+            result = self.run_script(
+                {
+                    "run_phase": "preflight",
+                    "skill": "threads",
+                    "thread_dispatch_gate": {
+                        "planned_native_threads": [
+                            {"id": "research"},
+                            {"id": "review"},
+                        ],
+                    },
+                    "queue_bounds": bounds,
+                },
+                Path(temp_dir) / "insufficient-calls.jsonl",
+                "--validate-only",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("planned lanes exceed remaining model calls", result.stderr)
+
     def test_rejects_appending_a_preflight_record(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "preflight.jsonl"
@@ -437,7 +497,7 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
                         "fallback_mode": "none",
                         "planned_native_threads": [{"id": "calibration"}],
                     },
-                    "queue_bounds": self.queue_bounds(),
+                    "queue_bounds": self.preflight_bounds(),
                 },
                 log_path,
             )
