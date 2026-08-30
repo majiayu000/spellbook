@@ -71,4 +71,4 @@ Inspect at a wide desktop viewport and a narrow mobile viewport. Confirm:
 - source links point to the recorded direct URLs; and
 - the page remains understandable if animation is disabled.
 
-Use ordinary browser, syntax, accessibility, or link checks when available. When no interactive renderer is at hand, `scripts/render-check.sh` captures desktop and mobile screenshots with any installed headless Chromium. Do not infer semantic correctness from a custom validator or encode explanation quality as fixed HTML selectors.
+Use ordinary browser, syntax, accessibility, or link checks when available. When no interactive renderer is at hand, `scripts/render-check.sh <page.html> [new-output-directory]` uses an installed Playwright CLI to capture the complete page at desktop and mobile widths. It creates a fresh temporary output directory by default and refuses to reuse an explicitly named directory. Playwright owns Chromium startup, including the root-container sandbox arguments needed by its bundled browser. Do not infer semantic correctness from a custom validator or encode explanation quality as fixed HTML selectors.

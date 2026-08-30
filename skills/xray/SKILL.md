@@ -91,7 +91,7 @@ Keep the first layer visually quiet and low in terminology. Move implementation 
 
 ### 7. Verify before delivery
 
-Open or render the page at a desktop and narrow viewport when a renderer is available. When no interactive renderer is at hand, [scripts/render-check.sh](scripts/render-check.sh) captures both widths with any installed headless Chromium. Re-check every full-bleed or negative-margin block at the narrow width; it is the classic source of silent horizontal overflow. Inspect clipping, overflow, legibility, unresolved placeholders, source-link behavior, and whether the visual sequence still makes sense without narration. Exercise any interaction that carries explanatory meaning. If no renderer is available at all, report visual verification as incomplete instead of implying it passed.
+Open or render the page at a desktop and narrow viewport when a renderer is available. When no interactive renderer is at hand, [scripts/render-check.sh](scripts/render-check.sh) uses an installed Playwright CLI to capture the complete page at both widths in a fresh output directory. Re-check every full-bleed or negative-margin block at the narrow width; it is the classic source of silent horizontal overflow. Inspect clipping, overflow, legibility, unresolved placeholders, source-link behavior, and whether the visual sequence still makes sense without narration. Exercise any interaction that carries explanatory meaning. If no renderer is available at all, report visual verification as incomplete instead of implying it passed.
 
 ## Done When
 
