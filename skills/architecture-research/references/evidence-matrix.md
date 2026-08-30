@@ -10,23 +10,27 @@ decision-relevant claim to its evidence ledger entry.
 
 - User outcome:
 - Capability the system must own:
+- Decision question:
 - Current boundary:
 - Missing layer:
 - Required now:
 - Explicit non-goals:
 - Constraints: scale, freshness, latency, quality, privacy, deployment, budget,
   licensing, data ownership
-- Decision to make:
+- No-change cost:
+- Quality scenarios:
+  - When <stimulus> occurs under <condition>, the system must <response>,
+    measured by <outcome>.
 ```
 
 ## 2. Candidate map
 
 ```markdown
-| Candidate | Type | Comparable boundary | Non-comparable boundary | Why included |
-|---|---|---|---|---|
-| Current system | baseline | | | |
-| Candidate A | direct / adjacent / component | | | |
-| Candidate B | commercial / open source / standard | | | |
+| Candidate | Type | Comparable boundary | Non-comparable boundary | Possible reuse unit | Why included |
+|---|---|---|---|---|---|
+| Current system | baseline | | | retain / replace | |
+| Candidate A | direct / adjacent / component | | | whole / component / protocol / pattern | |
+| Candidate B | commercial / open source / standard | | | | |
 ```
 
 Use `non-comparable` when a product only shares the interface. Do not compare a
@@ -51,7 +55,7 @@ Rules:
 - A vendor claim remains a vendor claim unless independently measured.
 - Preserve contradictions; explain them instead of selecting the convenient one.
 
-## 4. Architecture comparison
+## 4. Architecture and capability comparison
 
 Remove irrelevant rows rather than filling them with guesses.
 
@@ -74,6 +78,17 @@ Remove irrelevant rows rather than filling them with guesses.
 | License / cost / lock-in | | | | |
 ```
 
+For any capability that materially affects the decision, add its evidence level:
+
+```markdown
+| Capability | Declared | Implemented | Wired | Exercised | Measured | Evidence / gap |
+|---|---|---|---|---|---|---|
+| | yes/no/unknown | | | | | |
+```
+
+Do not collapse the maturity columns into a score. Their purpose is to expose a
+missing live path, validation loop, or quality measure.
+
 ## 5. Ownership and dependency map
 
 ```markdown
@@ -88,6 +103,14 @@ request
 Mark every external runtime dependency. “Self-hosted” is not equivalent to
 “independent” when discovery, data, models, or control-plane services still come
 from another provider.
+
+For stateful systems, also record authority and recovery:
+
+```markdown
+| State | Authority | Durable or ephemeral | Derived from | Restart behavior | Reconciliation |
+|---|---|---|---|---|---|
+| | | | | | |
+```
 
 ## 6. Comparable test record
 
@@ -108,15 +131,35 @@ from another provider.
 If no fair test ran, replace the section with the exact blocker and the future
 test that would remove the uncertainty.
 
-## 7. Decision record
+## 7. Adoption viability
+
+Include this section when the recommendation introduces an open-source project,
+vendor, hosted service, or other externally governed dependency.
+
+```markdown
+| Area | Evidence | Risk / decision impact |
+|---|---|---|
+| Maintenance and releases | | |
+| Governance and contributor concentration | | |
+| Tests, security, and release provenance | | |
+| License and distribution | | |
+| Upgrade, operations, and support | | |
+| Switching cost and exit path | | |
+```
+
+Automated health or security scores are inputs, not acceptance decisions. Check
+whether each underlying heuristic applies to this project and workload.
+
+## 8. Decision record
 
 ```markdown
 ## Decision
 
-- Disposition: adopt / adapt / build / defer
+- Disposition: adopt / adapt / build / defer / retain
 - Selected direction:
 - Why it fits the current capability brief:
-- Ideas or components to reuse:
+- Reuse unit: whole system / subsystem / component / protocol / data model / pattern
+- Quality trade-offs accepted:
 - What not to copy:
 - Rejected alternatives and reasons:
 - Accepted risks:
@@ -124,6 +167,9 @@ test that would remove the uncertainty.
 - Evidence that would reverse the decision:
 - Smallest validation milestone:
 - Verification command or observable success condition:
+- Exit path or review trigger:
+- Handoff to architecture-foundation: selected components, constraints,
+  ownership decisions, unresolved questions, prohibited dependencies
 ```
 
 Avoid a score that implies false precision. When weighted scoring is truly

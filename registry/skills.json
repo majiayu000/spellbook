@@ -101,6 +101,22 @@
     ]
   },
   {
+    "name": "architecture-research",
+    "category": "Development Architecture",
+    "format": "directory",
+    "path": "skills/architecture-research/SKILL.md",
+    "description": "Evidence-driven architecture research for understanding real systems and making technical decisions. Use when doing architecture landscape studies, source-backed system archaeology, build-vs-buy or adopt/adapt/build decisions, open-source and commercial comparisons, revisiting an earlier architecture choice, or handling requests such as 架构调研, 架构选型, 竞品架构, 技术尽调, 同类方案, 开源替代, how is X built, and what should we learn from X. Do not use for small mechanical changes, market-only discovery, or detailed design after the technology direction is already fixed.",
+    "language": "mixed",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "architecture"
+    ]
+  },
+  {
     "name": "ask-opencli",
     "category": "AI & Agent Workflow",
     "format": "directory",
@@ -967,22 +983,6 @@
     "tags": [
       "documentation",
       "product-management"
-    ]
-  },
-  {
-    "name": "prior-art-architecture",
-    "category": "Uncategorized",
-    "format": "directory",
-    "path": "skills/prior-art-architecture/SKILL.md",
-    "description": "Evidence-driven technical prior-art and competitor architecture research before building a new tool, service, subsystem, or major capability. Use when choosing or replacing foundational technology, deciding build vs buy, comparing open-source and commercial implementations, or when the user asks 技术选型, 竞品架构, 同类方案, 开源替代, 商业方案, how is X built, or whether to adopt/adapt/build. Do not use for small mechanical edits, market-only product discovery, or a technology already fixed by the user or repository.",
-    "language": "mixed",
-    "compatibility": {
-      "runtimes": [
-        "unspecified"
-      ]
-    },
-    "tags": [
-      "architecture"
     ]
   },
   {
