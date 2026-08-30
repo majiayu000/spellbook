@@ -23,8 +23,8 @@ Install through Spellbook from the repository root:
 
 ## Usage
 
-### Important: Thinking Tokens
-By default, this skill suppresses thinking tokens (stderr output) using `2>/dev/null` to avoid bloating Claude Code's context window. If you want to see the thinking tokens for debugging or insight into Codex's reasoning process, explicitly ask Claude to show them.
+### Diagnostics and Usage
+The skill preserves stderr as a bounded artifact instead of discarding it or pasting it into Claude Code's context. For automated, batch, or cost-sensitive work it uses `codex exec --json`, saves the JSONL event stream, and reports measured input, cached-input, output, and reasoning usage when available.
 
 ### Example Workflow
 
@@ -43,8 +43,11 @@ Claude will activate the Codex skill and:
 ```bash
 codex exec --config model_reasoning_effort="high" \
   --sandbox read-only \
-  "Analyze this Claude Code skill repository comprehensively..." 2>/dev/null
+  --json \
+  "Analyze this Claude Code skill repository comprehensively..."
 ```
+
+Large homogeneous batches first run one calibration tranche. The workflow projects total calls and tokens from measured usage, asks for approval of the concrete budget when needed, and starts a fresh bounded session for each tranche instead of repeatedly resending accumulated history.
 
 **Result:**
 Claude will summarize the Codex analysis output, highlighting key suggestions and asking if you'd like to continue with follow-up actions.

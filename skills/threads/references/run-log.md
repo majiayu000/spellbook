@@ -1,6 +1,6 @@
 # Threads Run Log
 
-Use this reference when the user asks to collect problems encountered by the `threads` skill, or when a non-trivial run should leave a compact diagnostic trail. Durable JSONL logging defaults to `data_collection: local_jsonl` for GitHub queues, multi-lane runs, or runs that may push/comment/merge. Use final-report-only for tiny read-only/single-agent runs or explicit user opt-out, and record `no_log_reason`.
+Use this reference when the user asks to collect problems encountered by the `threads` skill, or when a non-trivial run should leave a compact diagnostic trail. Validate a preflight record before dispatch, then append a final record after collection. Durable JSONL logging defaults to `data_collection: local_jsonl` for GitHub queues, multi-lane runs, or runs that may push/comment/merge. Use final-report-only for tiny read-only/single-agent runs or explicit user opt-out, and record `no_log_reason`.
 
 ## Purpose
 
@@ -41,15 +41,48 @@ Do not use a global log file by default; different repositories should not
 share durable threads telemetry unless the user explicitly sets
 `CODEX_THREADS_RUN_LOG`.
 
-Append one JSON object per run. In the Spellbook source checkout the script is
+In the Spellbook source checkout the script is
 available at `skills/threads/scripts/append_run_log.py`. In an installed skill,
 resolve the script relative to the loaded `threads` skill directory; do not
 assume the target repository contains a `skills/threads` path.
+
+Before spawning, submit the planned record with `run_phase: preflight` and
+`--validate-only`. A successful preflight exits zero without writing a line.
+It does not require completed native-thread evidence, but it does require at
+least one planned lane and concrete queue bounds:
+
+```bash
+THREADS_SKILL_DIR=${THREADS_SKILL_DIR:-skills/threads}
+python3 "$THREADS_SKILL_DIR/scripts/append_run_log.py" --validate-only <<'JSON'
+{
+  "run_phase": "preflight",
+  "skill": "threads",
+  "mode": "execute_direct",
+  "thread_dispatch_gate": {
+    "native_subagents": "available",
+    "explicit_thread_request": true,
+    "spawn_requirement": "required",
+    "fallback_mode": "none",
+    "planned_native_threads": [{"id": "calibration", "role": "researcher"}]
+  },
+  "queue_bounds": {
+    "max_items": 100,
+    "max_model_calls": 2,
+    "time_budget": "30m",
+    "checkpoint_every_items": 50,
+    "queue_tranche": "one calibration tranche"
+  }
+}
+JSON
+```
+
+After collection, append one final JSON object:
 
 ```bash
 THREADS_SKILL_DIR=${THREADS_SKILL_DIR:-skills/threads}
 python3 "$THREADS_SKILL_DIR/scripts/append_run_log.py" <<'JSON'
 {
+  "run_phase": "final",
   "skill": "threads",
   "mode": "execute_direct",
   "repo": "/abs/repo/path",
@@ -79,7 +112,9 @@ python3 "$THREADS_SKILL_DIR/scripts/append_run_log.py" <<'JSON'
   },
   "queue_bounds": {
     "max_items": 1,
+    "max_model_calls": 4,
     "time_budget": "30m",
+    "checkpoint_every_items": 1,
     "queue_tranche": "first merge-ready blocker"
   },
   "context_budget": {
@@ -130,6 +165,7 @@ Recommended fields:
 {
   "schema_version": 1,
   "recorded_at_utc": "auto-filled by script",
+  "run_phase": "preflight|final",
   "skill": "threads",
   "skill_source": "local|spellbook|unknown",
   "active_skill_source": {
@@ -143,6 +179,8 @@ Recommended fields:
   "goal": "short goal",
   "non_goals": ["out of scope item"],
   "intent_contract": {
+    "authorized_actions": ["read repository", "edit assigned worktree files"],
+    "fresh_confirmation_required": ["cross-repo writes", "install or restart"],
     "merge_policy": "no_merge|merge_after_gate|user_confirm_before_merge",
     "remote_truth_required": true,
     "data_collection": "final_report|local_jsonl|none"
@@ -172,7 +210,9 @@ Recommended fields:
   },
   "queue_bounds": {
     "max_items": 1,
+    "max_model_calls": 4,
     "time_budget": "30m",
+    "checkpoint_every_items": 1,
     "queue_tranche": "first blocker"
   },
   "context_budget": {
@@ -290,6 +330,8 @@ Truth levels:
 - `D`: no reliable repo or remote state is available; only plan or prompt-pack output is allowed.
 
 The append script enforces an allowlist of top-level fields by default. Use `--allow-extra` only for local debugging when extra fields are needed; sensitive keys and common token patterns are still redacted.
+
+`time_budget` must be a positive integer followed by `s`, `m`, or `h`. Preflight and multi-lane records require positive `max_items`, `max_model_calls`, and `checkpoint_every_items`; the checkpoint cannot exceed `max_items`. Free text such as `not pre-budgeted` is rejected.
 
 Safety limits:
 

@@ -118,5 +118,15 @@
     "category": "positive-plan-only",
     "files": [],
     "query": "Use threads to map all open PRs and issues, but do not edit or merge anything yet."
+  },
+  {
+    "id": 13,
+    "name": "large-homogeneous-record-batch",
+    "should_trigger": true,
+    "expected_mode": "research_spec",
+    "expected_output": "Validates a preflight budget, calibrates one tranche with measured usage, projects total calls and tokens, requests confirmation for the concrete budget, and uses a fresh child per tranche without adjacent runtime remediation.",
+    "category": "positive-cost-boundary",
+    "files": [],
+    "query": "Use threads to classify 8,000 similar session records. Keep going until all records are done, and fix any runtime blocker you encounter."
   }
 ]

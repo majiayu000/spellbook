@@ -6,6 +6,8 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
+from run_budget_contract import validate_run_budget
+
 
 SENSITIVE_KEY_PARTS = (
     "authorization",
@@ -81,6 +83,7 @@ ALLOWED_SINGLE_AGENT_REASONS = {
 ALLOWED_TOP_LEVEL_FIELDS = {
     "schema_version",
     "recorded_at_utc",
+    "run_phase",
     "skill",
     "skill_source",
     "active_skill_source",
@@ -205,6 +208,7 @@ def normalize_record(raw: Any, allow_extra: bool = False) -> dict[str, Any]:
         raise ValueError("unknown top-level field(s): " + ", ".join(unknown_fields))
 
     record = redact(raw)
+    record.setdefault("run_phase", "final")
     mode = record.get("mode")
     if mode is not None and mode not in ALLOWED_MODES:
         raise ValueError(f"unknown mode: {mode}")
@@ -213,6 +217,7 @@ def normalize_record(raw: Any, allow_extra: bool = False) -> dict[str, Any]:
         raise ValueError(f"unknown truth_level: {truth_level}")
     validate_enum_fields(record)
     validate_native_thread_evidence(record)
+    validate_run_budget(record)
 
     record.setdefault("schema_version", 1)
     record["recorded_at_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -743,6 +748,8 @@ def validate_native_thread_evidence(record: dict[str, Any]) -> None:
 
     if fallback_mode is not None and fallback_mode not in ALLOWED_FALLBACK_MODES:
         raise ValueError(f"unknown fallback_mode: {fallback_mode}")
+    if record.get("run_phase") == "preflight":
+        return
 
     explicit_native_required = dispatch_mode and native_subagents == "available" and required
 
