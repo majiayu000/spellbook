@@ -4,17 +4,29 @@
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import signal
 import subprocess
 import sys
+import time
 
 
 def positive_seconds(value: str) -> float:
     seconds = float(value)
-    if seconds <= 0:
-        raise argparse.ArgumentTypeError("timeout must be positive")
+    if not math.isfinite(seconds) or seconds <= 0:
+        raise argparse.ArgumentTypeError("timeout must be finite and positive")
     return seconds
+
+
+def process_group_exists(group_id: int) -> bool:
+    try:
+        os.killpg(group_id, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
 
 
 def stop_process_group(process: subprocess.Popen[bytes]) -> None:
@@ -22,14 +34,17 @@ def stop_process_group(process: subprocess.Popen[bytes]) -> None:
         os.killpg(process.pid, signal.SIGTERM)
     except ProcessLookupError:
         return
-    try:
-        process.wait(timeout=5)
-    except subprocess.TimeoutExpired:
+    deadline = time.monotonic() + 5
+    while process_group_exists(process.pid) and time.monotonic() < deadline:
+        process.poll()
+        time.sleep(0.05)
+    if process_group_exists(process.pid):
         try:
             os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
+            process.wait()
             return
-        process.wait()
+    process.wait()
 
 
 def main() -> int:
