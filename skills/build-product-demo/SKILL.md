@@ -198,7 +198,9 @@ python3 <skill-dir>/scripts/analyze_demo_pacing.py <final-video> \
 Treat its default silence and low-motion limits as a fail-closed rehearsal
 gate. The analyzer exempts a silence or low-motion segment only when the entire
 detected interval falls inside a motivated hold declared by the plan; do not
-raise a file-wide threshold to accommodate one hold.
+raise a file-wide threshold to accommodate one hold. It rejects alternate audio
+or video streams because those tracks are not pacing-verified; deliver exactly
+one of each.
 Review continuous playback or dense consecutive frames as well as a contact
 sheet; one frame per scene can make a static slide deck look varied.
 

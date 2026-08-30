@@ -642,6 +642,48 @@ def test_pacing_validates_every_audio_stream_duration(tmp_path: Path) -> None:
     assert any("audio stream 1 duration 12.000s" in error for error in report["errors"])
 
 
+def test_pacing_rejects_unverified_alternate_streams(tmp_path: Path) -> None:
+    media = tmp_path / "demo.mp4"
+    media.write_bytes(b"video")
+    args = argparse.Namespace(
+        media=media,
+        plan=None,
+        silence_noise="-35dB",
+        silence_min_duration=0.45,
+        freeze_noise="-50dB",
+        freeze_min_duration=1.0,
+        max_silence_ratio=0.18,
+        max_silence_segment=1.75,
+        max_low_motion_ratio=0.40,
+        max_low_motion_segment=4.0,
+        json_out=None,
+    )
+    probe_payload = json.dumps(
+        {
+            "format": {"duration": "60"},
+            "streams": [
+                {"index": 0, "codec_type": "video", "duration": "60"},
+                {"index": 1, "codec_type": "video", "duration": "60"},
+                {"index": 2, "codec_type": "audio", "duration": "60"},
+                {"index": 3, "codec_type": "audio", "duration": "60"},
+            ],
+        }
+    )
+    stdout = io.StringIO()
+    with (
+        mock.patch.object(PACING, "parse_args", return_value=args),
+        mock.patch.object(PACING.shutil, "which", return_value="/usr/bin/tool"),
+        mock.patch.object(PACING, "run", side_effect=[probe_payload, "", ""]),
+        mock.patch.object(sys, "stdout", stdout),
+    ):
+        result = PACING.main()
+
+    report = json.loads(stdout.getvalue())
+    assert result == 1
+    assert "alternate video streams are not pacing-verified" in report["errors"]
+    assert "alternate audio streams are not pacing-verified" in report["errors"]
+
+
 def test_pacing_accepts_streams_without_duration_metadata(tmp_path: Path) -> None:
     media = tmp_path / "demo.webm"
     media.write_bytes(b"video")

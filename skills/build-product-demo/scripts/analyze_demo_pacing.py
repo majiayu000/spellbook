@@ -206,6 +206,9 @@ def main() -> int:
         errors.append("media has no video stream")
     if "audio" not in stream_types:
         errors.append("media has no audio stream")
+    for stream_type in ("video", "audio"):
+        if sum(item_type == stream_type for item_type, _, _ in stream_details) > 1:
+            errors.append(f"alternate {stream_type} streams are not pacing-verified")
     for stream_type, stream_index, stream_duration in stream_details:
         stream_label = f"{stream_type} stream {stream_index}"
         if stream_duration is None:
