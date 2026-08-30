@@ -170,6 +170,23 @@
     ]
   },
   {
+    "name": "build-product-demo",
+    "category": "Content & Research",
+    "format": "directory",
+    "path": "skills/build-product-demo/SKILL.md",
+    "description": "Plan, produce, or diagnose evidence-backed product demo videos and screen-recorded promotional walkthroughs. Use when the user asks to make a product demo, launch video, feature showcase, app walkthrough, demo reel, or polished recording; wants every important capability shown without a slow feature tour; asks to remove dead time or fix narration-to-action pacing; or needs a repeatable script, capture plan, and verified final media. Do not use for fictional commercials with no real product proof, general-purpose video editing, or documentation-only tutorials that do not need a promotional narrative.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "content",
+      "debugging"
+    ]
+  },
+  {
     "name": "capability-distill",
     "category": "AI & Agent Workflow",
     "format": "directory",

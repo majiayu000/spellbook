@@ -1,5 +1,5 @@
 {
-  "total_skills": 105,
+  "total_skills": 106,
   "total_tags": 35,
   "tag_counts": {
     "agent": 15,
@@ -8,9 +8,9 @@
     "backend": 13,
     "browser": 5,
     "code-review": 16,
-    "content": 7,
+    "content": 8,
     "database": 4,
-    "debugging": 9,
+    "debugging": 10,
     "deploy": 4,
     "design-system": 2,
     "devops": 2,
@@ -119,6 +119,7 @@
       "vibeguard"
     ],
     "content": [
+      "build-product-demo",
       "github-trending",
       "humanizer",
       "slides",
@@ -134,6 +135,7 @@
       "release-engineering"
     ],
     "debugging": [
+      "build-product-demo",
       "codex-log-guard",
       "css-debug",
       "ip-check",

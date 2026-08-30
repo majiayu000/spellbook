@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Product Demo"
+  short_description: "Direct and verify evidence-backed product demos"
+  default_prompt: "Use $build-product-demo to turn this product into a truthful, paced, and verified promotional demo."
