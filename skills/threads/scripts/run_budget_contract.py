@@ -132,10 +132,15 @@ def _validate_bounds(bounds: object, field: str) -> None:
 
 def validate_run_budget(record: dict[str, object]) -> None:
     phase = record.get("run_phase")
-    if phase not in ALLOWED_RUN_PHASES:
-        raise ValueError(f"unknown run_phase: {phase}")
-    if record.get("lanes_total") is not None:
-        _positive_int(record["lanes_total"], "lanes_total")
+    if not isinstance(phase, str) or phase not in ALLOWED_RUN_PHASES:
+        raise ValueError("run_phase must be preflight or final")
+    lanes_total = record.get("lanes_total")
+    if lanes_total is not None and (
+        isinstance(lanes_total, bool)
+        or not isinstance(lanes_total, int)
+        or lanes_total < 0
+    ):
+        raise ValueError("lanes_total must be a non-negative integer")
 
     top_level = record.get("queue_bounds")
     intent = record.get("intent_contract")
@@ -175,12 +180,16 @@ def validate_run_budget(record: dict[str, object]) -> None:
                 "thread_dispatch_gate.planned_native_threads must contain at least one lane "
                 "for a threads preflight"
             )
+        planned_lane_ids: set[str] = set()
         for lane in planned:
             lane_id = lane.get("id") or lane.get("lane_id") if isinstance(lane, dict) else None
             if not isinstance(lane_id, str) or not lane_id.strip():
                 raise ValueError(
                     "preflight planned_native_threads entries require string id"
                 )
+            if lane_id in planned_lane_ids:
+                raise ValueError("preflight planned_native_threads ids must be unique")
+            planned_lane_ids.add(lane_id)
         if _positive_int(bounds["max_model_calls"], "queue_bounds.max_model_calls") < len(planned):
             raise ValueError("queue_bounds.max_model_calls cannot be lower than planned lanes")
     elif bounds is not None:

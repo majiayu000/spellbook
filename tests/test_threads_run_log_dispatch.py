@@ -866,7 +866,51 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             )
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("lanes_total must be a positive integer", result.stderr)
+            self.assertIn("lanes_total must be a non-negative integer", result.stderr)
+
+    def test_accepts_zero_lane_final(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "zero-lane-final.jsonl"
+            result = self.run_script(
+                {"skill": "threads", "lanes_total": 0},
+                log_path,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_rejects_duplicate_preflight_lane_ids(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "duplicate-lane-ids.jsonl"
+            result = self.run_script(
+                {
+                    "run_phase": "preflight",
+                    "skill": "threads",
+                    "thread_dispatch_gate": {
+                        "planned_native_threads": [
+                            {"id": "review"},
+                            {"id": "review"},
+                        ],
+                    },
+                    "queue_bounds": self.queue_bounds(),
+                },
+                log_path,
+                "--validate-only",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("planned_native_threads ids must be unique", result.stderr)
+
+    def test_rejects_non_string_run_phase_without_traceback(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "invalid-run-phase.jsonl"
+            result = self.run_script(
+                {"run_phase": {}, "skill": "threads"},
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("run_phase must be preflight or final", result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
 
     def test_rejects_multi_lane_list_without_queue_bounds(self):
         with TemporaryDirectory() as temp_dir:
