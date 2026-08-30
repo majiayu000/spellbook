@@ -27,6 +27,20 @@ def _fake_tools(tmp_path: Path, *, direct_playwright: bool) -> tuple[Path, Path,
         encoding="utf-8",
     )
     executable.chmod(0o755)
+    executable = bin_dir / "npm"
+    executable.write_text(
+        "#!/bin/sh\n"
+        "printf '%s\\n' \"$@\" >> \"$XRAY_NPX_TRACE\"\n"
+        "if [ \"${1:-}\" = '--offline' ] && [ \"${2:-}\" = '--no' ] "
+        "&& [ \"${3:-}\" = '--' ] && [ \"${4:-}\" = 'playwright' ] "
+        "&& [ \"${5:-}\" = '--version' ]; then exit 0; fi\n"
+        "if [ \"${XRAY_PLAYWRIGHT_FAIL:-0}\" = '1' ]; then exit 7; fi\n"
+        "for last do :; done\n"
+        "mkdir -p \"$(dirname \"$last\")\"\n"
+        ": > \"$last\"\n",
+        encoding="utf-8",
+    )
+    executable.chmod(0o755)
     if direct_playwright:
         executable = bin_dir / "playwright"
         executable.write_text(
@@ -68,6 +82,7 @@ def _run(
         capture_output=True,
         text=True,
         env=environment,
+        cwd=tmp_path,
         check=False,
     )
     result.trace = npx_trace  # type: ignore[attr-defined]
@@ -86,6 +101,7 @@ def test_render_check_uses_encoded_file_uri_and_full_page_capture(tmp_path: Path
 
     assert result.returncode == 0, result.stderr
     trace = result.trace.read_text(encoding="utf-8")  # type: ignore[attr-defined]
+    assert "--offline\n--no\n--\nplaywright" in trace
     assert trace.count("--full-page") == 2
     assert "folder%20%231/explain%3Fthis.html" in trace
     assert "--viewport-size\n1280, 720" in trace
@@ -157,3 +173,12 @@ def test_visual_contract_distinguishes_svg_and_canvas_label_checks() -> None:
 
     assert "getBBox()" in contract
     assert "measureText()" in contract
+
+
+def test_render_check_accepts_hyphen_prefixed_relative_page_path(tmp_path: Path) -> None:
+    page = tmp_path / "-explainer.html"
+    page.write_text("<main>evidence</main>", encoding="utf-8")
+
+    result = _run(tmp_path, Path("-explainer.html"))
+
+    assert result.returncode == 0, result.stderr

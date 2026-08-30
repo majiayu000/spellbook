@@ -8,7 +8,7 @@ if [ $# -lt 1 ] || [ $# -gt 2 ]; then
   exit 64
 fi
 
-PAGE=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
+PAGE=$(cd "$(dirname -- "$1")" && pwd)/$(basename -- "$1")
 if [ ! -f "$PAGE" ]; then
   echo "not a file: $PAGE" >&2
   exit 66
@@ -22,8 +22,8 @@ fi
 PLAYWRIGHT_MODE=
 if command -v playwright >/dev/null 2>&1 && playwright --version >/dev/null 2>&1; then
   PLAYWRIGHT_MODE=direct
-elif command -v npx >/dev/null 2>&1 && npx --no-install playwright --version >/dev/null 2>&1; then
-  PLAYWRIGHT_MODE=npx
+elif command -v npm >/dev/null 2>&1 && npm exec --offline --no -- playwright --version >/dev/null 2>&1; then
+  PLAYWRIGHT_MODE=npm
 else
   echo "Playwright CLI is unavailable; install Playwright before rendering" >&2
   exit 69
@@ -33,7 +33,7 @@ run_playwright() {
   if [ "$PLAYWRIGHT_MODE" = direct ]; then
     playwright "$@"
   else
-    npx --no-install playwright "$@"
+    npm exec --offline --no -- playwright "$@"
   fi
 }
 
