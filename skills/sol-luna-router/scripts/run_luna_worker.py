@@ -264,7 +264,6 @@ def build_codex_args(
         "-c", f'model_reasoning_effort="{REASONING_EFFORT}"',
         "-c", "features.apps=false",
         "-c", "features.plugins=false",
-        "-c", "features.recommended_plugins=false",
         "-c", "features.multi_agent_v2.enabled=false",
         "-c", "agents.enabled=false",
     ]

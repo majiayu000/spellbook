@@ -199,7 +199,7 @@ class RunnerTests(unittest.TestCase):
         self.assertIn('model_reasoning_effort="max"', command)
         self.assertIn("features.apps=false", command)
         self.assertIn("features.plugins=false", command)
-        self.assertIn("features.recommended_plugins=false", command)
+        self.assertNotIn("features.recommended_plugins=false", command)
         self.assertIn("features.multi_agent_v2.enabled=false", command)
         self.assertIn("agents.enabled=false", command)
         self.assertNotIn("--skip-git-repo-check", command)
@@ -283,7 +283,7 @@ class RunnerTests(unittest.TestCase):
         self.assertIn('model_reasoning_effort="max"', command)
         self.assertIn("features.apps=false", command)
         self.assertIn("features.plugins=false", command)
-        self.assertIn("features.recommended_plugins=false", command)
+        self.assertNotIn("features.recommended_plugins=false", command)
         self.assertIn('sandbox_mode="workspace-write"', command)
         record = self.read_records()[0]
         self.assertEqual(record["resumed_thread_id"], "thread-previous")
