@@ -442,6 +442,25 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_rejects_preflight_without_capability_gate_fields(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "missing-capability-gate.jsonl"
+            result = self.run_script(
+                {
+                    "run_phase": "preflight",
+                    "skill": "threads",
+                    "thread_dispatch_gate": {
+                        "planned_native_threads": [{"id": "calibration"}],
+                    },
+                    "queue_bounds": self.preflight_bounds(),
+                },
+                log_path,
+                "--validate-only",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("preflight capability gate requires", result.stderr)
+
     def test_rejects_preflight_usage_above_declared_ceilings(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "exhausted-preflight.jsonl"

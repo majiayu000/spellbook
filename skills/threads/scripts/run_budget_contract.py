@@ -311,6 +311,28 @@ def validate_run_budget(record: dict[str, object]) -> None:
             raise ValueError("preflight budget is exhausted at the time ceiling")
         if bounds["planned_seconds"] > time_budget_seconds - elapsed_seconds:
             raise ValueError("preflight planned tranche exceeds remaining time")
+        capability_gate = record.get("capability_gate")
+        dispatch_gate = record.get("thread_dispatch_gate")
+        gate_containers = [
+            record,
+            capability_gate if isinstance(capability_gate, dict) else {},
+            dispatch_gate if isinstance(dispatch_gate, dict) else {},
+        ]
+        required_gate_fields = (
+            "native_subagents",
+            "explicit_thread_request",
+            "spawn_requirement",
+            "fallback_mode",
+        )
+        missing_gate_fields = [
+            field
+            for field in required_gate_fields
+            if not any(container.get(field) is not None for container in gate_containers)
+        ]
+        if missing_gate_fields:
+            raise ValueError(
+                "preflight capability gate requires: " + ", ".join(missing_gate_fields)
+            )
     elif bounds is not None:
         spawned = _spawned_threads(record)
         items_processed = bounds.get("items_processed")
