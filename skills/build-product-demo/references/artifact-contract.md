@@ -65,7 +65,7 @@ Use this shape:
   "audience": "specific audience",
   "proof_proposition": "observable claim the demo will prove",
   "reference_benchmark": "path or identity of the comparison artifact",
-  "duration_seconds": 60,
+  "duration_seconds": 5,
   "max_information_gap_seconds": 5,
   "max_attention_gap_seconds": 3,
   "first_product_action_seconds": 4,

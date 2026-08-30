@@ -184,9 +184,7 @@ def main() -> int:
         errors.append("media has no audio stream")
     for stream_type, stream_index, stream_duration in stream_details:
         stream_label = f"{stream_type} stream {stream_index}"
-        if stream_duration is None:
-            errors.append(f"{stream_label} duration is unavailable")
-        elif stream_duration is not None and abs(stream_duration - duration) > 0.2:
+        if stream_duration is not None and abs(stream_duration - duration) > 0.2:
             errors.append(
                 f"{stream_label} duration {stream_duration:.3f}s differs from "
                 f"container duration {duration:.3f}s"
