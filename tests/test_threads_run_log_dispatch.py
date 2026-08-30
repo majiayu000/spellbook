@@ -461,6 +461,29 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("preflight capability gate requires", result.stderr)
 
+    def test_rejects_contradictory_preflight_capability_gate(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "contradictory-capability-gate.jsonl"
+            result = self.run_script(
+                {
+                    "run_phase": "preflight",
+                    "skill": "threads",
+                    "thread_dispatch_gate": {
+                        "native_subagents": "unavailable",
+                        "explicit_thread_request": False,
+                        "spawn_requirement": "unavailable",
+                        "fallback_mode": "none",
+                        "planned_native_threads": [{"id": "calibration"}],
+                    },
+                    "queue_bounds": self.preflight_bounds(),
+                },
+                log_path,
+                "--validate-only",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("preflight capability gate is not dispatch-capable", result.stderr)
+
     def test_rejects_preflight_usage_above_declared_ceilings(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "exhausted-preflight.jsonl"

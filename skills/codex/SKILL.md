@@ -33,12 +33,28 @@ Do not build Codex commands with `echo "user prompt" | ...`; user text can conta
 
 ```bash
 (
+for required_command in python3 head wc mkfifo; do
+  command -v "$required_command" >/dev/null 2>&1 || {
+    printf 'Missing required command: %s\n' "$required_command" >&2
+    exit 127
+  }
+done
 codex_skill_dir=${CODEX_SKILL_DIR:-$HOME/.claude/skills/codex}
-[ -f "$codex_skill_dir/scripts/run_with_timeout.py" ] || exit 1
+[ -f "$codex_skill_dir/scripts/run_with_timeout.py" ] || {
+  printf 'Missing Codex timeout helper: %s\n' \
+    "$codex_skill_dir/scripts/run_with_timeout.py" >&2
+  exit 1
+}
 codex_artifacts=$(mktemp -d) || exit 1
+codex_stderr_max_bytes=1048576
+codex_stderr_pipe="$codex_artifacts/stderr.pipe"
+mkfifo "$codex_stderr_pipe" || exit 1
+head -c "$codex_stderr_max_bytes" <"$codex_stderr_pipe" \
+  >"$codex_artifacts/stderr.log" &
+codex_stderr_limiter_pid=$!
 if python3 "$codex_skill_dir/scripts/run_with_timeout.py" 1800 \
   codex exec resume --last \
-  2>"$codex_artifacts/stderr.log" <<'EOF'
+  2>"$codex_stderr_pipe" <<'EOF'
 Your follow-up prompt goes here.
 EOF
 then
@@ -46,14 +62,26 @@ then
 else
   codex_status=$?
 fi
+stderr_limiter_status=0
+wait "$codex_stderr_limiter_pid" || stderr_limiter_status=$?
+rm -- "$codex_stderr_pipe" || exit 1
+artifact_status=0
+stderr_bytes=$(wc -c <"$codex_artifacts/stderr.log") || exit 1
+if [ "$stderr_bytes" -ge "$codex_stderr_max_bytes" ]; then
+  printf 'Codex stderr reached its %s-byte artifact limit\n' \
+    "$codex_stderr_max_bytes" >&2
+  artifact_status=125
+fi
+if [ "$stderr_limiter_status" -ne 0 ]; then artifact_status=$stderr_limiter_status; fi
 tail -c 4000 -- "$codex_artifacts/stderr.log"
 tail_status=$?
-if [ "$codex_status" -eq 0 ] && [ "$tail_status" -eq 0 ]; then
+if [ "$codex_status" -eq 0 ] && [ "$artifact_status" -eq 0 ] && [ "$tail_status" -eq 0 ]; then
   rm -R -- "$codex_artifacts" || exit $?
 else
   printf 'Codex artifacts retained: %s\n' "$codex_artifacts" >&2
 fi
 if [ "$codex_status" -ne 0 ]; then exit "$codex_status"; fi
+if [ "$artifact_status" -ne 0 ]; then exit "$artifact_status"; fi
 exit "$tail_status"
 )
 ```

@@ -333,6 +333,26 @@ def validate_run_budget(record: dict[str, object]) -> None:
             raise ValueError(
                 "preflight capability gate requires: " + ", ".join(missing_gate_fields)
             )
+        effective_gate = {
+            field: next(
+                container[field]
+                for container in gate_containers
+                if container.get(field) is not None
+            )
+            for field in required_gate_fields
+        }
+        explicit_request = effective_gate["explicit_thread_request"]
+        explicit_request_enabled = explicit_request is True or (
+            isinstance(explicit_request, str)
+            and explicit_request.strip().lower() in {"yes", "true", "1", "required"}
+        )
+        if (
+            effective_gate["native_subagents"] != "available"
+            or not explicit_request_enabled
+            or effective_gate["spawn_requirement"] != "required"
+            or effective_gate["fallback_mode"] != "none"
+        ):
+            raise ValueError("preflight capability gate is not dispatch-capable")
     elif bounds is not None:
         spawned = _spawned_threads(record)
         items_processed = bounds.get("items_processed")

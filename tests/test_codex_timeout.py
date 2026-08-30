@@ -218,7 +218,10 @@ import pathlib
 import sys
 import time
 
-pathlib.Path(sys.argv[1]).write_text(str(os.getpid()), encoding="utf-8")
+target = pathlib.Path(sys.argv[1])
+temporary = target.with_suffix(".tmp")
+temporary.write_text(str(os.getpid()), encoding="utf-8")
+temporary.replace(target)
 time.sleep(60)
 '''
 pathlib.Path(group_id_file).write_text(str(os.getpgrp()), encoding="utf-8")
@@ -278,7 +281,10 @@ import pathlib
 import sys
 import time
 
-pathlib.Path(sys.argv[1]).write_text(str(os.getpid()), encoding="utf-8")
+target = pathlib.Path(sys.argv[1])
+temporary = target.with_suffix(".tmp")
+temporary.write_text(str(os.getpid()), encoding="utf-8")
+temporary.replace(target)
 time.sleep(60)
 """,
         encoding="utf-8",
