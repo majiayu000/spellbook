@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
+from fractions import Fraction
 from pathlib import Path
 
 
@@ -119,6 +120,20 @@ def split_exempt_segments(
     return checked, exempt
 
 
+def stream_duration_seconds(stream: dict[object, object]) -> float | None:
+    raw_duration = stream.get("duration")
+    try:
+        if raw_duration is not None:
+            return float(raw_duration)
+        duration_ts = stream.get("duration_ts")
+        time_base = stream.get("time_base")
+        if duration_ts is not None and isinstance(time_base, str):
+            return float(duration_ts) * float(Fraction(time_base))
+    except (TypeError, ValueError, ZeroDivisionError):
+        return None
+    return None
+
+
 def main() -> int:
     args = parse_args()
     if not args.media.is_file():
@@ -130,7 +145,7 @@ def main() -> int:
     try:
         hold_intervals = load_hold_intervals(args.plan)
         probe = json.loads(run([
-            "ffprobe", "-v", "error", "-show_entries", "format=duration:stream=index,codec_type,duration",
+            "ffprobe", "-v", "error", "-show_entries", "format=duration:stream=index,codec_type,duration,duration_ts,time_base",
             "-of", "json", str(args.media)
         ]))
         duration = float(probe["format"]["duration"])
@@ -143,11 +158,7 @@ def main() -> int:
             if stream_type not in {"audio", "video"}:
                 continue
             stream_index = stream.get("index", position)
-            raw_duration = stream.get("duration")
-            try:
-                stream_duration = float(raw_duration) if raw_duration is not None else None
-            except (TypeError, ValueError):
-                stream_duration = None
+            stream_duration = stream_duration_seconds(stream)
             stream_details.append((stream_type, stream_index, stream_duration))
         stream_types = {stream_type for stream_type, _, _ in stream_details}
         silence_output = run([
@@ -190,7 +201,9 @@ def main() -> int:
         errors.append("media has no audio stream")
     for stream_type, stream_index, stream_duration in stream_details:
         stream_label = f"{stream_type} stream {stream_index}"
-        if stream_duration is not None and abs(stream_duration - duration) > 0.2:
+        if stream_duration is None:
+            errors.append(f"{stream_label} duration cannot be established")
+        elif abs(stream_duration - duration) > 0.2:
             errors.append(
                 f"{stream_label} duration {stream_duration:.3f}s differs from "
                 f"container duration {duration:.3f}s"

@@ -106,6 +106,11 @@ def validate_plan(plan: object) -> list[str]:
             "native_surface_target_ratio must be between "
             f"{minimum_native_target:g} and 1"
         )
+    uses_native_exception = (
+        has_native_exception and is_number(native_target) and native_target < 0.6
+    )
+    if has_native_exception and not uses_native_exception:
+        errors.append("native_surface_exception is only allowed for a target below 0.6")
     first_action_limit = plan.get("first_product_action_seconds")
     if not is_number(first_action_limit) or not 0 <= first_action_limit <= 5:
         errors.append("first_product_action_seconds must be between 0 and 5")
@@ -235,7 +240,7 @@ def validate_plan(plan: object) -> list[str]:
                 previous_event = at_seconds
                 event_times.append((float(at_seconds), str(kind), str(beat_type)))
                 qualifying_product_surface = surface == "native" or (
-                    has_native_exception and surface == "composite"
+                    uses_native_exception and surface == "composite"
                 )
                 if kind == "product_action" and beat_type == "normal" and qualifying_product_surface:
                     product_action_times.append(float(at_seconds))
@@ -274,7 +279,7 @@ def validate_plan(plan: object) -> list[str]:
                 f"native surface ratio is {native_ratio:.3f}, below target {native_target:.3f}"
             )
         explanatory_ratio = explanatory_duration / duration
-        if not has_native_exception and explanatory_ratio >= 0.2 - 1e-6:
+        if not uses_native_exception and explanatory_ratio >= 0.2 - 1e-6:
             errors.append(
                 f"explanatory surface ratio is {explanatory_ratio:.3f}, "
                 "but must stay below 0.200 without native_surface_exception"
