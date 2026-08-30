@@ -69,6 +69,10 @@ def validate_semantic_array_limits(record: dict[str, object], limit: int) -> Non
     queue_ledger = record.get("queue_ledger")
     if isinstance(queue_ledger, list) and len(queue_ledger) > limit:
         raise ValueError(f"queue_ledger exceeds {limit} items")
+    if isinstance(queue_ledger, dict):
+        ledger_items = queue_ledger.get("items")
+        if isinstance(ledger_items, list) and len(ledger_items) > limit:
+            raise ValueError(f"queue_ledger.items exceeds {limit} items")
 
 
 def _validate_bounds(bounds: object, field: str) -> None:
@@ -125,8 +129,13 @@ def validate_run_budget(record: dict[str, object]) -> None:
     if top_level is not None and nested is not None and top_level != nested:
         raise ValueError("conflicting queue_bounds across top-level and intent_contract")
 
-    if (phase == "preflight" or _multi_lane(record)) and top_level is None and nested is None:
-        raise ValueError("queue_bounds is required for preflight and multi-lane runs")
+    dispatched_work = bool(_planned_threads(record) or _spawned_threads(record))
+    if (
+        phase == "preflight" or _multi_lane(record) or dispatched_work
+    ) and top_level is None and nested is None:
+        raise ValueError(
+            "queue_bounds is required for preflight, multi-lane, and dispatched runs"
+        )
     bounds = top_level if top_level is not None else nested
     if phase == "preflight":
         planned = _planned_threads(record)
@@ -152,7 +161,9 @@ def validate_run_budget(record: dict[str, object]) -> None:
         else:
             items_closed = queue_ledger.get("items_closed", 0) if isinstance(queue_ledger, dict) else 0
             items_deferred = queue_ledger.get("items_deferred", 0) if isinstance(queue_ledger, dict) else 0
-            processed_items = items_closed + items_deferred
+            ledger_items = queue_ledger.get("items", []) if isinstance(queue_ledger, dict) else []
+            nested_items = len(ledger_items) if isinstance(ledger_items, list) else 0
+            processed_items = max(items_closed + items_deferred, nested_items)
         if processed_items > _positive_int(bounds["max_items"], "queue_bounds.max_items"):
             raise ValueError(
                 "queue_bounds.max_items cannot be lower than processed queue_ledger items"

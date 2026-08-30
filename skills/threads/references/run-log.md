@@ -333,7 +333,7 @@ Truth levels:
 
 The append script enforces an allowlist of top-level fields by default. Use `--allow-extra` only for local debugging when extra fields are needed; sensitive keys and common token patterns are still redacted.
 
-`time_budget` must be a positive integer followed by `s`, `m`, or `h`. Preflight and multi-lane records require positive `max_items`, `max_model_calls`, and `checkpoint_every_items`; the checkpoint cannot exceed `max_items`. Final bounded records also require non-negative `elapsed_seconds`, which cannot exceed `time_budget`. Free text such as `not pre-budgeted` is rejected.
+`time_budget` must be a positive integer followed by `s`, `m`, or `h`. Preflight, multi-lane, and final records containing planned or spawned work require positive `max_items`, `max_model_calls`, and `checkpoint_every_items`; this includes a one-child tranche. The checkpoint cannot exceed `max_items`. Final bounded records also require non-negative `elapsed_seconds`, which cannot exceed `time_budget`. The processed item audit uses the larger of the queue-ledger status counters and nested `items` length. Free text such as `not pre-budgeted` is rejected.
 
 Safety limits:
 

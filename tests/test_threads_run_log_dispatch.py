@@ -524,6 +524,31 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertIn("max_items cannot be lower than processed queue_ledger items", result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_rejects_nested_queue_ledger_items_above_item_ceiling(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "nested-ledger-budget.jsonl"
+            bounds = self.queue_bounds()
+            bounds["max_items"] = 1
+            bounds["checkpoint_every_items"] = 1
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "queue_bounds": bounds,
+                    "queue_ledger": {
+                        "items_total": 2,
+                        "items_closed": 0,
+                        "items_deferred": 0,
+                        "stale_base": False,
+                        "items": [{"id": 1}, {"id": 2}],
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("max_items cannot be lower than processed queue_ledger items", result.stderr)
+            self.assertFalse(log_path.exists())
+
     def test_rejects_non_finite_elapsed_seconds(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "non-finite-elapsed.jsonl"
@@ -663,6 +688,31 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertIn("planned_native_threads exceeds 100 items", result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_rejects_nested_ledger_items_truncated_before_budget_validation(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "too-many-nested-ledger-items.jsonl"
+            bounds = self.queue_bounds()
+            bounds["max_items"] = 101
+            bounds["checkpoint_every_items"] = 1
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "queue_bounds": bounds,
+                    "queue_ledger": {
+                        "items_total": 101,
+                        "items_closed": 0,
+                        "items_deferred": 0,
+                        "stale_base": False,
+                        "items": [{"id": index} for index in range(101)],
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("queue_ledger.items exceeds 100 items", result.stderr)
+            self.assertFalse(log_path.exists())
+
     def test_rejects_preflight_without_queue_bounds(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "preflight-no-budget.jsonl"
@@ -706,6 +756,40 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
                     "skill": "threads",
                     "lane_map": {
                         "lanes": [{"role": "worker"}, {"role": "reviewer"}],
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("queue_bounds is required", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_rejects_single_lane_final_without_queue_bounds(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "single-lane-no-budget.jsonl"
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "execute_direct",
+                    "native_subagents": "available",
+                    "explicit_thread_request": True,
+                    "spawn_requirement": "required",
+                    "fallback_mode": "none",
+                    "thread_dispatch_gate": {
+                        "planned_native_threads": [{"id": "calibration"}],
+                    },
+                    "native_thread_evidence": {
+                        "spawned_agents": [
+                            {
+                                "lane_id": "calibration",
+                                "spawn_tool": "multi_agent_v1.spawn_agent",
+                                "agent_id_or_thread_id": "agent-123",
+                                "wait_evidence": "wait_agent completed",
+                                "close_evidence": "close_agent completed",
+                                "result_collected": True,
+                            }
+                        ]
                     },
                 },
                 log_path,
