@@ -269,9 +269,7 @@ def _git_output(*args: str) -> str:
 
 
 def _repository_git_context_available() -> bool:
-    return shutil.which("git") is not None and all(
-        (REPO_ROOT / marker).is_file() for marker in REPOSITORY_MARKERS
-    )
+    return all((REPO_ROOT / marker).is_file() for marker in REPOSITORY_MARKERS)
 
 
 def _check_published_source_metadata(value: object) -> dict[str, object]:
@@ -706,6 +704,19 @@ class BenchmarkEvidenceTests(unittest.TestCase):
                     "run",
                     side_effect=AssertionError("source detection must not invoke Git"),
                 ),
+            ):
+                self.assertTrue(_repository_git_context_available())
+
+    def test_source_checkout_is_detected_when_git_is_unavailable(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="benchmark-evidence-no-git-") as directory:
+            checkout = Path(directory)
+            for marker in REPOSITORY_MARKERS:
+                path = checkout / marker
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("# repository marker\n", encoding="utf-8")
+            with (
+                mock.patch.object(sys.modules[__name__], "REPO_ROOT", checkout),
+                mock.patch.object(shutil, "which", return_value=None),
             ):
                 self.assertTrue(_repository_git_context_available())
 
