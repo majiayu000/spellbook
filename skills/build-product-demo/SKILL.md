@@ -190,11 +190,14 @@ Run the pacing analyzer for promotional video:
 
 ```bash
 python3 <skill-dir>/scripts/analyze_demo_pacing.py <final-video> \
+  --plan <demo-dir>/beat-plan.json \
   --json-out <demo-dir>/pacing-verification.json
 ```
 
 Treat its default silence and low-motion limits as a fail-closed rehearsal
-gate. Change a threshold only when the plan names the exact motivated hold.
+gate. The analyzer exempts a silence or low-motion segment only when the entire
+detected interval falls inside a motivated hold declared by the plan; do not
+raise a file-wide threshold to accommodate one hold.
 Review continuous playback or dense consecutive frames as well as a contact
 sheet; one frame per scene can make a static slide deck look varied.
 

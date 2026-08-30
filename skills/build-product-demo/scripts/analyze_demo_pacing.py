@@ -12,13 +12,18 @@ import sys
 from pathlib import Path
 
 
-SILENCE_RE = re.compile(r"silence_duration:\s*([0-9.]+)")
-FREEZE_RE = re.compile(r"freeze_duration:\s*([0-9.]+)")
+SILENCE_START_RE = re.compile(r"silence_start:\s*([0-9.]+)")
+SILENCE_END_RE = re.compile(r"silence_end:\s*([0-9.]+)")
+SILENCE_DURATION_RE = re.compile(r"silence_duration:\s*([0-9.]+)")
+FREEZE_START_RE = re.compile(r"freeze_start:\s*([0-9.]+)")
+FREEZE_END_RE = re.compile(r"freeze_end:\s*([0-9.]+)")
+FREEZE_DURATION_RE = re.compile(r"freeze_duration:\s*([0-9.]+)")
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("media", type=Path)
+    parser.add_argument("--plan", type=Path, help="Validated beat plan containing hold intervals.")
     parser.add_argument("--silence-noise", default="-35dB")
     parser.add_argument("--silence-min-duration", type=float, default=0.45)
     # Terminal and code demos often change only a small text region. A more
@@ -41,8 +46,71 @@ def run(command: list[str]) -> str:
     return result.stdout + result.stderr
 
 
-def durations(pattern: re.Pattern[str], output: str) -> list[float]:
-    return [float(match.group(1)) for match in pattern.finditer(output)]
+def timed_segments(
+    start_pattern: re.Pattern[str],
+    end_pattern: re.Pattern[str],
+    duration_pattern: re.Pattern[str],
+    output: str,
+    media_duration: float,
+) -> list[tuple[float, float, float]]:
+    starts = [float(match.group(1)) for match in start_pattern.finditer(output)]
+    ends = [float(match.group(1)) for match in end_pattern.finditer(output)]
+    durations = [float(match.group(1)) for match in duration_pattern.finditer(output)]
+    if not starts and not ends and not durations:
+        return []
+    if len(starts) == len(ends) + 1 and len(durations) == len(ends):
+        ends.append(media_duration)
+        durations.append(media_duration - starts[-1])
+    if not (len(starts) == len(ends) == len(durations)):
+        raise RuntimeError("ffmpeg emitted incomplete interval metadata")
+    segments = list(zip(starts, ends, durations))
+    if any(end <= start or abs((end - start) - duration) > 0.1 for start, end, duration in segments):
+        raise RuntimeError("ffmpeg emitted inconsistent interval metadata")
+    return segments
+
+
+def load_hold_intervals(path: Path | None) -> list[tuple[float, float]]:
+    if path is None:
+        return []
+    try:
+        plan = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"cannot read beat plan: {exc}") from exc
+    if not isinstance(plan, dict) or not isinstance(plan.get("beats"), list):
+        raise RuntimeError("beat plan must contain a beats array")
+    intervals: list[tuple[float, float]] = []
+    for index, beat in enumerate(plan["beats"]):
+        if not isinstance(beat, dict) or beat.get("type") != "hold":
+            continue
+        start = beat.get("start_seconds")
+        end = beat.get("end_seconds")
+        reason = beat.get("hold_reason")
+        if (
+            isinstance(start, bool)
+            or not isinstance(start, (int, float))
+            or isinstance(end, bool)
+            or not isinstance(end, (int, float))
+            or start < 0
+            or end <= start
+            or not isinstance(reason, str)
+            or not reason.strip()
+        ):
+            raise RuntimeError(f"beats[{index}] has an invalid hold interval")
+        intervals.append((float(start), float(end)))
+    return intervals
+
+
+def split_exempt_segments(
+    segments: list[tuple[float, float, float]],
+    holds: list[tuple[float, float]],
+) -> tuple[list[tuple[float, float, float]], list[tuple[float, float, float]]]:
+    checked: list[tuple[float, float, float]] = []
+    exempt: list[tuple[float, float, float]] = []
+    for segment in segments:
+        start, end, _ = segment
+        target = exempt if any(start >= left - 0.05 and end <= right + 0.05 for left, right in holds) else checked
+        target.append(segment)
+    return checked, exempt
 
 
 def main() -> int:
@@ -54,6 +122,7 @@ def main() -> int:
         print("error: ffmpeg and ffprobe are required", file=sys.stderr)
         return 2
     try:
+        hold_intervals = load_hold_intervals(args.plan)
         probe = json.loads(run([
             "ffprobe", "-v", "error", "-show_entries", "format=duration:stream=codec_type,duration",
             "-of", "json", str(args.media)
@@ -76,16 +145,29 @@ def main() -> int:
             "-vf", f"freezedetect=n={args.freeze_noise}:d={args.freeze_min_duration}",
             "-an", "-f", "null", "-",
         ])
+        silence_segments = timed_segments(
+            SILENCE_START_RE, SILENCE_END_RE, SILENCE_DURATION_RE, silence_output, duration
+        )
+        low_motion_segments = timed_segments(
+            FREEZE_START_RE, FREEZE_END_RE, FREEZE_DURATION_RE, freeze_output, duration
+        )
     except (RuntimeError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
-    silence = durations(SILENCE_RE, silence_output)
-    low_motion = durations(FREEZE_RE, freeze_output)
-    silence_total = sum(silence)
-    low_motion_total = sum(low_motion)
-    silence_ratio = silence_total / duration if duration else 0.0
-    low_motion_ratio = low_motion_total / duration if duration else 0.0
+    checked_silence, exempt_silence = split_exempt_segments(silence_segments, hold_intervals)
+    checked_low_motion, exempt_low_motion = split_exempt_segments(
+        low_motion_segments, hold_intervals
+    )
+    silence_total = sum(segment[2] for segment in silence_segments)
+    low_motion_total = sum(segment[2] for segment in low_motion_segments)
+    checked_silence_total = sum(segment[2] for segment in checked_silence)
+    checked_low_motion_total = sum(segment[2] for segment in checked_low_motion)
+    checked_duration = max(0.0, duration - sum(end - start for start, end in hold_intervals))
+    silence_ratio = checked_silence_total / checked_duration if checked_duration else 0.0
+    low_motion_ratio = checked_low_motion_total / checked_duration if checked_duration else 0.0
+    silence_durations = [segment[2] for segment in checked_silence]
+    low_motion_durations = [segment[2] for segment in checked_low_motion]
     errors: list[str] = []
     if "video" not in stream_types:
         errors.append("media has no video stream")
@@ -102,31 +184,38 @@ def main() -> int:
             )
     if silence_ratio > args.max_silence_ratio:
         errors.append(f"silence ratio {silence_ratio:.3f} exceeds {args.max_silence_ratio:.3f}")
-    if silence and max(silence) > args.max_silence_segment:
-        errors.append(f"longest silence {max(silence):.3f}s exceeds {args.max_silence_segment:.3f}s")
+    if silence_durations and max(silence_durations) > args.max_silence_segment:
+        errors.append(f"longest silence {max(silence_durations):.3f}s exceeds {args.max_silence_segment:.3f}s")
     if low_motion_ratio > args.max_low_motion_ratio:
         errors.append(f"low-motion ratio {low_motion_ratio:.3f} exceeds {args.max_low_motion_ratio:.3f}")
-    if low_motion and max(low_motion) > args.max_low_motion_segment:
-        errors.append(f"longest low-motion span {max(low_motion):.3f}s exceeds {args.max_low_motion_segment:.3f}s")
+    if low_motion_durations and max(low_motion_durations) > args.max_low_motion_segment:
+        errors.append(f"longest low-motion span {max(low_motion_durations):.3f}s exceeds {args.max_low_motion_segment:.3f}s")
 
     report = {
         "valid": not errors,
         "media": args.media.name,
         "duration_seconds": duration,
+        "checked_duration_seconds": round(checked_duration, 3),
         "stream_durations_seconds": {
             key: round(value, 3) for key, value in sorted(stream_durations.items())
         },
         "silence": {
             "total_seconds": round(silence_total, 3),
+            "checked_seconds": round(checked_silence_total, 3),
+            "exempt_seconds": round(sum(segment[2] for segment in exempt_silence), 3),
             "ratio": round(silence_ratio, 4),
-            "longest_segment_seconds": round(max(silence, default=0.0), 3),
-            "segments": len(silence),
+            "longest_segment_seconds": round(max(silence_durations, default=0.0), 3),
+            "segments": len(silence_segments),
+            "exempt_segments": len(exempt_silence),
         },
         "low_motion": {
             "total_seconds": round(low_motion_total, 3),
+            "checked_seconds": round(checked_low_motion_total, 3),
+            "exempt_seconds": round(sum(segment[2] for segment in exempt_low_motion), 3),
             "ratio": round(low_motion_ratio, 4),
-            "longest_segment_seconds": round(max(low_motion, default=0.0), 3),
-            "segments": len(low_motion),
+            "longest_segment_seconds": round(max(low_motion_durations, default=0.0), 3),
+            "segments": len(low_motion_segments),
+            "exempt_segments": len(exempt_low_motion),
         },
         "thresholds": {
             "max_silence_ratio": args.max_silence_ratio,

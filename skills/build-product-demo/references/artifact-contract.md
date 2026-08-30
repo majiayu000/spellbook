@@ -149,7 +149,10 @@ or overlaps. Every beat changes audience knowledge or product state. A normal
 beat may not exceed `max_information_gap_seconds`; split it at the next real
 action, reveal, or consequence instead of adding decorative cuts.
 
-The native-surface duration must meet `native_surface_target_ratio`. The first
+The native-surface duration must meet `native_surface_target_ratio`, and title
+plus composite surfaces must stay below 20% unless
+`native_surface_exception` records why the medium makes those ratios
+inapplicable. The first
 `product_action` event on a normal native-surface beat must occur by
 `first_product_action_seconds`; title and composite events do not satisfy this
 gate. Consecutive non-hold events may not exceed
@@ -159,5 +162,6 @@ gate. Consecutive non-hold events may not exceed
 
 Record the plan validation result, media probe output, pacing analyzer output,
 native/title/composite duration ratios, dense-frame and continuous-playback
-review, retained evidence paths, known limitations, and final verdict. Do not
+review, exact motivated-hold intervals and their analyzer exemptions, retained
+evidence paths, known limitations, and final verdict. Do not
 mark the demo complete when any required check is missing.

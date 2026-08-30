@@ -131,6 +131,7 @@ def validate_plan(plan: Any) -> list[str]:
     seen_ids: set[str] = set()
     previous_end = 0.0
     native_duration = 0.0
+    explanatory_duration = 0.0
     event_times: list[tuple[float, str, str]] = []
     product_action_times: list[float] = []
     hold_intervals: list[tuple[float, float]] = []
@@ -173,6 +174,8 @@ def validate_plan(plan: Any) -> list[str]:
             beat_duration = end - start
             if surface == "native":
                 native_duration += beat_duration
+            elif surface == "title" or surface == "composite":
+                explanatory_duration += beat_duration
             if beat_type == "hold":
                 hold_intervals.append((float(start), float(end)))
             if beat_type == "normal" and is_number(max_gap) and max_gap > 0 and beat_duration > max_gap + TOLERANCE_SECONDS:
@@ -229,6 +232,12 @@ def validate_plan(plan: Any) -> list[str]:
             errors.append(
                 f"native surface ratio is {native_ratio:.3f}, below target {native_target:.3f}"
             )
+        explanatory_ratio = explanatory_duration / duration
+        if not has_native_exception and explanatory_ratio >= 0.2 - 1e-6:
+            errors.append(
+                f"explanatory surface ratio is {explanatory_ratio:.3f}, "
+                "but must stay below 0.200 without native_surface_exception"
+            )
 
     if not product_action_times:
         errors.append("plan must contain at least one product_action event")
@@ -276,7 +285,7 @@ def main() -> int:
 
     print(json.dumps({
         "valid": True,
-        "plan": str(args.plan),
+        "plan": args.plan.name,
         "beats": len(plan["beats"]),
         "duration_seconds": plan["duration_seconds"],
         "max_information_gap_seconds": plan["max_information_gap_seconds"],

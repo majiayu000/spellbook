@@ -201,6 +201,50 @@ def test_declared_native_surface_exception_allows_a_lower_target() -> None:
     assert VALIDATOR.validate_plan(plan) == []
 
 
+def test_explanatory_surface_limit_requires_a_declared_exception() -> None:
+    plan = _valid_plan()
+    plan["first_product_action_seconds"] = 3
+    plan["native_surface_target_ratio"] = 0.6
+    plan["beats"] = [
+        _beat(
+            "title",
+            0,
+            1.6,
+            beat_type="title",
+            truth_mode="title",
+            surface="title",
+            events=[
+                {
+                    "at_seconds": 0.5,
+                    "kind": "reveal",
+                    "description": "A claim card appears.",
+                }
+            ],
+        ),
+        _beat("native-proof", 1.6, 4),
+    ]
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert any("explanatory surface ratio is 0.400" in error for error in errors)
+
+
+def test_plan_validation_report_uses_plan_basename(tmp_path: Path) -> None:
+    plan_path = tmp_path / "client-name" / "beat-plan.json"
+    plan_path.parent.mkdir()
+    plan_path.write_text(json.dumps(_valid_plan()), encoding="utf-8")
+    stdout = io.StringIO()
+    with (
+        mock.patch.object(sys, "argv", ["validate_demo_plan.py", str(plan_path)]),
+        mock.patch.object(sys, "stdout", stdout),
+    ):
+        result = VALIDATOR.main()
+
+    report = json.loads(stdout.getvalue())
+    assert result == 0
+    assert report["plan"] == "beat-plan.json"
+
+
 def _probe_args(media: Path, **overrides: object) -> argparse.Namespace:
     values: dict[str, object] = {
         "media": media,
@@ -308,6 +352,7 @@ def test_pacing_report_uses_media_basename(tmp_path: Path) -> None:
         max_silence_segment=1.75,
         max_low_motion_ratio=0.40,
         max_low_motion_segment=4.0,
+        plan=None,
         json_out=None,
     )
     probe_payload = json.dumps(
@@ -331,3 +376,100 @@ def test_pacing_report_uses_media_basename(tmp_path: Path) -> None:
     report = json.loads(stdout.getvalue())
     assert result == 0
     assert report["media"] == "demo.mp4"
+
+
+def _freeze_output(*segments: tuple[float, float]) -> str:
+    lines: list[str] = []
+    for start, end in segments:
+        lines.extend(
+            [
+                f"[freezedetect] lavfi.freezedetect.freeze_start: {start}",
+                f"[freezedetect] lavfi.freezedetect.freeze_duration: {end - start}",
+                f"[freezedetect] lavfi.freezedetect.freeze_end: {end}",
+            ]
+        )
+    return "\n".join(lines)
+
+
+def _run_pacing_with_freezes(
+    tmp_path: Path, *segments: tuple[float, float]
+) -> tuple[int, dict[str, object]]:
+    media = tmp_path / "demo.mp4"
+    media.write_bytes(b"video")
+    plan_path = tmp_path / "beat-plan.json"
+    plan_path.write_text(
+        json.dumps(
+            {
+                "beats": [
+                    {
+                        "type": "hold",
+                        "start_seconds": 0,
+                        "end_seconds": 6,
+                        "hold_reason": "The audience needs to read the completed result.",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    args = argparse.Namespace(
+        media=media,
+        plan=plan_path,
+        silence_noise="-35dB",
+        silence_min_duration=0.45,
+        freeze_noise="-50dB",
+        freeze_min_duration=1.0,
+        max_silence_ratio=0.18,
+        max_silence_segment=1.75,
+        max_low_motion_ratio=0.40,
+        max_low_motion_segment=4.0,
+        json_out=None,
+    )
+    probe_payload = json.dumps(
+        {
+            "format": {"duration": "60"},
+            "streams": [
+                {"codec_type": "video", "duration": "60"},
+                {"codec_type": "audio", "duration": "60"},
+            ],
+        }
+    )
+    stdout = io.StringIO()
+    with (
+        mock.patch.object(PACING, "parse_args", return_value=args),
+        mock.patch.object(PACING.shutil, "which", return_value="/usr/bin/tool"),
+        mock.patch.object(
+            PACING,
+            "run",
+            side_effect=[probe_payload, "", _freeze_output(*segments)],
+        ),
+        mock.patch.object(sys, "stdout", stdout),
+    ):
+        result = PACING.main()
+    return result, json.loads(stdout.getvalue())
+
+
+def test_declared_hold_exempts_only_its_low_motion_interval(tmp_path: Path) -> None:
+    result, report = _run_pacing_with_freezes(tmp_path, (0, 6))
+
+    assert result == 0
+    assert report["low_motion"]["exempt_seconds"] == 6
+
+
+def test_low_motion_outside_declared_hold_still_fails(tmp_path: Path) -> None:
+    result, report = _run_pacing_with_freezes(tmp_path, (0, 6), (10, 15))
+
+    assert result == 1
+    assert any("longest low-motion span 5.000s" in error for error in report["errors"])
+
+
+def test_open_ended_low_motion_segment_extends_to_media_end() -> None:
+    segments = PACING.timed_segments(
+        PACING.FREEZE_START_RE,
+        PACING.FREEZE_END_RE,
+        PACING.FREEZE_DURATION_RE,
+        "lavfi.freezedetect.freeze_start: 1.5",
+        10.0,
+    )
+
+    assert segments == [(1.5, 10.0, 8.5)]
