@@ -33,7 +33,8 @@ Do not build Codex commands with `echo "user prompt" | ...`; user text can conta
 
 ```bash
 (
-codex_skill_dir=${CODEX_SKILL_DIR:?set CODEX_SKILL_DIR to the installed codex skill}
+codex_skill_dir=${CODEX_SKILL_DIR:-$HOME/.claude/skills/codex}
+[ -f "$codex_skill_dir/scripts/run_with_timeout.py" ] || exit 1
 codex_artifacts=$(mktemp -d) || exit 1
 if python3 "$codex_skill_dir/scripts/run_with_timeout.py" 1800 \
   codex exec resume --last \

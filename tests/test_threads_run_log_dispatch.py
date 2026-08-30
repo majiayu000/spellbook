@@ -968,6 +968,23 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
                 result.stderr,
             )
 
+    def test_accepts_final_usage_in_sole_intent_bounds_container(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "sole-nested-final.jsonl"
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "intent_contract": {"queue_bounds": self.queue_bounds()},
+                },
+                log_path,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(
+                record["intent_contract"]["queue_bounds"]["model_calls_used"], 2
+            )
+
     def test_rejects_non_array_spawned_agent_evidence(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "malformed-spawned-agents.jsonl"

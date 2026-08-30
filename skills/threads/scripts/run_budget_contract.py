@@ -218,7 +218,7 @@ def validate_run_budget(record: dict[str, object]) -> None:
             "intent_contract.queue_bounds",
             require_planning=phase == "preflight",
         )
-        if FINAL_USAGE_FIELDS.intersection(nested):
+        if top_level is not None and FINAL_USAGE_FIELDS.intersection(nested):
             raise ValueError(
                 "intent_contract.queue_bounds must not contain final usage fields"
             )
