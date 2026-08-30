@@ -40,8 +40,12 @@ def _spawned_threads(record: dict[str, object]) -> list[object]:
         evidence = gate.get("native_thread_evidence") if isinstance(gate, dict) else None
     if not isinstance(evidence, dict):
         return []
-    spawned = evidence.get("spawned_agents")
-    return spawned if isinstance(spawned, list) else []
+    if "spawned_agents" not in evidence:
+        return []
+    spawned = evidence["spawned_agents"]
+    if not isinstance(spawned, list):
+        raise ValueError("native_thread_evidence.spawned_agents must be a list")
+    return spawned
 
 
 def _multi_lane(record: dict[str, object]) -> bool:
@@ -144,11 +148,24 @@ def validate_run_budget(record: dict[str, object]) -> None:
 
     top_level = record.get("queue_bounds")
     intent = record.get("intent_contract")
+    if phase == "preflight":
+        if not isinstance(intent, dict):
+            raise ValueError("intent_contract is required for preflight")
+        for field in ("goal", "done_when"):
+            if not isinstance(intent.get(field), str) or not intent[field].strip():
+                raise ValueError(f"intent_contract.{field} is required for preflight")
+        for field in ("authorized_actions", "fresh_confirmation_required"):
+            if field not in intent:
+                raise ValueError(f"intent_contract.{field} is required for preflight")
     nested = intent.get("queue_bounds") if isinstance(intent, dict) else None
     if top_level is not None:
         _validate_bounds(top_level, "queue_bounds")
     if nested is not None:
         _validate_bounds(nested, "intent_contract.queue_bounds")
+        if FINAL_USAGE_FIELDS.intersection(nested):
+            raise ValueError(
+                "intent_contract.queue_bounds must not contain final usage fields"
+            )
     if top_level is not None and nested is not None:
         top_contract = {
             name: value for name, value in top_level.items()

@@ -12,6 +12,9 @@ SCRIPT = ROOT / "skills" / "threads" / "scripts" / "append_run_log.py"
 
 class ThreadsRunLogDispatchTests(unittest.TestCase):
     def run_script(self, payload, log_path, *extra_args):
+        payload = dict(payload)
+        if payload.get("run_phase") == "preflight" and "intent_contract" not in payload:
+            payload["intent_contract"] = self.intent_contract()
         return subprocess.run(
             [sys.executable, str(SCRIPT), "--path", str(log_path), *extra_args],
             input=json.dumps(payload),
@@ -19,6 +22,14 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             capture_output=True,
             check=False,
         )
+
+    def intent_contract(self):
+        return {
+            "goal": "Validate one bounded test tranche.",
+            "done_when": "The preflight contract passes validation.",
+            "authorized_actions": ["validate the test record"],
+            "fresh_confirmation_required": [],
+        }
 
     def queue_bounds(self):
         return {
@@ -639,8 +650,11 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "nested-contract-final.jsonl"
             approved_bounds = self.queue_bounds()
-            del approved_bounds["elapsed_seconds"]
+            for field in ("elapsed_seconds", "items_processed", "model_calls_used"):
+                del approved_bounds[field]
             final_bounds = {**approved_bounds, "elapsed_seconds": 12}
+            final_bounds["items_processed"] = 2
+            final_bounds["model_calls_used"] = 2
             result = self.run_script(
                 {
                     "skill": "threads",
@@ -653,6 +667,63 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
             self.assertEqual(record["queue_bounds"]["elapsed_seconds"], 12)
+
+    def test_rejects_usage_evidence_inside_intent_bounds(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "nested-usage-conflict.jsonl"
+            nested_bounds = self.queue_bounds()
+            nested_bounds["model_calls_used"] = 99
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "intent_contract": {"queue_bounds": nested_bounds},
+                    "queue_bounds": self.queue_bounds(),
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(
+                "intent_contract.queue_bounds must not contain final usage fields",
+                result.stderr,
+            )
+
+    def test_rejects_non_array_spawned_agent_evidence(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "malformed-spawned-agents.jsonl"
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "native_thread_evidence": {"spawned_agents": {"lane_id": "review"}},
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("native_thread_evidence.spawned_agents must be a list", result.stderr)
+
+    def test_preflight_requires_intent_contract(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "missing-intent-preflight.jsonl"
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--path", str(log_path), "--validate-only"],
+                input=json.dumps(
+                    {
+                        "run_phase": "preflight",
+                        "skill": "threads",
+                        "thread_dispatch_gate": {
+                            "planned_native_threads": [{"id": "review"}],
+                        },
+                        "queue_bounds": self.queue_bounds(),
+                    }
+                ),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("intent_contract is required for preflight", result.stderr)
 
     def test_rejects_non_finite_elapsed_seconds(self):
         with TemporaryDirectory() as temp_dir:

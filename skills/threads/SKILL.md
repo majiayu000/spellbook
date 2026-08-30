@@ -13,7 +13,7 @@ Native Codex threads are short-lived parallel work lines inside the Codex workfl
 ## Quick Path
 
 1. Classify the request: `single_agent`, `plan_only`, `execute_direct`, `review_only`, `research_spec`, or `clarify_first`.
-2. If the user explicitly asked for threads, record `thread_dispatch_gate`, write a `run_phase: preflight` record, and pass `append_run_log.py --validate-only` before spawning.
+2. If the user explicitly asked for threads, record `intent_contract` and `thread_dispatch_gate`, write a `run_phase: preflight` record, and pass `append_run_log.py --validate-only` before spawning.
 3. For GitHub queues, fetch remote state in the coordinator lane, then write `queue_gate`, `queue_ledger`, `issue_to_pr_map`, and the validated `queue_bounds`.
 4. Write a lane map with file ownership, verification owner, stop conditions, context budget, and output firewall.
 5. Route large command output to artifacts before dispatch; the parent reads only summaries, short tails, targeted greps, and evidence paths.

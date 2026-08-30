@@ -58,6 +58,12 @@ python3 "$THREADS_SKILL_DIR/scripts/append_run_log.py" --validate-only <<'JSON'
   "run_phase": "preflight",
   "skill": "threads",
   "mode": "execute_direct",
+  "intent_contract": {
+    "goal": "Review one bounded calibration item.",
+    "done_when": "The calibration result and measured usage are recorded.",
+    "authorized_actions": ["read the assigned item"],
+    "fresh_confirmation_required": []
+  },
   "thread_dispatch_gate": {
     "native_subagents": "available",
     "explicit_thread_request": true,
