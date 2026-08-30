@@ -1424,7 +1424,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/sol-luna-router/SKILL.md",
-    "description": "Route coding or repository-review work so GPT-5.6 Sol remains the commander and verifier while a separate GPT-5.6 Luna Max Codex CLI session performs bounded implementation or read-only investigation. Use when the user asks for Sol to direct, plan, supervise, or review Luna work; when native Sol-to-Luna spawning is unavailable or incompatible; or when a task needs auditable agent ownership, budgeted verification, live progress, timeout recovery, usage telemetry, and a Sol review loop.",
+    "description": "Route substantial coding or repository-review work through a two-stage Sol commander/verifier and separate Luna Max CLI worker. Use when the user explicitly asks Sol to direct or supervise Luna, explicitly requests this router, needs an isolated auditable Luna-owned implementation with a Sol review loop, or asks to diagnose or measure the router itself. Do not use merely because a task involves coding, verification, progress reporting, or token saving. For small or straightforward tasks, keep work in Sol unless the user explicitly requests Luna; router configuration, usage, and efficiency questions should use read-only inspection without launching a worker.",
     "language": "en",
     "compatibility": {
       "runtimes": [
@@ -1433,7 +1433,8 @@
     },
     "tags": [
       "agent",
-      "code-review"
+      "code-review",
+      "debugging"
     ]
   },
   {

@@ -19,6 +19,9 @@ What the record reports and validates:
   this repository: implementation commit `3aef0df62c7739ae3c568b594f37c7bbcda36117`
   has baseline parent `f3a68b17159ccf14b75d1c074380971a93c55901`,
   and the validator checks both trees and the three-file change scope.
+- Package-local evidence validation always runs separately; published-source Git
+  provenance is verified in the Spellbook checkout and explicitly skipped as a
+  separate test when an installed copy has no repository context.
 - The three listed implementation paths are benchmark result metadata, not
   current PR changed files.
 
