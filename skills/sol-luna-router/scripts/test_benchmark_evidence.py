@@ -28,6 +28,10 @@ PUBLISHED_SOURCE = {
     "implementation_commit": "3aef0df62c7739ae3c568b594f37c7bbcda36117",
     "implementation_tree": "5ed15a2cc66859547c1334e6dc3b708da04d9f53",
 }
+REPOSITORY_MARKERS = (
+    "scripts/validate_skills.py",
+    "skills/sol-luna-router/scripts/test_benchmark_evidence.py",
+)
 
 SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -264,20 +268,34 @@ def _git_output(*args: str) -> str:
 
 
 def _repository_git_context_available() -> bool:
-    for commit in (
-        PUBLISHED_SOURCE["baseline_commit"],
-        PUBLISHED_SOURCE["implementation_commit"],
-    ):
+    try:
+        top_level = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "rev-parse", "--show-toplevel"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return False
+    if top_level.returncode != 0:
+        return False
+    try:
+        if Path(top_level.stdout.strip()).resolve() != REPO_ROOT.resolve():
+            return False
+    except OSError:
+        return False
+
+    for marker in REPOSITORY_MARKERS:
         try:
             completed = subprocess.run(
                 [
                     "git",
-                    "--no-replace-objects",
                     "-C",
                     str(REPO_ROOT),
-                    "cat-file",
-                    "-e",
-                    f"{commit}^{{commit}}",
+                    "ls-files",
+                    "--error-unmatch",
+                    "--",
+                    marker,
                 ],
                 check=False,
                 capture_output=True,
@@ -671,6 +689,39 @@ class BenchmarkEvidenceTests(unittest.TestCase):
             )
             with mock.patch.object(sys.modules[__name__], "REPO_ROOT", consumer_root):
                 self.assertFalse(_repository_git_context_available())
+
+    def test_shallow_spellbook_checkout_does_not_skip_provenance(self) -> None:
+        evidence = _load_json(EVIDENCE_PATH)
+        provenance = _mapping(evidence["provenance"], "provenance")
+        with tempfile.TemporaryDirectory(prefix="benchmark-evidence-shallow-") as directory:
+            checkout = Path(directory)
+            marker_paths = (
+                checkout / "scripts" / "validate_skills.py",
+                checkout
+                / "skills"
+                / "sol-luna-router"
+                / "scripts"
+                / "test_benchmark_evidence.py",
+            )
+            for marker in marker_paths:
+                marker.parent.mkdir(parents=True, exist_ok=True)
+                marker.write_text("# repository marker\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "init", "-q", str(checkout)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            subprocess.run(
+                ["git", "-C", str(checkout), "add", *(str(path) for path in marker_paths)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            with mock.patch.object(sys.modules[__name__], "REPO_ROOT", checkout):
+                self.assertTrue(_repository_git_context_available())
+                with self.assertRaisesRegex(EvidenceValidationError, "git show"):
+                    _check_published_source(provenance["published_source"], [])
 
     def test_standalone_validation_rejects_arbitrary_published_source_hashes(self) -> None:
         evidence = _load_json(EVIDENCE_PATH)
