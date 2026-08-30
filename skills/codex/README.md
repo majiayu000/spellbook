@@ -36,7 +36,7 @@ Use codex to analyze this repository and suggest improvements for my claude code
 **Claude Code response:**
 Claude will activate the Codex skill and:
 1. Use the installed Codex default model, or ask once if you requested a specific model choice.
-2. Ask which reasoning effort level (`low`, `medium`, or `high`) unless already specified in your prompt.
+2. Use the installed default reasoning effort unless you requested a specific level.
 3. Select appropriate sandbox mode (defaults to `read-only` for analysis)
 4. Avoid high-impact flags such as `danger-full-access`, `--dangerously-bypass-approvals-and-sandbox`, or `--skip-git-repo-check` unless the user explicitly approves them.
 5. Run a command like:
@@ -54,8 +54,13 @@ Claude will activate the Codex skill and:
     codex_status=$?
   fi
 
-  tail -n 1 -- "$codex_artifacts/events.jsonl"
-  tail -n 20 -- "$codex_artifacts/stderr.log"
+  jq -sr \
+    '[.[] | select(.type == "item.completed" and .item.type == "agent_message") | .item.text] | last // "" | .[0:4000]' \
+    "$codex_artifacts/events.jsonl" || exit $?
+  jq -cs \
+    '[.[] | select(.type == "turn.completed") | .usage] | last // {}' \
+    "$codex_artifacts/events.jsonl" || exit $?
+  tail -n 20 -- "$codex_artifacts/stderr.log" || exit $?
   exit "$codex_status"
 )
 ```
