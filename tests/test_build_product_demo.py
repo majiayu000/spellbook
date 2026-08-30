@@ -102,6 +102,15 @@ def _valid_plan() -> dict[str, object]:
     }
 
 
+def test_validator_requires_integer_schema_version() -> None:
+    plan = _valid_plan()
+    plan["schema_version"] = 2.0
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert "schema_version must be integer 2" in errors
+
+
 @pytest.mark.parametrize(
     ("path", "bad_value"),
     [

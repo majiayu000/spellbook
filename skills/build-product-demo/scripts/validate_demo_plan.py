@@ -73,8 +73,13 @@ def validate_plan(plan: object) -> list[str]:
     if not isinstance(plan, dict):
         return ["plan root must be an object"]
 
-    if plan.get("schema_version") != 2:
-        errors.append("schema_version must be 2")
+    schema_version = plan.get("schema_version")
+    if (
+        not isinstance(schema_version, int)
+        or isinstance(schema_version, bool)
+        or schema_version != 2
+    ):
+        errors.append("schema_version must be integer 2")
 
     product = plan.get("product")
     if not isinstance(product, dict):
