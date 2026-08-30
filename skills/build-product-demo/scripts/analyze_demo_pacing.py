@@ -111,7 +111,7 @@ def main() -> int:
 
     report = {
         "valid": not errors,
-        "media": str(args.media.resolve()),
+        "media": args.media.name,
         "duration_seconds": duration,
         "stream_durations_seconds": {
             key: round(value, 3) for key, value in sorted(stream_durations.items())

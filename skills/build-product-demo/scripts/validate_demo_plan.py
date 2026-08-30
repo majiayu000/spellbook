@@ -48,6 +48,16 @@ def require_positive_number(value: Any, path: str, errors: list[str]) -> None:
         errors.append(f"{path} must be a positive number")
 
 
+def require_positive_integer(value: Any, path: str, errors: list[str]) -> None:
+    if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+        errors.append(f"{path} must be a positive integer")
+
+
+def require_enum(value: Any, allowed: set[str], path: str, errors: list[str]) -> None:
+    if not isinstance(value, str) or value not in allowed:
+        errors.append(f"{path} must be one of {sorted(allowed)}")
+
+
 def require_string_list(value: Any, path: str, errors: list[str], *, allow_empty: bool = True) -> None:
     if not isinstance(value, list):
         errors.append(f"{path} must be an array")
@@ -80,9 +90,17 @@ def validate_plan(plan: Any) -> list[str]:
     require_positive_number(plan.get("max_information_gap_seconds"), "max_information_gap_seconds", errors)
     require_positive_number(plan.get("max_attention_gap_seconds"), "max_attention_gap_seconds", errors)
 
+    native_exception = plan.get("native_surface_exception")
+    has_native_exception = isinstance(native_exception, str) and bool(native_exception.strip())
+    if native_exception is not None:
+        require_text(native_exception, "native_surface_exception", errors)
     native_target = plan.get("native_surface_target_ratio")
-    if not is_number(native_target) or not 0.6 <= native_target <= 1:
-        errors.append("native_surface_target_ratio must be between 0.6 and 1")
+    minimum_native_target = 0 if has_native_exception else 0.6
+    if not is_number(native_target) or not minimum_native_target <= native_target <= 1:
+        errors.append(
+            "native_surface_target_ratio must be between "
+            f"{minimum_native_target:g} and 1"
+        )
     first_action_limit = plan.get("first_product_action_seconds")
     if not is_number(first_action_limit) or not 0 <= first_action_limit <= 5:
         errors.append("first_product_action_seconds must be between 0 and 5")
@@ -91,8 +109,9 @@ def validate_plan(plan: Any) -> list[str]:
     if not isinstance(delivery, dict):
         errors.append("delivery must be an object")
     else:
-        for field in ("width", "height", "fps"):
-            require_positive_number(delivery.get(field), f"delivery.{field}", errors)
+        for field in ("width", "height"):
+            require_positive_integer(delivery.get(field), f"delivery.{field}", errors)
+        require_positive_number(delivery.get("fps"), "delivery.fps", errors)
         require_text(delivery.get("container"), "delivery.container", errors)
 
     truth_boundary = plan.get("truth_boundary")
@@ -130,16 +149,13 @@ def validate_plan(plan: Any) -> list[str]:
             seen_ids.add(beat_id)
 
         beat_type = beat.get("type")
-        if beat_type not in BEAT_TYPES:
-            errors.append(f"{prefix}.type must be one of {sorted(BEAT_TYPES)}")
+        require_enum(beat_type, BEAT_TYPES, f"{prefix}.type", errors)
 
         truth_mode = beat.get("truth_mode")
-        if truth_mode not in TRUTH_MODES:
-            errors.append(f"{prefix}.truth_mode must be one of {sorted(TRUTH_MODES)}")
+        require_enum(truth_mode, TRUTH_MODES, f"{prefix}.truth_mode", errors)
 
         surface = beat.get("surface")
-        if surface not in SURFACES:
-            errors.append(f"{prefix}.surface must be one of {sorted(SURFACES)}")
+        require_enum(surface, SURFACES, f"{prefix}.surface", errors)
 
         start = beat.get("start_seconds")
         end = beat.get("end_seconds")
@@ -183,8 +199,7 @@ def validate_plan(plan: Any) -> list[str]:
                 at_seconds = event.get("at_seconds")
                 kind = event.get("kind")
                 require_text(event.get("description"), f"{event_prefix}.description", errors)
-                if kind not in EVENT_KINDS:
-                    errors.append(f"{event_prefix}.kind must be one of {sorted(EVENT_KINDS)}")
+                require_enum(kind, EVENT_KINDS, f"{event_prefix}.kind", errors)
                 if not is_number(at_seconds):
                     errors.append(f"{event_prefix}.at_seconds must be a number")
                     continue
@@ -194,7 +209,7 @@ def validate_plan(plan: Any) -> list[str]:
                     errors.append(f"{event_prefix}.at_seconds must increase within the beat")
                 previous_event = at_seconds
                 event_times.append((float(at_seconds), str(kind), str(beat_type)))
-                if kind == "product_action":
+                if kind == "product_action" and beat_type == "normal" and surface == "native":
                     product_action_times.append(float(at_seconds))
 
         if beat_type == "hold":

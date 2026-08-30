@@ -173,8 +173,13 @@ the final video with:
 
 ```bash
 python3 <skill-dir>/scripts/probe_demo_media.py <final-video> \
-  --expect-width <width> --expect-height <height> --require-audio
+  --expect-width <width> --expect-height <height> --expect-fps <fps> \
+  --expect-duration <duration_seconds> --expect-container <container> \
+  --require-audio
 ```
+
+The duration check allows 0.25 seconds of encoding variance by default. Change
+`--duration-tolerance` only when the plan records why the delivery needs it.
 
 Also inspect the full video or a contact sheet for frozen frames, clipped UI,
 unreadable type, secret leakage, missing chapters, broken focus, abrupt audio,

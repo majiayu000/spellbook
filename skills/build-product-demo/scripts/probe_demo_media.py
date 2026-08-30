@@ -20,8 +20,11 @@ def parse_cli_args() -> argparse.Namespace:
     parser.add_argument("--expect-height", type=int)
     parser.add_argument("--expect-fps", type=float)
     parser.add_argument("--fps-tolerance", type=float, default=0.1)
+    parser.add_argument("--expect-duration", type=float)
+    parser.add_argument("--duration-tolerance", type=float, default=0.25)
     parser.add_argument("--min-duration", type=float)
     parser.add_argument("--max-duration", type=float)
+    parser.add_argument("--expect-container")
     parser.add_argument("--expect-video-codec")
     parser.add_argument("--expect-audio-codec")
     parser.add_argument("--require-audio", action="store_true")
@@ -72,6 +75,7 @@ def main() -> int:
     video_stream = next((stream for stream in streams if stream.get("codec_type") == "video"), None)
     audio_stream = next((stream for stream in streams if stream.get("codec_type") == "audio"), None)
     format_data = payload.get("format", {})
+    format_name = format_data.get("format_name")
     try:
         duration = float(format_data.get("duration"))
     except (TypeError, ValueError):
@@ -82,6 +86,9 @@ def main() -> int:
         errors.append("no video stream")
     if args.require_audio and audio_stream is None:
         errors.append("no audio stream")
+    actual_containers = format_name.split(",") if isinstance(format_name, str) else []
+    if args.expect_container and args.expect_container not in actual_containers:
+        errors.append(f"container is {format_name}, expected {args.expect_container}")
 
     fps = frame_rate(video_stream.get("r_frame_rate")) if video_stream else None
     if video_stream:
@@ -103,6 +110,14 @@ def main() -> int:
     if duration is None:
         errors.append("duration is unavailable")
     else:
+        if (
+            args.expect_duration is not None
+            and abs(duration - args.expect_duration) > args.duration_tolerance
+        ):
+            errors.append(
+                f"duration is {duration:.3f}s, expected {args.expect_duration:.3f}s "
+                f"+/- {args.duration_tolerance:.3f}s"
+            )
         if args.min_duration is not None and duration < args.min_duration:
             errors.append(f"duration is {duration:.3f}s, below minimum {args.min_duration:.3f}s")
         if args.max_duration is not None and duration > args.max_duration:
@@ -110,9 +125,9 @@ def main() -> int:
 
     report = {
         "valid": not errors,
-        "media": str(args.media.resolve()),
+        "media": args.media.name,
         "size_bytes": args.media.stat().st_size,
-        "format": format_data.get("format_name"),
+        "format": format_name,
         "duration_seconds": duration,
         "video": None if video_stream is None else {
             "codec": video_stream.get("codec_name"),

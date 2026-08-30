@@ -116,8 +116,13 @@ Required top-level fields:
 - `duration_seconds`, `max_information_gap_seconds`,
   `max_attention_gap_seconds`: positive numbers;
 - `first_product_action_seconds`: number from zero through five;
-- `native_surface_target_ratio`: number from `0.6` through `1.0`;
-- `delivery.width`, `delivery.height`, `delivery.fps`: positive numbers;
+- `native_surface_target_ratio`: number from `0.6` through `1.0`; a lower target
+  is allowed only when `native_surface_exception` is a non-empty explanation of
+  why the medium makes the ratio inapplicable;
+- `native_surface_exception`: omit it normally; use a non-empty string only for
+  the documented lower-target exception;
+- `delivery.width`, `delivery.height`: positive integers;
+- `delivery.fps`: positive number;
 - `delivery.container`: non-empty string;
 - `truth_boundary.live`, `deterministic`, `composite`, `excluded`: arrays;
 - `beats`: non-empty ordered array.
@@ -145,8 +150,10 @@ beat may not exceed `max_information_gap_seconds`; split it at the next real
 action, reveal, or consequence instead of adding decorative cuts.
 
 The native-surface duration must meet `native_surface_target_ratio`. The first
-`product_action` event must occur by `first_product_action_seconds`. Consecutive
-non-hold events may not exceed `max_attention_gap_seconds`.
+`product_action` event on a normal native-surface beat must occur by
+`first_product_action_seconds`; title and composite events do not satisfy this
+gate. Consecutive non-hold events may not exceed
+`max_attention_gap_seconds`.
 
 ## `verification.json`
 
