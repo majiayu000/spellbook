@@ -63,7 +63,8 @@ Let the mechanism determine the page structure. A short concept may need one vis
 Inspect at a wide desktop viewport and a narrow mobile viewport. Confirm:
 
 - no horizontal clipping or overlapping labels;
-- every SVG or canvas label's rendered bounding box stays inside its own container and the viewBox — SVG text never reflows, and a page-level overflow check will not catch it;
+- every SVG label's `getBBox()` stays inside its container and `viewBox` — SVG text never reflows, and a page-level overflow check will not catch it;
+- every canvas label's intended origin and `measureText()` metrics fit within the canvas dimensions; visually inspect glyph edges when the browser cannot expose exact drawing bounds;
 - full-bleed or negative-margin blocks are re-checked at the narrow width, the classic source of silent horizontal overflow;
 - the main causal path remains visually dominant;
 - text is legible without zooming;
