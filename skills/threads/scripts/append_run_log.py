@@ -115,6 +115,8 @@ def main() -> int:
             record = normalize_record(raw, allow_extra=args.allow_extra)
             if args.validate_only:
                 return 0
+            if record.get("run_phase") == "preflight":
+                raise ValueError("preflight records require --validate-only")
             append_record(record, path)
             output_path = path
     except (OSError, json.JSONDecodeError, ValueError) as exc:

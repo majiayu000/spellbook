@@ -23,6 +23,17 @@ def _planned_threads(record: dict[str, object]) -> list[object]:
     return planned if isinstance(planned, list) else []
 
 
+def _spawned_threads(record: dict[str, object]) -> list[object]:
+    evidence = record.get("native_thread_evidence")
+    if not isinstance(evidence, dict):
+        gate = record.get("thread_dispatch_gate")
+        evidence = gate.get("native_thread_evidence") if isinstance(gate, dict) else None
+    if not isinstance(evidence, dict):
+        return []
+    spawned = evidence.get("spawned_agents")
+    return spawned if isinstance(spawned, list) else []
+
+
 def _multi_lane(record: dict[str, object]) -> bool:
     lanes_total = record.get("lanes_total")
     lanes = record.get("lanes")
@@ -84,6 +95,7 @@ def validate_run_budget(record: dict[str, object]) -> None:
 
     if (phase == "preflight" or _multi_lane(record)) and top_level is None and nested is None:
         raise ValueError("queue_bounds is required for preflight and multi-lane runs")
+    bounds = top_level if top_level is not None else nested
     if phase == "preflight":
         planned = _planned_threads(record)
         if not planned:
@@ -94,6 +106,11 @@ def validate_run_budget(record: dict[str, object]) -> None:
         for lane in planned:
             if not isinstance(lane, dict) or not (lane.get("id") or lane.get("lane_id")):
                 raise ValueError("preflight planned_native_threads entries require id")
-        bounds = top_level if top_level is not None else nested
         if _positive_int(bounds["max_model_calls"], "queue_bounds.max_model_calls") < len(planned):
             raise ValueError("queue_bounds.max_model_calls cannot be lower than planned lanes")
+    elif bounds is not None:
+        spawned = _spawned_threads(record)
+        if _positive_int(bounds["max_model_calls"], "queue_bounds.max_model_calls") < len(spawned):
+            raise ValueError(
+                "queue_bounds.max_model_calls cannot be lower than spawned agents"
+            )

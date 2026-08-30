@@ -42,6 +42,7 @@ Claude will activate the Codex skill and:
 5. Run a command like:
 ```bash
 (
+  command -v jq >/dev/null 2>&1 || exit 1
   codex_artifacts=$(mktemp -d) || exit 1
   if codex exec --config model_reasoning_effort="high" \
     --sandbox read-only \

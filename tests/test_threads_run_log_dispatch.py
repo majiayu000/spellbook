@@ -376,6 +376,66 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_rejects_appending_a_preflight_record(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "preflight.jsonl"
+            result = self.run_script(
+                {
+                    "run_phase": "preflight",
+                    "skill": "threads",
+                    "mode": "execute_direct",
+                    "thread_dispatch_gate": {
+                        "native_subagents": "available",
+                        "explicit_thread_request": True,
+                        "spawn_requirement": "required",
+                        "fallback_mode": "none",
+                        "planned_native_threads": [{"id": "calibration"}],
+                    },
+                    "queue_bounds": self.queue_bounds(),
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("preflight records require --validate-only", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_rejects_final_spawn_count_above_model_call_ceiling(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "too-many-model-calls.jsonl"
+            bounds = self.queue_bounds()
+            bounds["max_model_calls"] = 1
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "execute_direct",
+                    "native_subagents": "available",
+                    "explicit_thread_request": True,
+                    "spawn_requirement": "required",
+                    "fallback_mode": "none",
+                    "native_thread_evidence": {
+                        "spawned_agents": [
+                            {
+                                "lane_id": f"lane-{index}",
+                                "spawn_tool": "multi_agent_v1.spawn_agent",
+                                "agent_id_or_thread_id": f"agent-{index}",
+                                "wait_evidence": "wait_agent completed",
+                                "close_evidence": "close_agent completed",
+                                "result_collected": True,
+                            }
+                            for index in range(3)
+                        ]
+                    },
+                    "lanes_total": 3,
+                    "queue_bounds": bounds,
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("max_model_calls cannot be lower than spawned agents", result.stderr)
+            self.assertFalse(log_path.exists())
+
     def test_rejects_invalid_preflight_fallback_semantics(self):
         cases = [
             ({}, "fallback_mode is required"),
