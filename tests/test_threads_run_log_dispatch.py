@@ -336,6 +336,44 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertIn("planned_native_threads missing spawned evidence", result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_rejects_duplicate_final_planned_lane_ids(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "duplicate-final-plan.jsonl"
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "mode": "review_only",
+                    "thread_dispatch_gate": {
+                        "native_subagents": "available",
+                        "explicit_thread_request": True,
+                        "spawn_requirement": "required",
+                        "fallback_mode": "none",
+                        "planned_native_threads": [
+                            {"id": "same", "role": "reviewer"},
+                            {"id": "same", "role": "reviewer"},
+                        ],
+                        "native_thread_evidence": {
+                            "spawned_agents": [
+                                {
+                                    "lane_id": "same",
+                                    "spawn_tool": "multi_agent_v1.spawn_agent",
+                                    "agent_id_or_thread_id": "agent-123",
+                                    "wait_evidence": "wait_agent completed",
+                                    "close_evidence": "close_agent completed",
+                                    "result_collected": True,
+                                }
+                            ]
+                        },
+                    },
+                    "queue_bounds": self.queue_bounds(),
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("planned_native_threads ids must be unique", result.stderr)
+            self.assertFalse(log_path.exists())
+
     def test_accepts_planned_native_thread_with_lane_no_spawn_reason(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "planned-reason.jsonl"
@@ -779,6 +817,20 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("queue_bounds is required", result.stderr)
             self.assertFalse(log_path.exists())
+
+    def test_accepts_null_queue_ledger_without_queue_bounds(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "null-ledger.jsonl"
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "queue_ledger": None,
+                },
+                log_path,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(log_path.exists())
 
     def test_accepts_final_elapsed_evidence_with_nested_ceiling_contract(self):
         with TemporaryDirectory() as temp_dir:

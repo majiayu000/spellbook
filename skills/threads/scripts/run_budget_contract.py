@@ -231,12 +231,21 @@ def validate_run_budget(record: dict[str, object]) -> None:
         if top_contract != nested_contract:
             raise ValueError("conflicting queue_bounds across top-level and intent_contract")
 
-    dispatched_work = bool(_planned_threads(record) or _spawned_threads(record))
+    planned = _planned_threads(record)
+    planned_lane_ids: set[str] = set()
+    for lane in planned:
+        lane_id = lane.get("id") or lane.get("lane_id") if isinstance(lane, dict) else None
+        if not isinstance(lane_id, str) or not lane_id.strip():
+            raise ValueError("planned_native_threads entries require string id")
+        if lane_id in planned_lane_ids:
+            raise ValueError("planned_native_threads ids must be unique")
+        planned_lane_ids.add(lane_id)
+    dispatched_work = bool(planned or _spawned_threads(record))
     if (
         phase == "preflight"
         or _multi_lane(record)
         or dispatched_work
-        or "queue_ledger" in record
+        or record.get("queue_ledger") is not None
     ) and top_level is None and nested is None:
         raise ValueError(
             "queue_bounds is required for preflight, multi-lane, queue-ledger, "
@@ -264,22 +273,11 @@ def validate_run_budget(record: dict[str, object]) -> None:
         ):
             raise ValueError("queue_bounds.elapsed_seconds exceeds time_budget")
     if phase == "preflight":
-        planned = _planned_threads(record)
         if not planned:
             raise ValueError(
                 "thread_dispatch_gate.planned_native_threads must contain at least one lane "
                 "for a threads preflight"
             )
-        planned_lane_ids: set[str] = set()
-        for lane in planned:
-            lane_id = lane.get("id") or lane.get("lane_id") if isinstance(lane, dict) else None
-            if not isinstance(lane_id, str) or not lane_id.strip():
-                raise ValueError(
-                    "preflight planned_native_threads entries require string id"
-                )
-            if lane_id in planned_lane_ids:
-                raise ValueError("preflight planned_native_threads ids must be unique")
-            planned_lane_ids.add(lane_id)
         for field in ("planned_items", "planned_model_calls", "planned_seconds"):
             if field not in bounds:
                 raise ValueError(f"queue_bounds.{field} is required for preflight")
