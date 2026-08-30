@@ -155,8 +155,10 @@ plus composite surfaces must stay below 20% unless
 `native_surface_exception` records why the medium makes those ratios
 inapplicable. The first
 `product_action` event on a normal native-surface beat must occur by
-`first_product_action_seconds`; title and composite events do not satisfy this
-gate. Consecutive non-hold events may not exceed
+`first_product_action_seconds`. When a documented lower-target
+`native_surface_exception` is active, a `product_action` event on a normal
+composite proof surface also qualifies. Title events never satisfy this gate.
+Consecutive non-hold events may not exceed
 `max_attention_gap_seconds`.
 
 ## `verification.json`

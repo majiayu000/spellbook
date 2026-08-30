@@ -139,6 +139,13 @@ def main() -> int:
     if not args.media.is_file():
         print(f"error: media not found: {args.media}", file=sys.stderr)
         return 2
+    if args.json_out is not None:
+        input_paths = {args.media.resolve()}
+        if args.plan is not None:
+            input_paths.add(args.plan.resolve())
+        if args.json_out.resolve() in input_paths:
+            print("error: json output must not overwrite an input artifact", file=sys.stderr)
+            return 2
     if shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None:
         print("error: ffmpeg and ffprobe are required", file=sys.stderr)
         return 2

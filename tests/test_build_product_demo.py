@@ -370,6 +370,16 @@ def test_title_beat_requires_title_truth_mode() -> None:
     assert "beats[0].truth_mode must be 'title' for a title beat" in errors
 
 
+def test_title_surface_requires_title_beat_and_truth_mode() -> None:
+    plan = _valid_plan()
+    plan["beats"] = [_beat("claim-card", 0, 4, truth_mode="live", surface="title")]
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert "beats[0].type must be 'title' for a title surface" in errors
+    assert "beats[0].truth_mode must be 'title' for a title surface" in errors
+
+
 def test_validator_counts_both_endpoint_gaps_in_global_tolerance() -> None:
     plan = _valid_plan()
     plan["beats"] = [_beat("proof", 0.04, 3.96)]
@@ -466,6 +476,24 @@ def test_probe_validates_average_frame_rate_for_variable_rate_media(tmp_path: Pa
     report = json.loads(stdout.getvalue())
     assert result == 1
     assert any("frame rate is 15.0" in error for error in report["errors"])
+
+
+def test_probe_refuses_to_overwrite_media_with_report(tmp_path: Path) -> None:
+    media = tmp_path / "demo.mp4"
+    media.write_bytes(b"video")
+    with (
+        mock.patch.object(
+            PROBE,
+            "parse_cli_args",
+            return_value=_probe_args(media, json_out=media),
+        ),
+        mock.patch.object(PROBE.subprocess, "run") as run_probe,
+    ):
+        result = PROBE.main()
+
+    assert result == 2
+    assert media.read_bytes() == b"video"
+    run_probe.assert_not_called()
 
 
 def test_probe_checks_declared_duration_and_container_without_exposing_path(
@@ -676,6 +704,40 @@ def test_pacing_rejects_streams_without_any_timing_metadata(tmp_path: Path) -> N
     report = json.loads(stdout.getvalue())
     assert result == 1
     assert any("duration cannot be established" in error for error in report["errors"])
+
+
+@pytest.mark.parametrize("output_target", ["media", "plan"])
+def test_pacing_refuses_to_overwrite_input_artifacts(
+    tmp_path: Path, output_target: str
+) -> None:
+    media = tmp_path / "demo.mp4"
+    media.write_bytes(b"video")
+    plan_path = tmp_path / "beat-plan.json"
+    plan_path.write_text('{"beats": []}', encoding="utf-8")
+    json_out = media if output_target == "media" else plan_path
+    args = argparse.Namespace(
+        media=media,
+        plan=plan_path,
+        silence_noise="-35dB",
+        silence_min_duration=0.45,
+        freeze_noise="-50dB",
+        freeze_min_duration=1.0,
+        max_silence_ratio=0.18,
+        max_silence_segment=1.75,
+        max_low_motion_ratio=0.40,
+        max_low_motion_segment=4.0,
+        json_out=json_out,
+    )
+    with (
+        mock.patch.object(PACING, "parse_args", return_value=args),
+        mock.patch.object(PACING, "run") as run_tool,
+    ):
+        result = PACING.main()
+
+    assert result == 2
+    assert media.read_bytes() == b"video"
+    assert plan_path.read_text(encoding="utf-8") == '{"beats": []}'
+    run_tool.assert_not_called()
 
 
 def _freeze_output(*segments: tuple[float, float]) -> str:

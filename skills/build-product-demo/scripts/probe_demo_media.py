@@ -45,6 +45,9 @@ def main() -> int:
     if not args.media.is_file():
         print(f"error: media not found: {args.media}", file=sys.stderr)
         return 2
+    if args.json_out is not None and args.json_out.resolve() == args.media.resolve():
+        print("error: json output must not overwrite media input", file=sys.stderr)
+        return 2
     if shutil.which("ffprobe") is None:
         print("error: ffprobe is not available on PATH", file=sys.stderr)
         return 2

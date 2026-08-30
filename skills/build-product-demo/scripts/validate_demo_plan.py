@@ -177,6 +177,10 @@ def validate_plan(plan: object) -> list[str]:
             errors.append(f"{prefix}.type must be 'title' when truth_mode is 'title'")
         if truth_mode == "title" and beat_type != "title" and surface != "title":
             errors.append(f"{prefix}.surface must be 'title' when truth_mode is 'title'")
+        if surface == "title" and beat_type != "title":
+            errors.append(f"{prefix}.type must be 'title' for a title surface")
+        if surface == "title" and truth_mode != "title":
+            errors.append(f"{prefix}.truth_mode must be 'title' for a title surface")
 
         start = beat.get("start_seconds")
         end = beat.get("end_seconds")
