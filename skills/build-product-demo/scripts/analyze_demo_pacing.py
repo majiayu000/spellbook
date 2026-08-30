@@ -97,7 +97,13 @@ def load_hold_intervals(path: Path | None) -> list[tuple[float, float]]:
         ):
             raise RuntimeError(f"beats[{index}] has an invalid hold interval")
         intervals.append((float(start), float(end)))
-    return intervals
+    merged: list[tuple[float, float]] = []
+    for start, end in sorted(intervals):
+        if merged and start <= merged[-1][1] + 0.05:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
 
 
 def split_exempt_segments(

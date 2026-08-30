@@ -327,6 +327,33 @@ def test_title_truth_mode_requires_a_title_beat_and_surface() -> None:
     assert "beats[0].surface must be 'title' when truth_mode is 'title'" in errors
 
 
+def test_title_beat_requires_title_truth_mode() -> None:
+    plan = _valid_plan()
+    beat = _beat(
+        "misclassified-title",
+        0,
+        4,
+        beat_type="title",
+        truth_mode="live",
+        surface="title",
+    )
+    beat["evidence"] = ["evidence/title.json"]
+    plan["beats"] = [beat]
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert "beats[0].truth_mode must be 'title' for a title beat" in errors
+
+
+def test_validator_counts_both_endpoint_gaps_in_global_tolerance() -> None:
+    plan = _valid_plan()
+    plan["beats"] = [_beat("proof", 0.04, 3.96)]
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert "aggregate beat gaps total 0.080s, above tolerance 0.050s" in errors
+
+
 def test_plan_validation_report_uses_plan_basename(tmp_path: Path) -> None:
     plan_path = tmp_path / "client-name" / "beat-plan.json"
     plan_path.parent.mkdir()
@@ -364,7 +391,13 @@ def _probe_args(media: Path, **overrides: object) -> argparse.Namespace:
     return argparse.Namespace(**values)
 
 
-def _ffprobe_result(*, duration: float = 60.0, container: str = "mov,mp4,m4a,3gp,3g2,mj2") -> subprocess.CompletedProcess[str]:
+def _ffprobe_result(
+    *,
+    duration: float = 60.0,
+    container: str = "mov,mp4,m4a,3gp,3g2,mj2",
+    average_frame_rate: str = "30/1",
+    real_frame_rate: str = "30/1",
+) -> subprocess.CompletedProcess[str]:
     payload = {
         "format": {"duration": str(duration), "format_name": container},
         "streams": [
@@ -374,7 +407,8 @@ def _ffprobe_result(*, duration: float = 60.0, container: str = "mov,mp4,m4a,3gp
                 "codec_name": "h264",
                 "width": 1920,
                 "height": 1080,
-                "r_frame_rate": "30/1",
+                "avg_frame_rate": average_frame_rate,
+                "r_frame_rate": real_frame_rate,
             },
             {
                 "index": 1,
@@ -386,6 +420,27 @@ def _ffprobe_result(*, duration: float = 60.0, container: str = "mov,mp4,m4a,3gp
         ],
     }
     return subprocess.CompletedProcess([], 0, json.dumps(payload), "")
+
+
+def test_probe_validates_average_frame_rate_for_variable_rate_media(tmp_path: Path) -> None:
+    media = tmp_path / "demo.mp4"
+    media.write_bytes(b"video")
+    stdout = io.StringIO()
+    with (
+        mock.patch.object(PROBE, "parse_cli_args", return_value=_probe_args(media)),
+        mock.patch.object(PROBE.shutil, "which", return_value="/usr/bin/ffprobe"),
+        mock.patch.object(
+            PROBE.subprocess,
+            "run",
+            return_value=_ffprobe_result(average_frame_rate="15/1", real_frame_rate="30/1"),
+        ),
+        mock.patch.object(sys, "stdout", stdout),
+    ):
+        result = PROBE.main()
+
+    report = json.loads(stdout.getvalue())
+    assert result == 1
+    assert any("frame rate is 15.0" in error for error in report["errors"])
 
 
 def test_probe_checks_declared_duration_and_container_without_exposing_path(
@@ -642,6 +697,38 @@ def test_low_motion_outside_declared_hold_still_fails(tmp_path: Path) -> None:
 
     assert result == 1
     assert any("longest low-motion span 5.000s" in error for error in report["errors"])
+
+
+def test_contiguous_hold_intervals_exempt_their_union(tmp_path: Path) -> None:
+    plan_path = tmp_path / "beat-plan.json"
+    plan_path.write_text(
+        json.dumps(
+            {
+                "beats": [
+                    {
+                        "type": "hold",
+                        "start_seconds": 1,
+                        "end_seconds": 3,
+                        "hold_reason": "Read the first result.",
+                    },
+                    {
+                        "type": "hold",
+                        "start_seconds": 3,
+                        "end_seconds": 6,
+                        "hold_reason": "Read the second result.",
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    holds = PACING.load_hold_intervals(plan_path)
+    checked, exempt = PACING.split_exempt_segments([(1, 6, 5)], holds)
+
+    assert holds == [(1.0, 6.0)]
+    assert checked == []
+    assert exempt == [(1, 6, 5)]
 
 
 def test_open_ended_low_motion_segment_extends_to_media_end() -> None:

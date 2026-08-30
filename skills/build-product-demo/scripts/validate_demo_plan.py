@@ -166,6 +166,8 @@ def validate_plan(plan: object) -> list[str]:
         require_enum(surface, SURFACES, f"{prefix}.surface", errors)
         if beat_type == "title" and surface != "title":
             errors.append(f"{prefix}.surface must be 'title' for a title beat")
+        if beat_type == "title" and truth_mode != "title":
+            errors.append(f"{prefix}.truth_mode must be 'title' for a title beat")
         if truth_mode == "title" and beat_type != "title":
             errors.append(f"{prefix}.type must be 'title' when truth_mode is 'title'")
         if truth_mode == "title" and beat_type != "title" and surface != "title":
@@ -246,6 +248,12 @@ def validate_plan(plan: object) -> list[str]:
         if not audience_changed and not product_changed:
             errors.append(f"{prefix} changes neither audience knowledge nor product state")
 
+    if is_number(duration):
+        terminal_delta = duration - previous_end
+        if terminal_delta > 0:
+            cumulative_gap += terminal_delta
+        elif terminal_delta < 0:
+            cumulative_overlap -= terminal_delta
     if cumulative_gap > TOLERANCE_SECONDS:
         errors.append(
             f"aggregate beat gaps total {cumulative_gap:.3f}s, "

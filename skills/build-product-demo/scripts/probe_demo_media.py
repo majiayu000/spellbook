@@ -10,7 +10,6 @@ import subprocess
 import sys
 from fractions import Fraction
 from pathlib import Path
-from typing import Any
 
 
 def parse_cli_args() -> argparse.Namespace:
@@ -32,7 +31,7 @@ def parse_cli_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def frame_rate(value: Any) -> float | None:
+def frame_rate(value: object) -> float | None:
     if not isinstance(value, str) or not value or value == "0/0":
         return None
     try:
@@ -55,7 +54,7 @@ def main() -> int:
         "-v",
         "error",
         "-show_entries",
-        "format=duration,format_name:stream=index,codec_type,codec_name,width,height,r_frame_rate,sample_rate,channels",
+        "format=duration,format_name:stream=index,codec_type,codec_name,width,height,avg_frame_rate,sample_rate,channels",
         "-of",
         "json",
         str(args.media),
@@ -90,7 +89,7 @@ def main() -> int:
     if args.expect_container and args.expect_container not in actual_containers:
         errors.append(f"container is {format_name}, expected {args.expect_container}")
 
-    fps = frame_rate(video_stream.get("r_frame_rate")) if video_stream else None
+    fps = frame_rate(video_stream.get("avg_frame_rate")) if video_stream else None
     if video_stream:
         if args.expect_width is not None and video_stream.get("width") != args.expect_width:
             errors.append(f"width is {video_stream.get('width')}, expected {args.expect_width}")
