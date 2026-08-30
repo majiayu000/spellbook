@@ -61,6 +61,12 @@ def main() -> int:
         print(f"run_with_timeout.py: cannot start command: {exc}", file=sys.stderr)
         return 127
 
+    def handle_sigterm(signum: int, frame: object) -> None:
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        stop_process_group(process)
+        raise SystemExit(128 + signum)
+
+    signal.signal(signal.SIGTERM, handle_sigterm)
     try:
         return process.wait(timeout=args.timeout_seconds)
     except subprocess.TimeoutExpired:

@@ -390,6 +390,38 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_rejects_preflight_usage_above_declared_ceilings(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "exhausted-preflight.jsonl"
+            bounds = self.queue_bounds()
+            bounds.update(
+                {
+                    "max_items": 1,
+                    "max_model_calls": 1,
+                    "checkpoint_every_items": 1,
+                    "items_processed": 99,
+                    "model_calls_used": 99,
+                    "time_budget": "1s",
+                    "elapsed_seconds": 99,
+                }
+            )
+            result = self.run_script(
+                {
+                    "run_phase": "preflight",
+                    "skill": "threads",
+                    "mode": "execute_direct",
+                    "thread_dispatch_gate": {
+                        "planned_native_threads": [{"id": "calibration"}],
+                    },
+                    "queue_bounds": bounds,
+                },
+                log_path,
+                "--validate-only",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("items_processed exceeds max_items", result.stderr)
+
     def test_rejects_appending_a_preflight_record(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "preflight.jsonl"

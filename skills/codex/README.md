@@ -58,11 +58,11 @@ Claude will activate the Codex skill and:
   fi
 
   extract_status=0
-  jq -sr \
-    '[.[] | select(.type == "item.completed" and .item.type == "agent_message") | .item.text] | last // "" | .[0:4000]' \
+  jq -ser \
+    '[.[] | select(.type == "item.completed" and .item.type == "agent_message") | .item.text] | last | select(type == "string" and length > 0) | .[0:4000]' \
     "$codex_artifacts/events.jsonl" || extract_status=$?
-  jq -cs \
-    '[.[] | select(.type == "turn.completed") | .usage] | last // {}' \
+  jq -cse \
+    '[.[] | select(.type == "turn.completed") | .usage] | last | select(type == "object" and length > 0)' \
     "$codex_artifacts/events.jsonl" || extract_status=$?
   tail -n 20 -- "$codex_artifacts/stderr.log" || extract_status=$?
   if [ "$codex_status" -eq 0 ] && [ "$extract_status" -eq 0 ]; then

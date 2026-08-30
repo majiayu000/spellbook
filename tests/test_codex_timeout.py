@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -137,3 +138,36 @@ time.sleep(60)
     with pytest.raises(ProcessLookupError):
         os.killpg(group_id, 0)
     assert result.returncode == 124
+
+
+def test_supervisor_forwards_sigterm_to_process_group(tmp_path: Path) -> None:
+    child_pid_file = tmp_path / "child-pid"
+    helper = tmp_path / "child.py"
+    helper.write_text(
+        """\
+import os
+import pathlib
+import sys
+import time
+
+pathlib.Path(sys.argv[1]).write_text(str(os.getpid()), encoding="utf-8")
+time.sleep(60)
+""",
+        encoding="utf-8",
+    )
+    supervisor = subprocess.Popen(
+        [sys.executable, str(SUPERVISOR), "60", sys.executable, str(helper), str(child_pid_file)],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    for _ in range(100):
+        if child_pid_file.exists():
+            break
+        time.sleep(0.05)
+    child_pid = int(child_pid_file.read_text(encoding="utf-8"))
+
+    supervisor.terminate()
+    assert supervisor.wait(timeout=10) == 128 + signal.SIGTERM
+    with pytest.raises(ProcessLookupError):
+        os.kill(child_pid, 0)

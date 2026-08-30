@@ -202,6 +202,26 @@ def validate_run_budget(record: dict[str, object]) -> None:
             "and dispatched runs"
         )
     bounds = top_level if top_level is not None else nested
+    if bounds is not None:
+        items_processed = bounds.get("items_processed")
+        if items_processed is not None and items_processed > _positive_int(
+            bounds["max_items"], "queue_bounds.max_items"
+        ):
+            if phase == "final":
+                raise ValueError(
+                    "queue_bounds.max_items cannot be lower than processed queue_ledger items"
+                )
+            raise ValueError("queue_bounds.items_processed exceeds max_items")
+        model_calls_used = bounds.get("model_calls_used")
+        if model_calls_used is not None and model_calls_used > _positive_int(
+            bounds["max_model_calls"], "queue_bounds.max_model_calls"
+        ):
+            raise ValueError("queue_bounds.model_calls_used exceeds max_model_calls")
+        elapsed_seconds = bounds.get("elapsed_seconds")
+        if elapsed_seconds is not None and elapsed_seconds > _duration_seconds(
+            bounds["time_budget"], "queue_bounds.time_budget"
+        ):
+            raise ValueError("queue_bounds.elapsed_seconds exceeds time_budget")
     if phase == "preflight":
         planned = _planned_threads(record)
         if not planned:
@@ -233,10 +253,6 @@ def validate_run_budget(record: dict[str, object]) -> None:
             raise ValueError(
                 "queue_bounds.model_calls_used cannot be lower than spawned agents"
             )
-        if model_calls_used > _positive_int(
-            bounds["max_model_calls"], "queue_bounds.max_model_calls"
-        ):
-            raise ValueError("queue_bounds.model_calls_used exceeds max_model_calls")
         queue_ledger = record.get("queue_ledger")
         known_ledger_usage = 0
         if isinstance(queue_ledger, dict):
@@ -249,14 +265,6 @@ def validate_run_budget(record: dict[str, object]) -> None:
             raise ValueError(
                 "queue_bounds.items_processed cannot be lower than queue ledger usage"
             )
-        if items_processed > _positive_int(bounds["max_items"], "queue_bounds.max_items"):
-            raise ValueError(
-                "queue_bounds.max_items cannot be lower than processed queue_ledger items"
-            )
         elapsed_seconds = bounds.get("elapsed_seconds")
         if elapsed_seconds is None:
             raise ValueError("queue_bounds.elapsed_seconds is required for final bounded runs")
-        if elapsed_seconds > _duration_seconds(
-            bounds["time_budget"], "queue_bounds.time_budget"
-        ):
-            raise ValueError("queue_bounds.elapsed_seconds exceeds time_budget")
