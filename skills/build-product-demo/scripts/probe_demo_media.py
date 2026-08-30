@@ -40,14 +40,25 @@ def frame_rate(value: object) -> float | None:
         return None
 
 
+def paths_alias(first: Path, second: Path) -> bool:
+    return first.resolve() == second.resolve() or (
+        first.exists() and first.samefile(second)
+    )
+
+
 def main() -> int:
     args = parse_cli_args()
     if not args.media.is_file():
         print(f"error: media not found: {args.media}", file=sys.stderr)
         return 2
-    if args.json_out is not None and args.json_out.resolve() == args.media.resolve():
-        print("error: json output must not overwrite media input", file=sys.stderr)
-        return 2
+    if args.json_out is not None:
+        try:
+            if paths_alias(args.json_out, args.media):
+                print("error: json output must not overwrite media input", file=sys.stderr)
+                return 2
+        except OSError as exc:
+            print(f"error: cannot compare media and json output: {exc}", file=sys.stderr)
+            return 2
     if shutil.which("ffprobe") is None:
         print("error: ffprobe is not available on PATH", file=sys.stderr)
         return 2

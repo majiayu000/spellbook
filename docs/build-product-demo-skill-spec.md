@@ -87,7 +87,7 @@ python3 skills/build-product-demo/scripts/validate_demo_plan.py \
 python3 skills/build-product-demo/scripts/probe_demo_media.py \
   <representative-video.mp4> --expect-width 1440 --expect-height 900
 python3 skills/build-product-demo/scripts/analyze_demo_pacing.py \
-  <representative-video.mp4>
+  <representative-video.mp4> --plan <representative-plan.json>
 python3 scripts/validate_skills.py --write
 python3 scripts/validate_skills.py --check
 python3 scripts/audit_skill_quality.py build-product-demo

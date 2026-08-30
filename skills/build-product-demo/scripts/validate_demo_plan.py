@@ -238,8 +238,9 @@ def validate_plan(plan: object) -> list[str]:
                 if not is_number(at_seconds):
                     errors.append(f"{event_prefix}.at_seconds must be a number")
                     continue
-                if is_number(start) and is_number(end) and not start <= at_seconds <= end:
+                if is_number(start) and is_number(end) and not start <= at_seconds < end:
                     errors.append(f"{event_prefix}.at_seconds must fall inside its beat")
+                    continue
                 if previous_event is not None and at_seconds <= previous_event:
                     errors.append(f"{event_prefix}.at_seconds must increase within the beat")
                 previous_event = at_seconds

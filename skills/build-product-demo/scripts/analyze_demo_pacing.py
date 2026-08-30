@@ -70,7 +70,9 @@ def timed_segments(
     return segments
 
 
-def load_hold_intervals(path: Path | None) -> list[tuple[float, float]]:
+def load_hold_intervals(
+    path: Path | None, media_duration: float | None = None
+) -> list[tuple[float, float]]:
     if path is None:
         return []
     try:
@@ -79,6 +81,14 @@ def load_hold_intervals(path: Path | None) -> list[tuple[float, float]]:
         raise RuntimeError(f"cannot read beat plan: {exc}") from exc
     if not isinstance(plan, dict) or not isinstance(plan.get("beats"), list):
         raise RuntimeError("beat plan must contain a beats array")
+    if media_duration is not None:
+        plan_duration = plan.get("duration_seconds")
+        if (
+            isinstance(plan_duration, bool)
+            or not isinstance(plan_duration, (int, float))
+            or abs(float(plan_duration) - media_duration) > 0.25
+        ):
+            raise RuntimeError("beat plan duration does not match media duration")
     intervals: list[tuple[float, float]] = []
     for index, beat in enumerate(plan["beats"]):
         if not isinstance(beat, dict) or beat.get("type") != "hold":
@@ -93,6 +103,7 @@ def load_hold_intervals(path: Path | None) -> list[tuple[float, float]]:
             or not isinstance(end, (int, float))
             or start < 0
             or end <= start
+            or (media_duration is not None and end > media_duration + 0.05)
             or not isinstance(reason, str)
             or not reason.strip()
         ):
@@ -134,28 +145,38 @@ def stream_duration_seconds(stream: dict[object, object]) -> float | None:
     return None
 
 
+def paths_alias(first: Path, second: Path) -> bool:
+    return first.resolve() == second.resolve() or (
+        first.exists() and first.samefile(second)
+    )
+
+
 def main() -> int:
     args = parse_args()
     if not args.media.is_file():
         print(f"error: media not found: {args.media}", file=sys.stderr)
         return 2
     if args.json_out is not None:
-        input_paths = {args.media.resolve()}
-        if args.plan is not None:
-            input_paths.add(args.plan.resolve())
-        if args.json_out.resolve() in input_paths:
-            print("error: json output must not overwrite an input artifact", file=sys.stderr)
+        try:
+            input_paths = [args.media]
+            if args.plan is not None:
+                input_paths.append(args.plan)
+            if any(paths_alias(args.json_out, input_path) for input_path in input_paths):
+                print("error: json output must not overwrite an input artifact", file=sys.stderr)
+                return 2
+        except OSError as exc:
+            print(f"error: cannot compare input and json output paths: {exc}", file=sys.stderr)
             return 2
     if shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None:
         print("error: ffmpeg and ffprobe are required", file=sys.stderr)
         return 2
     try:
-        hold_intervals = load_hold_intervals(args.plan)
         probe = json.loads(run([
             "ffprobe", "-v", "error", "-show_entries", "format=duration:stream=index,codec_type,duration,duration_ts,time_base",
             "-of", "json", str(args.media)
         ]))
         duration = float(probe["format"]["duration"])
+        hold_intervals = load_hold_intervals(args.plan, media_duration=duration)
         streams = probe.get("streams", [])
         stream_details: list[tuple[str, object, float | None]] = []
         for position, stream in enumerate(streams):

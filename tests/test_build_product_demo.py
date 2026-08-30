@@ -156,6 +156,29 @@ def test_validator_requires_delivery_codecs(field: str) -> None:
     assert f"delivery.{field} must be a non-empty string" in errors
 
 
+def test_validator_rejects_event_at_final_media_endpoint() -> None:
+    plan = _valid_plan()
+    plan["beats"] = [
+        _beat(
+            "proof",
+            0,
+            4,
+            events=[
+                {
+                    "at_seconds": 4,
+                    "kind": "product_action",
+                    "description": "An unrenderable endpoint action.",
+                }
+            ],
+        )
+    ]
+
+    errors = VALIDATOR.validate_plan(plan)
+
+    assert "beats[0].events[0].at_seconds must fall inside its beat" in errors
+    assert "plan must contain at least one product_action event" in errors
+
+
 def test_title_or_composite_events_do_not_satisfy_first_native_product_action() -> None:
     plan = _valid_plan()
     plan["duration_seconds"] = 4
@@ -508,6 +531,26 @@ def test_probe_refuses_to_overwrite_media_with_report(tmp_path: Path) -> None:
     run_probe.assert_not_called()
 
 
+def test_probe_refuses_hard_link_to_media_as_report(tmp_path: Path) -> None:
+    media = tmp_path / "demo.mp4"
+    media.write_bytes(b"video")
+    report = tmp_path / "report.json"
+    report.hardlink_to(media)
+    with (
+        mock.patch.object(
+            PROBE,
+            "parse_cli_args",
+            return_value=_probe_args(media, json_out=report),
+        ),
+        mock.patch.object(PROBE.subprocess, "run") as run_probe,
+    ):
+        result = PROBE.main()
+
+    assert result == 2
+    assert media.read_bytes() == b"video"
+    run_probe.assert_not_called()
+
+
 def test_probe_checks_declared_duration_and_container_without_exposing_path(
     tmp_path: Path,
 ) -> None:
@@ -800,6 +843,35 @@ def test_pacing_refuses_to_overwrite_input_artifacts(
     run_tool.assert_not_called()
 
 
+def test_pacing_refuses_hard_link_to_media_as_report(tmp_path: Path) -> None:
+    media = tmp_path / "demo.mp4"
+    media.write_bytes(b"video")
+    report = tmp_path / "report.json"
+    report.hardlink_to(media)
+    args = argparse.Namespace(
+        media=media,
+        plan=None,
+        silence_noise="-35dB",
+        silence_min_duration=0.45,
+        freeze_noise="-50dB",
+        freeze_min_duration=1.0,
+        max_silence_ratio=0.18,
+        max_silence_segment=1.75,
+        max_low_motion_ratio=0.40,
+        max_low_motion_segment=4.0,
+        json_out=report,
+    )
+    with (
+        mock.patch.object(PACING, "parse_args", return_value=args),
+        mock.patch.object(PACING, "run") as run_tool,
+    ):
+        result = PACING.main()
+
+    assert result == 2
+    assert media.read_bytes() == b"video"
+    run_tool.assert_not_called()
+
+
 def _freeze_output(*segments: tuple[float, float]) -> str:
     lines: list[str] = []
     for start, end in segments:
@@ -822,6 +894,7 @@ def _run_pacing_with_freezes(
     plan_path.write_text(
         json.dumps(
             {
+                "duration_seconds": 60,
                 "beats": [
                     {
                         "type": "hold",
@@ -915,6 +988,29 @@ def test_contiguous_hold_intervals_exempt_their_union(tmp_path: Path) -> None:
     assert holds == [(1.0, 6.0)]
     assert checked == []
     assert exempt == [(1, 6, 5)]
+
+
+def test_hold_plan_duration_must_match_media(tmp_path: Path) -> None:
+    plan_path = tmp_path / "stale-plan.json"
+    plan_path.write_text(
+        json.dumps(
+            {
+                "duration_seconds": 100,
+                "beats": [
+                    {
+                        "type": "hold",
+                        "start_seconds": 1,
+                        "end_seconds": 100,
+                        "hold_reason": "Stale timing.",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RuntimeError, match="duration does not match media"):
+        PACING.load_hold_intervals(plan_path, media_duration=60)
 
 
 def test_open_ended_low_motion_segment_extends_to_media_end() -> None:
