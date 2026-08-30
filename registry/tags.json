@@ -1,9 +1,9 @@
 {
-  "total_skills": 104,
+  "total_skills": 105,
   "total_tags": 35,
   "tag_counts": {
     "agent": 15,
-    "architecture": 14,
+    "architecture": 15,
     "auth": 3,
     "backend": 13,
     "browser": 5,
@@ -64,6 +64,7 @@
       "dev-architecture-playbook",
       "elegant-architecture",
       "golang-web",
+      "prior-art-architecture",
       "project-health-auditor",
       "python-project",
       "rust-project",
