@@ -23,6 +23,18 @@ class ThreadsRunLogTests(unittest.TestCase):
             check=False,
         )
 
+    def queue_bounds(self):
+        return {
+            "max_items": 10,
+            "max_model_calls": 2,
+            "items_processed": 2,
+            "model_calls_used": 2,
+            "time_budget": "30m",
+            "elapsed_seconds": 0,
+            "checkpoint_every_items": 5,
+            "queue_tranche": "bounded test tranche",
+        }
+
     def nested_payload(self):
         return {
             "skill": "threads",
@@ -63,6 +75,7 @@ class ThreadsRunLogTests(unittest.TestCase):
                     }
                 ],
             },
+            "queue_bounds": self.queue_bounds(),
             "lane_map": {
                 "lanes": [
                     {
@@ -390,6 +403,7 @@ class ThreadsRunLogTests(unittest.TestCase):
                     "skill": "threads",
                     "mode": "execute_direct",
                     "queue_ledger": {"stale_base": True},
+                    "queue_bounds": self.queue_bounds(),
                 },
                 log_path,
             )
@@ -412,6 +426,7 @@ class ThreadsRunLogTests(unittest.TestCase):
                             "remote_state": "open",
                         }
                     ],
+                    "queue_bounds": self.queue_bounds(),
                 },
                 log_path,
             )
@@ -433,6 +448,30 @@ class ThreadsRunLogTests(unittest.TestCase):
         payload["queue_ledger"]["items_total"] = -1
 
         self.assert_rejects_payload(payload, "queue_ledger.items_total")
+
+    def test_rejects_null_queue_ledger_counter(self):
+        payload = self.nested_payload()
+        payload["queue_ledger"]["items_closed"] = None
+
+        self.assert_rejects_payload(
+            payload, "queue_ledger.items_closed must be a non-negative integer"
+        )
+
+    def test_rejects_malformed_authorization_lists(self):
+        cases = [
+            ("authorized_actions", "read repository", "must be a list"),
+            ("fresh_confirmation_required", {}, "must be a list"),
+            ("authorized_actions", [""], "entries must be non-empty strings"),
+        ]
+        for field, value, expected_error in cases:
+            with self.subTest(field=field, value=value):
+                payload = {
+                    "skill": "threads",
+                    "intent_contract": {field: value},
+                }
+                self.assert_rejects_payload(
+                    payload, f"intent_contract.{field} {expected_error}"
+                )
 
     def test_rejects_invalid_queue_ledger_list_entry_shape(self):
         payload = self.nested_payload()

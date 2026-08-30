@@ -17,7 +17,8 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 - 用户明确要求 threads/subagents 且 native_subagents=available 时，必须先 spawn 至少一个 native subagent，或在任何实现/评论/merge 前记录 `fallback_mode: single_agent` 和结构化 `no_spawn_reason`。
 - `native_subagents: available` + `fallback_mode: none` 只有在 `native_thread_evidence.spawned_agents` 里有真实 agent/thread ID 时才成立；main coordinator 不能算 spawned thread。
 - GitHub issue/PR queue 必须先输出 queue_gate 和 issue_to_pr_map，再输出 lane_map；不能只凭 MERGEABLE/CLEAN 或 open 列表开 worker。
-- 先写 intent_contract：goal / non_goals / done_when / merge_policy / remote_truth_required / truth_level / queue_ledger / ci_truth_source / data_collection / queue_bounds / remote_refresh。
+- 先写 intent_contract：goal / non_goals / done_when / authorized_actions / fresh_confirmation_required / merge_policy / remote_truth_required / truth_level / queue_ledger / ci_truth_source / data_collection / queue_bounds / remote_refresh。
+- dispatch 前先用 `append_run_log.py --validate-only` 校验 `run_phase=preflight`；失败时不得 spawn。
 - merge_policy 默认 no_merge；只有用户在当前对话明确授权 merge，才允许 merge_after_gate。
 - GitHub queue、多 lane、或会 push/comment/merge 的运行默认 `data_collection: local_jsonl`；只有很小的只读单 agent 任务或用户明确 opt out 才用 final_report-only，并记录 no_log_reason。
 - 记录 active_skill_source：实际加载的 skill 路径和可发现的 source SHA；发现不了就写 unknown，不要猜。
@@ -40,7 +41,7 @@ Use these templates as raw material. Fill concrete repo paths, PR numbers, issue
 - reviewer lane 默认不跑 full project test suite；full suite 只能由一个明确 owner 跑，通常是 root orchestrator、verification_owner、merge_reviewer，或由当前 head SHA 的 fresh CI 提供。
 - Cargo 测试过滤要合法：每个 `cargo test` 命令只传一个 filter，或使用 module/path 级 filter；不要把多个无关 test name 当多个 positional filters 传给同一条命令。
 - review lane 只读。
-- 完成的 subagent 要及时 close；长 issue/PR 队列完成一个 bounded tranche 后，记录 ledger/resume query，并考虑开新 parent thread 降低上下文负担。
+- 完成的 subagent 要及时 close；长 issue/PR 队列完成一个 bounded tranche 后，记录 ledger/resume query，并考虑开新 parent thread 降低上下文负担。批量同质记录每个 tranche 都开新 child，不跨 tranche resume。
 - 高上下文文件 AGENTS.md/CLAUDE.md/settings/hooks 默认禁止修改。
 - 每个 PR merge 前必须有独立 thread review。
 - 当 native_subagents=available 时，merge 前的独立 review 必须来自 spawned native thread，并在 `native_thread_evidence` 记录 agent/thread ID、wait evidence、close evidence。
@@ -113,16 +114,17 @@ Target: {{issue_or_pr_or_queue}}
 3. native_thread_evidence：spawned_agents 的 lane_id、spawn_tool、agent_id_or_thread_id、wait_evidence、close_evidence、result_collected；若未 spawn，必须说明 no_spawn_reason / fallback_reason
 4. intent_contract（含 merge_policy 默认 no_merge、truth_level、data_collection）
 5. queue_gate、queue_ledger 和 issue_to_pr_map（GitHub queue 必填；非 queue 说明 N/A）
-6. queue_bounds：max_items / time_budget / queue_tranche
+6. queue_bounds：max_items / max_model_calls / planned_items / planned_model_calls / planned_seconds / time_budget / checkpoint_every_items / queue_tranche
 7. remote_refresh：origin/main SHA、stale_base 判断、处理建议
 8. 已完成映射和证据
 9. 未完成/风险
 10. 推荐处理动作和理由
 11. 可并行 worktree 拆分
 12. 每个 lane 的 writable_files、forbidden_files、exclusive_verification、verification_scope、native_thread_id
-13. 必须运行的验证命令
-14. 不应在本轮强做的范围
-15. 建议的 failure_codes（如 stale_remote_state、duplicate_work_missed、missing_intent_contract、native_thread_not_spawned）
+13. done_when 达成后立即停止；blocker 不授权跨 repo 写入、GitHub 写入、安装/升级/重启、迁移/重建索引或全局配置/hook 修改
+14. 必须运行的验证命令
+15. 不应在本轮强做的范围
+16. 建议的 failure_codes（如 stale_remote_state、duplicate_work_missed、missing_intent_contract、native_thread_not_spawned）
 ```
 
 ## Implementation Worker

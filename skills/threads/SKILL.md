@@ -13,8 +13,8 @@ Native Codex threads are short-lived parallel work lines inside the Codex workfl
 ## Quick Path
 
 1. Classify the request: `single_agent`, `plan_only`, `execute_direct`, `review_only`, `research_spec`, or `clarify_first`.
-2. If the user explicitly asked for threads, record `thread_dispatch_gate` and spawn required native lanes before implementation.
-3. For GitHub queues, fetch remote state in the coordinator lane, then write `queue_gate`, `queue_ledger`, and `issue_to_pr_map`.
+2. If the user explicitly asked for threads, record `intent_contract` and `thread_dispatch_gate`, write a `run_phase: preflight` record, and pass `append_run_log.py --validate-only` before spawning.
+3. For GitHub queues, fetch remote state in the coordinator lane, then write `queue_gate`, `queue_ledger`, `issue_to_pr_map`, and the validated `queue_bounds`.
 4. Write a lane map with file ownership, verification owner, stop conditions, context budget, and output firewall.
 5. Route large command output to artifacts before dispatch; the parent reads only summaries, short tails, targeted greps, and evidence paths.
 6. Dispatch only bounded native lanes with disjoint writable scopes or read-only roles.
@@ -97,6 +97,8 @@ intent_contract:
   goal:
   non_goals:
   done_when:
+  authorized_actions:
+  fresh_confirmation_required:
   merge_policy: no_merge | merge_after_gate | user_confirm_before_merge
   remote_truth_required: yes | no
   truth_level: A | B | C | D
@@ -106,7 +108,12 @@ intent_contract:
   active_skill_source: path | source_sha | unknown
   queue_bounds:
     max_items:
+    max_model_calls:
+    planned_items:
+    planned_model_calls:
+    planned_seconds:
     time_budget:
+    checkpoint_every_items:
     queue_tranche:
   context_budget:
     window_tokens:
@@ -135,6 +142,8 @@ Defaults:
 - `data_collection` is `local_jsonl` for GitHub issue/PR queues, multi-lane runs, or any run that may push/comment/merge; use `final_report` only for tiny read-only/single-agent runs or explicit user opt-out.
 - Record the active skill path and source revision when discoverable; record `unknown` rather than guessing.
 - If merge permission is ambiguous, stop after merge review and report the exact recommendation or merge command instead of merging.
+- `authorized_actions` is the closed mutation set for this run. Put cross-repo writes, GitHub writes, installs/upgrades/restarts, migrations/reindexing, and global config/hook changes in `fresh_confirmation_required` unless the current request explicitly authorizes them.
+- Reaching `done_when` ends the run. A blocker does not expand `authorized_actions`; report it and request confirmation for any adjacent remediation.
 
 Direct actions: inspect repo instructions, fetch remote state, map lanes, apply the Explicit Thread Dispatch Gate, spawn required bounded native subagents, integrate results, verify, and report closure.
 
@@ -146,7 +155,17 @@ Feedback loop: record notable failures in `threads_run_log`, classify the failur
 
 If the user asks for issue/PR queue handling, `remote_truth_required` is `yes` and `queue_ledger` is `required_for_queue`.
 
-Broad queue requests such as "all issues and PRs" are bounded by default. If the user did not give an explicit long-run budget, choose one smallest mergeable tranche, record `max_items` / `time_budget` / `queue_tranche`, and leave the remaining queue for the next run with exact next actions.
+Broad queue requests such as "all issues and PRs" are bounded by default. If the user did not give an explicit long-run budget, choose one smallest mergeable tranche, record `max_items` / `max_model_calls` / `time_budget` / `checkpoint_every_items` / `queue_tranche`, and leave the remaining queue for the next run with exact next actions. Every preflight also records concrete `planned_items`, `planned_model_calls`, and `planned_seconds`; each must fit the allowance remaining after cumulative usage. Values such as `unbounded`, `as needed`, or `not pre-budgeted` are invalid.
+
+## Mass-Record Cost Gate
+
+Do not use a long-lived native thread as a generic loop over hundreds or thousands of similar records.
+
+1. Validate a `run_phase: preflight` record with `scripts/append_run_log.py --validate-only` before the first spawn.
+2. Run one representative calibration tranche and collect measured usage when the worker runtime exposes it. Project total model calls and tokens from that evidence; use the token projection as approval evidence, while the enforceable contract remains the item, model-call, time, and checkpoint bounds. Record unavailable usage as a blocker rather than guessing.
+3. Ask for confirmation before the full run when the concrete projection was not already authorized. After confirmation or existing authorization, validate a second preflight containing the full run's approved `max_items`, `max_model_calls`, `time_budget`, and `checkpoint_every_items` before dispatching another tranche.
+4. Start a fresh bounded child for every tranche. Do not resume the same child across tranches or feed it raw prior transcripts; pass compact instructions and artifact paths only.
+5. Before every child or tranche dispatch, recheck item, model-call, and elapsed-time usage, stop at any validated ceiling, and cap the next tranche to the smallest remaining allowance. At each `checkpoint_every_items` cadence, persist the queue ledger and compare measured token usage with the calibration projection; stop and request a revised budget on material overrun. Close completed children and update the existing queue-ledger artifact listed in `output_firewall.evidence_paths`; do not invent a checkpoint run phase, and append the final run log only after collection. Carry the approved `queue_bounds` into that final record, including for a one-child tranche.
 
 ## Parent Context Budget
 
@@ -480,7 +499,7 @@ If the user asked for “review then merge,” the merge reviewer should be a se
 
 ## Run Log
 
-For non-trivial runs, include a compact `threads_run_log` block in the final report. For GitHub queues, multi-lane runs, or any run that may push/comment/merge, append the same JSON object locally with `scripts/append_run_log.py` unless the user opts out; record `no_log_reason` when final-report-only is used. Read [run-log.md](references/run-log.md) before writing durable logs.
+For runs that will dispatch native lanes, validate a `run_phase: preflight` record before dispatch. Append a `run_phase: final` record after collection for GitHub queues, multi-lane runs, or any run that may push/comment/merge, unless the user opts out; record `no_log_reason` when final-report-only is used. Read [run-log.md](references/run-log.md) before writing or validating records.
 
 Run logs are observational. Do not record secrets, credentials, full prompts, or private user data. Prefer short summaries, file paths, PR/issue numbers, command names, failure codes, and verification outcomes.
 
@@ -534,6 +553,16 @@ threads_run_log:
 - lanes_total:
 - queue_items_total:
 - queue_bounds:
+    max_items:
+    max_model_calls:
+    planned_items:
+    planned_model_calls:
+    planned_seconds:
+    items_processed:
+    model_calls_used:
+    time_budget:
+    elapsed_seconds:
+    checkpoint_every_items:
     queue_tranche:
 - context_budget:
     soft_stop_ratio:
@@ -574,6 +603,8 @@ remote_closure:
 - If a worker touches unassigned files, stop that lane and audit before proceeding.
 - If three attempts fail on the same problem, stop and challenge the hypothesis or split the issue differently.
 - If a hook/UI status looks stuck, verify process/log evidence before calling the task stuck.
+- If the work is homogeneous record classification, calibrate and use fresh tranches; session resume is for conversational continuity, not a batch loop.
+- If `done_when` is already true, stop. Treat adjacent runtime repair or another repository as a new authorization decision.
 - Classify failures as specification/system design, inter-agent misalignment, or verification/termination before retrying.
 - If long-running remote state changes underneath a lane, record `stale_remote_state` and refresh/rebase only through an explicit gate; do not silently continue on a stale base.
 - If no native subagent capability is available, return the lane map and exact prompts so the user can launch them manually.

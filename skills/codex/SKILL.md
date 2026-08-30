@@ -6,57 +6,126 @@ compatibility: {runtimes: [claude_code]}
 
 # Codex Skill Guide
 
-## Running a Task
-1. If the user did not specify a model or reasoning effort, use the installed Codex default or ask once with the available user-question mechanism. Do not hardcode a model list; model names change over time.
-2. Select the sandbox mode required for the task; default to `--sandbox read-only` unless edits or network access are necessary.
-3. Run `codex --version` first. Stop and report the failure if Codex is unavailable.
-4. Assemble the command with the appropriate options:
+## Operating Contract
+1. Run `codex --version` and `codex exec --help` first. Stop if Codex is unavailable, and only use flags shown by the installed CLI.
+2. If the user did not specify a model or reasoning effort, use the installed default. Do not hardcode a model list; model names and supported reasoning levels change over time.
+3. Select the smallest sandbox needed: `--sandbox read-only` for inspection and `--sandbox workspace-write` for requested local edits. Network access, extra writable roots, and broader modes are separate grants.
+4. Assemble the command from supported options such as:
    - `-m, --model <MODEL>`
-   - `--config model_reasoning_effort="<xhigh|high|medium|low>"`
-   - `--sandbox <read-only|workspace-write|danger-full-access>`; only use other modes when `codex exec --help` lists them
+   - `--config model_reasoning_effort="<LEVEL>"`
+   - `--sandbox <read-only|workspace-write|danger-full-access>`
    - `-C, --cd <DIR>`
    - `--add-dir <DIR>`
+   - `--json`
+   - `--ephemeral`
    - `--skip-git-repo-check`
    - `--dangerously-bypass-approvals-and-sandbox`
 5. Do not use `--skip-git-repo-check` by default. Use it only when the user explicitly asks to run outside a Git repository or has approved that boundary bypass for this command.
-6. When continuing a previous session, use `codex exec resume --last` via stdin. Do not add model, reasoning, or sandbox flags on resume unless the user explicitly requests an override.
-7. **IMPORTANT**: By default, append `2>/dev/null` to `codex exec` commands to suppress thinking tokens (stderr). Only show stderr if the user explicitly requests it or if debugging is needed.
-8. Run the command, capture stdout/stderr (filtered as appropriate), and summarize the outcome for the user.
-9. **After Codex completes**, inform the user: "You can resume this Codex session at any time by saying 'codex resume' or asking me to continue with additional analysis or changes."
+6. Do not use deprecated compatibility shortcuts such as `--full-auto`; use the explicit sandbox shown by current help.
+7. Preserve stderr. Keep it out of the parent context by writing it to a bounded artifact and reading only the exit status, short tail, or targeted diagnostics. Never redirect it to `/dev/null`.
+8. For automation, batch work, cost investigation, or any run that needs measured usage, add `--json` and save stdout as JSONL. Read the final usage event and report input, cached input, output, and reasoning tokens when present.
+9. Enforce a hard wall-clock timeout with the supervising runtime. Stop on non-zero exit or timeout; do not automatically retry an expensive run.
+10. When continuing a genuinely conversational task, use `codex exec resume --last` via stdin. Do not resume a session for homogeneous record batches; start a fresh bounded `--ephemeral` run per tranche so accumulated history is not resent on every model call.
 
 ### Safe Prompt Passing
 
 Do not build Codex commands with `echo "user prompt" | ...`; user text can contain quotes, substitutions, or newlines. Prefer a quoted heredoc so the shell never reinterprets prompt contents:
 
 ```bash
-codex exec resume --last 2>/dev/null <<'EOF'
+(
+for required_command in python3 head wc mkfifo; do
+  command -v "$required_command" >/dev/null 2>&1 || {
+    printf 'Missing required command: %s\n' "$required_command" >&2
+    exit 127
+  }
+done
+codex_skill_dir=${CODEX_SKILL_DIR:-$HOME/.claude/skills/codex}
+[ -f "$codex_skill_dir/scripts/run_with_timeout.py" ] || {
+  printf 'Missing Codex timeout helper: %s\n' \
+    "$codex_skill_dir/scripts/run_with_timeout.py" >&2
+  exit 1
+}
+codex_artifacts=$(mktemp -d) || exit 1
+codex_stderr_max_bytes=1048576
+codex_stderr_pipe="$codex_artifacts/stderr.pipe"
+mkfifo "$codex_stderr_pipe" || exit 1
+head -c "$codex_stderr_max_bytes" <"$codex_stderr_pipe" \
+  >"$codex_artifacts/stderr.log" &
+codex_stderr_limiter_pid=$!
+if python3 "$codex_skill_dir/scripts/run_with_timeout.py" 1800 \
+  codex exec resume --last \
+  2>"$codex_stderr_pipe" <<'EOF'
 Your follow-up prompt goes here.
 EOF
+then
+  codex_status=0
+else
+  codex_status=$?
+fi
+stderr_limiter_status=0
+wait "$codex_stderr_limiter_pid" || stderr_limiter_status=$?
+rm -- "$codex_stderr_pipe" || exit 1
+artifact_status=0
+stderr_bytes=$(wc -c <"$codex_artifacts/stderr.log") || exit 1
+if [ "$stderr_bytes" -ge "$codex_stderr_max_bytes" ]; then
+  printf 'Codex stderr reached its %s-byte artifact limit\n' \
+    "$codex_stderr_max_bytes" >&2
+  artifact_status=125
+fi
+if [ "$stderr_limiter_status" -ne 0 ]; then artifact_status=$stderr_limiter_status; fi
+tail -c 4000 -- "$codex_artifacts/stderr.log"
+tail_status=$?
+if [ "$codex_status" -eq 0 ] && [ "$artifact_status" -eq 0 ] && [ "$tail_status" -eq 0 ]; then
+  rm -R -- "$codex_artifacts" || exit $?
+else
+  printf 'Codex artifacts retained: %s\n' "$codex_artifacts" >&2
+fi
+if [ "$codex_status" -ne 0 ]; then exit "$codex_status"; fi
+if [ "$artifact_status" -ne 0 ]; then exit "$artifact_status"; fi
+exit "$tail_status"
+)
 ```
 
 ### Quick Reference
 | Use case | Sandbox mode | Key flags |
 | --- | --- | --- |
-| Read-only review or analysis | `read-only` | `--sandbox read-only 2>/dev/null` |
-| Apply local edits | `workspace-write` | `--sandbox workspace-write 2>/dev/null` |
-| Apply edits that need network access | `workspace-write` plus config | `--sandbox workspace-write -c 'sandbox_workspace_write.network_access=true' 2>/dev/null` |
+| Read-only review or analysis | `read-only` | `--sandbox read-only` |
+| Apply local edits | `workspace-write` | `--sandbox workspace-write` |
+| Apply edits that need network access | `workspace-write` plus config | `--sandbox workspace-write -c 'sandbox_workspace_write.network_access=true'` after approval |
+| Machine-readable usage | Match task | `--json`; save JSONL stdout and stderr separately |
+| Independent batch tranche | Match task | `--ephemeral --json`; do not resume the previous tranche |
 | Permit extra write scope | Prefer `--add-dir` | Ask before adding extra writable directories |
 | Permit broad file access | `danger-full-access` only after approval | Ask before adding `--sandbox danger-full-access` |
-| Resume recent session | Inherited from original | `codex exec resume --last 2>/dev/null <<'EOF'` + prompt + `EOF` |
-| Run from another directory | Match task needs | `-C <DIR>` plus other flags `2>/dev/null` |
+| Resume a conversational task | Inherited from original | `codex exec resume --last` via quoted heredoc |
+| Run from another directory | Match task needs | `-C <DIR>` plus other flags |
+
+## Batch Cost Gate
+
+Before more than one similar model call:
+
+1. Define a small calibration ceiling for records, model calls, wall-clock time, and checkpoint cadence; ask for confirmation first when the user has not authorized even that bounded calibration.
+2. Run one representative calibration tranche with `--json` inside that ceiling.
+3. Measure actual usage from the JSONL event stream; do not estimate from record count alone.
+4. Project the remaining calls and tokens from the measured tranche.
+5. State the full-run maximum calls, maximum records, wall-clock budget, and checkpoint cadence.
+6. Ask for confirmation when the projected full run is materially larger than the calibration or the user did not already authorize that concrete budget.
+
+Stop at every checkpoint if measured usage exceeds the projection. Cached input is still token usage: a high cached-input share usually means the same large prefix or accumulated session context is being sent repeatedly, not that the run is free.
 
 ## Following Up
-- After every `codex` command, use the available user-question mechanism to confirm next steps, collect clarifications, or decide whether to resume with `codex exec resume --last`.
-- When resuming, pass the new prompt through stdin using a quoted heredoc. The resumed session automatically uses the same model, reasoning effort, and sandbox mode from the original session.
-- Restate the chosen model, reasoning effort, and sandbox mode when proposing follow-up actions.
+- Resume only when prior conversational context is necessary. For independent records, pass only the tranche instructions and compact artifacts needed for that tranche.
+- Restate the model, reasoning effort, sandbox, measured usage, and remaining budget before proposing another costly tranche.
+- Reaching the requested `done_when` condition ends the run. A blocker is not permission to install, upgrade, restart services, migrate or reindex data, edit global config/hooks, write to another repository, or perform GitHub writes unless the current request explicitly authorizes that action.
 
 ## Error Handling
 - Stop and report failures whenever `codex --version` or a `codex exec` command exits non-zero; request direction before retrying.
 - Before you use high-impact flags (`--sandbox danger-full-access`, `--dangerously-bypass-approvals-and-sandbox`, `--dangerously-bypass-hook-trust`, `--skip-git-repo-check`) ask the user for permission using AskUserQuestion unless it was already given.
-- When output includes warnings or partial results, summarize them and ask how to adjust using `AskUserQuestion`.
+- When output includes warnings, partial results, missing usage, or a timeout, preserve the evidence and ask how to adjust. Do not silently degrade to an unmetered or broader run.
 
 ## Gotchas
 
 - `--skip-git-repo-check` bypasses an important cwd/worktree guard. Treat it like a boundary exception, not a default.
 - `danger-full-access` and the `--dangerously-*` bypass flags are high-impact modes. Prefer `read-only`, then `workspace-write`, then modes explicitly listed by the installed CLI, then specific `--add-dir` grants before considering full access.
 - If a prompt came from the user or another model, pass it as stdin or as a single already-quoted CLI argument. Never interpolate it into a shell string.
+- Suppressing stderr hides failure and progress evidence; pasting all stderr into the parent wastes context. Save it, then inspect a bounded tail.
+- A small output does not imply a cheap run. Repeated large cached prefixes can dominate usage across many short calls.

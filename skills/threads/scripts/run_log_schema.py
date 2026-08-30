@@ -6,6 +6,8 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
+from run_budget_contract import validate_run_budget, validate_semantic_array_limits
+
 
 SENSITIVE_KEY_PARTS = (
     "authorization",
@@ -81,6 +83,7 @@ ALLOWED_SINGLE_AGENT_REASONS = {
 ALLOWED_TOP_LEVEL_FIELDS = {
     "schema_version",
     "recorded_at_utc",
+    "run_phase",
     "skill",
     "skill_source",
     "active_skill_source",
@@ -203,8 +206,10 @@ def normalize_record(raw: Any, allow_extra: bool = False) -> dict[str, Any]:
     unknown_fields = sorted(set(raw) - ALLOWED_TOP_LEVEL_FIELDS)
     if unknown_fields and not allow_extra:
         raise ValueError("unknown top-level field(s): " + ", ".join(unknown_fields))
+    validate_semantic_array_limits(raw, MAX_ARRAY_ITEMS)
 
     record = redact(raw)
+    record.setdefault("run_phase", "final")
     mode = record.get("mode")
     if mode is not None and mode not in ALLOWED_MODES:
         raise ValueError(f"unknown mode: {mode}")
@@ -213,6 +218,7 @@ def normalize_record(raw: Any, allow_extra: bool = False) -> dict[str, Any]:
         raise ValueError(f"unknown truth_level: {truth_level}")
     validate_enum_fields(record)
     validate_native_thread_evidence(record)
+    validate_run_budget(record)
 
     record.setdefault("schema_version", 1)
     record["recorded_at_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -386,6 +392,9 @@ def validate_enum_fields(record: dict[str, Any]) -> None:
             ALLOWED_DATA_COLLECTION,
             "intent_contract.data_collection",
         )
+        for field in ("authorized_actions", "fresh_confirmation_required"):
+            if field in intent_contract:
+                validate_string_list(intent_contract[field], f"intent_contract.{field}")
     validate_enum(record.get("outcome"), ALLOWED_OUTCOMES, "outcome")
     validate_queue_gate(record)
     validate_queue_ledger(record)
@@ -491,7 +500,10 @@ def validate_queue_ledger(record: dict[str, Any]) -> None:
         return
     ledger = require_object(queue_ledger, "queue_ledger")
     for field in ("items_total", "items_closed", "items_deferred"):
-        validate_non_negative_int(ledger.get(field), f"queue_ledger.{field}")
+        value = ledger.get(field)
+        if field in ledger and value is None:
+            raise ValueError(f"queue_ledger.{field} must be a non-negative integer")
+        validate_non_negative_int(value, f"queue_ledger.{field}")
     validate_bool(ledger.get("stale_base"), "queue_ledger.stale_base")
     if "superseded_items" in ledger:
         require_list(ledger["superseded_items"], "queue_ledger.superseded_items")
@@ -743,7 +755,6 @@ def validate_native_thread_evidence(record: dict[str, Any]) -> None:
 
     if fallback_mode is not None and fallback_mode not in ALLOWED_FALLBACK_MODES:
         raise ValueError(f"unknown fallback_mode: {fallback_mode}")
-
     explicit_native_required = dispatch_mode and native_subagents == "available" and required
 
     if explicit_native_required and fallback_mode is None:
@@ -755,6 +766,7 @@ def validate_native_thread_evidence(record: dict[str, Any]) -> None:
     if (
         explicit_native_required
         and fallback_mode == "none"
+        and record.get("run_phase") != "preflight"
         and not has_spawned_agent(record)
     ):
         raise ValueError(
@@ -777,6 +789,9 @@ def validate_native_thread_evidence(record: dict[str, Any]) -> None:
             "prompt_pack_only fallback is invalid when native subagents are "
             "available for an explicit threads run"
         )
+
+    if record.get("run_phase") == "preflight":
+        return
 
     if explicit_native_required and fallback_mode == "none":
         validate_planned_native_threads(record)
