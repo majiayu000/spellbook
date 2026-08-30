@@ -45,7 +45,7 @@ then
 else
   codex_status=$?
 fi
-tail -n 20 -- "$codex_artifacts/stderr.log"
+tail -c 4000 -- "$codex_artifacts/stderr.log"
 tail_status=$?
 if [ "$codex_status" -eq 0 ] && [ "$tail_status" -eq 0 ]; then
   rm -R -- "$codex_artifacts" || exit $?

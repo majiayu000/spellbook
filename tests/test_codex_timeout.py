@@ -140,7 +140,13 @@ time.sleep(60)
     assert result.returncode == 124
 
 
-def test_supervisor_forwards_sigterm_to_process_group(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "termination_signal",
+    [signal.SIGHUP, signal.SIGINT, signal.SIGQUIT, signal.SIGTERM],
+)
+def test_supervisor_forwards_termination_signal_to_process_group(
+    tmp_path: Path, termination_signal: signal.Signals
+) -> None:
     child_pid_file = tmp_path / "child-pid"
     helper = tmp_path / "child.py"
     helper.write_text(
@@ -167,7 +173,14 @@ time.sleep(60)
         time.sleep(0.05)
     child_pid = int(child_pid_file.read_text(encoding="utf-8"))
 
-    supervisor.terminate()
-    assert supervisor.wait(timeout=10) == 128 + signal.SIGTERM
-    with pytest.raises(ProcessLookupError):
+    supervisor.send_signal(termination_signal)
+    return_code = supervisor.wait(timeout=10)
+    try:
         os.kill(child_pid, 0)
+    except ProcessLookupError:
+        child_exists = False
+    else:
+        child_exists = True
+        os.killpg(child_pid, signal.SIGKILL)
+    assert return_code == 128 + termination_signal
+    assert not child_exists

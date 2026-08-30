@@ -136,6 +136,17 @@ def _validate_bounds(bounds: object, field: str) -> None:
             isinstance(value, bool) or not isinstance(value, int) or value < 0
         ):
             raise ValueError(f"{field}.{name} must be a non-negative integer")
+    for name in ("planned_items", "planned_model_calls"):
+        if name in bounds:
+            _positive_int(bounds[name], f"{field}.{name}")
+    planned_seconds = bounds.get("planned_seconds")
+    if planned_seconds is not None and (
+        isinstance(planned_seconds, bool)
+        or not isinstance(planned_seconds, (int, float))
+        or planned_seconds <= 0
+        or (isinstance(planned_seconds, float) and not math.isfinite(planned_seconds))
+    ):
+        raise ValueError(f"{field}.planned_seconds must be a finite positive number")
     if not isinstance(bounds["queue_tranche"], str) or not bounds["queue_tranche"].strip():
         raise ValueError(f"{field}.queue_tranche must be a non-empty string")
     if bounds["queue_tranche"].strip().lower() in {
@@ -239,24 +250,39 @@ def validate_run_budget(record: dict[str, object]) -> None:
             if lane_id in planned_lane_ids:
                 raise ValueError("preflight planned_native_threads ids must be unique")
             planned_lane_ids.add(lane_id)
+        for field in ("planned_items", "planned_model_calls", "planned_seconds"):
+            if field not in bounds:
+                raise ValueError(f"queue_bounds.{field} is required for preflight")
         max_items = _positive_int(bounds["max_items"], "queue_bounds.max_items")
-        items_processed = bounds.get("items_processed")
+        items_processed = bounds.get("items_processed") or 0
         if items_processed is not None and items_processed >= max_items:
             raise ValueError("preflight budget is exhausted at the item ceiling")
+        planned_items = _positive_int(
+            bounds["planned_items"], "queue_bounds.planned_items"
+        )
+        if planned_items > max_items - items_processed:
+            raise ValueError("preflight planned tranche exceeds remaining items")
         max_model_calls = _positive_int(
             bounds["max_model_calls"], "queue_bounds.max_model_calls"
         )
         model_calls_used = bounds.get("model_calls_used") or 0
         if model_calls_used >= max_model_calls:
             raise ValueError("preflight budget is exhausted at the model-call ceiling")
-        if len(planned) > max_model_calls - model_calls_used:
-            raise ValueError("preflight planned lanes exceed remaining model calls")
-        elapsed_seconds = bounds.get("elapsed_seconds")
+        planned_model_calls = _positive_int(
+            bounds["planned_model_calls"], "queue_bounds.planned_model_calls"
+        )
+        if planned_model_calls < len(planned):
+            raise ValueError("queue_bounds.planned_model_calls cannot be lower than planned lanes")
+        if planned_model_calls > max_model_calls - model_calls_used:
+            raise ValueError("preflight planned tranche exceeds remaining model calls")
+        elapsed_seconds = bounds.get("elapsed_seconds") or 0
         time_budget_seconds = _duration_seconds(
             bounds["time_budget"], "queue_bounds.time_budget"
         )
         if elapsed_seconds is not None and elapsed_seconds >= time_budget_seconds:
             raise ValueError("preflight budget is exhausted at the time ceiling")
+        if bounds["planned_seconds"] > time_budget_seconds - elapsed_seconds:
+            raise ValueError("preflight planned tranche exceeds remaining time")
     elif bounds is not None:
         spawned = _spawned_threads(record)
         items_processed = bounds.get("items_processed")

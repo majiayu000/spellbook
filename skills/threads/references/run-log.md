@@ -74,6 +74,9 @@ python3 "$THREADS_SKILL_DIR/scripts/append_run_log.py" --validate-only <<'JSON'
   "queue_bounds": {
     "max_items": 100,
     "max_model_calls": 2,
+    "planned_items": 50,
+    "planned_model_calls": 1,
+    "planned_seconds": 900,
     "time_budget": "30m",
     "checkpoint_every_items": 50,
     "queue_tranche": "one calibration tranche"
@@ -343,7 +346,7 @@ Truth levels:
 
 The append script enforces an allowlist of top-level fields by default. Use `--allow-extra` only for local debugging when extra fields are needed; sensitive keys and common token patterns are still redacted.
 
-`time_budget` must be a positive integer followed by `s`, `m`, or `h`. Preflight, multi-lane, queue-ledger, and final records containing planned or spawned work require positive `max_items`, `max_model_calls`, and `checkpoint_every_items`; this includes coordinator-only queues and one-child tranches. Recheck all ceilings before every child or tranche dispatch and cap the next tranche to the smallest remaining allowance; checkpoint cadence controls ledger persistence, not permission to overshoot. The checkpoint cannot exceed `max_items`. Final bounded records also require non-negative `items_processed`, `model_calls_used`, and `elapsed_seconds`; each usage value is checked against its ceiling, and elapsed time cannot exceed `time_budget`. `items_processed` counts the actual tranche work, including closed, deferred, and superseded items, rather than every discovered open ledger entry. A final record may preserve approved ceilings in `intent_contract.queue_bounds` and add final usage evidence in top-level `queue_bounds`; all shared ceiling fields must still match. Free text such as `not pre-budgeted` is rejected.
+`time_budget` must be a positive integer followed by `s`, `m`, or `h`. Preflight, multi-lane, queue-ledger, and final records containing planned or spawned work require positive `max_items`, `max_model_calls`, and `checkpoint_every_items`; this includes coordinator-only queues and one-child tranches. Every preflight additionally requires positive `planned_items`, `planned_model_calls`, and `planned_seconds`, and validates them against the item, model-call, and time allowance remaining after cumulative usage. Recheck all ceilings before every child or tranche dispatch and cap the next tranche to the smallest remaining allowance; checkpoint cadence controls ledger persistence, not permission to overshoot. The checkpoint cannot exceed `max_items`. Final bounded records also require non-negative `items_processed`, `model_calls_used`, and `elapsed_seconds`; each usage value is checked against its ceiling, and elapsed time cannot exceed `time_budget`. `items_processed` counts the actual tranche work, including closed, deferred, and superseded items, rather than every discovered open ledger entry. A final record may preserve approved ceilings in `intent_contract.queue_bounds` and add final usage evidence in top-level `queue_bounds`; all shared ceiling fields must still match. Free text such as `not pre-budgeted` is rejected.
 
 Safety limits:
 

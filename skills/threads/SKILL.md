@@ -109,6 +109,9 @@ intent_contract:
   queue_bounds:
     max_items:
     max_model_calls:
+    planned_items:
+    planned_model_calls:
+    planned_seconds:
     time_budget:
     checkpoint_every_items:
     queue_tranche:
@@ -152,7 +155,7 @@ Feedback loop: record notable failures in `threads_run_log`, classify the failur
 
 If the user asks for issue/PR queue handling, `remote_truth_required` is `yes` and `queue_ledger` is `required_for_queue`.
 
-Broad queue requests such as "all issues and PRs" are bounded by default. If the user did not give an explicit long-run budget, choose one smallest mergeable tranche, record `max_items` / `max_model_calls` / `time_budget` / `checkpoint_every_items` / `queue_tranche`, and leave the remaining queue for the next run with exact next actions. Values such as `unbounded`, `as needed`, or `not pre-budgeted` are invalid.
+Broad queue requests such as "all issues and PRs" are bounded by default. If the user did not give an explicit long-run budget, choose one smallest mergeable tranche, record `max_items` / `max_model_calls` / `time_budget` / `checkpoint_every_items` / `queue_tranche`, and leave the remaining queue for the next run with exact next actions. Every preflight also records concrete `planned_items`, `planned_model_calls`, and `planned_seconds`; each must fit the allowance remaining after cumulative usage. Values such as `unbounded`, `as needed`, or `not pre-budgeted` are invalid.
 
 ## Mass-Record Cost Gate
 
@@ -552,6 +555,9 @@ threads_run_log:
 - queue_bounds:
     max_items:
     max_model_calls:
+    planned_items:
+    planned_model_calls:
+    planned_seconds:
     items_processed:
     model_calls_used:
     time_budget:

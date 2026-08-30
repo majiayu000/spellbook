@@ -114,7 +114,7 @@ Target: {{issue_or_pr_or_queue}}
 3. native_thread_evidence：spawned_agents 的 lane_id、spawn_tool、agent_id_or_thread_id、wait_evidence、close_evidence、result_collected；若未 spawn，必须说明 no_spawn_reason / fallback_reason
 4. intent_contract（含 merge_policy 默认 no_merge、truth_level、data_collection）
 5. queue_gate、queue_ledger 和 issue_to_pr_map（GitHub queue 必填；非 queue 说明 N/A）
-6. queue_bounds：max_items / max_model_calls / time_budget / checkpoint_every_items / queue_tranche
+6. queue_bounds：max_items / max_model_calls / planned_items / planned_model_calls / planned_seconds / time_budget / checkpoint_every_items / queue_tranche
 7. remote_refresh：origin/main SHA、stale_base 判断、处理建议
 8. 已完成映射和证据
 9. 未完成/风险

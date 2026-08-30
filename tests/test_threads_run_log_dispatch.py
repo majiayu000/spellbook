@@ -50,6 +50,9 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
                 "items_processed": 0,
                 "model_calls_used": 0,
                 "elapsed_seconds": 0,
+                "planned_items": 1,
+                "planned_model_calls": 1,
+                "planned_seconds": 1,
             }
         )
         return bounds
@@ -463,6 +466,7 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
         with TemporaryDirectory() as temp_dir:
             bounds = self.preflight_bounds()
             bounds["model_calls_used"] = 1
+            bounds["planned_model_calls"] = 2
             result = self.run_script(
                 {
                     "run_phase": "preflight",
@@ -480,7 +484,45 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             )
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("planned lanes exceed remaining model calls", result.stderr)
+            self.assertIn("planned tranche exceeds remaining model calls", result.stderr)
+
+    def test_rejects_preflight_tranche_above_each_remaining_allowance(self):
+        cases = [
+            ({"max_items": 100, "items_processed": 99, "planned_items": 2}, "items"),
+            (
+                {
+                    "max_model_calls": 2,
+                    "model_calls_used": 1,
+                    "planned_model_calls": 2,
+                },
+                "model calls",
+            ),
+            (
+                {"time_budget": "2s", "elapsed_seconds": 1, "planned_seconds": 2},
+                "time",
+            ),
+        ]
+        for updates, allowance in cases:
+            with self.subTest(allowance=allowance), TemporaryDirectory() as temp_dir:
+                bounds = self.preflight_bounds()
+                bounds.update(updates)
+                result = self.run_script(
+                    {
+                        "run_phase": "preflight",
+                        "skill": "threads",
+                        "thread_dispatch_gate": {
+                            "planned_native_threads": [{"id": "calibration"}],
+                        },
+                        "queue_bounds": bounds,
+                    },
+                    Path(temp_dir) / "oversized-tranche.jsonl",
+                    "--validate-only",
+                )
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(
+                    f"planned tranche exceeds remaining {allowance}", result.stderr
+                )
 
     def test_rejects_appending_a_preflight_record(self):
         with TemporaryDirectory() as temp_dir:
