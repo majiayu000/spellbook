@@ -16,6 +16,11 @@ BOUND_CONTRACT_FIELDS = {
     "checkpoint_every_items",
     "queue_tranche",
 }
+PREFLIGHT_PLANNING_FIELDS = {
+    "planned_items",
+    "planned_model_calls",
+    "planned_seconds",
+}
 
 
 def _positive_int(value: object, field: str) -> int:
@@ -189,6 +194,16 @@ def validate_run_budget(record: dict[str, object]) -> None:
         for field in ("authorized_actions", "fresh_confirmation_required"):
             if field not in intent:
                 raise ValueError(f"intent_contract.{field} is required for preflight")
+        authorized_actions = intent["authorized_actions"]
+        confirmation_actions = intent["fresh_confirmation_required"]
+        if isinstance(authorized_actions, list) and isinstance(confirmation_actions, list):
+            overlap = {
+                action for action in authorized_actions if isinstance(action, str)
+            }.intersection(
+                action for action in confirmation_actions if isinstance(action, str)
+            )
+            if overlap:
+                raise ValueError("intent_contract authorization lists must be disjoint")
     nested = intent.get("queue_bounds") if isinstance(intent, dict) else None
     if top_level is not None:
         _validate_bounds(top_level, "queue_bounds")
@@ -199,8 +214,11 @@ def validate_run_budget(record: dict[str, object]) -> None:
                 "intent_contract.queue_bounds must not contain final usage fields"
             )
     if top_level is not None and nested is not None:
-        top_contract = {name: top_level[name] for name in BOUND_CONTRACT_FIELDS}
-        nested_contract = {name: nested[name] for name in BOUND_CONTRACT_FIELDS}
+        compared_fields = set(BOUND_CONTRACT_FIELDS)
+        if phase == "preflight":
+            compared_fields.update(PREFLIGHT_PLANNING_FIELDS)
+        top_contract = {name: top_level[name] for name in compared_fields}
+        nested_contract = {name: nested[name] for name in compared_fields}
         if top_contract != nested_contract:
             raise ValueError("conflicting queue_bounds across top-level and intent_contract")
 

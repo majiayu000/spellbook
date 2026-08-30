@@ -21,14 +21,20 @@ def positive_seconds(value: str) -> float:
     return seconds
 
 
-def process_group_exists(group_id: int) -> bool:
-    try:
-        os.killpg(group_id, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    return True
+def process_group_has_live_members(group_id: int) -> bool:
+    result = subprocess.run(
+        ["ps", "-axo", "pgid=,stat="],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"cannot inspect process group {group_id}: {result.stderr.strip()}")
+    for line in result.stdout.splitlines():
+        fields = line.split()
+        if len(fields) >= 2 and fields[0] == str(group_id) and not fields[1].startswith("Z"):
+            return True
+    return False
 
 
 def stop_process_group(process: subprocess.Popen[bytes]) -> None:
@@ -37,10 +43,10 @@ def stop_process_group(process: subprocess.Popen[bytes]) -> None:
     except ProcessLookupError:
         return
     deadline = time.monotonic() + 5
-    while process_group_exists(process.pid) and time.monotonic() < deadline:
+    while process_group_has_live_members(process.pid) and time.monotonic() < deadline:
         process.poll()
         time.sleep(0.05)
-    if process_group_exists(process.pid):
+    if process_group_has_live_members(process.pid):
         try:
             os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
@@ -74,7 +80,7 @@ def main() -> int:
     deadline = time.monotonic() + args.timeout_seconds
     try:
         return_code = process.wait(timeout=args.timeout_seconds)
-        while process_group_exists(process.pid):
+        while process_group_has_live_members(process.pid):
             remaining_seconds = deadline - time.monotonic()
             if remaining_seconds <= 0:
                 raise subprocess.TimeoutExpired(args.command, args.timeout_seconds)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import runpy
 import signal
 import subprocess
 import sys
@@ -12,6 +13,30 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SUPERVISOR = ROOT / "skills" / "codex" / "scripts" / "run_with_timeout.py"
+
+
+def test_process_group_inspection_ignores_zombies(monkeypatch: pytest.MonkeyPatch) -> None:
+    timeout_module = runpy.run_path(str(SUPERVISOR))
+    has_live_members = timeout_module["process_group_has_live_members"]
+
+    def zombie_processes(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(args=[], returncode=0, stdout="123 Z\n123 Z+\n", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", zombie_processes)
+    assert not has_live_members(123)
+
+
+def test_process_group_inspection_finds_non_zombie_member(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    timeout_module = runpy.run_path(str(SUPERVISOR))
+    has_live_members = timeout_module["process_group_has_live_members"]
+
+    def live_processes(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(args=[], returncode=0, stdout="123 Z\n123 S\n", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", live_processes)
+    assert has_live_members(123)
 
 
 def test_supervisor_returns_child_status() -> None:

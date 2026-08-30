@@ -807,6 +807,54 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
             self.assertEqual(record["queue_bounds"]["elapsed_seconds"], 12)
 
+    def test_rejects_conflicting_preflight_planning_fields(self):
+        with TemporaryDirectory() as temp_dir:
+            top_level_bounds = self.preflight_bounds()
+            nested_bounds = self.preflight_bounds()
+            for field in ("elapsed_seconds", "items_processed", "model_calls_used"):
+                del nested_bounds[field]
+            nested_bounds["planned_items"] = 2
+            intent = self.intent_contract()
+            intent["queue_bounds"] = nested_bounds
+            result = self.run_script(
+                {
+                    "run_phase": "preflight",
+                    "skill": "threads",
+                    "intent_contract": intent,
+                    "thread_dispatch_gate": {
+                        "planned_native_threads": [{"id": "calibration"}],
+                    },
+                    "queue_bounds": top_level_bounds,
+                },
+                Path(temp_dir) / "conflicting-plan.jsonl",
+                "--validate-only",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("conflicting queue_bounds", result.stderr)
+
+    def test_rejects_action_in_both_authorization_lists(self):
+        with TemporaryDirectory() as temp_dir:
+            intent = self.intent_contract()
+            intent["authorized_actions"] = ["merge PR #1"]
+            intent["fresh_confirmation_required"] = ["merge PR #1"]
+            result = self.run_script(
+                {
+                    "run_phase": "preflight",
+                    "skill": "threads",
+                    "intent_contract": intent,
+                    "thread_dispatch_gate": {
+                        "planned_native_threads": [{"id": "calibration"}],
+                    },
+                    "queue_bounds": self.preflight_bounds(),
+                },
+                Path(temp_dir) / "ambiguous-authorization.jsonl",
+                "--validate-only",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("authorization lists must be disjoint", result.stderr)
+
     def test_rejects_malformed_thread_dispatch_gate_container(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "malformed-dispatch-gate.jsonl"
