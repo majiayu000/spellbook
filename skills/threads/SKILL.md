@@ -553,6 +553,7 @@ threads_run_log:
     max_items:
     max_model_calls:
     time_budget:
+    elapsed_seconds:
     checkpoint_every_items:
     queue_tranche:
 - context_budget:

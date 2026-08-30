@@ -114,6 +114,7 @@ python3 "$THREADS_SKILL_DIR/scripts/append_run_log.py" <<'JSON'
     "max_items": 1,
     "max_model_calls": 4,
     "time_budget": "30m",
+    "elapsed_seconds": 180,
     "checkpoint_every_items": 1,
     "queue_tranche": "first merge-ready blocker"
   },
@@ -212,6 +213,7 @@ Recommended fields:
     "max_items": 1,
     "max_model_calls": 4,
     "time_budget": "30m",
+    "elapsed_seconds": 180,
     "checkpoint_every_items": 1,
     "queue_tranche": "first blocker"
   },
@@ -331,7 +333,7 @@ Truth levels:
 
 The append script enforces an allowlist of top-level fields by default. Use `--allow-extra` only for local debugging when extra fields are needed; sensitive keys and common token patterns are still redacted.
 
-`time_budget` must be a positive integer followed by `s`, `m`, or `h`. Preflight and multi-lane records require positive `max_items`, `max_model_calls`, and `checkpoint_every_items`; the checkpoint cannot exceed `max_items`. Free text such as `not pre-budgeted` is rejected.
+`time_budget` must be a positive integer followed by `s`, `m`, or `h`. Preflight and multi-lane records require positive `max_items`, `max_model_calls`, and `checkpoint_every_items`; the checkpoint cannot exceed `max_items`. Final bounded records also require non-negative `elapsed_seconds`, which cannot exceed `time_budget`. Free text such as `not pre-budgeted` is rejected.
 
 Safety limits:
 

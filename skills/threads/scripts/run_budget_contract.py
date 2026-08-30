@@ -6,13 +6,21 @@ import re
 
 
 ALLOWED_RUN_PHASES = {"preflight", "final"}
-CONCRETE_DURATION = re.compile(r"^[1-9][0-9]*(?:s|m|h)$")
+CONCRETE_DURATION = re.compile(r"^([1-9][0-9]*)(s|m|h)$")
 
 
 def _positive_int(value: object, field: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         raise ValueError(f"{field} must be a positive integer")
     return value
+
+
+def _duration_seconds(value: object, field: str) -> int:
+    match = CONCRETE_DURATION.fullmatch(value.strip()) if isinstance(value, str) else None
+    if match is None:
+        raise ValueError(f"{field} must be a concrete duration such as 30m or 2h")
+    multiplier = {"s": 1, "m": 60, "h": 3600}[match.group(2)]
+    return int(match.group(1)) * multiplier
 
 
 def _planned_threads(record: dict[str, object]) -> list[object]:
@@ -79,10 +87,14 @@ def _validate_bounds(bounds: object, field: str) -> None:
     )
     if checkpoint > max_items:
         raise ValueError(f"{field}.checkpoint_every_items must not exceed {field}.max_items")
-    if not isinstance(bounds["time_budget"], str) or not CONCRETE_DURATION.fullmatch(
-        bounds["time_budget"].strip()
+    _duration_seconds(bounds["time_budget"], f"{field}.time_budget")
+    elapsed_seconds = bounds.get("elapsed_seconds")
+    if elapsed_seconds is not None and (
+        isinstance(elapsed_seconds, bool)
+        or not isinstance(elapsed_seconds, (int, float))
+        or elapsed_seconds < 0
     ):
-        raise ValueError(f"{field}.time_budget must be a concrete duration such as 30m or 2h")
+        raise ValueError(f"{field}.elapsed_seconds must be a non-negative number")
     if not isinstance(bounds["queue_tranche"], str) or not bounds["queue_tranche"].strip():
         raise ValueError(f"{field}.queue_tranche must be a non-empty string")
     if bounds["queue_tranche"].strip().lower() in {
@@ -130,12 +142,17 @@ def validate_run_budget(record: dict[str, object]) -> None:
                 "queue_bounds.max_model_calls cannot be lower than spawned agents"
             )
         queue_ledger = record.get("queue_ledger")
-        items_closed = queue_ledger.get("items_closed") if isinstance(queue_ledger, dict) else None
-        if (
-            isinstance(items_closed, int)
-            and not isinstance(items_closed, bool)
-            and items_closed > _positive_int(bounds["max_items"], "queue_bounds.max_items")
-        ):
+        items_closed = queue_ledger.get("items_closed", 0) if isinstance(queue_ledger, dict) else 0
+        items_deferred = queue_ledger.get("items_deferred", 0) if isinstance(queue_ledger, dict) else 0
+        processed_items = items_closed + items_deferred
+        if processed_items > _positive_int(bounds["max_items"], "queue_bounds.max_items"):
             raise ValueError(
-                "queue_bounds.max_items cannot be lower than queue_ledger.items_closed"
+                "queue_bounds.max_items cannot be lower than processed queue_ledger items"
             )
+        elapsed_seconds = bounds.get("elapsed_seconds")
+        if elapsed_seconds is None:
+            raise ValueError("queue_bounds.elapsed_seconds is required for final bounded runs")
+        if elapsed_seconds > _duration_seconds(
+            bounds["time_budget"], "queue_bounds.time_budget"
+        ):
+            raise ValueError("queue_bounds.elapsed_seconds exceeds time_budget")

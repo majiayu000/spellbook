@@ -25,6 +25,7 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             "max_items": 10,
             "max_model_calls": 2,
             "time_budget": "30m",
+            "elapsed_seconds": 0,
             "checkpoint_every_items": 5,
             "queue_tranche": "bounded test tranche",
         }
@@ -457,7 +458,50 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             )
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("max_items cannot be lower than queue_ledger.items_closed", result.stderr)
+            self.assertIn("max_items cannot be lower than processed queue_ledger items", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_rejects_final_deferred_items_above_item_ceiling(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "too-many-deferred-items.jsonl"
+            bounds = self.queue_bounds()
+            bounds["max_items"] = 1
+            bounds["checkpoint_every_items"] = 1
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "lanes_total": 2,
+                    "queue_bounds": bounds,
+                    "queue_ledger": {
+                        "items_total": 100,
+                        "items_closed": 1,
+                        "items_deferred": 99,
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("max_items cannot be lower than processed queue_ledger items", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_rejects_final_elapsed_time_above_time_budget(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "elapsed-budget.jsonl"
+            bounds = self.queue_bounds()
+            bounds["time_budget"] = "1s"
+            bounds["elapsed_seconds"] = 1.5
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "lanes_total": 2,
+                    "queue_bounds": bounds,
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("elapsed_seconds exceeds time_budget", result.stderr)
             self.assertFalse(log_path.exists())
 
     def test_rejects_spawned_agents_truncated_before_budget_validation(self):
