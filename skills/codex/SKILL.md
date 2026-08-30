@@ -66,11 +66,12 @@ exit "$codex_status"
 
 Before more than one similar model call:
 
-1. Run one representative calibration tranche with `--json`.
-2. Measure actual usage from the JSONL event stream; do not estimate from record count alone.
-3. Project the remaining calls and tokens from the measured tranche.
-4. State the maximum calls, maximum records, wall-clock budget, and checkpoint cadence.
-5. Ask for confirmation when the projected full run is materially larger than the calibration or the user did not already authorize that concrete budget.
+1. Define a small calibration ceiling for records, model calls, wall-clock time, and checkpoint cadence; ask for confirmation first when the user has not authorized even that bounded calibration.
+2. Run one representative calibration tranche with `--json` inside that ceiling.
+3. Measure actual usage from the JSONL event stream; do not estimate from record count alone.
+4. Project the remaining calls and tokens from the measured tranche.
+5. State the full-run maximum calls, maximum records, wall-clock budget, and checkpoint cadence.
+6. Ask for confirmation when the projected full run is materially larger than the calibration or the user did not already authorize that concrete budget.
 
 Stop at every checkpoint if measured usage exceeds the projection. Cached input is still token usage: a high cached-input share usually means the same large prefix or accumulated session context is being sent repeatedly, not that the run is free.
 

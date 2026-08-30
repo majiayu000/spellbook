@@ -8,6 +8,7 @@ import re
 
 ALLOWED_RUN_PHASES = {"preflight", "final"}
 CONCRETE_DURATION = re.compile(r"^([1-9][0-9]*)(s|m|h)$")
+FINAL_USAGE_FIELDS = {"elapsed_seconds", "items_processed", "model_calls_used"}
 
 
 def _positive_int(value: object, field: str) -> int:
@@ -73,6 +74,9 @@ def validate_semantic_array_limits(record: dict[str, object], limit: int) -> Non
         ledger_items = queue_ledger.get("items")
         if isinstance(ledger_items, list) and len(ledger_items) > limit:
             raise ValueError(f"queue_ledger.items exceeds {limit} items")
+        superseded = queue_ledger.get("superseded_items")
+        if isinstance(superseded, list) and len(superseded) > limit:
+            raise ValueError(f"queue_ledger.superseded_items exceeds {limit} items")
     intent = record.get("intent_contract")
     if isinstance(intent, dict):
         for field in ("authorized_actions", "fresh_confirmation_required"):
@@ -110,6 +114,12 @@ def _validate_bounds(bounds: object, field: str) -> None:
         or (isinstance(elapsed_seconds, float) and not math.isfinite(elapsed_seconds))
     ):
         raise ValueError(f"{field}.elapsed_seconds must be a finite non-negative number")
+    for name in ("items_processed", "model_calls_used"):
+        value = bounds.get(name)
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, int) or value < 0
+        ):
+            raise ValueError(f"{field}.{name} must be a non-negative integer")
     if not isinstance(bounds["queue_tranche"], str) or not bounds["queue_tranche"].strip():
         raise ValueError(f"{field}.queue_tranche must be a non-empty string")
     if bounds["queue_tranche"].strip().lower() in {
@@ -124,6 +134,8 @@ def validate_run_budget(record: dict[str, object]) -> None:
     phase = record.get("run_phase")
     if phase not in ALLOWED_RUN_PHASES:
         raise ValueError(f"unknown run_phase: {phase}")
+    if record.get("lanes_total") is not None:
+        _positive_int(record["lanes_total"], "lanes_total")
 
     top_level = record.get("queue_bounds")
     intent = record.get("intent_contract")
@@ -134,10 +146,12 @@ def validate_run_budget(record: dict[str, object]) -> None:
         _validate_bounds(nested, "intent_contract.queue_bounds")
     if top_level is not None and nested is not None:
         top_contract = {
-            name: value for name, value in top_level.items() if name != "elapsed_seconds"
+            name: value for name, value in top_level.items()
+            if name not in FINAL_USAGE_FIELDS
         }
         nested_contract = {
-            name: value for name, value in nested.items() if name != "elapsed_seconds"
+            name: value for name, value in nested.items()
+            if name not in FINAL_USAGE_FIELDS
         }
         if top_contract != nested_contract:
             raise ValueError("conflicting queue_bounds across top-level and intent_contract")
@@ -162,26 +176,42 @@ def validate_run_budget(record: dict[str, object]) -> None:
                 "for a threads preflight"
             )
         for lane in planned:
-            if not isinstance(lane, dict) or not (lane.get("id") or lane.get("lane_id")):
-                raise ValueError("preflight planned_native_threads entries require id")
+            lane_id = lane.get("id") or lane.get("lane_id") if isinstance(lane, dict) else None
+            if not isinstance(lane_id, str) or not lane_id.strip():
+                raise ValueError(
+                    "preflight planned_native_threads entries require string id"
+                )
         if _positive_int(bounds["max_model_calls"], "queue_bounds.max_model_calls") < len(planned):
             raise ValueError("queue_bounds.max_model_calls cannot be lower than planned lanes")
     elif bounds is not None:
         spawned = _spawned_threads(record)
-        if _positive_int(bounds["max_model_calls"], "queue_bounds.max_model_calls") < len(spawned):
+        items_processed = bounds.get("items_processed")
+        model_calls_used = bounds.get("model_calls_used")
+        if items_processed is None:
+            raise ValueError("queue_bounds.items_processed is required for final bounded runs")
+        if model_calls_used is None:
+            raise ValueError("queue_bounds.model_calls_used is required for final bounded runs")
+        if model_calls_used < len(spawned):
             raise ValueError(
-                "queue_bounds.max_model_calls cannot be lower than spawned agents"
+                "queue_bounds.model_calls_used cannot be lower than spawned agents"
             )
+        if model_calls_used > _positive_int(
+            bounds["max_model_calls"], "queue_bounds.max_model_calls"
+        ):
+            raise ValueError("queue_bounds.model_calls_used exceeds max_model_calls")
         queue_ledger = record.get("queue_ledger")
-        if isinstance(queue_ledger, list):
-            processed_items = len(queue_ledger)
-        else:
+        known_ledger_usage = 0
+        if isinstance(queue_ledger, dict):
             items_closed = queue_ledger.get("items_closed", 0) if isinstance(queue_ledger, dict) else 0
             items_deferred = queue_ledger.get("items_deferred", 0) if isinstance(queue_ledger, dict) else 0
-            ledger_items = queue_ledger.get("items", []) if isinstance(queue_ledger, dict) else []
-            nested_items = len(ledger_items) if isinstance(ledger_items, list) else 0
-            processed_items = max(items_closed + items_deferred, nested_items)
-        if processed_items > _positive_int(bounds["max_items"], "queue_bounds.max_items"):
+            superseded = queue_ledger.get("superseded_items", [])
+            superseded_count = len(superseded) if isinstance(superseded, list) else 0
+            known_ledger_usage = items_closed + items_deferred + superseded_count
+        if items_processed < known_ledger_usage:
+            raise ValueError(
+                "queue_bounds.items_processed cannot be lower than queue ledger usage"
+            )
+        if items_processed > _positive_int(bounds["max_items"], "queue_bounds.max_items"):
             raise ValueError(
                 "queue_bounds.max_items cannot be lower than processed queue_ledger items"
             )

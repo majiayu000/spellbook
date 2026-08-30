@@ -27,6 +27,8 @@ class ThreadsRunLogTests(unittest.TestCase):
         return {
             "max_items": 10,
             "max_model_calls": 2,
+            "items_processed": 2,
+            "model_calls_used": 2,
             "time_budget": "30m",
             "elapsed_seconds": 0,
             "checkpoint_every_items": 5,

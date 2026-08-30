@@ -24,6 +24,8 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
         return {
             "max_items": 10,
             "max_model_calls": 2,
+            "items_processed": 2,
+            "model_calls_used": 2,
             "time_budget": "30m",
             "elapsed_seconds": 0,
             "checkpoint_every_items": 5,
@@ -406,6 +408,7 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             log_path = Path(temp_dir) / "too-many-model-calls.jsonl"
             bounds = self.queue_bounds()
             bounds["max_model_calls"] = 1
+            bounds["model_calls_used"] = 3
             result = self.run_script(
                 {
                     "skill": "threads",
@@ -434,7 +437,7 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             )
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("max_model_calls cannot be lower than spawned agents", result.stderr)
+            self.assertIn("model_calls_used exceeds max_model_calls", result.stderr)
             self.assertFalse(log_path.exists())
 
     def test_rejects_final_items_closed_above_item_ceiling(self):
@@ -443,6 +446,7 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             bounds = self.queue_bounds()
             bounds["max_items"] = 1
             bounds["checkpoint_every_items"] = 1
+            bounds["items_processed"] = 500
             result = self.run_script(
                 {
                     "skill": "threads",
@@ -467,6 +471,7 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             bounds = self.queue_bounds()
             bounds["max_items"] = 1
             bounds["checkpoint_every_items"] = 1
+            bounds["items_processed"] = 100
             result = self.run_script(
                 {
                     "skill": "threads",
@@ -510,6 +515,7 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             bounds = self.queue_bounds()
             bounds["max_items"] = 1
             bounds["checkpoint_every_items"] = 1
+            bounds["items_processed"] = 2
             result = self.run_script(
                 {
                     "skill": "threads",
@@ -524,12 +530,72 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertIn("max_items cannot be lower than processed queue_ledger items", result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_accepts_open_list_ledger_larger_than_bounded_tranche(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "open-list-ledger.jsonl"
+            bounds = self.queue_bounds()
+            bounds["max_items"] = 1
+            bounds["checkpoint_every_items"] = 1
+            bounds["items_processed"] = 1
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "queue_bounds": bounds,
+                    "queue_ledger": [
+                        {"item": f"#{index}", "remote_state": "open"}
+                        for index in range(100)
+                    ],
+                },
+                log_path,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_rejects_actual_model_calls_above_ceiling(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "model-call-overrun.jsonl"
+            bounds = self.queue_bounds()
+            bounds["max_model_calls"] = 1
+            bounds["model_calls_used"] = 2
+            result = self.run_script(
+                {"skill": "threads", "lanes_total": 1, "queue_bounds": bounds},
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("model_calls_used exceeds max_model_calls", result.stderr)
+
+    def test_rejects_superseded_items_missing_from_usage(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "superseded-usage.jsonl"
+            bounds = self.queue_bounds()
+            bounds["max_items"] = 100
+            bounds["items_processed"] = 1
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "queue_bounds": bounds,
+                    "queue_ledger": {
+                        "items_total": 50,
+                        "items_closed": 0,
+                        "items_deferred": 0,
+                        "stale_base": False,
+                        "superseded_items": list(range(50)),
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("items_processed cannot be lower than queue ledger usage", result.stderr)
+
     def test_rejects_nested_queue_ledger_items_above_item_ceiling(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "nested-ledger-budget.jsonl"
             bounds = self.queue_bounds()
             bounds["max_items"] = 1
             bounds["checkpoint_every_items"] = 1
+            bounds["items_processed"] = 2
             result = self.run_script(
                 {
                     "skill": "threads",
@@ -771,6 +837,36 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("queue_bounds is required", result.stderr)
             self.assertFalse(log_path.exists())
+
+    def test_rejects_non_string_preflight_lane_id(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "numeric-lane-id.jsonl"
+            result = self.run_script(
+                {
+                    "run_phase": "preflight",
+                    "skill": "threads",
+                    "thread_dispatch_gate": {
+                        "planned_native_threads": [{"id": 123}],
+                    },
+                    "queue_bounds": self.queue_bounds(),
+                },
+                log_path,
+                "--validate-only",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("planned_native_threads entries require string id", result.stderr)
+
+    def test_rejects_malformed_lanes_total(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "malformed-lanes-total.jsonl"
+            result = self.run_script(
+                {"skill": "threads", "lanes_total": "20"},
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("lanes_total must be a positive integer", result.stderr)
 
     def test_rejects_multi_lane_list_without_queue_bounds(self):
         with TemporaryDirectory() as temp_dir:

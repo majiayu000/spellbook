@@ -552,6 +552,8 @@ threads_run_log:
 - queue_bounds:
     max_items:
     max_model_calls:
+    items_processed:
+    model_calls_used:
     time_budget:
     elapsed_seconds:
     checkpoint_every_items:
