@@ -22,6 +22,12 @@ EVIDENCE_PATH = SKILL_DIR / "evals" / "transport-warning-benchmark-2026-08-12.js
 TASK_PATH = SKILL_DIR / "evals" / "transport-warning-benchmark-2026-08-12-task.md"
 RATE_CARD_PATH = SKILL_DIR / "references" / "rate-card-2026-08-05.json"
 REFERENCE_PATH = SKILL_DIR / "references" / "transport-warning-benchmark-2026-08-12.md"
+PUBLISHED_SOURCE = {
+    "baseline_commit": "f3a68b17159ccf14b75d1c074380971a93c55901",
+    "baseline_tree": "21735b7bb4fd982dc8919269dda9209c5caf3014",
+    "implementation_commit": "3aef0df62c7739ae3c568b594f37c7bbcda36117",
+    "implementation_tree": "5ed15a2cc66859547c1334e6dc3b708da04d9f53",
+}
 
 SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -258,22 +264,30 @@ def _git_output(*args: str) -> str:
 
 
 def _repository_git_context_available() -> bool:
-    try:
-        completed = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(REPO_ROOT),
-                "rev-parse",
-                "--is-inside-work-tree",
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-    except OSError:
-        return False
-    return completed.returncode == 0 and completed.stdout.strip() == "true"
+    for commit in (
+        PUBLISHED_SOURCE["baseline_commit"],
+        PUBLISHED_SOURCE["implementation_commit"],
+    ):
+        try:
+            completed = subprocess.run(
+                [
+                    "git",
+                    "--no-replace-objects",
+                    "-C",
+                    str(REPO_ROOT),
+                    "cat-file",
+                    "-e",
+                    f"{commit}^{{commit}}",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except OSError:
+            return False
+        if completed.returncode != 0:
+            return False
+    return True
 
 
 def _check_published_source_metadata(value: object) -> dict[str, object]:
@@ -285,6 +299,11 @@ def _check_published_source_metadata(value: object) -> dict[str, object]:
     )
     for name in ("baseline_commit", "baseline_tree", "implementation_commit", "implementation_tree"):
         _check_hash(source[name], SHA1_RE, f"published_source.{name}")
+        _equal(
+            source[name],
+            PUBLISHED_SOURCE[name],
+            f"published source {name.replace('_', ' ')} (published_source.{name})",
+        )
     return source
 
 
@@ -640,6 +659,35 @@ class BenchmarkEvidenceTests(unittest.TestCase):
                 ),
             ):
                 validate_evidence(include_repository_provenance=False)
+
+    def test_unrelated_consumer_git_checkout_is_not_repository_context(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="benchmark-evidence-consumer-") as directory:
+            consumer_root = Path(directory)
+            subprocess.run(
+                ["git", "init", "-q", str(consumer_root)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            with mock.patch.object(sys.modules[__name__], "REPO_ROOT", consumer_root):
+                self.assertFalse(_repository_git_context_available())
+
+    def test_standalone_validation_rejects_arbitrary_published_source_hashes(self) -> None:
+        evidence = _load_json(EVIDENCE_PATH)
+        provenance = _mapping(evidence["provenance"], "provenance")
+        source = _mapping(provenance["published_source"], "published_source")
+        source["baseline_commit"] = "0" * 40
+        with tempfile.TemporaryDirectory(prefix="benchmark-evidence-test-") as directory:
+            drifted_evidence = Path(directory) / EVIDENCE_PATH.name
+            drifted_evidence.write_text(json.dumps(evidence), encoding="utf-8")
+            with self.assertRaisesRegex(
+                EvidenceValidationError,
+                "published_source.baseline_commit",
+            ):
+                validate_evidence(
+                    evidence_path=drifted_evidence,
+                    include_repository_provenance=False,
+                )
 
     @unittest.skipUnless(
         _repository_git_context_available(),
