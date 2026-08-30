@@ -126,15 +126,26 @@ def validate_run_budget(record: dict[str, object]) -> None:
         _validate_bounds(top_level, "queue_bounds")
     if nested is not None:
         _validate_bounds(nested, "intent_contract.queue_bounds")
-    if top_level is not None and nested is not None and top_level != nested:
-        raise ValueError("conflicting queue_bounds across top-level and intent_contract")
+    if top_level is not None and nested is not None:
+        top_contract = {
+            name: value for name, value in top_level.items() if name != "elapsed_seconds"
+        }
+        nested_contract = {
+            name: value for name, value in nested.items() if name != "elapsed_seconds"
+        }
+        if top_contract != nested_contract:
+            raise ValueError("conflicting queue_bounds across top-level and intent_contract")
 
     dispatched_work = bool(_planned_threads(record) or _spawned_threads(record))
     if (
-        phase == "preflight" or _multi_lane(record) or dispatched_work
+        phase == "preflight"
+        or _multi_lane(record)
+        or dispatched_work
+        or "queue_ledger" in record
     ) and top_level is None and nested is None:
         raise ValueError(
-            "queue_bounds is required for preflight, multi-lane, and dispatched runs"
+            "queue_bounds is required for preflight, multi-lane, queue-ledger, "
+            "and dispatched runs"
         )
     bounds = top_level if top_level is not None else nested
     if phase == "preflight":

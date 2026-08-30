@@ -23,6 +23,16 @@ class ThreadsRunLogTests(unittest.TestCase):
             check=False,
         )
 
+    def queue_bounds(self):
+        return {
+            "max_items": 10,
+            "max_model_calls": 2,
+            "time_budget": "30m",
+            "elapsed_seconds": 0,
+            "checkpoint_every_items": 5,
+            "queue_tranche": "bounded test tranche",
+        }
+
     def nested_payload(self):
         return {
             "skill": "threads",
@@ -63,6 +73,7 @@ class ThreadsRunLogTests(unittest.TestCase):
                     }
                 ],
             },
+            "queue_bounds": self.queue_bounds(),
             "lane_map": {
                 "lanes": [
                     {
@@ -390,6 +401,7 @@ class ThreadsRunLogTests(unittest.TestCase):
                     "skill": "threads",
                     "mode": "execute_direct",
                     "queue_ledger": {"stale_base": True},
+                    "queue_bounds": self.queue_bounds(),
                 },
                 log_path,
             )
@@ -412,6 +424,7 @@ class ThreadsRunLogTests(unittest.TestCase):
                             "remote_state": "open",
                         }
                     ],
+                    "queue_bounds": self.queue_bounds(),
                 },
                 log_path,
             )

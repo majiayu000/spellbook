@@ -549,6 +549,45 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertIn("max_items cannot be lower than processed queue_ledger items", result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_rejects_queue_ledger_without_queue_bounds(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "ledger-no-budget.jsonl"
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "queue_ledger": {
+                        "items_total": 500,
+                        "items_closed": 500,
+                        "items_deferred": 0,
+                        "stale_base": False,
+                    },
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("queue_bounds is required", result.stderr)
+            self.assertFalse(log_path.exists())
+
+    def test_accepts_final_elapsed_evidence_with_nested_ceiling_contract(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "nested-contract-final.jsonl"
+            approved_bounds = self.queue_bounds()
+            del approved_bounds["elapsed_seconds"]
+            final_bounds = {**approved_bounds, "elapsed_seconds": 12}
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "intent_contract": {"queue_bounds": approved_bounds},
+                    "queue_bounds": final_bounds,
+                },
+                log_path,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(record["queue_bounds"]["elapsed_seconds"], 12)
+
     def test_rejects_non_finite_elapsed_seconds(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "non-finite-elapsed.jsonl"
