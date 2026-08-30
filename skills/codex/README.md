@@ -41,16 +41,23 @@ Claude will activate the Codex skill and:
 4. Avoid high-impact flags such as `danger-full-access`, `--dangerously-bypass-approvals-and-sandbox`, or `--skip-git-repo-check` unless the user explicitly approves them.
 5. Run a command like:
 ```bash
-codex_artifacts=$(mktemp -d)
-codex exec --config model_reasoning_effort="high" \
-  --sandbox read-only \
-  --json \
-  "Analyze this Claude Code skill repository comprehensively..." \
-  >"$codex_artifacts/events.jsonl" \
-  2>"$codex_artifacts/stderr.log"
+(
+  codex_artifacts=$(mktemp -d) || exit 1
+  if codex exec --config model_reasoning_effort="high" \
+    --sandbox read-only \
+    --json \
+    "Analyze this Claude Code skill repository comprehensively..." \
+    >"$codex_artifacts/events.jsonl" \
+    2>"$codex_artifacts/stderr.log"; then
+    codex_status=0
+  else
+    codex_status=$?
+  fi
 
-tail -n 1 -- "$codex_artifacts/events.jsonl"
-tail -n 20 -- "$codex_artifacts/stderr.log"
+  tail -n 1 -- "$codex_artifacts/events.jsonl"
+  tail -n 20 -- "$codex_artifacts/stderr.log"
+  exit "$codex_status"
+)
 ```
 
 Large homogeneous batches first run one calibration tranche. The workflow projects total calls and tokens from measured usage, asks for approval of the concrete budget when needed, and starts a fresh bounded session for each tranche instead of repeatedly resending accumulated history.

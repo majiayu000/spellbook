@@ -206,6 +206,16 @@ def normalize_record(raw: Any, allow_extra: bool = False) -> dict[str, Any]:
     unknown_fields = sorted(set(raw) - ALLOWED_TOP_LEVEL_FIELDS)
     if unknown_fields and not allow_extra:
         raise ValueError("unknown top-level field(s): " + ", ".join(unknown_fields))
+    dispatch_gate = raw.get("thread_dispatch_gate")
+    planned_threads = (
+        dispatch_gate.get("planned_native_threads")
+        if isinstance(dispatch_gate, dict)
+        else None
+    )
+    if isinstance(planned_threads, list) and len(planned_threads) > MAX_ARRAY_ITEMS:
+        raise ValueError(
+            f"thread_dispatch_gate.planned_native_threads exceeds {MAX_ARRAY_ITEMS} items"
+        )
 
     record = redact(raw)
     record.setdefault("run_phase", "final")
@@ -748,9 +758,6 @@ def validate_native_thread_evidence(record: dict[str, Any]) -> None:
 
     if fallback_mode is not None and fallback_mode not in ALLOWED_FALLBACK_MODES:
         raise ValueError(f"unknown fallback_mode: {fallback_mode}")
-    if record.get("run_phase") == "preflight":
-        return
-
     explicit_native_required = dispatch_mode and native_subagents == "available" and required
 
     if explicit_native_required and fallback_mode is None:
@@ -762,6 +769,7 @@ def validate_native_thread_evidence(record: dict[str, Any]) -> None:
     if (
         explicit_native_required
         and fallback_mode == "none"
+        and record.get("run_phase") != "preflight"
         and not has_spawned_agent(record)
     ):
         raise ValueError(
@@ -784,6 +792,9 @@ def validate_native_thread_evidence(record: dict[str, Any]) -> None:
             "prompt_pack_only fallback is invalid when native subagents are "
             "available for an explicit threads run"
         )
+
+    if record.get("run_phase") == "preflight":
+        return
 
     if explicit_native_required and fallback_mode == "none":
         validate_planned_native_threads(record)

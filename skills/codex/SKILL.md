@@ -32,9 +32,19 @@ compatibility: {runtimes: [claude_code]}
 Do not build Codex commands with `echo "user prompt" | ...`; user text can contain quotes, substitutions, or newlines. Prefer a quoted heredoc so the shell never reinterprets prompt contents:
 
 ```bash
-codex exec resume --last <<'EOF'
+(
+codex_artifacts=$(mktemp -d) || exit 1
+if codex exec resume --last 2>"$codex_artifacts/stderr.log" <<'EOF'
 Your follow-up prompt goes here.
 EOF
+then
+  codex_status=0
+else
+  codex_status=$?
+fi
+tail -n 20 -- "$codex_artifacts/stderr.log"
+exit "$codex_status"
+)
 ```
 
 ### Quick Reference

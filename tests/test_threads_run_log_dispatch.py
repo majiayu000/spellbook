@@ -376,6 +376,67 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertFalse(log_path.exists())
 
+    def test_rejects_invalid_preflight_fallback_semantics(self):
+        cases = [
+            ({}, "fallback_mode is required"),
+            ({"fallback_mode": "single_agent"}, "single_agent fallback"),
+            ({"fallback_mode": "prompt_pack_only"}, "prompt_pack_only fallback is invalid"),
+        ]
+        for gate_fields, expected_error in cases:
+            with self.subTest(gate_fields=gate_fields), TemporaryDirectory() as temp_dir:
+                log_path = Path(temp_dir) / "invalid-fallback.jsonl"
+                result = self.run_script(
+                    {
+                        "run_phase": "preflight",
+                        "skill": "threads",
+                        "mode": "execute_direct",
+                        "thread_dispatch_gate": {
+                            "native_subagents": "available",
+                            "explicit_thread_request": True,
+                            "spawn_requirement": "required",
+                            "planned_native_threads": [{"id": "calibration"}],
+                            **gate_fields,
+                        },
+                        "queue_bounds": self.queue_bounds(),
+                    },
+                    log_path,
+                    "--validate-only",
+                )
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected_error, result.stderr)
+                self.assertFalse(log_path.exists())
+
+    def test_rejects_planned_threads_truncated_before_budget_validation(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "too-many-planned-threads.jsonl"
+            bounds = self.queue_bounds()
+            bounds["max_items"] = 101
+            bounds["max_model_calls"] = 100
+            result = self.run_script(
+                {
+                    "run_phase": "preflight",
+                    "skill": "threads",
+                    "mode": "execute_direct",
+                    "thread_dispatch_gate": {
+                        "native_subagents": "available",
+                        "explicit_thread_request": True,
+                        "spawn_requirement": "required",
+                        "fallback_mode": "none",
+                        "planned_native_threads": [
+                            {"id": f"lane-{index}"} for index in range(101)
+                        ],
+                    },
+                    "queue_bounds": bounds,
+                },
+                log_path,
+                "--validate-only",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("planned_native_threads exceeds 100 items", result.stderr)
+            self.assertFalse(log_path.exists())
+
     def test_rejects_preflight_without_queue_bounds(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "preflight-no-budget.jsonl"
