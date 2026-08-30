@@ -43,8 +43,10 @@ Claude will activate the Codex skill and:
 ```bash
 (
   command -v jq >/dev/null 2>&1 || exit 1
+  command -v perl >/dev/null 2>&1 || exit 1
   codex_artifacts=$(mktemp -d) || exit 1
-  if codex exec --config model_reasoning_effort="high" \
+  if perl -e 'alarm shift; exec @ARGV' 1800 codex exec \
+    --config model_reasoning_effort="high" \
     --sandbox read-only \
     --json \
     "Analyze this Claude Code skill repository comprehensively..." \

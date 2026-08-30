@@ -392,6 +392,9 @@ def validate_enum_fields(record: dict[str, Any]) -> None:
             ALLOWED_DATA_COLLECTION,
             "intent_contract.data_collection",
         )
+        for field in ("authorized_actions", "fresh_confirmation_required"):
+            if field in intent_contract:
+                validate_string_list(intent_contract[field], f"intent_contract.{field}")
     validate_enum(record.get("outcome"), ALLOWED_OUTCOMES, "outcome")
     validate_queue_gate(record)
     validate_queue_ledger(record)
@@ -497,7 +500,10 @@ def validate_queue_ledger(record: dict[str, Any]) -> None:
         return
     ledger = require_object(queue_ledger, "queue_ledger")
     for field in ("items_total", "items_closed", "items_deferred"):
-        validate_non_negative_int(ledger.get(field), f"queue_ledger.{field}")
+        value = ledger.get(field)
+        if field in ledger and value is None:
+            raise ValueError(f"queue_ledger.{field} must be a non-negative integer")
+        validate_non_negative_int(value, f"queue_ledger.{field}")
     validate_bool(ledger.get("stale_base"), "queue_ledger.stale_base")
     if "superseded_items" in ledger:
         require_list(ledger["superseded_items"], "queue_ledger.superseded_items")

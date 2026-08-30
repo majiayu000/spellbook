@@ -447,6 +447,30 @@ class ThreadsRunLogTests(unittest.TestCase):
 
         self.assert_rejects_payload(payload, "queue_ledger.items_total")
 
+    def test_rejects_null_queue_ledger_counter(self):
+        payload = self.nested_payload()
+        payload["queue_ledger"]["items_closed"] = None
+
+        self.assert_rejects_payload(
+            payload, "queue_ledger.items_closed must be a non-negative integer"
+        )
+
+    def test_rejects_malformed_authorization_lists(self):
+        cases = [
+            ("authorized_actions", "read repository", "must be a list"),
+            ("fresh_confirmation_required", {}, "must be a list"),
+            ("authorized_actions", [""], "entries must be non-empty strings"),
+        ]
+        for field, value, expected_error in cases:
+            with self.subTest(field=field, value=value):
+                payload = {
+                    "skill": "threads",
+                    "intent_contract": {field: value},
+                }
+                self.assert_rejects_payload(
+                    payload, f"intent_contract.{field} {expected_error}"
+                )
+
     def test_rejects_invalid_queue_ledger_list_entry_shape(self):
         payload = self.nested_payload()
         payload["queue_ledger"] = ["#117"]

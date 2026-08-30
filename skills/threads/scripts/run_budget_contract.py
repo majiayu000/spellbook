@@ -73,6 +73,12 @@ def validate_semantic_array_limits(record: dict[str, object], limit: int) -> Non
         ledger_items = queue_ledger.get("items")
         if isinstance(ledger_items, list) and len(ledger_items) > limit:
             raise ValueError(f"queue_ledger.items exceeds {limit} items")
+    intent = record.get("intent_contract")
+    if isinstance(intent, dict):
+        for field in ("authorized_actions", "fresh_confirmation_required"):
+            actions = intent.get(field)
+            if isinstance(actions, list) and len(actions) > limit:
+                raise ValueError(f"intent_contract.{field} exceeds {limit} items")
 
 
 def _validate_bounds(bounds: object, field: str) -> None:
