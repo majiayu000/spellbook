@@ -46,7 +46,6 @@ Claude will activate the Codex skill and:
   codex_skill_dir=${CODEX_SKILL_DIR:?set CODEX_SKILL_DIR to the installed codex skill}
   codex_artifacts=$(mktemp -d) || exit 1
   if python3 "$codex_skill_dir/scripts/run_with_timeout.py" 1800 codex exec \
-    --config model_reasoning_effort="high" \
     --sandbox read-only \
     --json \
     "Analyze this Claude Code skill repository comprehensively..." \

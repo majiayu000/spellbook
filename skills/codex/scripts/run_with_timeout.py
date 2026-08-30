@@ -71,8 +71,15 @@ def main() -> int:
 
     for termination_signal in TERMINATION_SIGNALS:
         signal.signal(termination_signal, handle_termination)
+    deadline = time.monotonic() + args.timeout_seconds
     try:
-        return process.wait(timeout=args.timeout_seconds)
+        return_code = process.wait(timeout=args.timeout_seconds)
+        while process_group_exists(process.pid):
+            remaining_seconds = deadline - time.monotonic()
+            if remaining_seconds <= 0:
+                raise subprocess.TimeoutExpired(args.command, args.timeout_seconds)
+            time.sleep(min(0.05, remaining_seconds))
+        return return_code
     except subprocess.TimeoutExpired:
         stop_process_group(process)
         print(

@@ -783,10 +783,15 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
     def test_accepts_final_elapsed_evidence_with_nested_ceiling_contract(self):
         with TemporaryDirectory() as temp_dir:
             log_path = Path(temp_dir) / "nested-contract-final.jsonl"
-            approved_bounds = self.queue_bounds()
+            approved_bounds = self.preflight_bounds()
             for field in ("elapsed_seconds", "items_processed", "model_calls_used"):
                 del approved_bounds[field]
-            final_bounds = {**approved_bounds, "elapsed_seconds": 12}
+            final_bounds = {
+                field: value
+                for field, value in approved_bounds.items()
+                if field not in {"planned_items", "planned_model_calls", "planned_seconds"}
+            }
+            final_bounds["elapsed_seconds"] = 12
             final_bounds["items_processed"] = 2
             final_bounds["model_calls_used"] = 2
             result = self.run_script(
@@ -801,6 +806,20 @@ class ThreadsRunLogDispatchTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             record = json.loads(log_path.read_text(encoding="utf-8").splitlines()[0])
             self.assertEqual(record["queue_bounds"]["elapsed_seconds"], 12)
+
+    def test_rejects_malformed_thread_dispatch_gate_container(self):
+        with TemporaryDirectory() as temp_dir:
+            log_path = Path(temp_dir) / "malformed-dispatch-gate.jsonl"
+            result = self.run_script(
+                {
+                    "skill": "threads",
+                    "thread_dispatch_gate": "planned work",
+                },
+                log_path,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("thread_dispatch_gate must be an object", result.stderr)
 
     def test_rejects_usage_evidence_inside_intent_bounds(self):
         with TemporaryDirectory() as temp_dir:

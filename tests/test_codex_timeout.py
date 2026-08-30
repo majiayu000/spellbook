@@ -140,6 +140,69 @@ time.sleep(60)
     assert result.returncode == 124
 
 
+def test_supervisor_keeps_deadline_after_leader_exits_normally(tmp_path: Path) -> None:
+    child_pid_file = tmp_path / "child-pid"
+    group_id_file = tmp_path / "group-id"
+    helper = tmp_path / "short-leader.py"
+    helper.write_text(
+        """\
+import os
+import pathlib
+import subprocess
+import sys
+import time
+
+child_pid_file, group_id_file = sys.argv[1:]
+child_code = '''
+import os
+import pathlib
+import sys
+import time
+
+pathlib.Path(sys.argv[1]).write_text(str(os.getpid()), encoding="utf-8")
+time.sleep(60)
+'''
+pathlib.Path(group_id_file).write_text(str(os.getpgrp()), encoding="utf-8")
+subprocess.Popen(
+    [sys.executable, "-c", child_code, child_pid_file],
+    stdin=subprocess.DEVNULL,
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+)
+while not pathlib.Path(child_pid_file).exists():
+    time.sleep(0.01)
+""",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SUPERVISOR),
+            "0.3",
+            sys.executable,
+            str(helper),
+            str(child_pid_file),
+            str(group_id_file),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    child_pid = int(child_pid_file.read_text(encoding="utf-8"))
+    group_id = int(group_id_file.read_text(encoding="utf-8"))
+    try:
+        os.kill(child_pid, 0)
+    except ProcessLookupError:
+        child_exists = False
+    else:
+        child_exists = True
+        os.killpg(group_id, signal.SIGKILL)
+    assert result.returncode == 124
+    assert not child_exists
+
+
 @pytest.mark.parametrize(
     "termination_signal",
     [signal.SIGHUP, signal.SIGINT, signal.SIGQUIT, signal.SIGTERM],

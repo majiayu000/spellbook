@@ -9,6 +9,13 @@ import re
 ALLOWED_RUN_PHASES = {"preflight", "final"}
 CONCRETE_DURATION = re.compile(r"^([1-9][0-9]*)(s|m|h)$")
 FINAL_USAGE_FIELDS = {"elapsed_seconds", "items_processed", "model_calls_used"}
+BOUND_CONTRACT_FIELDS = {
+    "max_items",
+    "max_model_calls",
+    "time_budget",
+    "checkpoint_every_items",
+    "queue_tranche",
+}
 
 
 def _positive_int(value: object, field: str) -> int:
@@ -27,8 +34,10 @@ def _duration_seconds(value: object, field: str) -> int:
 
 def _planned_threads(record: dict[str, object]) -> list[object]:
     gate = record.get("thread_dispatch_gate")
-    if not isinstance(gate, dict):
+    if gate is None:
         return []
+    if not isinstance(gate, dict):
+        raise ValueError("thread_dispatch_gate must be an object")
     if "planned_native_threads" not in gate:
         return []
     planned = gate["planned_native_threads"]
@@ -190,14 +199,8 @@ def validate_run_budget(record: dict[str, object]) -> None:
                 "intent_contract.queue_bounds must not contain final usage fields"
             )
     if top_level is not None and nested is not None:
-        top_contract = {
-            name: value for name, value in top_level.items()
-            if name not in FINAL_USAGE_FIELDS
-        }
-        nested_contract = {
-            name: value for name, value in nested.items()
-            if name not in FINAL_USAGE_FIELDS
-        }
+        top_contract = {name: top_level[name] for name in BOUND_CONTRACT_FIELDS}
+        nested_contract = {name: nested[name] for name in BOUND_CONTRACT_FIELDS}
         if top_contract != nested_contract:
             raise ValueError("conflicting queue_bounds across top-level and intent_contract")
 
