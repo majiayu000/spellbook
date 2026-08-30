@@ -518,7 +518,7 @@ def parse_events(stdout: str, stderr: str, returncode: int) -> dict[str, object]
         elif event_type == "error":
             warnings.append(extract_error(event))
 
-    details = {"worker_thread_id": thread_id, "event_count": len(events), "strict_config": True}
+    details = {"worker_thread_id": thread_id, "event_count": len(events)}
     usage_for_failure = failure_usage if fatal_error is not None else usage
     normalized_usage = normalize_usage(usage_for_failure)
     if normalized_usage:
@@ -603,11 +603,9 @@ def classify_failure(error: BaseException) -> str:
         return "capacity_exhausted"
     if (
         isinstance(error, WorkerRunError) and error.code == "codex_exit"
-        and error.details.get("strict_config") is True
-        and any(
-            marker in message
-            for marker in ("unknown field", "unknown configuration field")
-        )
+        and error.details.get("event_count") == 0
+        and "error loading config.toml" in message
+        and ("unknown field" in message or "unknown configuration field" in message)
     ):
         return "config_incompatible"
     if isinstance(error, WorkerRunError):

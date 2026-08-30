@@ -1,16 +1,6 @@
 ---
 name: sol-luna-router
-description: >-
-  Route substantial coding or repository-review work through a two-stage Sol
-  commander/verifier and separate Luna Max CLI worker. Use when the user
-  explicitly asks Sol to direct or supervise Luna, explicitly requests this
-  router, needs an isolated auditable Luna-owned implementation with a Sol
-  review loop, or asks to diagnose or measure the router itself. Do not use
-  merely because a task involves coding, verification, progress reporting, or
-  token saving. For small or straightforward tasks, keep work in Sol unless
-  the user explicitly requests Luna; router configuration, usage, and
-  efficiency questions should use read-only inspection without launching a
-  worker.
+description: Route substantial coding or repository-review work through a two-stage Sol commander/verifier and separate Luna Max CLI worker. Use when the user explicitly asks Sol to direct or supervise Luna, explicitly requests this router, needs an isolated auditable Luna-owned implementation with a Sol review loop, or asks to diagnose or measure the router itself. Do not use merely because a task involves coding, verification, progress reporting, or token saving. For small or straightforward tasks, keep work in Sol unless the user explicitly requests Luna; router configuration, usage, and efficiency questions should use read-only inspection without launching a worker.
 ---
 
 # Sol-Luna Router

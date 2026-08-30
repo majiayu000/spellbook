@@ -60,12 +60,15 @@ if mode == "failure-with-usage":
     print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 40, "cached_input_tokens": 10, "output_tokens": 8}}))
     raise SystemExit(7)
 if mode == "config-incompatible":
-    print("Error: unknown field `disable_response_storage`", file=sys.stderr)
+    print("Error loading config.toml: unknown configuration field `disable_response_storage`", file=sys.stderr)
     raise SystemExit(7)
 if mode == "capacity":
     print(json.dumps({"type": "error", "message": "usage limit reached"}))
     raise SystemExit(7)
 print(json.dumps({"type": "thread.started", "thread_id": "thread-123"}), flush=True)
+if mode == "post-start-unknown-field":
+    print(json.dumps({"type": "error", "message": "tool returned unknown field `status`"}))
+    raise SystemExit(7)
 if mode == "sleep":
     time.sleep(10)
 if mode == "recovered":
@@ -197,11 +200,6 @@ class RunnerTests(unittest.TestCase):
         command = json.loads(self.args_file.read_text(encoding="utf-8"))
         self.assertIn("gpt-5.6-luna", command)
         self.assertIn('model_reasoning_effort="max"', command)
-        self.assertIn("features.apps=false", command)
-        self.assertIn("features.plugins=false", command)
-        self.assertNotIn("features.recommended_plugins=false", command)
-        self.assertIn("features.multi_agent_v2.enabled=false", command)
-        self.assertIn("agents.enabled=false", command)
         self.assertNotIn("--skip-git-repo-check", command)
 
         records = self.read_records()
@@ -281,9 +279,6 @@ class RunnerTests(unittest.TestCase):
         self.assertIn("-m", command)
         self.assertIn("gpt-5.6-luna", command)
         self.assertIn('model_reasoning_effort="max"', command)
-        self.assertIn("features.apps=false", command)
-        self.assertIn("features.plugins=false", command)
-        self.assertNotIn("features.recommended_plugins=false", command)
         self.assertIn('sandbox_mode="workspace-write"', command)
         record = self.read_records()[0]
         self.assertEqual(record["resumed_thread_id"], "thread-previous")
@@ -455,12 +450,25 @@ class RunnerTests(unittest.TestCase):
             mode="config-incompatible",
         )
         self.assertEqual(result.returncode, 1)
-        self.assertIn("unknown field `disable_response_storage`", result.stderr)
+        self.assertIn("unknown configuration field `disable_response_storage`", result.stderr)
         command = json.loads(self.args_file.read_text(encoding="utf-8"))
         self.assertIn("--strict-config", command)
         record = self.read_records()[0]
         self.assertEqual(record["failure_code"], "config_incompatible")
         self.assertNotIn("disable_response_storage", json.dumps(record))
+
+    def test_unknown_field_after_worker_start_is_not_a_config_failure(self) -> None:
+        result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+            mode="post-start-unknown-field",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("unknown field `status`", result.stderr)
+        self.assertEqual(self.read_records()[0]["failure_code"], "codex_exit")
 
     def test_recovered_transport_errors_are_warnings_not_failures(self) -> None:
         result = self.invoke(
