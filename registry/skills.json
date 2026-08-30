@@ -101,6 +101,22 @@
     ]
   },
   {
+    "name": "architecture-research",
+    "category": "Development Architecture",
+    "format": "directory",
+    "path": "skills/architecture-research/SKILL.md",
+    "description": "Evidence-driven architecture research for understanding real systems and making technical decisions. Use when doing architecture landscape studies, source-backed system archaeology, build-vs-buy or adopt/adapt/build decisions, open-source and commercial comparisons, revisiting an earlier architecture choice, or handling requests such as 架构调研, 架构选型, 竞品架构, 技术尽调, 同类方案, 开源替代, how is X built, and what should we learn from X. Do not use for small mechanical changes, market-only discovery, or detailed design after the technology direction is already fixed.",
+    "language": "mixed",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "architecture"
+    ]
+  },
+  {
     "name": "ask-opencli",
     "category": "AI & Agent Workflow",
     "format": "directory",

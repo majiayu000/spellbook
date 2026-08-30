@@ -45,6 +45,7 @@ CATEGORY_BY_NAME = {
     "zig-project": "Development Architecture",
     "harmonyos-app": "Development Architecture",
     "architecture-foundation": "Development Architecture",
+    "architecture-research": "Development Architecture",
     "dev-architecture-playbook": "Development Architecture",
     "elegant-architecture": "Development Architecture",
     "rust-best-practices": "Development Architecture",

@@ -3,7 +3,7 @@
   "total_tags": 35,
   "tag_counts": {
     "agent": 15,
-    "architecture": 14,
+    "architecture": 15,
     "auth": 3,
     "backend": 13,
     "browser": 5,
@@ -58,6 +58,7 @@
     ],
     "architecture": [
       "architecture-foundation",
+      "architecture-research",
       "brainstorming",
       "codebase-audit",
       "contribution-architect",
