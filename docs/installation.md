@@ -5,7 +5,29 @@
 - Claude Code CLI and/or Codex installed
 - Git
 
-## One Command Install
+## Start With One Workflow
+
+Use the maintained `skills` CLI as the default public installation path. It
+discovers the repository skills, lets you select supported coding agents, and
+installs only the named workflow:
+
+```bash
+npx skills add majiayu000/spellbook --skill frontend-design --skill app-ui-design --skill ui-design-system --skill figma-to-react
+```
+
+List the full catalog without installing:
+
+```bash
+npx skills add majiayu000/spellbook --list
+```
+
+The five maintained starting workflows are listed in the repository
+[README](../README.md#pick-a-workflow).
+
+## Advanced Cross-Runtime Installer
+
+Use `install.sh` when you need explicit runtime target paths, a non-interactive
+shell flow, or the repository's Claude Code agents.
 
 ```bash
 # Install skills for both Claude Code and Codex
@@ -63,10 +85,10 @@ git clone https://github.com/majiayu000/spellbook.git
 
 ### Skills
 
-For repository-local installation, prefer
-`install.sh --target <target> --skills <skill-name>` because it supports both
-source layouts and both runtime targets. This is the Codex distribution path for
-Spellbook skills today: direct skill install, not plugin manifest packaging.
+For normal installation, prefer
+`npx skills add majiayu000/spellbook --skill <skill-name>`. For an explicit
+repository-local cross-runtime installation, use
+`install.sh --target <target> --skills <skill-name>`.
 
 - Directory skills: `skills/<skill-name>/SKILL.md`
 - File skills: `skills/<skill-name>.SKILL.md`
