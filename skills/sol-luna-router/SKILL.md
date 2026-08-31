@@ -190,7 +190,7 @@ ambiguous files remain visible as unresolved coverage. Resolved partial commande
 be shown, but commander-plus-worker totals and total-scope normalized metrics are null until every
 required parent window resolves. A complete total additionally requires every ledger run to have
 valid worker usage; commander-window coverage alone is insufficient. The runner preserves exact
-usage on failed Codex exits or failed turns when Codex emitted it, but absent usage remains
+usage on failed Codex exits, failed turns, or timeouts when Codex emitted it, but absent usage remains
 unresolved. The normalized credit metrics are observational cost-per-outcome measures; controlled
 A/B remains the causal total-cost proof.
 
@@ -217,7 +217,7 @@ has materially changed.
 
 - If the runner reports an incompatible or unavailable model, stop and report the exact error.
 - If Luna requests broader ownership, network, or permissions, return it to the user or revise the plan; do not grant it silently.
-- On timeout, retain the partial `thread_id` and events path; resume with a smaller prompt, or treat a run without a thread ID as unrecoverable.
+- On timeout, retain the partial `thread_id`, events path, and any emitted `usage`; resume with a smaller prompt, or treat a run without a thread ID as unrecoverable.
 - Treat `capacity_exhausted` as infrastructure capacity, not task quality; never lower Luna effort automatically.
 - Treat malformed JSONL, nonzero exit, `turn.failed`, missing completion, or missing final response as failure; recovered transport errors remain warnings.
 - Do not claim the Skill is effective from invocation count, worker success, or token totals alone;

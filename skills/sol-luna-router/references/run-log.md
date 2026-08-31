@@ -41,12 +41,12 @@ delete them according to the user's retention policy.
 ## Fields and interpretation
 
 `status` is `success` or `failed`. Run records include the exact normalized token fields emitted by
-Codex under `usage` when available, including on a failed exit or failed turn; absent usage is not
+Codex under `usage` when available, including on a failed exit, failed turn, or timeout; absent usage is not
 written as zero. The runner does not estimate billing or infer prices. Failures include a stable
 `failure_code` and exclude raw error messages. Important codes include:
 
 - `capacity_exhausted`: rate, quota, usage, credit, or spend capacity prevented completion;
-- `timeout`: the bounded worker runtime expired;
+- `timeout`: the bounded worker runtime expired; keep emitted usage when the partial stream has it;
 - `codex_exit` or `turn_failed`: Codex terminated unsuccessfully;
 - `invalid_jsonl`, `incomplete_turn`, `missing_thread_id`, `missing_final_response`;
 - `invalid_input`, `invalid_profile`, `non_git_target`, and `artifact_exists`.

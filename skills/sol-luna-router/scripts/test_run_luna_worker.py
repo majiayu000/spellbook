@@ -71,6 +71,9 @@ if mode == "post-start-unknown-field":
     raise SystemExit(7)
 if mode == "sleep":
     time.sleep(10)
+if mode == "sleep-with-usage":
+    print(json.dumps({"type": "item.completed", "usage": {"input_tokens": 21, "cached_input_tokens": 8, "output_tokens": 3}}), flush=True)
+    time.sleep(10)
 if mode == "recovered":
     print(json.dumps({"type": "error", "message": "Reconnecting after request timed out"}))
     print(json.dumps({"type": "item.completed", "item": {"type": "error", "message": "Falling back to HTTPS transport"}}))
@@ -594,6 +597,33 @@ class RunnerTests(unittest.TestCase):
         record = self.read_records()[0]
         self.assertEqual(record["failure_code"], "timeout")
         self.assertEqual(record["worker_thread_id"], "thread-123")
+        self.assertNotIn("usage", record)
+
+    def test_timeout_preserves_exact_usage_from_partial_stream(self) -> None:
+        events_file = self.root / "events" / "partial-usage.jsonl"
+        result = self.invoke(
+            "run",
+            "--cwd",
+            str(self.repo),
+            "--prompt-file",
+            str(self.prompt),
+            "--events-file",
+            str(events_file),
+            "--timeout-seconds",
+            "1",
+            "--heartbeat-seconds",
+            "0",
+            mode="sleep-with-usage",
+        )
+        self.assertEqual(result.returncode, 1)
+        record = self.read_records()[0]
+        self.assertEqual(record["failure_code"], "timeout")
+        self.assertEqual(record["worker_thread_id"], "thread-123")
+        self.assertEqual(record["event_count"], 2)
+        self.assertEqual(
+            record["usage"],
+            {"input_tokens": 21, "cached_input_tokens": 8, "output_tokens": 3},
+        )
 
     def test_existing_events_file_is_not_overwritten(self) -> None:
         events_file = self.root / "events.jsonl"
@@ -610,6 +640,34 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("already exists", result.stderr)
         self.assertEqual(events_file.read_text(encoding="utf-8"), "preserve\n")
+
+
+class WorkerEventTests(unittest.TestCase):
+    def test_partial_event_summary_keeps_last_usage(self) -> None:
+        from worker_events import partial_event_summary
+
+        stdout = "\n".join(
+            [
+                json.dumps({"type": "thread.started", "thread_id": "t1"}),
+                json.dumps({"type": "item.completed", "usage": {"input_tokens": 4}}),
+                json.dumps({"type": "item.completed", "usage": {"input_tokens": 9, "output_tokens": 2}}),
+                "not-json",
+            ]
+        )
+        thread_id, event_count, usage = partial_event_summary(stdout)
+        self.assertEqual(thread_id, "t1")
+        self.assertEqual(event_count, 3)
+        self.assertEqual(usage, {"input_tokens": 9, "output_tokens": 2})
+
+    def test_partial_event_summary_omits_empty_usage(self) -> None:
+        from worker_events import partial_event_summary
+
+        thread_id, event_count, usage = partial_event_summary(
+            json.dumps({"type": "thread.started", "thread_id": "t1"})
+        )
+        self.assertEqual(thread_id, "t1")
+        self.assertEqual(event_count, 1)
+        self.assertEqual(usage, {})
 
 
 if __name__ == "__main__":
