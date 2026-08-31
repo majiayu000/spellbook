@@ -32,25 +32,29 @@
 
 ## 快速开始
 
-### 一键安装（所有技能）
+先从一个贴近任务的工作流开始。维护中的 `skills` CLI 会在安装时让你选择
+支持的 coding agents，并且只安装下面四个技能：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/majiayu000/spellbook/main/install.sh | bash -s -- --target all
+npx skills add majiayu000/spellbook --skill frontend-design --skill app-ui-design --skill ui-design-system --skill figma-to-react
 ```
 
-### 手动安装（选择性）
+安装前可以运行 `npx skills add majiayu000/spellbook --list` 查看目录。
+另外四个起步组合见[选择工作流](#选择工作流)。
+
+### 高级跨 Runtime 安装器
+
+当你需要明确指定 Claude Code/Codex 的安装路径，或同时安装仓库里的
+Claude Code agents 时，继续使用 `install.sh`。
 
 ```bash
-# 克隆仓库
+# 将全部技能和支持的 agents 安装到两个维护中的 runtime
+curl -fsSL https://raw.githubusercontent.com/majiayu000/spellbook/main/install.sh | bash -s -- --target all
+
+# 或克隆仓库并明确选择技能
 git clone https://github.com/majiayu000/spellbook.git
 cd spellbook
-
-# 为 Claude Code 和 Codex 安装特定技能
 ./install.sh --target all --skills typescript-project,python-project,devops-excellence
-
-# 或为单个 Runtime 安装全部
-./install.sh --target claude --all
-./install.sh --target codex --all
 ```
 
 ### 验证安装
@@ -81,15 +85,18 @@ Claude Code 仍是一等支持目标，也是用户搜索和认知入口。项�
 
 | 工作流 | 安装命令 | 适合场景 |
 |---|---|---|
-| 前端与 UI | `./install.sh --target all --skills frontend-design,app-ui-design,ui-design-system,figma-to-react` | 产品界面、落地页、设计系统、Figma 交付 |
-| 代码质量 | `./install.sh --target all --skills codebase-audit,flowguard,systematic-debugging,review-gate` | 代码审计、受控交付、根因定位、落地前审查 |
-| 运维与发布 | `./install.sh --target all --skills release-engineering,server-security,clash-doctor,system-doctor` | 发布规划、服务器加固、本地与网络诊断 |
-| 产品与文档 | `./install.sh --target all --skills product-discovery,prd-master,technical-spec,product-analytics` | 用户发现、PRD、技术方案、指标设计 |
-| Agent 工作流 | `./install.sh --target all --skills codex-agent,multi-ai-research,flowguard,vibeguard` | 交叉审查、多 AI 调研、上下文交接、防幻觉检查 |
+| 前端与 UI | `npx skills add majiayu000/spellbook --skill frontend-design --skill app-ui-design --skill ui-design-system --skill figma-to-react` | 产品界面、落地页、设计系统、Figma 交付 |
+| 代码质量 | `npx skills add majiayu000/spellbook --skill codebase-audit --skill flowguard --skill systematic-debugging --skill review-gate` | 代码审计、受控交付、根因定位、落地前审查 |
+| 运维与发布 | `npx skills add majiayu000/spellbook --skill release-engineering --skill server-security --skill clash-doctor --skill system-doctor` | 发布规划、服务器加固、本地与网络诊断 |
+| 产品与文档 | `npx skills add majiayu000/spellbook --skill product-discovery --skill prd-master --skill technical-spec --skill product-analytics` | 用户发现、PRD、技术方案、指标设计 |
+| Agent 工作流 | `npx skills add majiayu000/spellbook --skill codex-agent --skill multi-ai-research --skill flowguard --skill vibeguard` | 交叉审查、多 AI 调研、上下文交接、防幻觉检查 |
 
 优先体验的高信号单项：`github-trending`、`harmonyos-app`、`app-ui-design`、`product-discovery`、`xiaohongshu`、`codebase-audit`、`server-security`。
 
 可复制的试用 prompt 见 [Showcase](./docs/showcase.md)。
+精选的一方技能可在 [Spellbook Skill Browser](https://majiayu000.github.io/spellbook/skills.html)
+浏览；更广泛的社区技能可到
+[Claude Skills Registry](https://majiayu000.github.io/claude-skill-registry/) 发现。
 版本历史见 [Changelog](./CHANGELOG.md)。
 
 ---

@@ -371,7 +371,7 @@ function openModal(skill) {
   const tags = el('div', 'tags');
   (skill.tags || []).forEach(t => tags.append(makeTagButton(t)));
 
-  const installCmd = `./install.sh --target all --skills ${skill.name}`;
+  const installCmd = `npx skills add majiayu000/spellbook --skill ${skill.name}`;
   const cmd = el('div', 'cmd');
   cmd.append(el('code', null, installCmd));
   const copyBtn = el('button', 'btn primary', 'Copy');

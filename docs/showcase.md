@@ -7,7 +7,7 @@ These examples are quick checks after installing Spellbook. Pick one workflow, p
 Install:
 
 ```bash
-./install.sh --target all --skills codebase-audit,flowguard,systematic-debugging
+npx skills add majiayu000/spellbook --skill codebase-audit --skill flowguard --skill systematic-debugging --skill review-gate
 ```
 
 Prompt:
@@ -27,7 +27,7 @@ Expected output:
 Install:
 
 ```bash
-./install.sh --target all --skills frontend-design,app-ui-design,ui-design-system
+npx skills add majiayu000/spellbook --skill frontend-design --skill app-ui-design --skill ui-design-system --skill figma-to-react
 ```
 
 Prompt:
@@ -47,7 +47,7 @@ Expected output:
 Install:
 
 ```bash
-./install.sh --target all --skills release-engineering,server-security,system-doctor
+npx skills add majiayu000/spellbook --skill release-engineering --skill server-security --skill clash-doctor --skill system-doctor
 ```
 
 Prompt:
@@ -67,7 +67,7 @@ Expected output:
 Install:
 
 ```bash
-./install.sh --target all --skills product-discovery,prd-master,technical-spec,product-analytics
+npx skills add majiayu000/spellbook --skill product-discovery --skill prd-master --skill technical-spec --skill product-analytics
 ```
 
 Prompt:
@@ -81,3 +81,23 @@ Expected output:
 - Problem, user, solution, scope, and non-goals.
 - Acceptance criteria and measurable success metrics.
 - Follow-up technical-spec outline when implementation detail is needed.
+
+## Agent Workflows
+
+Install:
+
+```bash
+npx skills add majiayu000/spellbook --skill codex-agent --skill multi-ai-research --skill flowguard --skill vibeguard
+```
+
+Prompt:
+
+```text
+Use codex-agent to review this repository's current change, then use flowguard and vibeguard to separate verified findings from assumptions. Do not edit or delegate yet. Return the three highest-impact risks, the evidence for each, and the smallest safe verification plan.
+```
+
+Expected output:
+
+- Evidence-backed risks instead of generic review advice.
+- Clear separation between verified facts, inferences, and unknowns.
+- A bounded verification plan before any implementation or delegation.

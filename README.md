@@ -32,25 +32,31 @@
 
 ## Quick Start
 
-### One-Line Install (All Skills)
+Start with one job-shaped workflow. The maintained `skills` CLI lets you choose
+the supported coding agents during installation and installs only these four
+skills:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/majiayu000/spellbook/main/install.sh | bash -s -- --target all
+npx skills add majiayu000/spellbook --skill frontend-design --skill app-ui-design --skill ui-design-system --skill figma-to-react
 ```
 
-### Manual Install (Selective)
+Use `npx skills add majiayu000/spellbook --list` to inspect the catalog before
+installing. See [Pick a Workflow](#pick-a-workflow) for four other focused
+starting points.
+
+### Advanced Cross-Runtime Installer
+
+`install.sh` remains available when you want explicit Claude Code/Codex target
+paths or need to install the repository's Claude Code agents as well as skills.
 
 ```bash
-# Clone the repository
+# Install all skills and supported agents into both maintained runtimes
+curl -fsSL https://raw.githubusercontent.com/majiayu000/spellbook/main/install.sh | bash -s -- --target all
+
+# Or clone the repository and select skills explicitly
 git clone https://github.com/majiayu000/spellbook.git
 cd spellbook
-
-# Install specific skills for Claude Code and Codex
 ./install.sh --target all --skills typescript-project,python-project,devops-excellence
-
-# Or install everything for one runtime
-./install.sh --target claude --all
-./install.sh --target codex --all
 ```
 
 ### Verify Installation
@@ -81,15 +87,19 @@ Start with a small bundle that matches the job, then add more skills when the wo
 
 | Workflow | Install | Good for |
 |---|---|---|
-| Frontend and UI | `./install.sh --target all --skills frontend-design,app-ui-design,ui-design-system,figma-to-react` | Product UI, landing pages, design systems, Figma handoff |
-| Code quality | `./install.sh --target all --skills codebase-audit,flowguard,systematic-debugging,review-gate` | Audits, guarded delivery, root-cause debugging, pre-landing review |
-| Ops and release | `./install.sh --target all --skills release-engineering,server-security,clash-doctor,system-doctor` | Release planning, server hardening, and local or network diagnosis |
-| Product and docs | `./install.sh --target all --skills product-discovery,prd-master,technical-spec,product-analytics` | Discovery, PRDs, technical specs, metrics plans |
-| Agent workflows | `./install.sh --target all --skills codex-agent,multi-ai-research,flowguard,vibeguard` | Cross-review, multi-AI research, context handoff, anti-hallucination checks |
+| Frontend and UI | `npx skills add majiayu000/spellbook --skill frontend-design --skill app-ui-design --skill ui-design-system --skill figma-to-react` | Product UI, landing pages, design systems, Figma handoff |
+| Code quality | `npx skills add majiayu000/spellbook --skill codebase-audit --skill flowguard --skill systematic-debugging --skill review-gate` | Audits, guarded delivery, root-cause debugging, pre-landing review |
+| Ops and release | `npx skills add majiayu000/spellbook --skill release-engineering --skill server-security --skill clash-doctor --skill system-doctor` | Release planning, server hardening, and local or network diagnosis |
+| Product and docs | `npx skills add majiayu000/spellbook --skill product-discovery --skill prd-master --skill technical-spec --skill product-analytics` | Discovery, PRDs, technical specs, metrics plans |
+| Agent workflows | `npx skills add majiayu000/spellbook --skill codex-agent --skill multi-ai-research --skill flowguard --skill vibeguard` | Cross-review, multi-AI research, context handoff, anti-hallucination checks |
 
 High-signal individual skills to try first: `github-trending`, `harmonyos-app`, `app-ui-design`, `product-discovery`, `xiaohongshu`, `codebase-audit`, and `server-security`.
 
 See [Showcase](./docs/showcase.md) for copy-paste prompts and expected outputs.
+Use the [Spellbook Skill Browser](https://majiayu000.github.io/spellbook/skills.html)
+for curated first-party skills, or the
+[Claude Skills Registry](https://majiayu000.github.io/claude-skill-registry/)
+for broader community discovery.
 Release history lives in [Changelog](./CHANGELOG.md).
 
 ---
