@@ -15,6 +15,18 @@ ROOT = Path(__file__).resolve().parents[1]
 SUPERVISOR = ROOT / "skills" / "codex" / "scripts" / "run_with_timeout.py"
 
 
+def process_is_live(process_id: int) -> bool:
+    result = subprocess.run(
+        ["ps", "-o", "stat=", "-p", str(process_id)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode not in {0, 1}:
+        raise AssertionError(f"cannot inspect process {process_id}: {result.stderr.strip()}")
+    return any(state and not state.startswith("Z") for state in result.stdout.split())
+
+
 def test_process_group_inspection_ignores_zombies(monkeypatch: pytest.MonkeyPatch) -> None:
     timeout_module = runpy.run_path(str(SUPERVISOR))
     has_live_members = timeout_module["process_group_has_live_members"]
@@ -156,6 +168,7 @@ time.sleep(60)
 
 def test_supervisor_kills_descendant_after_group_leader_exits(tmp_path: Path) -> None:
     group_id_file = tmp_path / "group-id"
+    child_pid_file = tmp_path / "child-pid"
     helper = tmp_path / "leader.py"
     helper.write_text(
         """\
@@ -166,7 +179,7 @@ import subprocess
 import sys
 import time
 
-group_id_file = sys.argv[1]
+group_id_file, child_pid_file = sys.argv[1:]
 child_code = '''
 import signal
 import time
@@ -174,29 +187,44 @@ import time
 signal.signal(signal.SIGTERM, signal.SIG_IGN)
 time.sleep(60)
 '''
-subprocess.Popen(
+child = subprocess.Popen(
     [sys.executable, "-c", child_code],
     stdin=subprocess.DEVNULL,
     stdout=subprocess.DEVNULL,
     stderr=subprocess.DEVNULL,
 )
 pathlib.Path(group_id_file).write_text(str(os.getpgrp()), encoding="utf-8")
+target = pathlib.Path(child_pid_file)
+temporary = target.with_suffix(".tmp")
+temporary.write_text(str(child.pid), encoding="utf-8")
+temporary.replace(target)
 time.sleep(60)
 """,
         encoding="utf-8",
     )
 
     result = subprocess.run(
-        [sys.executable, str(SUPERVISOR), "0.3", sys.executable, str(helper), str(group_id_file)],
+        [
+            sys.executable,
+            str(SUPERVISOR),
+            "0.3",
+            sys.executable,
+            str(helper),
+            str(group_id_file),
+            str(child_pid_file),
+        ],
         capture_output=True,
         text=True,
         check=False,
     )
 
     group_id = int(group_id_file.read_text(encoding="utf-8"))
-    with pytest.raises(ProcessLookupError):
-        os.killpg(group_id, 0)
+    child_pid = int(child_pid_file.read_text(encoding="utf-8"))
+    child_is_live = process_is_live(child_pid)
+    if child_is_live:
+        os.killpg(group_id, signal.SIGKILL)
     assert result.returncode == 124
+    assert not child_is_live
 
 
 def test_supervisor_keeps_deadline_after_leader_exits_normally(tmp_path: Path) -> None:
@@ -254,15 +282,11 @@ while not pathlib.Path(child_pid_file).exists():
 
     child_pid = int(child_pid_file.read_text(encoding="utf-8"))
     group_id = int(group_id_file.read_text(encoding="utf-8"))
-    try:
-        os.kill(child_pid, 0)
-    except ProcessLookupError:
-        child_exists = False
-    else:
-        child_exists = True
+    child_is_live = process_is_live(child_pid)
+    if child_is_live:
         os.killpg(group_id, signal.SIGKILL)
     assert result.returncode == 124
-    assert not child_exists
+    assert not child_is_live
 
 
 @pytest.mark.parametrize(
@@ -303,12 +327,8 @@ time.sleep(60)
 
     supervisor.send_signal(termination_signal)
     return_code = supervisor.wait(timeout=10)
-    try:
-        os.kill(child_pid, 0)
-    except ProcessLookupError:
-        child_exists = False
-    else:
-        child_exists = True
+    child_is_live = process_is_live(child_pid)
+    if child_is_live:
         os.killpg(child_pid, signal.SIGKILL)
     assert return_code == 128 + termination_signal
-    assert not child_exists
+    assert not child_is_live
