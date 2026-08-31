@@ -19,6 +19,11 @@ import time
 from typing import TextIO
 import uuid
 
+_SCRIPT_DIR = Path(__file__).resolve().parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+from worker_events import extract_error, normalize_usage, partial_event_summary
+
 
 MODEL = "gpt-5.6-luna"
 REASONING_EFFORT = "max"
@@ -31,7 +36,7 @@ OUTCOMES = ("verified", "needs_correction", "blocked", "rejected")
 RUN_LOG_ENV = "SOL_LUNA_RUN_LOG"
 PARENT_SESSION_ENV = "SOL_LUNA_PARENT_SESSION_ID"
 TELEMETRY_SCHEMA_VERSION = 1
-RUNNER_VERSION = "2.0.0"
+RUNNER_VERSION = "2.0.1"
 BOUNDED_REVIEW_POLICY = """Worker execution policy for bounded review:
 - Keep the target repository read-only. Use environment-owned temporary scratch only when required.
 - Use at most 8 repository commands and do not start a command expected to exceed 120 seconds.
@@ -350,23 +355,6 @@ def _terminate_process(process: subprocess.Popen[str]) -> None:
         process.wait()
 
 
-def partial_event_summary(stdout: str) -> tuple[str | None, int]:
-    thread_id: str | None = None
-    event_count = 0
-    for raw_line in stdout.splitlines():
-        try:
-            event = json.loads(raw_line)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(event, dict):
-            continue
-        event_count += 1
-        candidate = event.get("thread_id") if event.get("type") == "thread.started" else None
-        if isinstance(candidate, str) and candidate:
-            thread_id = candidate
-    return thread_id, event_count
-
-
 def build_worker_environment(profile: str, cache_root: Path | None) -> dict[str, str] | None:
     if profile != "bounded-review":
         return None
@@ -426,23 +414,26 @@ def execute_worker(
                 _terminate_process(process)
                 stdout = _read_stream(stdout_stream)
                 stderr = _read_stream(stderr_stream)
-                thread_id, event_count = partial_event_summary(stdout)
+                thread_id, event_count, usage = partial_event_summary(stdout)
                 recovery = (
                     f"resume with --thread-id {thread_id}"
                     if thread_id
                     else "no thread ID was observed"
                 )
                 artifact = str(events_path) if events_path else "not retained"
+                details: dict[str, object] = {
+                    "worker_thread_id": thread_id,
+                    "event_count": event_count,
+                    "duration_seconds": round(time.monotonic() - started_at, 3),
+                }
+                if usage:
+                    details["usage"] = usage
                 raise WorkerRunError(
                     f"Luna worker timed out after {timeout_seconds} seconds; {recovery}; "
                     f"partial events={event_count}; events_file={artifact}; "
                     f"stderr tail: {stderr[-STDERR_TAIL_CHARS:]}",
                     code="timeout",
-                    details={
-                        "worker_thread_id": thread_id,
-                        "event_count": event_count,
-                        "duration_seconds": round(time.monotonic() - started_at, 3),
-                    },
+                    details=details,
                 )
             if next_heartbeat is not None and now >= next_heartbeat:
                 print(
@@ -477,14 +468,17 @@ def parse_events(stdout: str, stderr: str, returncode: int) -> dict[str, object]
         try:
             event = json.loads(raw_line)
         except json.JSONDecodeError as error:
-            partial_thread_id, event_count = partial_event_summary(stdout)
+            partial_thread_id, event_count, partial_usage = partial_event_summary(stdout)
+            details = {
+                "worker_thread_id": partial_thread_id,
+                "event_count": event_count,
+            }
+            if partial_usage:
+                details["usage"] = partial_usage
             raise WorkerRunError(
                 f"Codex emitted invalid JSONL on line {line_number}: {error.msg}",
                 code="invalid_jsonl",
-                details={
-                    "worker_thread_id": partial_thread_id,
-                    "event_count": event_count,
-                },
+                details=details,
             ) from error
         if not isinstance(event, dict):
             raise WorkerRunError(
@@ -560,31 +554,6 @@ def parse_events(stdout: str, stderr: str, returncode: int) -> dict[str, object]
         "usage": usage,
         "event_count": len(events),
         "warnings": warnings,
-    }
-
-
-def extract_error(event: dict[str, object]) -> str:
-    error = event.get("error")
-    if isinstance(error, dict):
-        message = error.get("message")
-        if isinstance(message, str):
-            return message
-        return json.dumps(error, ensure_ascii=False, sort_keys=True)
-    if isinstance(error, str):
-        return error
-    message = event.get("message")
-    if isinstance(message, str):
-        return message
-    return json.dumps(event, ensure_ascii=False, sort_keys=True)
-
-
-def normalize_usage(usage: object) -> dict[str, int]:
-    if not isinstance(usage, dict):
-        return {}
-    return {
-        str(key): value
-        for key, value in usage.items()
-        if isinstance(value, int) and not isinstance(value, bool) and value >= 0
     }
 
 
