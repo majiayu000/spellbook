@@ -15,6 +15,11 @@ ROOT = Path(__file__).resolve().parents[1]
 SUPERVISOR = ROOT / "skills" / "codex" / "scripts" / "run_with_timeout.py"
 
 
+def process_group_has_live_members(group_id: int) -> bool:
+    timeout_module = runpy.run_path(str(SUPERVISOR))
+    return timeout_module["process_group_has_live_members"](group_id)
+
+
 def test_process_group_inspection_ignores_zombies(monkeypatch: pytest.MonkeyPatch) -> None:
     timeout_module = runpy.run_path(str(SUPERVISOR))
     has_live_members = timeout_module["process_group_has_live_members"]
@@ -194,9 +199,11 @@ time.sleep(60)
     )
 
     group_id = int(group_id_file.read_text(encoding="utf-8"))
-    with pytest.raises(ProcessLookupError):
-        os.killpg(group_id, 0)
+    live_members = process_group_has_live_members(group_id)
+    if live_members:
+        os.killpg(group_id, signal.SIGKILL)
     assert result.returncode == 124
+    assert not live_members
 
 
 def test_supervisor_keeps_deadline_after_leader_exits_normally(tmp_path: Path) -> None:
@@ -252,17 +259,12 @@ while not pathlib.Path(child_pid_file).exists():
         check=False,
     )
 
-    child_pid = int(child_pid_file.read_text(encoding="utf-8"))
     group_id = int(group_id_file.read_text(encoding="utf-8"))
-    try:
-        os.kill(child_pid, 0)
-    except ProcessLookupError:
-        child_exists = False
-    else:
-        child_exists = True
+    live_members = process_group_has_live_members(group_id)
+    if live_members:
         os.killpg(group_id, signal.SIGKILL)
     assert result.returncode == 124
-    assert not child_exists
+    assert not live_members
 
 
 @pytest.mark.parametrize(
@@ -303,12 +305,8 @@ time.sleep(60)
 
     supervisor.send_signal(termination_signal)
     return_code = supervisor.wait(timeout=10)
-    try:
-        os.kill(child_pid, 0)
-    except ProcessLookupError:
-        child_exists = False
-    else:
-        child_exists = True
+    live_members = process_group_has_live_members(child_pid)
+    if live_members:
         os.killpg(child_pid, signal.SIGKILL)
     assert return_code == 128 + termination_signal
-    assert not child_exists
+    assert not live_members
