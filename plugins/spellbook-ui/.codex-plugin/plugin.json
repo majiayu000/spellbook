@@ -1,0 +1,27 @@
+{
+  "name": "spellbook-ui",
+  "version": "0.1.0",
+  "description": "A focused Spellbook UI workflow for designing and implementing product interfaces in Codex.",
+  "author": {
+    "name": "majiayu000",
+    "url": "https://github.com/majiayu000"
+  },
+  "homepage": "https://majiayu000.github.io/spellbook/skills.html",
+  "repository": "https://github.com/majiayu000/spellbook",
+  "license": "MIT",
+  "keywords": ["ui", "frontend", "design-system", "figma"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Spellbook UI",
+    "shortDescription": "Design and implement polished product interfaces.",
+    "longDescription": "Four focused Spellbook skills for frontend design, app UI, design systems, and Figma-to-React handoff.",
+    "developerName": "Spellbook",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Design a polished first screen for this product.",
+      "Turn this UI brief into an implementation-ready design system.",
+      "Plan a faithful Figma-to-React implementation."
+    ]
+  }
+}
