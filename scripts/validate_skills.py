@@ -27,6 +27,9 @@ REGISTRY_JSON = ROOT / "registry" / "skills.json"
 REGISTRY_DOC = ROOT / "docs" / "skill-registry.md"
 TAGS_JSON = ROOT / "registry" / "tags.json"
 TAG_OVERRIDES_FILE = ROOT / "registry" / "tag_overrides.yml"
+SKILL_BROWSER = ROOT / "docs" / "skills.html"
+BROWSER_DATA_START = "/* registry-data:start */"
+BROWSER_DATA_END = "/* registry-data:end */"
 
 ALLOWED_FRONTMATTER_KEYS = {
     "name",
@@ -476,6 +479,47 @@ def render_registry_json(entries: list[SkillEntry]) -> str:
     return json.dumps(registry_payload(entries), ensure_ascii=False, indent=2) + "\n"
 
 
+def render_browser_data_block(entries: list[SkillEntry]) -> str:
+    """Render the registry fields consumed by the static skill browser."""
+    browser_records = [
+        {
+            "name": item["name"],
+            "category": item["category"],
+            "description": item["description"],
+            "tags": item["tags"],
+            "language": item["language"],
+            "path": item["path"],
+        }
+        for item in registry_payload(entries)
+    ]
+    rows = ",\n".join(
+        json.dumps(record, ensure_ascii=False, separators=(",", ":"))
+        for record in browser_records
+    )
+    # JSON is embedded in a script element, so keep HTML-sensitive characters
+    # escaped even when a skill description contains markup-like text.
+    rows = (
+        rows.replace("&", "\\u0026")
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
+    return f"{BROWSER_DATA_START}\nconst SKILLS = [\n{rows}\n];\n{BROWSER_DATA_END}"
+
+
+def render_browser_document(document: str, entries: list[SkillEntry]) -> str:
+    """Replace exactly one generated browser data block, preserving the shell."""
+    if document.count(BROWSER_DATA_START) != 1 or document.count(BROWSER_DATA_END) != 1:
+        raise ValueError("docs/skills.html must contain exactly one generated data block")
+    start = document.index(BROWSER_DATA_START)
+    end = document.index(BROWSER_DATA_END)
+    if end < start:
+        raise ValueError("docs/skills.html must contain an ordered generated data block")
+    end += len(BROWSER_DATA_END)
+    return document[:start] + render_browser_data_block(entries) + document[end:]
+
+
 def escape_table_cell(value: object) -> str:
     text = str(value).replace("\n", " ").replace("|", "\\|")
     return re.sub(r"\s+", " ", text).strip()
@@ -531,6 +575,19 @@ def check_file(path: Path, expected: str) -> list[str]:
     return []
 
 
+def check_browser_file(entries: list[SkillEntry]) -> list[str]:
+    if not SKILL_BROWSER.exists():
+        return [error("docs/skills.html is missing; run scripts/validate_skills.py --write")]
+    actual = SKILL_BROWSER.read_text(encoding="utf-8")
+    try:
+        expected = render_browser_document(actual, entries)
+    except ValueError as exc:
+        return [error(str(exc))]
+    if actual != expected:
+        return [error("docs/skills.html is out of date; run scripts/validate_skills.py --write")]
+    return []
+
+
 def check_readme_counts(skill_count: int) -> list[str]:
     messages: list[str] = []
     checks = [
@@ -554,6 +611,10 @@ def write_generated_files(entries: list[SkillEntry]) -> None:
     REGISTRY_JSON.write_text(render_registry_json(entries), encoding="utf-8")
     REGISTRY_DOC.write_text(render_registry_doc(entries), encoding="utf-8")
     TAGS_JSON.write_text(render_tags_json(entries), encoding="utf-8")
+    browser_document = SKILL_BROWSER.read_text(encoding="utf-8")
+    SKILL_BROWSER.write_text(
+        render_browser_document(browser_document, entries), encoding="utf-8"
+    )
 
 
 def search_skills(
@@ -658,6 +719,7 @@ def main() -> int:
         messages.extend(check_file(REGISTRY_JSON, render_registry_json(entries)))
         messages.extend(check_file(REGISTRY_DOC, render_registry_doc(entries)))
         messages.extend(check_file(TAGS_JSON, render_tags_json(entries)))
+        messages.extend(check_browser_file(entries))
         messages.extend(check_readme_counts(len(entries)))
 
     errors = [message for message in messages if message.startswith("ERROR:")]
