@@ -1,0 +1,5 @@
+{"id":"web-dashboard-redesign","prompt":"Redesign this React analytics dashboard so it feels distinctive and production-ready.","expected_trigger":true,"observed_trigger":true}
+{"id":"web-landing-page","prompt":"Build a polished responsive landing page in HTML and CSS for this product.","expected_trigger":true,"observed_trigger":true}
+{"id":"metal-black-hole","prompt":"这个 Rust 项目的黑洞效果由 Metal shader 渲染，帮我把视觉效果做得更高级。","expected_trigger":false,"observed_trigger":false}
+{"id":"native-game-renderer","prompt":"Improve the lighting and particles in this native game renderer.","expected_trigger":false,"observed_trigger":false}
+{"id":"quoted-frontend-trace","prompt":"日志里写着 frontend-design/SKILL.md，解释这行日志。","expected_trigger":false,"observed_trigger":false}

@@ -1,11 +1,14 @@
 # Creating Plugins Guide
 
-Spellbook plugin packaging currently targets Claude Code. Plugins in this
-repository use `.claude-plugin/plugin.json`; this repository does not define a
-Codex plugin manifest. For Codex, distribute skills through direct skill install
-with `install.sh --target codex` or a manual catalog install that preserves the
-source layout: copy or symlink directory skills as whole directories, and place
-file skills under `$HOME/.agents/skills/<skill-name>/SKILL.md`.
+Spellbook supports its existing Claude Code plugin packages and one focused
+Codex plugin pilot. Claude Code plugins use `.claude-plugin/plugin.json`; the
+Codex pilot at `plugins/spellbook-ui` uses `.codex-plugin/plugin.json` and
+packages only four UI workflow skills. Direct skill installation remains the
+default public Codex path.
+
+The Codex pilot is not a public marketplace release. See
+[`plugins/spellbook-ui/README.md`](../plugins/spellbook-ui/README.md) for local
+validation and temporary-marketplace installation.
 
 ## Claude Code Plugin Structure
 
@@ -61,13 +64,11 @@ unless the plugin runtime you target documents directory skill support.
 
 For the top-level Spellbook catalog installed by `install.sh`, see [Skill Format Policy](./skill-format-policy.md). New catalog skills should generally use the directory layout when they need progressive disclosure, templates, scripts, evals, or other companion files.
 
-Codex does not use a plugin package from this repository today. Codex skills are
-installed directly from the catalog source into `$HOME/.agents/skills`, either
-through `install.sh --target codex` or a manual catalog install. For directory
-skills, copy or symlink the whole `skills/<name>/` directory so companion
-`references/`, `scripts/`, `assets/`, and other support files stay available.
-For file skills, install `skills/<name>.SKILL.md` as
-`$HOME/.agents/skills/<name>/SKILL.md`.
+Codex users normally install skills directly from the catalog. The focused
+`spellbook-ui` pilot is the exception: it packages complete copies of four
+directory skills under its own `skills/` directory so companion references,
+scripts, templates, and evals remain available. It does not add apps, MCP
+servers, hooks, agents, or authentication.
 
 Plugin skill files use this frontmatter:
 
@@ -147,7 +148,7 @@ Agent behavior and instructions...
    /plugin install my-plugin
    ```
 
-For Codex users, direct installation into `$HOME/.agents/skills` is only a
-local raw-catalog workaround for testing or internal use. Do not present it as
-the Codex publishing path. Document Codex plugin publishing only after this
-repository adds a supported Codex plugin package and manifest.
+For Codex users, direct installation with the maintained `skills` CLI remains
+the public path. The `spellbook-ui` manifest is valid for a local plugin pilot,
+but it is not a publishing claim. Document a public Codex marketplace only
+after a real marketplace release has been verified.
