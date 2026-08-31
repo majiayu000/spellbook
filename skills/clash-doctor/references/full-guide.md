@@ -16,11 +16,17 @@ PROFILES_INDEX=$VERGE_DIR/profiles.yaml
 PROFILES_DIR=$VERGE_DIR/profiles
 VERGE_YAML=$VERGE_DIR/verge.yaml
 MIHOMO_API=http://127.0.0.1:9097
+MIHOMO_SOCK_PRIMARY=/tmp/verge/verge-mihomo.sock
+MIHOMO_SOCK_FALLBACK=/var/tmp/verge/verge-mihomo.sock
 ```
+
+Try both Unix sockets and then the configured HTTP controller. Fall back when a request fails, not only when a socket path is absent.
 
 ## 命令路由
 
 根据 $ARGUMENTS 判断执行哪个模式：
+
+If the task involves a local profile, load `local-hub.md` first. Empty enhancement files do not prove that a local hub is unconfigured.
 
 | 参数模式 | 执行模式 |
 |----------|----------|
@@ -30,15 +36,18 @@ MIHOMO_API=http://127.0.0.1:9097
 | `setup-ai <订阅名>` | **配置 AI 工具路由** |
 | `switch <订阅名>` | **切换激活配置** |
 | `status` | **当前状态概览** |
+| `hub` 或 `roles` | **本地 Hub 拓扑** |
+| `align` 或 `sync-check` | **多机只读对齐** |
+| `rustdesk <IP>` 或 `bypass <IP>` | **TUN 排除** |
 
 ---
 
 ## 模式一：配置文件列表（profiles）
 
-读取 `$PROFILES_INDEX`，列出所有 remote 类型的订阅，展示：
+读取 `$PROFILES_INDEX`，列出所有 `remote` 和 `local` profile。Remote 展示流量与到期时间；local 对这两列显示 `—`，并展示其 YAML 路径：
 
 ```
-订阅名称 | UID | 流量使用 | 到期时间 | 覆盖文件状态 | 是否激活
+名称 | 类型 | 流量使用 | 到期时间 | 配置状态 | 是否激活
 ```
 
 **覆盖文件状态**判断：读取每个订阅的 option 中关联的 merge/rules/proxies/groups 文件，检查内容是否为空模板。
@@ -56,9 +65,9 @@ MIHOMO_API=http://127.0.0.1:9097
 
   订阅名              流量          到期        覆盖状态        激活
 ─────────────────────────────────────────────────────────────────
-★ Nexitally         179/500 GB    2026-03-01  ✅ 全配置       ← 当前
-  灰狐云互联         57/200 GB     2027-03-04  ✅ 全配置
-  YToo_SS            0/15 GB       2027-03-25  ✅ 全配置
+★ Local-Hub          local    —             —           ✅ YAML      ← 当前
+  Subscription-A     remote   179/500 GB    2026-03-01  ✅ 覆盖
+  Subscription-B     remote   57/200 GB     2027-03-04  ✅ 覆盖
 
 覆盖详情：
   merge=DNS/TUN  rules=AI路由  proxies=住宅代理  groups=AI组
@@ -70,6 +79,8 @@ MIHOMO_API=http://127.0.0.1:9097
 
 将源订阅的 5 个覆盖文件（merge/script/rules/proxies/groups）内容复制到目标订阅的对应覆盖文件。
 
+`clone` 只适用于两个 `type: remote` profile。任一目标是 `type: local` 时停止，加载 `local-hub.md`，改为展示本地 YAML 的最小补丁。
+
 **步骤**：
 1. 读取 `$PROFILES_INDEX`，通过订阅名（name 字段模糊匹配）找到源和目标的 UID
 2. 从源订阅的 option 中找到 merge/script/rules/proxies/groups 的 UID
@@ -79,21 +90,22 @@ MIHOMO_API=http://127.0.0.1:9097
 
 **注意事项**：
 - rules 中的 `delete` 部分可能需要适配（源订阅的原始规则和目标可能不同）
-- merge 中的 TUN route-exclude-address 应保留（住宅代理 IP 防回环）
+- merge 中的 TUN `route-exclude-address` 必须并集保留，禁止整段替换
 - 如果目标覆盖文件已有非空内容，警告用户将被覆盖
 
 ---
 
 ## 模式三：配置 AI 工具路由（setup-ai）
 
-为指定订阅配置完整的 AI 开发工具代理路由。这是最常用的配置操作。
+为指定 profile 配置完整的 AI 开发工具代理路由。
 
 **步骤**：
-1. 读取 `$PROFILES_INDEX`，通过订阅名找到目标 UID 和关联的覆盖文件 UID
-2. 读取当前激活订阅的覆盖文件作为模板（如果有已配置的）
-3. 如果没有现成模板，使用内置的 AI 路由规则集（见下方）
-4. 写入 4 个覆盖文件（merge/rules/proxies/groups）
-5. 提示用户在 Clash Verge 中 reload 配置
+1. 读取 `$PROFILES_INDEX`，通过名称找到目标并检查目标自己的 `type`
+2. 目标是 `local`：加载 `local-hub.md`，展示最小 YAML 补丁，确认后只修改该目标的本地 YAML
+3. 目标是 `remote`：解析该目标关联的覆盖文件 UID；有现成配置时以目标自己的覆盖文件为基础
+4. Remote 目标没有现成模板时，使用下方内置规则集
+5. 展示文件与摘要，等待用户明确确认后写入
+6. 解析写入后的 YAML，然后提示用户退出并重新打开 Clash Verge
 
 ### 内置 AI 路由规则集
 
@@ -207,7 +219,7 @@ append:
 delete: []
 ```
 
-**注意**：同时自动将代理服务器 IP 写入 Merge 的 `route-exclude-address`（TUN 防回环）。
+**注意**：把代理服务器 IP 并入 Merge 的 `route-exclude-address`，不得覆盖原列表。
 
 #### Groups
 
@@ -226,6 +238,8 @@ delete:
 
 #### Merge
 
+写入前先读取现有 `route-exclude-address`，再做并集合并。
+
 ```yaml
 tun:
   route-exclude-address:
@@ -239,9 +253,15 @@ tun:
 
 1. 读取 `$PROFILES_INDEX`，通过订阅名找到目标 UID
 2. **确认**：告知用户将从当前订阅切换到目标订阅，列出目标订阅的覆盖配置状态
-3. 如果目标订阅覆盖文件为空，警告用户可能缺少 AI 路由规则
+3. Remote 目标覆盖文件为空时警告可能缺少 AI 路由；local 目标改为检查本地 YAML 的角色节点和必要组
 4. 修改 `$PROFILES_INDEX` 的 `current` 字段为目标 UID
-5. 提示用户在 Clash Verge 中 reload 或重启
+5. 提示用户退出并重新打开 Clash Verge
+
+---
+
+## 本地 Hub 与多机对齐
+
+`hub`、`roles`、`align`、`sync-check` 完整读取 `local-hub.md`。`align` 只读。
 
 ---
 
@@ -250,24 +270,22 @@ tun:
 并行采集：
 1. 读取 `$PROFILES_INDEX` → 当前激活的订阅名和流量
 2. 读取 `$VERGE_YAML` → TUN/系统代理/端口配置
-3. `curl -s $MIHOMO_API/version` → mihomo 版本
-4. `curl -s $MIHOMO_API/proxies` → 当前选中的节点
+3. 依次请求两个 Unix socket 的 `/version`、`/configs`、`/proxies`，请求失败后再试配置的 HTTP controller
 
 输出格式：
 ```
 🔍 Clash Verge 状态
 
 内核: mihomo v1.x.x
-激活订阅: Nexitally (179/500 GB, 到期 2026-03-01)
+激活订阅: Local-Hub (local)
 模式: rule
 端口: mixed=7897 socks=7898 http=7899
 TUN: ✅ 开启 (stack=mixed)
 系统代理: ✅ 开启
 
 当前节点:
-  Proxies → 🇭🇰 Hong Kong 02
-  Google  → 🇺🇸 USA Seattle 03
-  AI      → 🏠 Residential US (AI)
+  Proxies → Nearby-VPS
+  AI      → Residential-Exit
 ```
 
 ---
@@ -457,7 +475,7 @@ sniffer:
 - **诊断操作是只读的**，不修改任何配置
 - **配置操作需要确认**：写入覆盖文件前必须展示将要写入的内容摘要，等用户确认
 - **切换订阅需要确认**：展示目标订阅的覆盖状态，警告可能缺失的配置
-- **不要修改原始订阅文件**（`RxQXGGBzmzSb.yaml` 等），只修改覆盖文件（merge/rules/proxies/groups/script）
+- **不要修改原始订阅文件**（`<remote-uid>.yaml`），只修改覆盖文件（merge/rules/proxies/groups/script）或确认后的本地 Hub YAML
 - **住宅代理凭证敏感**：克隆时提醒用户覆盖文件包含代理凭证
 - 用中文输出所有信息
 - 端口以 `$VERGE_YAML` 中的实际配置为准（mixed=7897, socks=7898, http=7899, API=9097）

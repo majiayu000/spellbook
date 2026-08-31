@@ -21,6 +21,9 @@ Use this section for notable changes after the latest dated snapshot.
 
 ### Changed
 
+- Expanded `clash-doctor` and `clash-routes` with local-hub ownership,
+  request-level Mihomo endpoint fallback, and read-only multi-machine checks
+  without publishing personal network inventory.
 - Tightened the `threads` skill so GitHub queue and merge-capable runs default
   to durable local JSONL evidence, report active skill source, require
   connector/review-thread completion before merge, and prefer writable
