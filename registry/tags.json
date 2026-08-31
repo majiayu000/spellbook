@@ -5,8 +5,8 @@
     "agent": 15,
     "architecture": 15,
     "auth": 3,
-    "backend": 13,
-    "browser": 5,
+    "backend": 12,
+    "browser": 4,
     "code-review": 16,
     "content": 8,
     "database": 4,
@@ -19,7 +19,7 @@
     "go": 3,
     "harmonyos": 1,
     "javascript": 5,
-    "multi-ai": 6,
+    "multi-ai": 7,
     "observability": 3,
     "performance": 8,
     "product-management": 4,
@@ -82,7 +82,6 @@
       "api-design",
       "ask-opencli",
       "auth-security",
-      "clash-routes",
       "cliproxy-newapi-stack",
       "codebase-audit",
       "config-secrets-environments",
@@ -95,7 +94,6 @@
     ],
     "browser": [
       "ask-opencli",
-      "clash-routes",
       "frontend-design",
       "playwright-automation",
       "vscode-doctor"
@@ -212,6 +210,7 @@
     ],
     "multi-ai": [
       "ask-opencli",
+      "clash-routes",
       "cliproxy-newapi-stack",
       "codex",
       "gemma4-local-deploy",

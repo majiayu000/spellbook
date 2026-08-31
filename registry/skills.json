@@ -209,7 +209,7 @@
     "category": "Operations & Deploy",
     "format": "directory",
     "path": "skills/clash-doctor/SKILL.md",
-    "description": "Clash Verge 诊断与配置管理。网络诊断、配置 AI 工具路由规则（Claude/Codex/Cursor/Warp）、查看/克隆订阅配置、切换配置文件。当用户遇到网络问题、要配置代理规则、切换订阅、查看 Clash 配置时使用",
+    "description": "Clash Verge 与 mihomo 诊断和 profile 管理。当用户遇到代理失败、需要配置 AI 工具路由、本地 Hub 拓扑、多机对齐、TUN 绕过、克隆或切换订阅，或同步后 配置未生效时使用。进程线路使用 clash-routes，出口 IP 质量使用 ip-check。 普通网络测速不使用。",
     "language": "zh",
     "compatibility": {
       "runtimes": [
@@ -225,7 +225,7 @@
     "category": "Operations & Deploy",
     "format": "directory",
     "path": "skills/clash-routes/SKILL.md",
-    "description": "查看指定进程的代理线路。通过 Mihomo API 查询当前活跃连接，显示进程匹配的规则和代理链路。用于确认某个进程（如 claude、chrome）走的是哪条订阅线路",
+    "description": "查看本机进程的 Mihomo 实时代理链。当用户问 Claude、Codex、Gemini、ChatGPT、 浏览器或其他进程走哪个代理时使用。只读。Profile 拓扑和写入使用 clash-doctor， 出口 IP 质量使用 ip-check。",
     "language": "zh",
     "compatibility": {
       "runtimes": [
@@ -233,8 +233,7 @@
       ]
     },
     "tags": [
-      "backend",
-      "browser",
+      "multi-ai",
       "proxy"
     ]
   },
