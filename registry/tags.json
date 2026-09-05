@@ -7,10 +7,10 @@
     "auth": 3,
     "backend": 12,
     "browser": 4,
-    "code-review": 16,
+    "code-review": 17,
     "content": 8,
     "database": 4,
-    "debugging": 10,
+    "debugging": 11,
     "deploy": 4,
     "design-system": 2,
     "devops": 2,
@@ -99,6 +99,7 @@
       "vscode-doctor"
     ],
     "code-review": [
+      "agentsmd-optimize",
       "codebase-audit",
       "codex-agent",
       "codex-retrospective",
@@ -133,6 +134,7 @@
       "release-engineering"
     ],
     "debugging": [
+      "agentsmd-optimize",
       "build-product-demo",
       "codex-log-guard",
       "css-debug",

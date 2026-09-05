@@ -4,15 +4,17 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/agentsmd-optimize/SKILL.md",
-    "description": "Audit AND optimize a CLAUDE.md / AGENTS.md instruction file — score it against the five high-leverage patterns, flag anti-patterns, then apply approved fixes in place. Use when the user says 优化 CLAUDE.md / 优化 AGENTS.md / optimize my agent doc / 帮我改 claudemd, or after an audit when they want the fixes applied (not just reported).",
-    "language": "mixed",
+    "description": "Audit and organize AI coding-agent instructions, including AGENTS.md, CLAUDE.md, skills, and agent definitions. Use when the user asks to diagnose conflicting instructions, excessive approval pauses, broad skill triggers, duplicate guidance, or broken instruction references, or to clean up that instruction set. Ordinary code review, Markdown editing, or application debugging alone does not trigger this workflow. Inspection stays read-only; apply changes when authorized.",
+    "language": "en",
     "compatibility": {
       "runtimes": [
         "unspecified"
       ]
     },
     "tags": [
-      "agent"
+      "agent",
+      "code-review",
+      "debugging"
     ]
   },
   {
