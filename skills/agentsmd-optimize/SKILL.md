@@ -34,6 +34,14 @@ Common candidates, subject to the installed host's actual configuration:
 
 Do not transfer one host's precedence, frontmatter fields, tool names, or permission semantics to another. Settings and hooks can explain behavior, but changing runtime permissions, models, or enforcement is a separate scope from cleaning up prose.
 
+## Read official model guidance before behavioral review
+
+When auditing or optimizing instructions for an OpenAI model, read its official prompting guidance before reviewing behavior, even if the user did not explicitly ask to open the guide. This includes repeated approval pauses, incomplete follow-through, writing style, delegation, and excessive testing. A model-specific request for another provider likewise requires that provider's relevant official guidance. Pure path or format repairs do not require model guidance.
+
+1. Establish the target model from the request or verified runtime context; do not equate the host name with a model. For OpenAI, use [model guidance](https://developers.openai.com/api/docs/guides/latest-model) to locate the target model's prompting section. Preserve a named target instead of silently substituting the latest model. Ask only if an unresolved target would materially change the correction.
+2. Fetch and read the relevant official section using available documentation tools or web access. Reuse it if already read and still current in this conversation. A reference link alone is not evidence of reading. If the source is unavailable, report the gap and continue independent structural checks; leave model-dependent recommendations unresolved.
+3. Apply relevant recommendations alongside the owner's choices, preserving explicit-only skills, delegation limits, approval boundaries, and required tests. In the result, cite the guide actually read and explain which recommendations informed the findings or edits. Reading a guide does not authorize changing models or runtime settings.
+
 ## Review meaning and behavior
 
 For each material finding, provide the file and line, a short excerpt, the triggering situation, likely effect, and smallest useful correction. Separate verified structural facts from inferred behavioral effects and unresolved questions.
@@ -120,7 +128,7 @@ rule engine or scheduled cleanup job to encode an editorial decision.
 
 ## Documentation and sharing
 
-Consult only sources relevant to the host and uncertainty; do not fetch them all on every run:
+Complete the required model-guidance step above when applicable. Consult the remaining sources only when relevant to the host and uncertainty; do not fetch them all on every run:
 
 - [Agent Skills specification](https://agentskills.io/specification)
 - [Codex AGENTS.md discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
