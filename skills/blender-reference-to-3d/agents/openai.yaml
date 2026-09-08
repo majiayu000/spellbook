@@ -1,0 +1,4 @@
+interface:
+  display_name: "参考图到三维角色"
+  short_description: "从参考拆解和轮廓标注到三维建模、配色、多视图验收与可编辑工程交付"
+  default_prompt: "使用 $blender-reference-to-3d，先分析参考图并标注五官与主发束边界，完成九视图，再制作头部和头发、配色与多角度检查，不要脖子和身体，交付可编辑 Blender 工程。"

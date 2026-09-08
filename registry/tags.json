@@ -1,11 +1,13 @@
 {
-  "total_skills": 106,
-  "total_tags": 35,
+  "total_skills": 107,
+  "total_tags": 37,
   "tag_counts": {
+    "3d-modeling": 1,
     "agent": 15,
     "architecture": 15,
     "auth": 3,
     "backend": 12,
+    "blender": 1,
     "browser": 4,
     "code-review": 17,
     "content": 8,
@@ -39,6 +41,9 @@
     "zig": 1
   },
   "index": {
+    "3d-modeling": [
+      "blender-reference-to-3d"
+    ],
     "agent": [
       "agentsmd-optimize",
       "agentsmd-scaffold",
@@ -91,6 +96,9 @@
       "harmonyos-app",
       "release-engineering",
       "rust-best-practices"
+    ],
+    "blender": [
+      "blender-reference-to-3d"
     ],
     "browser": [
       "ask-opencli",
