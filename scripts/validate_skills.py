@@ -96,6 +96,7 @@ CATEGORY_BY_NAME = {
     "figma-to-code": "UI/UX & Frontend",
     "figma-to-react": "UI/UX & Frontend",
     "frontend-design": "UI/UX & Frontend",
+    "illustrated-gallery": "UI/UX & Frontend",
     "playwright-automation": "UI/UX & Frontend",
     "ui-designer": "UI/UX & Frontend",
     "ui-design-system": "UI/UX & Frontend",

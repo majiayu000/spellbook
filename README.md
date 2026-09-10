@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>107 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>108 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-107-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-108-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -243,6 +243,7 @@ Skills for using multiple coding agents and CLI tools together.
 | [`app-ui-design`](./skills/app-ui-design/) | iOS/Android UI design, Material Design 3, HIG |
 | [`product-ux-expert`](./skills/product-ux-expert/) | UX evaluation, heuristics, accessibility |
 | [`frontend-design`](./skills/frontend-design/) | Web frontend design patterns |
+| [`illustrated-gallery`](./skills/illustrated-gallery/) | Illustrated website template with full-frame ASCII transitions |
 | [`ui-designer`](./skills/ui-designer/) | Extract design systems from UI screenshots and references |
 | [`ui-design-system`](./skills/ui-design-system/) | Design system toolkit and design-dev handoff support |
 | [`web-artifacts-builder`](./skills/web-artifacts-builder/) | Claude.ai HTML artifacts |

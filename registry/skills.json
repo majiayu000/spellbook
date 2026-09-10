@@ -851,6 +851,24 @@
     ]
   },
   {
+    "name": "illustrated-gallery",
+    "category": "UI/UX & Frontend",
+    "format": "directory",
+    "path": "skills/illustrated-gallery/SKILL.md",
+    "description": "Build an illustrated portfolio, creative-studio landing page, or brand showcase with a static art gallery and full-frame ASCII dissolve transitions. Use when the user requests Illustrated Gallery, this visual template, or $illustrated-gallery. Do not use for generic dashboards, standalone ASCII art, or image-to-video generation.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "content",
+      "design-system",
+      "frontend"
+    ]
+  },
+  {
     "name": "incident-slo-runbook",
     "category": "Operations & Deploy",
     "format": "directory",

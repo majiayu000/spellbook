@@ -1,5 +1,5 @@
 {
-  "total_skills": 107,
+  "total_skills": 108,
   "total_tags": 37,
   "tag_counts": {
     "3d-modeling": 1,
@@ -10,14 +10,14 @@
     "blender": 1,
     "browser": 4,
     "code-review": 17,
-    "content": 8,
+    "content": 9,
     "database": 4,
     "debugging": 11,
     "deploy": 4,
-    "design-system": 2,
+    "design-system": 3,
     "devops": 2,
     "documentation": 15,
-    "frontend": 16,
+    "frontend": 17,
     "go": 3,
     "harmonyos": 1,
     "javascript": 5,
@@ -129,6 +129,7 @@
       "build-product-demo",
       "github-trending",
       "humanizer",
+      "illustrated-gallery",
       "slides",
       "trip-planner",
       "weekly",
@@ -162,7 +163,8 @@
     ],
     "design-system": [
       "figma-to-code",
-      "figma-to-react"
+      "figma-to-react",
+      "illustrated-gallery"
     ],
     "devops": [
       "cliproxy-newapi-stack",
@@ -193,6 +195,7 @@
       "figma-to-react",
       "frontend-design",
       "idea-to-product",
+      "illustrated-gallery",
       "playwright-automation",
       "product-ux-expert",
       "ui-design-system",
