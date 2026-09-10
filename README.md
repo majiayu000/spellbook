@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>106 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>107 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-106-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-107-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -248,6 +248,7 @@ Skills for using multiple coding agents and CLI tools together.
 | [`web-artifacts-builder`](./skills/web-artifacts-builder/) | Claude.ai HTML artifacts |
 | [`react-best-practices`](./skills/react-best-practices/) | React and Next.js performance patterns distilled from Vercel guidance |
 | [`react-hooks-best-practices`](./skills/react-hooks-best-practices/) | React hooks, effects, refs, and component design patterns |
+| [`blender-reference-to-3d`](./skills/blender-reference-to-3d/) | Reference analysis, Blender character modeling, color, multiview review, and editable delivery |
 | [`slides`](./skills/slides/) | Speech-friendly slide deck and background slide generation |
 | [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | Compact UI/UX tables for product patterns, landing pages, charts, and 9 stacks |
 | [`figma-to-code`](./skills/figma-to-code/) | Figma designs to production React/Next.js with TypeScript and Tailwind |

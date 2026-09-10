@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>106 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>107 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-106-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-107-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -245,6 +245,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`web-artifacts-builder`](./skills/web-artifacts-builder/) | Claude.ai HTML 组件 |
 | [`react-best-practices`](./skills/react-best-practices/) | 基于 Vercel 指南整理的 React / Next.js 性能实践 |
 | [`react-hooks-best-practices`](./skills/react-hooks-best-practices/) | React hooks、effects、refs 与组件设计模式 |
+| [`blender-reference-to-3d`](./skills/blender-reference-to-3d/) | 从人物参考拆解到 Blender 头部与头发建模、配色、多视图检查和可编辑工程交付 |
 | [`slides`](./skills/slides/) | 口播视频背景和演示用幻灯片生成 |
 | [`ui-ux-pro-max`](./skills/ui-ux-pro-max/) | 产品模式、落地页、图表与 9 个技术栈的紧凑 UI/UX 表 |
 | [`figma-to-code`](./skills/figma-to-code/) | 把 Figma 设计转成生产级 React/Next.js + TypeScript + Tailwind |

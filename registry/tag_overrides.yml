@@ -86,3 +86,7 @@ capability-distill:
   - agent
   - prompt
   - documentation
+
+blender-reference-to-3d:
+  - blender
+  - 3d-modeling
