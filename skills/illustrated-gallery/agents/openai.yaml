@@ -1,0 +1,7 @@
+interface:
+  display_name: "Illustrated Gallery"
+  short_description: "Build illustrated websites with full-frame ASCII transitions"
+  icon_large: "./assets/preview.png"
+  default_prompt: "Use $illustrated-gallery to build a website with this illustrated gallery design."
+policy:
+  allow_implicit_invocation: true

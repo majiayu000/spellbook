@@ -90,3 +90,7 @@ capability-distill:
 blender-reference-to-3d:
   - blender
   - 3d-modeling
+
+illustrated-gallery:
+  - frontend
+  - design-system
