@@ -67,7 +67,9 @@ load the remainder on demand.
 
 - Edit branding and sections in [index.html](assets/source/index.html), visual
   rules in [style.css](assets/source/style.css), and image lists, crop positions,
-  and transitions in [app.js](assets/source/app.js).
+  and transitions in [app.js](assets/source/app.js). The brief download heading
+  and filename derive from the header `.brand` label and text, so rebranding the
+  header keeps the downloaded markdown in sync without a separate JS edit.
 - Keep the dependency-free HTML/CSS/JavaScript stack for new template sites.
   Do not introduce a framework solely to reuse the design.
 - When changing image count, synchronize the slide array, initial counter,
