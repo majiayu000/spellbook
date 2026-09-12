@@ -755,12 +755,22 @@ def test_pacing_uses_safe_media_argv_for_dash_prefixed_names(tmp_path: Path) -> 
     assert len(commands) == 3
     ffprobe_command, silence_command, freeze_command = commands
     resolved = str(media.resolve())
-    media_uri = media.resolve().as_uri()
     assert "--" in ffprobe_command
     assert ffprobe_command[ffprobe_command.index("--") + 1 :] == [resolved]
-    assert silence_command[silence_command.index("-i") + 1] == media_uri
-    assert freeze_command[freeze_command.index("-i") + 1] == media_uri
-    assert media_uri.startswith("file:")
+    assert silence_command[silence_command.index("-i") + 1] == resolved
+    assert freeze_command[freeze_command.index("-i") + 1] == resolved
+    assert not resolved.startswith("-")
+    assert "%" not in silence_command[silence_command.index("-i") + 1]
+
+
+def test_pacing_ffmpeg_input_keeps_spaces_unencoded(tmp_path: Path) -> None:
+    media = tmp_path / "Product Demo.mp4"
+    media.write_bytes(b"video")
+    resolved = PACING.media_ffmpeg_input(media)
+    assert resolved == str(media.resolve())
+    assert " " in resolved
+    assert "%20" not in resolved
+    assert not resolved.startswith("file:")
 
 
 def test_pacing_validates_every_audio_stream_duration(tmp_path: Path) -> None:

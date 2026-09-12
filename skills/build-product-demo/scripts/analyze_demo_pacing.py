@@ -169,8 +169,13 @@ def media_ffprobe_argv(path: Path) -> list[str]:
 
 
 def media_ffmpeg_input(path: Path) -> str:
-    """Return an unambiguous file: URI for ffmpeg -i."""
-    return path.resolve().as_uri()
+    """Return a resolved absolute path for ffmpeg -i.
+
+    Absolute paths keep dash-prefixed basenames from being parsed as options.
+    Do not use Path.as_uri(): FFmpeg's file: protocol treats the suffix as a
+    literal filename and does not decode percent-encoded characters.
+    """
+    return str(path.resolve())
 
 
 def main() -> int:
