@@ -46,6 +46,11 @@ def paths_alias(first: Path, second: Path) -> bool:
     )
 
 
+def media_argv(path: Path) -> list[str]:
+    """Return ffprobe trailing input args that cannot be parsed as options."""
+    return ["--", str(path.resolve())]
+
+
 def main() -> int:
     args = parse_cli_args()
     if not args.media.is_file():
@@ -71,7 +76,7 @@ def main() -> int:
         "format=duration,format_name:stream=index,codec_type,codec_name,width,height,avg_frame_rate,sample_rate,channels",
         "-of",
         "json",
-        str(args.media),
+        *media_argv(args.media),
     ]
     try:
         result = subprocess.run(command, check=True, capture_output=True, text=True)

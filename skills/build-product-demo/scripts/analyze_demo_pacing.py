@@ -163,6 +163,16 @@ def paths_alias(first: Path, second: Path) -> bool:
     )
 
 
+def media_ffprobe_argv(path: Path) -> list[str]:
+    """Return ffprobe trailing input args that cannot be parsed as options."""
+    return ["--", str(path.resolve())]
+
+
+def media_ffmpeg_input(path: Path) -> str:
+    """Return an unambiguous file: URI for ffmpeg -i."""
+    return path.resolve().as_uri()
+
+
 def main() -> int:
     args = parse_args()
     if not args.media.is_file():
@@ -183,9 +193,10 @@ def main() -> int:
         print("error: ffmpeg and ffprobe are required", file=sys.stderr)
         return 2
     try:
+        media_input = media_ffmpeg_input(args.media)
         probe = json.loads(run([
             "ffprobe", "-v", "error", "-show_entries", "format=duration:stream=index,codec_type,duration,duration_ts,time_base",
-            "-of", "json", str(args.media)
+            "-of", "json", *media_ffprobe_argv(args.media),
         ]))
         duration = float(probe["format"]["duration"])
         hold_intervals = load_hold_intervals(args.plan, media_duration=duration)
@@ -202,12 +213,12 @@ def main() -> int:
             stream_details.append((stream_type, stream_index, stream_duration))
         stream_types = {stream_type for stream_type, _, _ in stream_details}
         silence_output = run([
-            "ffmpeg", "-hide_banner", "-nostats", "-i", str(args.media),
+            "ffmpeg", "-hide_banner", "-nostats", "-i", media_input,
             "-af", f"silencedetect=noise={args.silence_noise}:d={args.silence_min_duration}",
             "-f", "null", "-",
         ])
         freeze_output = run([
-            "ffmpeg", "-hide_banner", "-nostats", "-i", str(args.media),
+            "ffmpeg", "-hide_banner", "-nostats", "-i", media_input,
             "-vf", f"freezedetect=n={args.freeze_noise}:d={args.freeze_min_duration}",
             "-an", "-f", "null", "-",
         ])

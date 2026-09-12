@@ -617,6 +617,31 @@ def test_probe_checks_declared_duration_and_container_without_exposing_path(
     assert any("expected 60.000s" in error for error in report["errors"])
 
 
+def test_probe_passes_dash_prefixed_media_after_end_of_options(tmp_path: Path) -> None:
+    media = tmp_path / "-show_entries"
+    media.write_bytes(b"video")
+    captured: dict[str, list[str]] = {}
+
+    def capture_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        captured["command"] = list(command)
+        return _ffprobe_result()
+
+    with (
+        mock.patch.object(PROBE, "parse_cli_args", return_value=_probe_args(media)),
+        mock.patch.object(PROBE.shutil, "which", return_value="/usr/bin/ffprobe"),
+        mock.patch.object(PROBE.subprocess, "run", side_effect=capture_run),
+        mock.patch.object(sys, "stdout", io.StringIO()),
+    ):
+        result = PROBE.main()
+
+    command = captured["command"]
+    assert result == 0
+    assert "--" in command
+    assert command[command.index("--") + 1 :] == [str(media.resolve())]
+    assert command[-1] != media.name
+    assert not command[-1].startswith("-")
+
+
 def test_probe_parser_accepts_all_plan_delivery_constraints(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         sys,
@@ -683,6 +708,59 @@ def test_pacing_report_uses_media_basename(tmp_path: Path) -> None:
     report = json.loads(stdout.getvalue())
     assert result == 0
     assert report["media"] == "demo.mp4"
+
+
+def test_pacing_uses_safe_media_argv_for_dash_prefixed_names(tmp_path: Path) -> None:
+    media = tmp_path / "-show_entries"
+    media.write_bytes(b"video")
+    args = argparse.Namespace(
+        media=media,
+        silence_noise="-35dB",
+        silence_min_duration=0.45,
+        freeze_noise="-50dB",
+        freeze_min_duration=1.0,
+        max_silence_ratio=0.18,
+        max_silence_segment=1.75,
+        max_low_motion_ratio=0.40,
+        max_low_motion_segment=4.0,
+        plan=None,
+        json_out=None,
+    )
+    probe_payload = json.dumps(
+        {
+            "format": {"duration": "60"},
+            "streams": [
+                {"codec_type": "video", "duration": "60"},
+                {"codec_type": "audio", "duration": "60"},
+            ],
+        }
+    )
+    commands: list[list[str]] = []
+
+    def capture_run(command: list[str]) -> str:
+        commands.append(list(command))
+        if command and command[0] == "ffprobe":
+            return probe_payload
+        return ""
+
+    with (
+        mock.patch.object(PACING, "parse_args", return_value=args),
+        mock.patch.object(PACING.shutil, "which", return_value="/usr/bin/tool"),
+        mock.patch.object(PACING, "run", side_effect=capture_run),
+        mock.patch.object(sys, "stdout", io.StringIO()),
+    ):
+        result = PACING.main()
+
+    assert result == 0
+    assert len(commands) == 3
+    ffprobe_command, silence_command, freeze_command = commands
+    resolved = str(media.resolve())
+    media_uri = media.resolve().as_uri()
+    assert "--" in ffprobe_command
+    assert ffprobe_command[ffprobe_command.index("--") + 1 :] == [resolved]
+    assert silence_command[silence_command.index("-i") + 1] == media_uri
+    assert freeze_command[freeze_command.index("-i") + 1] == media_uri
+    assert media_uri.startswith("file:")
 
 
 def test_pacing_validates_every_audio_stream_duration(tmp_path: Path) -> None:
