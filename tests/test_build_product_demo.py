@@ -1065,3 +1065,113 @@ def test_open_ended_low_motion_segment_extends_to_media_end() -> None:
     )
 
     assert segments == [(1.5, 10.0, 8.5)]
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["-35dB", "-50dB", "0dB", "12.5dB", "-12.5dB"],
+)
+def test_validate_noise_level_accepts_allowlisted_db(value: str) -> None:
+    assert PACING.validate_noise_level(value) == value
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "x[out];nullsink",
+        "-35dB,anull",
+        "-35dB;nullsink",
+        "-35dB[out]",
+        "-35dB:d=1",
+        "-35dB=evil",
+        "35db",
+        "-35",
+        "",
+        " -35dB",
+        "-35dB ",
+        "--35dB",
+    ],
+)
+def test_validate_noise_level_rejects_filtergraph_payloads(value: str) -> None:
+    with pytest.raises(argparse.ArgumentTypeError):
+        PACING.validate_noise_level(value)
+
+
+def test_pacing_rejects_malicious_silence_noise_before_subprocess(tmp_path: Path) -> None:
+    media = tmp_path / "demo.mp4"
+    media.write_bytes(b"video")
+    args = argparse.Namespace(
+        media=media,
+        plan=None,
+        silence_noise="x[out];nullsink",
+        silence_min_duration=0.45,
+        freeze_noise="-50dB",
+        freeze_min_duration=1.0,
+        max_silence_ratio=0.18,
+        max_silence_segment=1.75,
+        max_low_motion_ratio=0.40,
+        max_low_motion_segment=4.0,
+        json_out=None,
+    )
+    run_mock = mock.Mock()
+    stderr = io.StringIO()
+    with (
+        mock.patch.object(PACING, "parse_args", return_value=args),
+        mock.patch.object(PACING.shutil, "which", return_value="/usr/bin/tool"),
+        mock.patch.object(PACING, "run", run_mock),
+        mock.patch.object(sys, "stderr", stderr),
+    ):
+        result = PACING.main()
+
+    assert result == 2
+    assert run_mock.call_count == 0
+    assert "invalid noise level" in stderr.getvalue()
+
+
+def test_pacing_rejects_malicious_freeze_noise_before_subprocess(tmp_path: Path) -> None:
+    media = tmp_path / "demo.mp4"
+    media.write_bytes(b"video")
+    args = argparse.Namespace(
+        media=media,
+        plan=None,
+        silence_noise="-35dB",
+        silence_min_duration=0.45,
+        freeze_noise="-50dB;nullsink",
+        freeze_min_duration=1.0,
+        max_silence_ratio=0.18,
+        max_silence_segment=1.75,
+        max_low_motion_ratio=0.40,
+        max_low_motion_segment=4.0,
+        json_out=None,
+    )
+    run_mock = mock.Mock()
+    stderr = io.StringIO()
+    with (
+        mock.patch.object(PACING, "parse_args", return_value=args),
+        mock.patch.object(PACING.shutil, "which", return_value="/usr/bin/tool"),
+        mock.patch.object(PACING, "run", run_mock),
+        mock.patch.object(sys, "stderr", stderr),
+    ):
+        result = PACING.main()
+
+    assert result == 2
+    assert run_mock.call_count == 0
+    assert "invalid noise level" in stderr.getvalue()
+
+
+def test_pacing_cli_rejects_malicious_noise_flags(tmp_path: Path) -> None:
+    media = tmp_path / "demo.mp4"
+    media.write_bytes(b"video")
+    with mock.patch.object(
+        sys,
+        "argv",
+        [
+            "analyze_demo_pacing.py",
+            str(media),
+            "--silence-noise",
+            "x[out];nullsink",
+        ],
+    ):
+        with pytest.raises(SystemExit) as exc_info:
+            PACING.parse_args()
+    assert exc_info.value.code == 2
