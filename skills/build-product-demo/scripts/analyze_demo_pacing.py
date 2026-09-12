@@ -19,18 +19,33 @@ SILENCE_DURATION_RE = re.compile(r"silence_duration:\s*([0-9.]+)")
 FREEZE_START_RE = re.compile(r"freeze_start:\s*([0-9.]+)")
 FREEZE_END_RE = re.compile(r"freeze_end:\s*([0-9.]+)")
 FREEZE_DURATION_RE = re.compile(r"freeze_duration:\s*([0-9.]+)")
+NOISE_LEVEL_RE = re.compile(r"^-?[0-9]+(\.[0-9]+)?dB$")
+
+
+def validate_noise_level(value: str) -> str:
+    """Accept only strict ffmpeg dB noise levels for filtergraph interpolation.
+
+    Values are interpolated into -af/-vf filtergraphs. Reject anything that is
+    not an allowlisted dB literal so filtergraph metacharacters cannot inject
+    additional nodes (for example `,`, `;`, `[`, `]`, `:`, `=`).
+    """
+    if not isinstance(value, str) or not NOISE_LEVEL_RE.fullmatch(value):
+        raise argparse.ArgumentTypeError(
+            f"invalid noise level {value!r}; expected form like -35dB or 12.5dB"
+        )
+    return value
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("media", type=Path)
     parser.add_argument("--plan", type=Path, help="Validated beat plan containing hold intervals.")
-    parser.add_argument("--silence-noise", default="-35dB")
+    parser.add_argument("--silence-noise", type=validate_noise_level, default="-35dB")
     parser.add_argument("--silence-min-duration", type=float, default=0.45)
     # Terminal and code demos often change only a small text region. A more
     # sensitive default keeps those real interactions from being mistaken for
     # a frozen full-screen slide while still catching long static holds.
-    parser.add_argument("--freeze-noise", default="-50dB")
+    parser.add_argument("--freeze-noise", type=validate_noise_level, default="-50dB")
     parser.add_argument("--freeze-min-duration", type=float, default=1.0)
     parser.add_argument("--max-silence-ratio", type=float, default=0.18)
     parser.add_argument("--max-silence-segment", type=float, default=1.75)
@@ -165,6 +180,14 @@ def paths_alias(first: Path, second: Path) -> bool:
 
 def main() -> int:
     args = parse_args()
+    try:
+        # Re-validate before filter construction so Namespace/test paths cannot
+        # bypass argparse typing and inject filtergraph metacharacters.
+        args.silence_noise = validate_noise_level(args.silence_noise)
+        args.freeze_noise = validate_noise_level(args.freeze_noise)
+    except (argparse.ArgumentTypeError, TypeError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
     if not args.media.is_file():
         print(f"error: media not found: {args.media}", file=sys.stderr)
         return 2
