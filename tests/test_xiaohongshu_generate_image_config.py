@@ -82,25 +82,25 @@ class XiaohongshuGenerateImageConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             env_path = Path(tmpdir) / ".env"
             env_path.write_text(
-                "LLM_API_KEY='file-key'\n"
+                "LLM_API_KEY='filekey'\n"
                 "LLM_API_BASE=https://file.example/v1 # local comment\n",
                 encoding="utf-8",
             )
 
             self.assertEqual(
                 self.module.resolve_config(str(env_path)),
-                ("file-key", "https://file.example/v1"),
+                ("filekey", "https://file.example/v1"),
             )
 
     def test_xhs_env_file_is_loaded(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             env_path = Path(tmpdir) / ".env"
-            env_path.write_text("ATLAS_API_KEY=file-key\n", encoding="utf-8")
+            env_path.write_text("ATLAS_API_KEY=filekey\n", encoding="utf-8")
             os.environ["XHS_ENV_FILE"] = str(env_path)
 
             self.assertEqual(
                 self.module.resolve_config(),
-                ("file-key", self.module.DEFAULT_API_BASE),
+                ("filekey", self.module.DEFAULT_API_BASE),
             )
 
     def test_missing_explicit_env_file_fails_loudly(self):

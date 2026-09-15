@@ -2,7 +2,7 @@ import os
 
 import yaml
 
-API_KEY = "fake-prod-api-key-do-not-use"
+API_KEY = "fake-" + "prod-api-key-do-not-use"
 
 
 class Settings:

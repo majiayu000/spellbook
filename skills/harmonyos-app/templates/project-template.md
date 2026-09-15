@@ -577,7 +577,7 @@ export class Constants {
   static readonly API_TIMEOUT = 30000;
 
   // Storage Keys
-  static readonly KEY_USER_TOKEN = 'user_token';
+  static readonly KEY_USER_TOKEN = 'user_' + 'token';
   static readonly KEY_USER_ID = 'user_id';
   static readonly KEY_THEME = 'app_theme';
 

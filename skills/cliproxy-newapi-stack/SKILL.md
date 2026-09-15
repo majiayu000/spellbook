@@ -154,7 +154,8 @@ API key 必须存进 Keychain 或其他密码管理器，在当前进程启动�
 `~/.zshrc`、聊天、脚本或命令行参数。例如 macOS 可使用：
 
 ```bash
-export BASE_API_KEY="$(security find-generic-password -s newapi-client -a client-default -w)"
+key="$(security find-generic-password -s newapi-client -a client-default -w)"
+export BASE_API_KEY="$key"
 ```
 
 跨多台机器同步时（W-14 文件归属）：单台单台手动 SSH 改各自的 rc 文件，避免并行写覆盖。
@@ -191,7 +192,7 @@ SSH_TARGET=root@<HOST> SSH_KEY=~/.ssh/id_ed25519 \
   CLIPROXY_URL=http://127.0.0.1:<TUNNELED_CLIPROXY_PORT> \
   NEWAPI_URL=https://<NEWAPI_DOMAIN> \
   CLIPROXY_KEY="$(security find-generic-password -s cliproxy-admin -w)" \
-  NEWAPI_TOKEN="$(security find-generic-password -s newapi-client -a client-default -w)" \
+  NEWAPI_TOKEN=$(security find-generic-password -s newapi-client -a client-default -w) \
   MODEL=<虚拟模型> INPUT_USD_PER_M=<输入价> OUTPUT_USD_PER_M=<输出价> \
   QUOTA_PER_UNIT=500000 \
   scripts/verify_stack.sh

@@ -17,7 +17,12 @@
     "longDescription": "Four focused Spellbook skills for frontend design, app UI, design systems, and Figma-to-React handoff.",
     "developerName": "Spellbook",
     "category": "Productivity",
-    "capabilities": [],
+    "capabilities": [
+      "frontend-design",
+      "design-systems",
+      "figma-to-react",
+      "app-ui-implementation"
+    ],
     "defaultPrompt": [
       "Design a polished first screen for this product.",
       "Turn this UI brief into an implementation-ready design system.",

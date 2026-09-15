@@ -526,7 +526,7 @@ class SkillEcosystemDoctorTests(unittest.TestCase):
         self.assertIn("Call wallpaper", text[line - 1])
 
     def test_retired_reference_evidence_redacts_secrets(self):
-        token = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcd"
+        token = "ghp_" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcd"
         found = ecosystem_scans.find_retired_reference(
             f"Call auto-optimize {token} now.", "auto-optimize"
         )

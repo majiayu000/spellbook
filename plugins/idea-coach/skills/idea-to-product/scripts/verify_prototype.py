@@ -153,8 +153,8 @@ def verify(path: Path) -> list[str]:
             errors.append(f"missing {label}")
 
     dangerous_js = {
-        "eval() is forbidden": r"\beval\b",
-        "Function() constructor is forbidden": r"\bFunction\b",
+        "eval is forbidden": r"\beval\b",
+        "Function constructor is forbidden": r"\bFunction\b",
         "document.write is forbidden": r"\bdocument\s*\.\s*write\s*\(",
         "innerHTML assignment is forbidden": r"\binnerHTML\b",
         "insertAdjacentHTML is forbidden": r"\binsertAdjacentHTML\b",

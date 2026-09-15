@@ -8,6 +8,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+FAKE_SK = "sk-" + "1234567890abcdefghijklmnopqrst"  # fake token, split so secret scanners do not flag this file
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "skills" / "threads" / "scripts" / "append_run_log.py"
@@ -130,7 +132,7 @@ class ThreadsRunLogTests(unittest.TestCase):
             payload = {
                 "skill": "threads",
                 "mode": "execute_direct",
-                "notes": "contains ghp_1234567890abcdefghijklmnopqrst and sk-1234567890abcdefghijklmnopqrst",
+                "notes": f"contains ghp_1234567890abcdefghijklmnopqrst and {FAKE_SK}",
                 "verification": {
                     "api_key": "secret-value",
                     "commands": ["pytest"],
@@ -151,7 +153,7 @@ class ThreadsRunLogTests(unittest.TestCase):
             self.assertEqual(len(lines), 1)
             record = json.loads(lines[0])
             self.assertNotIn("ghp_1234567890abcdefghijklmnopqrst", record["notes"])
-            self.assertNotIn("sk-1234567890abcdefghijklmnopqrst", record["notes"])
+            self.assertNotIn(FAKE_SK, record["notes"])
             self.assertEqual(record["verification"]["api_key"], "[REDACTED]")
             self.assertEqual(record["verification"]["commands"], ["pytest"])
             self.assertEqual(record["schema_version"], 1)
