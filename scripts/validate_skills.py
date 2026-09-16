@@ -146,6 +146,7 @@ CATEGORY_BY_NAME = {
     "system-doctor": "Operations & Deploy",
     "vscode-doctor": "Operations & Deploy",
     # Content and reporting
+    "blender-editable-3d": "Content & Research",
     "blender-reference-to-3d": "Content & Research",
     "build-product-demo": "Content & Research",
     "github-trending": "Content & Research",

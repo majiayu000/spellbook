@@ -156,6 +156,23 @@
     ]
   },
   {
+    "name": "blender-editable-3d",
+    "category": "Content & Research",
+    "format": "directory",
+    "path": "skills/blender-editable-3d/SKILL.md",
+    "description": "根据参考图、带尺寸的设计图或文字概念，在 Blender 中制作由独立命名零件组成的可编辑 3D 模型，再按自然语言修改尺寸、部件和配色，交付 .blend、GLB 和多角度渲染。用于图纸转三维、产品概念建模、风格化硬表面道具，以及“做一个同样的案例，换成坦克或其他物体”等请求。以可继续修改的几何工程为核心；不默认制作拆解动画、录屏、绑定或制造模型。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "3d-modeling",
+      "blender"
+    ]
+  },
+  {
     "name": "blender-reference-to-3d",
     "category": "Content & Research",
     "format": "directory",

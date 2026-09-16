@@ -1,13 +1,13 @@
 {
-  "total_skills": 108,
+  "total_skills": 109,
   "total_tags": 37,
   "tag_counts": {
-    "3d-modeling": 1,
+    "3d-modeling": 2,
     "agent": 15,
     "architecture": 15,
     "auth": 3,
     "backend": 12,
-    "blender": 1,
+    "blender": 2,
     "browser": 4,
     "code-review": 17,
     "content": 9,
@@ -42,6 +42,7 @@
   },
   "index": {
     "3d-modeling": [
+      "blender-editable-3d",
       "blender-reference-to-3d"
     ],
     "agent": [
@@ -98,6 +99,7 @@
       "rust-best-practices"
     ],
     "blender": [
+      "blender-editable-3d",
       "blender-reference-to-3d"
     ],
     "browser": [
