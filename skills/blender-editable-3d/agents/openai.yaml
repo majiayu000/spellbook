@@ -1,4 +1,4 @@
 interface:
   display_name: "参考图转可编辑 3D 模型"
   short_description: "根据设计图或文字概念在 Blender 建模，按自然语言修改并交付可编辑工程"
-  default_prompt: "使用 $blender-editable-3d，根据参考图制作可编辑的 Blender 模型，保持主要零件独立，并演示一次尺寸和配色修改，交付 .blend、GLB 和渲染图。"
+  default_prompt: "使用 $blender-editable-3d，根据参考图、设计图或文字概念制作可编辑的 Blender 模型，保持主要零件独立，按用户要求修改并交付 .blend、GLB 和渲染图。人物角色、头发或脸部建模请使用 $blender-reference-to-3d。"
