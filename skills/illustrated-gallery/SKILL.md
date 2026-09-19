@@ -1,116 +1,108 @@
 ---
 name: illustrated-gallery
-description: "Build an illustrated portfolio, creative-studio landing page, or brand showcase with a static art gallery and full-frame ASCII dissolve transitions. Use when the user requests Illustrated Gallery, this visual template, or $illustrated-gallery. Do not use for generic dashboards, standalone ASCII art, or image-to-video generation."
+description: "Art-direct complete illustrated websites and write project-specific image-generation prompts. Use when the user requests Illustrated Gallery, a gallery-inspired visual style, or $illustrated-gallery. Covers visual direction, original artwork, and page-wide composition; not a fixed website clone, standalone image task, or generic dashboard skill."
 ---
 
 # Illustrated Gallery
 
-Create a website from the retained [source template](assets/source/index.html).
-Use [artifact-template.json](artifact-template.json) for reference paths. Preserve
-its visual system and accepted interactions while adapting content to the brief.
+This is an art-direction and image-prompting guide, not a ready-made website.
+It ships no images, brand, page markup, or fixed asset list. Create the visual
+language and artwork for the user's project; never import a previous project's
+pictures or content simply because it used this skill.
 
-## Workflow
+## Start with the project
 
-1. Inspect the target project and its instructions. For a new site, copy
-   `assets/source` into a new working directory; leave the skill's source intact.
-   For an existing site, adapt only the requested surface instead of replacing
-   the entire project.
-2. Identify the audience, brand, text, and illustration subjects from the request.
-   The five blue botanical artworks are examples, not mandatory subjects or a
-   fixed image count.
-3. Retain the large artwork stage, fixed text layer, restrained floating card,
-   serif headline hierarchy, and compact navigation unless the user requests
-   changes. Keep images still between transitions.
-4. Replace or generate a coherent image set, then adjust each mobile crop and
-   keep text and cards clear of faces, bird heads, and flower centers.
-5. Validate the complete interaction and responsive layout. Prepare static output
-   only when needed for hosting; use the user's authorized hosting workflow.
+Identify the audience, primary task, actual content, and requested scope. Respect
+existing integration requirements. When the user rejects the current UI, inspect
+only what is needed to preserve data and behavior, not to reuse its appearance.
 
-## Accepted interaction contract
+Choose a visual direction using [direction examples](references/art-direction.md).
+These are starting points, not presets or a closed menu. Palette, medium, subjects,
+composition, density, and motion can vary independently. State the chosen direction
+briefly and proceed; do not turn routine design choices into an approval interview.
 
-- Keep the full-frame ASCII dissolve, approximately 1.5 seconds long. Reuse the
-  implementation in [app.js](assets/source/app.js); do not substitute an edge wipe
-  or ordinary crossfade as an unsolicited optimization.
-- Keep artwork static. Do not add warping, ripples, floating particles, pointer
-  parallax, or zoom unless explicitly requested. Improve image composition or
-  crop instead when the image feels flat.
-- Treat subject motion, slide transitions, and scroll animation independently.
-  A request to stop image motion must not remove the transition animation.
-- Preserve autoplay, pause, previous/next, direct slide selection, touch swipes,
-  and reduced-motion support. Pause stops autoplay; manual navigation still works.
-- Reuse existing sections without adding dashboards, forms, configuration panels,
-  or theme systems. The sample brief-download form saves a local file; do not
-  describe it as sending a message or collecting a lead.
+Keep the useful qualities of a gallery: considered composition, strong type
+hierarchy, expressive artwork, and enough quiet space to read. Blue botanicals,
+serif headlines, floating cards, dark backgrounds, and carousels are optional,
+not requirements. Let the subject and user task determine their use.
 
-## Artwork direction
+## Design the whole page
 
-Use user-provided images or an available image-generation tool. Keep a consistent
-palette, drawing medium, lighting, and detail density across the set. If new
-image generation is required but unavailable, report that limitation rather than
-claiming example assets were newly generated.
+Before implementing, give every requested section a purpose and layout. A complete
+redesign includes navigation, the main content, search and filters if present,
+onboarding, supporting sections, empty states, and the footer. Changing a hero
+image while leaving the rest of the rejected UI intact is not a complete redesign.
 
-For this composition, start with wide 16:9 artwork, a quiet left region for
-headlines, and a subject near the center-right. Change this composition when the
-text layout changes. Structure prompts around purpose, subject, scene, medium,
-palette, focal placement, and text-free output. For example:
+Carry a coherent palette, typographic scale, spacing, and visual motifs through
+the page, while varying composition to suit each section. A directory may need a
+category index and readable resource rows; a portfolio may need large project
+images. Do not impose portfolio cards or a studio contact form on unrelated tasks.
+Preserve collected content and useful behavior when reorganizing an existing site.
 
-> Wide editorial illustration for a creative studio. An ivory heron among lotus
-> leaves, fine blue ink engraving, restrained teal and ivory palette, subject at
-> center-right, quiet dark left region for a headline. No text, logo, or border.
+Do not decorate every row with an unrelated generated image. Put artwork where it
+helps explain a concept or orient the reader; use typography and layout for dense
+information. Do not invent project screenshots, ratings, test results, or endorsements.
 
-Set each `slides[].focus` independently for mobile. Never reuse one crop for all
-subjects without inspecting it. Use full-sized WebP for the stage and smaller
-WebP thumbnails for the work grid. Preload the current and next full-sized image;
-load the remainder on demand.
+## Generate original artwork
 
-## Source and runtime
+Use user-provided project assets where appropriate, otherwise use an available
+image-generation tool. Follow its documented workflow. Choose image count and
+aspect ratios from the actual layout, never from a fixed sample collection.
 
-- Edit branding and sections in [index.html](assets/source/index.html), visual
-  rules in [style.css](assets/source/style.css), and image lists, crop positions,
-  and transitions in [app.js](assets/source/app.js). The brief download heading
-  and filename derive from the header `.brand` label and text, so rebranding the
-  header keeps the downloaded markdown in sync without a separate JS edit.
-- Keep the dependency-free HTML/CSS/JavaScript stack for new template sites.
-  Do not introduce a framework solely to reuse the design.
-- When changing image count, synchronize the slide array, initial counter,
-  selection buttons, work cards, and total. Runtime counters use `slides.length`.
-- Find and edit the relevant CSS declaration or media query rather than appending
-  more overrides to the stylesheet.
-- The retained `.openai/hosting.json` contains only static output configuration.
-  When using Sites, follow the installed Sites workflow and register a new site.
-  Never restore the original deployment ID or overwrite an unrelated live site.
-- Without Sites, serve or host the same static files using the target project's
-  established workflow. Do not invent an unavailable deployment integration.
+For each asset, write a prompt covering:
 
-## Build and verification
+- **Role and meaning:** its page section and the project idea it should express.
+- **Subject:** a concrete scene or visual metaphor relevant to that idea.
+- **Medium:** illustration, collage, material study, photography, or another chosen treatment.
+- **Palette and light:** how it belongs to this page's visual direction.
+- **Composition:** focal point, text-safe areas, framing, and likely mobile crop.
+- **Constraints:** no baked-in UI text, invented logos, or misleading product depictions.
 
-There are no build dependencies. In the new project, run `node --check app.js`.
-For static hosting, create `out/`, copy `index.html`, `style.css`, `app.js`, and the
-referenced WebP assets into it, preserving the `assets/` paths. Do not package
-Git metadata, credentials, runtime files, or unused large image originals.
+Write actual project-specific prompts, not unfilled templates. Across a set, keep
+shared medium, material, or lighting coherent while changing subjects and framing.
+A style reference guides composition and treatment; it is not an asset to deliver
+unless the user explicitly requests that particular image.
 
-Done when:
+Inspect generated images before integrating them. Adjust composition or regenerate
+if a subject conflicts with text, a mobile crop loses the focal point, or the result
+has misleading labels. Describe conceptual artwork as artwork, not a real product
+screenshot or measurement. Store final images in the target project, never in this
+skill; record the generation prompts and asset sources in the project's existing
+source notes when available.
 
-- Every referenced script and image exists, all images load, and the counts and
-  selection states agree with the actual artwork list.
-- The full transition is observed in a browser, not merely checked for errors;
-  images remain still before and after it.
-- Pause, direct selection, wraparound, touch navigation, and reduced motion work.
-- Desktop and mobile crops preserve subjects, floating cards do not obscure the
-  focal point, and there is no horizontal overflow.
-- The initial page loads only the current and next full-size artwork; work-grid
-  thumbnails do not force all full-size images to load.
+If suitable images or the generation capability are unavailable, report the missing
+asset and continue independent layout work. Ask for the needed asset or an alternative;
+do not silently substitute old sample images or claim the design is complete.
 
-Use available browser tooling for these checks. If unavailable, report the exact
-unverified behavior; syntax checks alone do not prove visual fidelity.
+## Interaction and implementation
 
-## Autonomy and gotchas
+Use the project's existing stack. A static page does not need a framework solely
+for this design. Keep content readable without depending on decorative effects.
 
-Perform requested local edits, previews, and validation directly. Honor explicit
-local-only requests. Publishing, paid media generation, permissions, and existing
-production changes require authorization for that action and destination; reuse
-approval already provided in the conversation.
+Choose motion to fit the composition. A still illustration needs no animation.
+When a gallery and ASCII dissolve are requested, render a roughly 1.5-second
+full-frame transition, sampling the outgoing and incoming image into character
+cells; keep the artwork still between changes. Do not substitute a wipe or add
+warping, parallax, or continuous zoom without a reason grounded in the brief.
 
-A still image distorted by a shader is not a generated video. A successful build
-is not proof of the requested visual effect. If a user rejects an animation,
-change that specific animation and preserve the other accepted interactions.
+For a carousel, provide pause, previous/next, direct selection, keyboard-operable
+controls, touch navigation, and reduced-motion support. Pause stops autoplay but
+not manual selection. Separate image movement, transitions, and scrolling behavior.
+Load only the initial artwork eagerly; defer other full-size images as appropriate.
+
+## Gotchas and completion checks
+
+Use the target project's checks and inspect the complete page in a browser.
+
+- Artwork, wording, and section purposes fit this project; no copied sample content.
+- Every section in the requested scope has been reviewed, including the lower page.
+- Desktop and mobile layouts preserve the focal point, readable contrast, and usable controls.
+- Navigation, search, filtering, empty states, and any gallery interactions work.
+- Images load, transitions are actually observed if used, and reduced motion is respected.
+- Resource records and useful existing functionality survive the redesign.
+- There are no unrelated images in the published output and no horizontal overflow.
+
+Report any unverified behavior rather than treating syntax checks as visual proof.
+Perform authorized local edits and checks directly. Reuse existing authorization for
+image generation and deployment; request missing authorization only when the next
+action exceeds the user's scope. Never publish to an unrelated site.
