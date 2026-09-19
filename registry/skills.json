@@ -872,7 +872,7 @@
     "category": "UI/UX & Frontend",
     "format": "directory",
     "path": "skills/illustrated-gallery/SKILL.md",
-    "description": "Build an illustrated portfolio, creative-studio landing page, or brand showcase with a static art gallery and full-frame ASCII dissolve transitions. Use when the user requests Illustrated Gallery, this visual template, or $illustrated-gallery. Do not use for generic dashboards, standalone ASCII art, or image-to-video generation.",
+    "description": "Art-direct complete illustrated websites and write project-specific image-generation prompts. Use when the user requests Illustrated Gallery, a gallery-inspired visual style, or $illustrated-gallery. Covers visual direction, original artwork, and page-wide composition; not a fixed website clone, standalone image task, or generic dashboard skill.",
     "language": "en",
     "compatibility": {
       "runtimes": [
@@ -880,7 +880,6 @@
       ]
     },
     "tags": [
-      "content",
       "design-system",
       "frontend"
     ]
