@@ -375,8 +375,9 @@ Every skill in Spellbook follows these principles:
 
 ## Release Status
 
-Spellbook is in pre-1.0 release-readiness mode. No numbered GitHub release tag
-has been cut yet; the current install path uses the repository `main` branch.
+Spellbook is in pre-1.0 release-readiness mode. The first numbered tag is
+[v0.1.0](https://github.com/majiayu000/spellbook/releases/tag/v0.1.0). The
+install path remains the repository `main` branch.
 See [Changelog](./CHANGELOG.md) for release history.
 
 Current limitations:

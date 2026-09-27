@@ -3,21 +3,30 @@
 All notable changes to Spellbook are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/):
-latest changes first, ISO dates, and grouped change types. Spellbook does not
-have published version tags yet, so entries are grouped by dated snapshots
-instead of SemVer releases. When versioned releases are introduced, use
-`MAJOR.MINOR.PATCH` release headings and keep the same change categories.
+latest changes first, ISO dates, and grouped change types. Numbered releases
+use `MAJOR.MINOR.PATCH` headings. The install path remains the `main` branch.
+
+
 
 History before this file was reconstructed from `git log`; it is intentionally
 curated for user-facing impact instead of being a raw commit dump.
 
 ## [Unreleased]
 
-Use this section for notable changes after the latest dated snapshot.
+Use this section for notable changes after the latest numbered release.
 
 ### Added
 
 <!-- none yet -->
+
+### Changed
+
+<!-- none yet -->
+
+## [0.1.0] - 2026-09-27
+
+First numbered GitHub release. It snapshots `main` at this tag. Installation
+still follows `main`; this tag is the version you can check out and cite.
 
 ### Changed
 
