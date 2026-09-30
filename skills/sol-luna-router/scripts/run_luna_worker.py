@@ -275,7 +275,7 @@ def build_codex_args(
     if args.command == "resume":
         return [
             *command, "resume", *fixed_worker_options, "-c",
-            f'sandbox_mode="{sandbox}"', args.thread_id, prompt,
+            f'sandbox_mode="{sandbox}"', "--", args.thread_id, prompt,
         ]
 
     command.extend(
