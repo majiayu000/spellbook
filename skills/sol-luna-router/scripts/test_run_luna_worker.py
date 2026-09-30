@@ -62,6 +62,16 @@ if mode == "failure-with-usage":
 if mode == "config-incompatible":
     print("Error loading config.toml: unknown configuration field `disable_response_storage`", file=sys.stderr)
     raise SystemExit(7)
+if mode == "config-incompatible-quota":
+    print("Error loading config.toml: unknown configuration field `quota`", file=sys.stderr)
+    raise SystemExit(7)
+if mode == "stderr-quota":
+    print("config load failed; quota setting is invalid", file=sys.stderr)
+    raise SystemExit(7)
+if mode == "structured-failure-stderr-quota":
+    print(json.dumps({"type": "error", "message": "simulated failure"}))
+    print("rate limit retry", file=sys.stderr)
+    raise SystemExit(7)
 if mode == "capacity":
     print(json.dumps({"type": "error", "message": "usage limit reached"}))
     raise SystemExit(7)
@@ -71,6 +81,9 @@ if mode == "post-start-unknown-field":
     raise SystemExit(7)
 if mode == "sleep":
     time.sleep(10)
+if mode == "sleep-rate-limit-retry":
+    print("rate limit retry", file=sys.stderr, flush=True)
+    time.sleep(10)
 if mode == "sleep-with-usage":
     print(json.dumps({"type": "item.completed", "usage": {"input_tokens": 21, "cached_input_tokens": 8, "output_tokens": 3}}), flush=True)
     time.sleep(10)
@@ -79,6 +92,8 @@ if mode == "recovered":
     print(json.dumps({"type": "item.completed", "item": {"type": "error", "message": "Falling back to HTTPS transport"}}))
 if mode == "turn-failed":
     print(json.dumps({"type": "turn.failed", "error": {"message": "terminal failure"}}))
+if mode == "turn-failed-capacity":
+    print(json.dumps({"type": "turn.failed", "error": {"message": "usage limit reached"}}))
 if mode == "turn-failed-with-usage":
     print(json.dumps({"type": "turn.failed", "usage": {"input_tokens": 30, "cached_input_tokens": 5, "output_tokens": 7}, "error": {"message": "terminal failure with usage"}}))
     raise SystemExit(0)
@@ -442,6 +457,66 @@ class RunnerTests(unittest.TestCase):
             record["usage"],
             {"input_tokens": 40, "cached_input_tokens": 10, "output_tokens": 8},
         )
+
+    def test_stderr_quota_is_not_capacity_exhaustion(self) -> None:
+        result = self.invoke(
+            "run", "--cwd", str(self.repo), "--prompt-file", str(self.prompt),
+            mode="stderr-quota",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("config load failed; quota setting is invalid", result.stderr)
+        record = self.read_records()[0]
+        self.assertEqual(record["failure_code"], "codex_exit")
+        self.assertNotIn("quota setting", json.dumps(record))
+
+    def test_config_incompatibility_takes_precedence_over_quota(self) -> None:
+        result = self.invoke(
+            "run", "--cwd", str(self.repo), "--prompt-file", str(self.prompt),
+            mode="config-incompatible-quota",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("unknown configuration field `quota`", result.stderr)
+        self.assertEqual(self.read_records()[0]["failure_code"], "config_incompatible")
+
+    def test_structured_failure_ignores_stderr_capacity_text(self) -> None:
+        result = self.invoke(
+            "run", "--cwd", str(self.repo), "--prompt-file", str(self.prompt),
+            mode="structured-failure-stderr-quota",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Codex exited with status 7: simulated failure", result.stderr)
+        self.assertEqual(self.read_records()[0]["failure_code"], "codex_exit")
+
+    def test_timeout_rate_limit_retry_stderr_keeps_timeout(self) -> None:
+        result = self.invoke(
+            "run", "--cwd", str(self.repo), "--prompt-file", str(self.prompt),
+            "--timeout-seconds", "3", "--heartbeat-seconds", "0",
+            mode="sleep-rate-limit-retry",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("rate limit retry", result.stderr)
+        record = self.read_records()[0]
+        self.assertEqual(record["failure_code"], "timeout")
+        self.assertEqual(record["worker_thread_id"], "thread-123")
+        self.assertNotIn("rate limit retry", json.dumps(record))
+
+    def test_structured_failed_turn_capacity_is_classified(self) -> None:
+        result = self.invoke(
+            "run", "--cwd", str(self.repo), "--prompt-file", str(self.prompt),
+            mode="turn-failed-capacity",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("usage limit reached", result.stderr)
+        record = self.read_records()[0]
+        self.assertEqual(record["failure_code"], "capacity_exhausted")
+        self.assertNotIn("usage limit reached", json.dumps(record))
+
+    def test_definitive_failure_code_is_preserved_despite_capacity_text(self) -> None:
+        for code in ("timeout", "config_incompatible", "invalid_jsonl", "custom_failure"):
+            with self.subTest(code=code):
+                error = RUNNER.WorkerRunError("quota rate limit", code=code)
+                self.assertEqual(RUNNER.classify_failure(error), code)
+        self.assertEqual(RUNNER.classify_failure(OSError("quota path missing")), "os_error")
 
     def test_strict_config_unknown_field_is_classified_as_incompatible(self) -> None:
         result = self.invoke(
