@@ -97,4 +97,7 @@ def test_browser_page_has_canonical_and_social_metadata():
 
     assert '<link rel="canonical" href="https://majiayu000.github.io/spellbook/skills.html">' in page
     assert '<meta property="og:url" content="https://majiayu000.github.io/spellbook/skills.html">' in page
-    assert '<meta name="twitter:card" content="summary">' in page
+    assert '<meta name="twitter:card" content="summary_large_image">' in page
+    preview_url = "https://majiayu000.github.io/spellbook/assets/spellbook-preview.png"
+    assert f'<meta property="og:image" content="{preview_url}">' in page
+    assert f'<meta name="twitter:image" content="{preview_url}">' in page
