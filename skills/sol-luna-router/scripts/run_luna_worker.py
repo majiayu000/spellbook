@@ -412,6 +412,9 @@ def execute_worker(
             elapsed = now - started_at
             if elapsed >= timeout_seconds:
                 _terminate_process(process)
+                # Termination can leave an incomplete UTF-8 character in either stream.
+                stdout_stream.reconfigure(errors="replace")
+                stderr_stream.reconfigure(errors="replace")
                 stdout = _read_stream(stdout_stream)
                 stderr = _read_stream(stderr_stream)
                 thread_id, event_count, usage = partial_event_summary(stdout)

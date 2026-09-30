@@ -74,6 +74,11 @@ if mode == "sleep":
 if mode == "sleep-with-usage":
     print(json.dumps({"type": "item.completed", "usage": {"input_tokens": 21, "cached_input_tokens": 8, "output_tokens": 3}}), flush=True)
     time.sleep(10)
+if mode in ("sleep-truncated-stdout", "sleep-truncated-stderr"):
+    print(json.dumps({"type": "item.completed", "usage": {"input_tokens": 21, "cached_input_tokens": 8, "output_tokens": 3}}), flush=True)
+    descriptor = 1 if mode == "sleep-truncated-stdout" else 2
+    os.write(descriptor, "partial 前缀".encode("utf-8") + b"\xe4\xb8")
+    time.sleep(10)
 if mode == "recovered":
     print(json.dumps({"type": "error", "message": "Reconnecting after request timed out"}))
     print(json.dumps({"type": "item.completed", "item": {"type": "error", "message": "Falling back to HTTPS transport"}}))
@@ -624,6 +629,59 @@ class RunnerTests(unittest.TestCase):
             record["usage"],
             {"input_tokens": 21, "cached_input_tokens": 8, "output_tokens": 3},
         )
+
+    def test_timeout_with_truncated_utf8_preserves_failure_telemetry(self) -> None:
+        for stream in ("stdout", "stderr"):
+            for retained in (False, True):
+                with self.subTest(stream=stream, retained=retained):
+                    events_file = self.root / "events" / f"partial-{stream}.jsonl"
+                    events_arguments = (
+                        ("--events-file", str(events_file)) if retained else ()
+                    )
+                    record_count = len(self.read_records()) if self.run_log.exists() else 0
+                    result = self.invoke(
+                        "run",
+                        "--cwd",
+                        str(self.repo),
+                        "--prompt-file",
+                        str(self.prompt),
+                        *events_arguments,
+                        "--timeout-seconds",
+                        "3",
+                        "--heartbeat-seconds",
+                        "0",
+                        mode=f"sleep-truncated-{stream}",
+                    )
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertEqual(result.stdout, "")
+                    self.assertIn("timed out after 3 seconds", result.stderr)
+                    self.assertIn("resume with --thread-id thread-123", result.stderr)
+                    self.assertIn("partial events=2", result.stderr)
+                    self.assertIn("telemetry=written", result.stderr)
+                    if stream == "stderr":
+                        self.assertIn("stderr tail: partial 前缀\ufffd", result.stderr)
+                    records = self.read_records()
+                    self.assertEqual(len(records), record_count + 1)
+                    record = records[-1]
+                    self.assertEqual(record["status"], "failed")
+                    self.assertEqual(record["failure_code"], "timeout")
+                    self.assertEqual(record["worker_thread_id"], "thread-123")
+                    self.assertEqual(record["event_count"], 2)
+                    self.assertEqual(record["raw_events_retained"], retained)
+                    self.assertEqual(
+                        record["usage"],
+                        {"input_tokens": 21, "cached_input_tokens": 8, "output_tokens": 3},
+                    )
+                    self.assertNotIn("partial 前缀", json.dumps(record, ensure_ascii=False))
+                    if retained:
+                        self.assertEqual(stat.S_IMODE(events_file.stat().st_mode), 0o600)
+                        raw_events = events_file.read_bytes()
+                        if stream == "stdout":
+                            self.assertTrue(
+                                raw_events.endswith("partial 前缀".encode("utf-8") + b"\xe4\xb8")
+                            )
+                        else:
+                            self.assertEqual(len(raw_events.splitlines()), 2)
 
     def test_existing_events_file_is_not_overwritten(self) -> None:
         events_file = self.root / "events.jsonl"
