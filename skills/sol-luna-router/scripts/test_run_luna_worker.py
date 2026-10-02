@@ -35,6 +35,7 @@ class Invocation:
 
 
 FAKE_CODEX = r'''#!/usr/bin/env python3
+import argparse
 import json
 import os
 import sys
@@ -45,6 +46,15 @@ capture = os.environ.get("FAKE_CODEX_ARGS_FILE")
 if capture:
     with open(capture, "w", encoding="utf-8") as handle:
         json.dump(sys.argv[1:], handle)
+if sys.argv[4:5] == ["resume"]:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-m")
+    parser.add_argument("-c", action="append")
+    parser.add_argument("--dangerously-bypass-approvals-and-sandbox", action="store_true", dest="bypass")
+    parser.add_argument("--last", action="store_true")
+    parser.add_argument("thread_id")
+    parser.add_argument("prompt")
+    resume_args = parser.parse_args(sys.argv[5:])
 environment_capture = os.environ.get("FAKE_CODEX_ENV_FILE")
 if environment_capture:
     keys = ("PYTHONDONTWRITEBYTECODE", "XDG_CACHE_HOME", "CARGO_TARGET_DIR", "GOCACHE", "npm_config_cache")
@@ -87,6 +97,11 @@ if mode == "sleep-rate-limit-retry":
 if mode == "sleep-with-usage":
     print(json.dumps({"type": "item.completed", "usage": {"input_tokens": 21, "cached_input_tokens": 8, "output_tokens": 3}}), flush=True)
     time.sleep(10)
+if mode in ("sleep-truncated-stdout", "sleep-truncated-stderr"):
+    print(json.dumps({"type": "item.completed", "usage": {"input_tokens": 21, "cached_input_tokens": 8, "output_tokens": 3}}), flush=True)
+    descriptor = 1 if mode == "sleep-truncated-stdout" else 2
+    os.write(descriptor, "partial 前缀".encode("utf-8") + b"\xe4\xb8")
+    time.sleep(10)
 if mode == "recovered":
     print(json.dumps({"type": "error", "message": "Reconnecting after request timed out"}))
     print(json.dumps({"type": "item.completed", "item": {"type": "error", "message": "Falling back to HTTPS transport"}}))
@@ -101,7 +116,10 @@ if mode == "missing-final-after-error":
     print(json.dumps({"type": "error", "message": "retry before empty completion"}))
     print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 10, "output_tokens": 0}}))
     raise SystemExit(0)
-print(json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": "done"}}))
+response = "done"
+if mode == "resume-argv":
+    response = json.dumps([resume_args.thread_id, resume_args.prompt, resume_args.bypass, resume_args.last])
+print(json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": response}}))
 if mode == "incomplete-after-error":
     print(json.dumps({"type": "error", "message": "retry was never recovered"}))
     raise SystemExit(0)
@@ -301,6 +319,58 @@ class RunnerTests(unittest.TestCase):
         record = self.read_records()[0]
         self.assertEqual(record["resumed_thread_id"], "thread-previous")
         self.assertEqual(record["worker_thread_id"], "thread-123")
+
+    def test_resume_option_like_values_remain_positional(self) -> None:
+        prompt = "--dangerously-bypass-approvals-and-sandbox\nKeep this prompt intact."
+        self.prompt.write_text(prompt, encoding="utf-8")
+        for thread_id in (
+            "--dangerously-bypass-approvals-and-sandbox",
+            "--last",
+            "--",
+            "019a0000-1234-7000-8000-000000000001",
+            "thread name with spaces",
+        ):
+            with self.subTest(thread_id=thread_id):
+                result = self.invoke(
+                    "resume", "--cwd", str(self.repo),
+                    f"--thread-id={thread_id}",
+                    "--prompt-file", str(self.prompt), mode="resume-argv",
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual(
+                    json.loads(payload["final_response"]),
+                    [thread_id, prompt, False, False],
+                )
+                command = json.loads(self.args_file.read_text(encoding="utf-8"))
+                self.assertEqual(command, [
+                    "exec", "--json", "--strict-config", "resume",
+                    "-m", "gpt-5.6-luna",
+                    "-c", 'model_reasoning_effort="max"',
+                    "-c", "features.apps=false",
+                    "-c", "features.plugins=false",
+                    "-c", "features.multi_agent_v2.enabled=false",
+                    "-c", "agents.enabled=false",
+                    "-c", 'sandbox_mode="workspace-write"',
+                    "--", thread_id, prompt,
+                ])
+
+    def test_resume_option_like_thread_preserves_codex_failure(self) -> None:
+        thread_id = "--dangerously-bypass-approvals-and-sandbox"
+        result = self.invoke(
+            "resume", "--cwd", str(self.repo),
+            f"--thread-id={thread_id}", "--prompt-file", str(self.prompt),
+            mode="failure-with-usage",
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("Codex exited with status 7: no error details", result.stderr)
+        record = self.read_records()[0]
+        self.assertEqual(record["failure_code"], "codex_exit")
+        self.assertEqual(record["resumed_thread_id"], thread_id)
+        self.assertEqual(record["usage"], {
+            "input_tokens": 40, "cached_input_tokens": 10, "output_tokens": 8,
+        })
 
     def test_no_run_log_is_explicit_opt_out(self) -> None:
         result = self.invoke(
@@ -699,6 +769,59 @@ class RunnerTests(unittest.TestCase):
             record["usage"],
             {"input_tokens": 21, "cached_input_tokens": 8, "output_tokens": 3},
         )
+
+    def test_timeout_with_truncated_utf8_preserves_failure_telemetry(self) -> None:
+        for stream in ("stdout", "stderr"):
+            for retained in (False, True):
+                with self.subTest(stream=stream, retained=retained):
+                    events_file = self.root / "events" / f"partial-{stream}.jsonl"
+                    events_arguments = (
+                        ("--events-file", str(events_file)) if retained else ()
+                    )
+                    record_count = len(self.read_records()) if self.run_log.exists() else 0
+                    result = self.invoke(
+                        "run",
+                        "--cwd",
+                        str(self.repo),
+                        "--prompt-file",
+                        str(self.prompt),
+                        *events_arguments,
+                        "--timeout-seconds",
+                        "3",
+                        "--heartbeat-seconds",
+                        "0",
+                        mode=f"sleep-truncated-{stream}",
+                    )
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertEqual(result.stdout, "")
+                    self.assertIn("timed out after 3 seconds", result.stderr)
+                    self.assertIn("resume with --thread-id thread-123", result.stderr)
+                    self.assertIn("partial events=2", result.stderr)
+                    self.assertIn("telemetry=written", result.stderr)
+                    if stream == "stderr":
+                        self.assertIn("stderr tail: partial 前缀\ufffd", result.stderr)
+                    records = self.read_records()
+                    self.assertEqual(len(records), record_count + 1)
+                    record = records[-1]
+                    self.assertEqual(record["status"], "failed")
+                    self.assertEqual(record["failure_code"], "timeout")
+                    self.assertEqual(record["worker_thread_id"], "thread-123")
+                    self.assertEqual(record["event_count"], 2)
+                    self.assertEqual(record["raw_events_retained"], retained)
+                    self.assertEqual(
+                        record["usage"],
+                        {"input_tokens": 21, "cached_input_tokens": 8, "output_tokens": 3},
+                    )
+                    self.assertNotIn("partial 前缀", json.dumps(record, ensure_ascii=False))
+                    if retained:
+                        self.assertEqual(stat.S_IMODE(events_file.stat().st_mode), 0o600)
+                        raw_events = events_file.read_bytes()
+                        if stream == "stdout":
+                            self.assertTrue(
+                                raw_events.endswith("partial 前缀".encode("utf-8") + b"\xe4\xb8")
+                            )
+                        else:
+                            self.assertEqual(len(raw_events.splitlines()), 2)
 
     def test_existing_events_file_is_not_overwritten(self) -> None:
         events_file = self.root / "events.jsonl"
