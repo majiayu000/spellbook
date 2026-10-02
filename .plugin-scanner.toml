@@ -1,0 +1,3 @@
+[scanner]
+# Intentional planted defects; ground truth is in evals/expected-findings.json.
+ignore_paths = ["skills/codebase-audit/evals/fixture/*"]
