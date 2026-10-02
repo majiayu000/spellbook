@@ -520,9 +520,11 @@ def parse_events(stdout: str, stderr: str, returncode: int) -> dict[str, object]
     normalized_usage = normalize_usage(usage_for_failure)
     if normalized_usage:
         details["usage"] = normalized_usage
+    codex_error = fatal_error or (warnings[-1] if warnings else None)
+    if codex_error:
+        details["codex_error"] = codex_error
     if returncode != 0:
-        detail = fatal_error or (warnings[-1] if warnings else None)
-        detail = detail or stderr[-STDERR_TAIL_CHARS:] or "no error details"
+        detail = codex_error or stderr[-STDERR_TAIL_CHARS:] or "no error details"
         raise WorkerRunError(
             f"Codex exited with status {returncode}: {detail}",
             code="codex_exit",
@@ -561,7 +563,21 @@ def parse_events(stdout: str, stderr: str, returncode: int) -> dict[str, object]
 
 
 def classify_failure(error: BaseException) -> str:
+    if not isinstance(error, WorkerRunError):
+        return "os_error"
+    if error.code not in ("codex_exit", "turn_failed"):
+        return error.code
     message = str(error).lower()
+    if (
+        error.code == "codex_exit" and error.details.get("event_count") == 0
+        and "error loading config.toml" in message
+        and ("unknown field" in message or "unknown configuration field" in message)
+    ):
+        return "config_incompatible"
+    codex_error = error.details.get("codex_error")
+    if not isinstance(codex_error, str):
+        return error.code
+    message = codex_error.lower()
     capacity_markers = (
         "rate limit",
         "rate_limit",
@@ -573,16 +589,7 @@ def classify_failure(error: BaseException) -> str:
     )
     if any(marker in message for marker in capacity_markers):
         return "capacity_exhausted"
-    if (
-        isinstance(error, WorkerRunError) and error.code == "codex_exit"
-        and error.details.get("event_count") == 0
-        and "error loading config.toml" in message
-        and ("unknown field" in message or "unknown configuration field" in message)
-    ):
-        return "config_incompatible"
-    if isinstance(error, WorkerRunError):
-        return error.code
-    return "os_error"
+    return error.code
 
 
 def prompt_fingerprint(prompt: str) -> tuple[str, int]:
