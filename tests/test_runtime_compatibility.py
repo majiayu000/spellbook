@@ -138,7 +138,7 @@ class RuntimeCompatibilityTests(unittest.TestCase):
 
     def test_invalid_runtime_declarations_are_rejected(self):
         cases = [
-            ("compatibility: codex", "compatibility must be a YAML mapping"),
+            ("compatibility: 123", "compatibility must be a non-empty string"),
             ("compatibility:\n  runtimes: []", "compatibility.runtimes must be a non-empty list"),
             ("compatibility:\n  runtimes:\n    - made_up", "unsupported runtime made_up"),
             ("compatibility:\n  runtimes:\n    - unspecified", "must not declare unspecified"),
@@ -156,17 +156,116 @@ class RuntimeCompatibilityTests(unittest.TestCase):
 
                     self.assertTrue(any(expected in message for message in messages), messages)
 
-    def test_quick_validate_accepts_mapping_schema_and_rejects_string_schema(self):
+    def test_standard_text_and_metadata_preserve_registry_and_quick_validation(self):
+        for yaml_parser in (validate_skills.yaml, None):
+            with self.subTest(fallback=yaml_parser is None), TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                skill_dir, entry = write_skill(root, compatibility=(
+                    'compatibility: Requires a compatible host and Python.\n'
+                    'metadata:\n  author: Example\n'
+                    '  spellbook-runtimes: "portable codex" # runtime IDs\n'
+                ))
+                with patched_root(root), patched_yaml(yaml_parser):
+                    frontmatter, parse_messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
+                    messages = validate_skills.validate_entries([entry])
+                self.assertFalse(parse_messages + messages, parse_messages + messages)
+                entry = validate_skills.SkillEntry(entry.install_name, entry.path, entry.format, frontmatter)
+                self.assertEqual(validate_skills.registry_payload([entry])[0]["compatibility"],
+                                 {"runtimes": ["codex", "portable"]})
+                self.assertEqual(quick_validate.validate_skill(skill_dir), (True, "Skill is valid!"))
+
+    def test_standard_text_alone_does_not_infer_runtime(self):
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            valid_skill_dir, _ = write_skill(root, compatibility="compatibility:\n  runtimes:\n    - codex")
-            invalid_skill_dir, _ = write_skill(root, name="invalid-skill", compatibility="compatibility: codex")
+            skill_dir, entry = write_skill(root, compatibility="compatibility: codex")
+            with patched_root(root):
+                self.assertFalse(validate_skills.validate_entries([entry]))
+                frontmatter, _ = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
+            entry = validate_skills.SkillEntry(entry.install_name, entry.path, entry.format, frontmatter)
+            self.assertEqual(validate_skills.registry_payload([entry])[0]["compatibility"],
+                             {"runtimes": ["unspecified"]})
+            self.assertEqual(quick_validate.validate_skill(skill_dir), (True, "Skill is valid!"))
 
-            self.assertEqual(quick_validate.validate_skill(valid_skill_dir), (True, "Skill is valid!"))
-            valid, message = quick_validate.validate_skill(invalid_skill_dir)
+    def test_metadata_errors_are_rejected_by_both_validators(self):
+        cases = [
+            'metadata:\n  spellbook-runtimes: ""',
+            'metadata:\n  spellbook-runtimes: [codex]',
+            'metadata:\n  spellbook-runtimes: false',
+            'metadata:\n  spellbook-runtimes: "made_up"',
+            'metadata:\n  spellbook-runtimes: "unspecified"',
+            'metadata:\n  spellbook-runtimes: "codex codex"',
+            'compatibility: {runtimes: [codex]}\nmetadata:\n  spellbook-runtimes: "claude_code"',
+            'compatibility: ""',
+            'compatibility: 123',
+            'compatibility: ' + 'x' * 501,
+            'metadata: "codex"',
+        ]
+        for value in cases:
+            with self.subTest(value=value), TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                skill_dir, entry = write_skill(root, compatibility=value)
+                with patched_root(root):
+                    messages = validate_skills.validate_entries([entry])
+                self.assertTrue(any(message.startswith("ERROR:") for message in messages), messages)
+                self.assertFalse(quick_validate.validate_skill(skill_dir)[0])
 
-            self.assertFalse(valid)
-            self.assertIn("Compatibility must be a YAML mapping", message)
+    def test_legacy_mapping_remains_readable_by_both_validators(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            skill_dir, entry = write_skill(root, compatibility="compatibility: {runtimes: [codex]}")
+            with patched_root(root):
+                self.assertFalse(validate_skills.validate_entries([entry]))
+            self.assertEqual(quick_validate.validate_skill(skill_dir), (True, "Skill is valid!"))
+
+    def test_migrated_skill_frontmatter_conforms_to_standard_field_contract(self):
+        # Agent Skills specification: compatibility is a string <= 500 chars;
+        # metadata maps strings to strings. Host execution is a separate check.
+        for name in ("codex", "codex-agent", "threads"):
+            with self.subTest(name=name):
+                path = ROOT / "skills" / name / "SKILL.md"
+                frontmatter, messages = validate_skills.parse_frontmatter(path)
+                self.assertFalse(messages)
+                self.assertIsInstance(frontmatter["compatibility"], str)
+                self.assertTrue(1 <= len(frontmatter["compatibility"]) <= 500)
+                self.assertTrue(all(isinstance(k, str) and isinstance(v, str)
+                                    for k, v in frontmatter["metadata"].items()))
+                self.assertEqual(quick_validate.validate_skill(path.parent), (True, "Skill is valid!"))
+                with patched_yaml(None):
+                    fallback, messages = validate_skills.parse_frontmatter(path)
+                self.assertFalse(messages)
+                self.assertEqual(fallback["metadata"], frontmatter["metadata"])
+                self.assertEqual(validate_skills.compatibility_object(fallback),
+                                 validate_skills.compatibility_object(frontmatter))
+
+    def test_fallback_metadata_never_silently_drops_runtime_declarations(self):
+        cases = [
+            'metadata:\n    spellbook-runtimes: unsupported_host',
+            'metadata:\n  "spellbook-runtimes": codex',
+            'metadata:\n  author: Example\n    spellbook-runtimes: codex',
+        ]
+        for value in cases:
+            with self.subTest(value=value), TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                _, entry = write_skill(root, compatibility=value)
+                with patched_root(root), patched_yaml(None):
+                    messages = validate_skills.validate_entries([entry])
+                self.assertTrue(any(message.startswith("ERROR:") for message in messages), messages)
+
+    def test_fallback_parser_does_not_treat_unknown_legacy_mapping_as_text(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            _, entry = write_skill(root, compatibility='compatibility: {runtimes: [codex], unknown: yes}')
+            with patched_root(root), patched_yaml(None):
+                messages = validate_skills.validate_entries([entry])
+            self.assertTrue(any("unsupported compatibility mapping" in message for message in messages), messages)
+
+    def test_fallback_parser_does_not_silently_drop_flow_metadata(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            _, entry = write_skill(root, compatibility='metadata: {spellbook-runtimes: codex}')
+            with patched_root(root), patched_yaml(None):
+                messages = validate_skills.validate_entries([entry])
+            self.assertTrue(any("metadata must be a YAML mapping" in message for message in messages), messages)
 
 
 if __name__ == "__main__":

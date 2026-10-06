@@ -63,6 +63,7 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
     messages: list[str] = []
     current_key: str | None = None
     current_nested_key: str | None = None
+    metadata_indent: int | None = None
     quoted_key: str | None = None
     quote_char: str | None = None
     quoted_parts: list[str] = []
@@ -100,6 +101,7 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
         if key_match:
             current_key = key_match.group(1)
             current_nested_key = None
+            metadata_indent = None
             raw_value = key_match.group(2) or ""
             stripped_value = raw_value.strip()
 
@@ -109,14 +111,33 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
                 quoted_parts = [stripped_value[1:]]
                 continue
 
-            if current_key == "compatibility" and stripped_value.startswith("{runtimes: [") and stripped_value.endswith("]}"):
-                raw_runtimes = stripped_value.removeprefix("{runtimes: [").removesuffix("]}")
-                frontmatter[current_key] = {
-                    "runtimes": [strip_quotes(item) for item in raw_runtimes.split(",") if item.strip()]
-                }
+            if current_key == "compatibility" and stripped_value.startswith("{"):
+                flow_match = re.fullmatch(r"\{\s*runtimes\s*:\s*\[(.*)\]\s*\}", stripped_value)
+                if flow_match is None:
+                    messages.append(error(f"{path.relative_to(ROOT)} has unsupported compatibility mapping; use PyYAML"))
+                else:
+                    frontmatter[current_key] = {
+                        "runtimes": [strip_quotes(item) for item in flow_match.group(1).split(",") if item.strip()]
+                    }
                 continue
 
             frontmatter[current_key] = normalize_scalar(strip_quotes(stripped_value)) if stripped_value else {}
+            continue
+
+        if current_key == "metadata" and line.startswith(" "):
+            metadata = frontmatter.get("metadata")
+            nested_match = re.fullmatch(r"( +)([A-Za-z0-9_-]+):(?:\s*(.*))?", line)
+            if not isinstance(metadata, dict) or nested_match is None:
+                messages.append(error(f"{path.relative_to(ROOT)} has unsupported metadata line; use PyYAML: {line}"))
+                continue
+            indent = len(nested_match.group(1))
+            if metadata_indent is not None and indent != metadata_indent:
+                messages.append(error(f"{path.relative_to(ROOT)} has unsupported metadata indentation; use PyYAML: {line}"))
+                continue
+            metadata_indent = indent
+            nested_key = nested_match.group(2)
+            raw_value = (nested_match.group(3) or "").strip()
+            metadata[nested_key] = normalize_scalar(strip_quotes(raw_value)) if raw_value else {}
             continue
 
         if current_key == "compatibility" and line.startswith("  "):

@@ -44,3 +44,33 @@ bash -n install.sh
 ```
 
 After migration, update any direct links that pointed to `skills/<name>.SKILL.md`.
+
+## Runtime Compatibility
+
+The [Agent Skills specification](https://agentskills.io/specification) reserves
+`compatibility` for environment-requirement text (1–500 characters). Spellbook
+keeps its machine-readable runtime filter in the string-valued metadata extension
+`spellbook-runtimes`:
+
+```yaml
+compatibility: Requires Codex with native subagent support.
+metadata:
+  spellbook-runtimes: "codex"
+```
+
+Use space-separated IDs from `claude_code`, `codex`, and `portable`. Unknown,
+duplicate, empty, or `unspecified` declarations are errors. Human-readable
+`compatibility` text alone is never interpreted as a runtime filter. Omitted
+runtime metadata remains `unspecified`, permits existing installation behavior,
+and is not a portability guarantee.
+
+Legacy `compatibility: {runtimes: [codex]}` mappings remain readable by Spellbook
+for existing custom skills, but do not conform to the public string-field
+contract. Migrate those mappings to the example above before distributing them
+to standard consumers. Do not declare both forms together. The registry's
+existing `compatibility.runtimes` JSON object, ordering, search output, and runtime
+filtering stay unchanged; the registry is not SKILL.md frontmatter.
+
+The dependency-free fallback parser supports the block `metadata` form shown
+above. Use PyYAML for other YAML forms. Standard conformance is a format check,
+not proof that every host loads or executes a skill successfully.

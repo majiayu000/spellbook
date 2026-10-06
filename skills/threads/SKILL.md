@@ -1,7 +1,9 @@
 ---
 name: threads
 description: Use when the user explicitly asks for $threads, Codex-native subagents, 开几个子 agent, or a GitHub issue/PR queue needing parallel lanes, worktrees, review/merge gates, and closure audit. Do not use for OS/language threads, chat/email/forum threads, or Assistants product threads unless Codex workflow orchestration is explicit.
-compatibility: {runtimes: [codex]}
+compatibility: Requires Codex with native subagent support.
+metadata:
+  spellbook-runtimes: "codex"
 ---
 
 # Threads

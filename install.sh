@@ -213,158 +213,31 @@ skill_supports_runtime() {
         error "python3 is required for runtime compatibility filtering."
     fi
 
-    python3 - "$skill_md" "$runtime_id" <<'PY' || status=$?
+    # Prefer the managed checkout (also works for curl | bash); sourced tests
+    # and direct checkout use can use the parser next to this installer.
+    local helper_dir="$INSTALL_DIR/scripts"
+    if [ ! -f "$helper_dir/skill_frontmatter.py" ]; then
+        helper_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/scripts"
+    fi
+
+    python3 - "$skill_md" "$runtime_id" "$helper_dir" <<'PY' || status=$?
 import sys
-import re
 from pathlib import Path
+
+sys.path.insert(0, sys.argv[3])
+import skill_frontmatter
+from runtime_compatibility import compatibility_object, validate_compatibility
 
 skill_md = Path(sys.argv[1])
 runtime_id = sys.argv[2]
-allowed_runtimes = {"claude_code", "codex", "portable"}
-
-
-def metadata_error(message):
-    print(f"ERROR: {skill_md} {message}", file=sys.stderr)
+skill_frontmatter.ROOT = skill_md.parent
+frontmatter, messages = skill_frontmatter.parse_frontmatter(skill_md)
+messages.extend(validate_compatibility(frontmatter, str(skill_md), skill_frontmatter.error))
+if messages:
+    print("\n".join(messages), file=sys.stderr)
     sys.exit(2)
-
-
-def strip_quotes(value):
-    value = value.strip()
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
-        return value[1:-1]
-    return value
-
-
-def strip_inline_comment(line):
-    in_single_quote = False
-    in_double_quote = False
-    escaped = False
-    for index, char in enumerate(line):
-        if escaped:
-            escaped = False
-            continue
-        if char == "\\":
-            escaped = True
-            continue
-        if char == "'" and not in_double_quote:
-            in_single_quote = not in_single_quote
-            continue
-        if char == '"' and not in_single_quote:
-            in_double_quote = not in_double_quote
-            continue
-        if (
-            char == "#"
-            and not in_single_quote
-            and not in_double_quote
-            and (index == 0 or line[index - 1].isspace())
-        ):
-            return line[:index].rstrip()
-    return line
-
-
-def parse_inline_list(value):
-    value = value.strip()
-    if value == "[]":
-        return []
-    if not (value.startswith("[") and value.endswith("]")):
-        return None
-    inner = value[1:-1].strip()
-    if not inner:
-        return []
-    return [strip_quotes(item.strip()) for item in inner.split(",") if item.strip()]
-
-
-def parse_flow_compatibility(value):
-    match = re.fullmatch(r"\{\s*runtimes\s*:\s*(\[.*\])\s*\}", value)
-    if not match:
-        metadata_error("compatibility must be a YAML mapping with runtimes")
-    parsed = parse_inline_list(match.group(1))
-    if parsed is None:
-        metadata_error("compatibility.runtimes must be a list")
-    return parsed
-
-
-text = skill_md.read_text(encoding="utf-8")
-if not text.startswith("---\n"):
-    metadata_error("is missing YAML frontmatter")
-
-end = text.find("\n---", 4)
-if end == -1:
-    metadata_error("has unterminated YAML frontmatter")
-
-compatibility_seen = False
-runtimes = None
-current_key = None
-in_runtime_list = False
-
-for raw_line in text[4:end].splitlines():
-    line = strip_inline_comment(raw_line).rstrip()
-    if not line.strip() or line.lstrip().startswith("#"):
-        continue
-
-    key_match = re.match(r"^([A-Za-z0-9_-]+):(?:\s*(.*))?$", line)
-    if key_match:
-        current_key = key_match.group(1)
-        in_runtime_list = False
-        if current_key != "compatibility":
-            continue
-
-        compatibility_seen = True
-        raw_value = (key_match.group(2) or "").strip()
-        if not raw_value:
-            continue
-        if raw_value.startswith("{"):
-            runtimes = parse_flow_compatibility(raw_value)
-            continue
-        metadata_error("compatibility must be a YAML mapping")
-
-    if current_key != "compatibility" or not line.startswith("  "):
-        continue
-
-    nested_match = re.match(r"^  ([A-Za-z0-9_-]+):(?:\s*(.*))?$", line)
-    if nested_match:
-        nested_key = nested_match.group(1)
-        if nested_key != "runtimes":
-            metadata_error(f"has unsupported compatibility key: {nested_key}")
-        in_runtime_list = True
-        raw_value = (nested_match.group(2) or "").strip()
-        if not raw_value:
-            runtimes = []
-            continue
-        parsed = parse_inline_list(raw_value)
-        if parsed is None:
-            metadata_error("compatibility.runtimes must be a list")
-        runtimes = parsed
-        continue
-
-    list_match = re.match(r"^    -\s*(.*)$", line)
-    if list_match and in_runtime_list:
-        if runtimes is None:
-            runtimes = []
-        runtimes.append(strip_quotes(list_match.group(1).strip()))
-        continue
-
-    metadata_error(f"has unsupported compatibility line: {line}")
-
-if not compatibility_seen:
-    sys.exit(0)
-
-if not isinstance(runtimes, list) or not runtimes:
-    metadata_error("compatibility.runtimes must be a non-empty list")
-
-seen = set()
-for runtime in runtimes:
-    if runtime != runtime.strip() or not runtime:
-        metadata_error("compatibility.runtimes entries must be non-empty strings")
-    if runtime == "unspecified":
-        metadata_error("must not declare unspecified; omit compatibility metadata instead")
-    if runtime not in allowed_runtimes:
-        metadata_error(f"has unsupported runtime {runtime}")
-    if runtime in seen:
-        metadata_error(f"declares duplicate runtime {runtime}")
-    seen.add(runtime)
-
-if "portable" in runtimes or runtime_id in runtimes:
+runtimes = compatibility_object(frontmatter)["runtimes"]
+if "unspecified" in runtimes or "portable" in runtimes or runtime_id in runtimes:
     sys.exit(0)
 sys.exit(10)
 PY

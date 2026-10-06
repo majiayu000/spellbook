@@ -72,13 +72,13 @@ Based on the user interview, fill in these components:
 
 - **name**: Skill identifier
 - **description**: When to trigger, what it does. This is the primary triggering mechanism - include both what the skill does AND specific contexts for when to use it. All "when to use" info goes here, not in the body. Note: currently Claude has a tendency to "undertrigger" skills -- to not use them when they'd be useful. To combat this, please make the skill descriptions a little bit "pushy". So for instance, instead of "How to build a simple fast dashboard to display internal Anthropic data.", you might write "How to build a simple fast dashboard to display internal Anthropic data. Make sure to use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"
-- **compatibility**: Optional structured runtime metadata. Omit it for skills that install everywhere. Use it only when a skill depends on a specific runtime, with allowed runtime ids `claude_code`, `codex`, and `portable`:
+- **compatibility**: Optional environment-requirement text (1–500 characters), as defined by the [Agent Skills specification](https://agentskills.io/specification). Spellbook's runtime filter belongs in the string-valued `metadata.spellbook-runtimes` extension, using space-separated `claude_code`, `codex`, or `portable` IDs:
   ```yaml
-  compatibility:
-    runtimes:
-      - codex
+  compatibility: Requires Codex with native subagent support.
+  metadata:
+    spellbook-runtimes: "codex"
   ```
-  Put required tools, dependencies, and setup notes in `allowed-tools`, `metadata`, or the skill body instead of free-form `compatibility` text.
+  Omitted runtime metadata stays `unspecified` in the registry and does not restrict installation; it does not prove portability. Legacy `compatibility.runtimes` mappings remain readable, but new skills should use the standard string plus metadata form.
 - **the rest of the skill :)**
 - **Reliable Skill Contract** for high-value workflow skills: forbidden
   behaviors, checkpoints, done conditions, smoke hooks, and drift signals.

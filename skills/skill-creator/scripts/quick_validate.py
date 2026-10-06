@@ -15,23 +15,38 @@ UNSPECIFIED_RUNTIME = 'unspecified'
 
 def validate_compatibility(frontmatter):
     """Validate optional runtime compatibility metadata."""
-    if 'compatibility' not in frontmatter:
-        return None
-    compatibility = frontmatter['compatibility']
-    if not isinstance(compatibility, dict):
-        return f"Compatibility must be a YAML mapping, got {type(compatibility).__name__}"
-    unexpected_keys = {str(key) for key in compatibility if key not in COMPATIBILITY_KEYS}
-    if unexpected_keys:
-        return f"Unexpected compatibility key(s): {', '.join(sorted(unexpected_keys))}"
-    runtimes = compatibility.get('runtimes')
-    if not isinstance(runtimes, list) or not runtimes:
-        return "Compatibility runtimes must be a non-empty list"
+    compatibility = frontmatter.get('compatibility')
+    metadata = frontmatter.get('metadata', {})
+    if not isinstance(metadata, dict):
+        return 'Metadata must be a YAML mapping'
+    declared = 'spellbook-runtimes' in metadata
+    if isinstance(compatibility, dict):
+        # Legacy Spellbook mapping; new skills use the standard string field.
+        if declared:
+            return "Runtimes are declared in both compatibility and metadata"
+        unexpected_keys = {str(key) for key in compatibility if key not in COMPATIBILITY_KEYS}
+        if unexpected_keys:
+            return f"Unexpected compatibility key(s): {', '.join(sorted(unexpected_keys))}"
+        runtimes = compatibility.get('runtimes')
+        if not isinstance(runtimes, list) or not runtimes:
+            return "Compatibility runtimes must be a non-empty list"
+    else:
+        if 'compatibility' in frontmatter and (
+            not isinstance(compatibility, str) or not 1 <= len(compatibility.strip()) <= 500
+        ):
+            return "Compatibility must be a non-empty string of at most 500 characters"
+        if not declared:
+            return None
+        value = metadata['spellbook-runtimes']
+        if not isinstance(value, str) or not value.strip():
+            return "metadata.spellbook-runtimes must be a non-empty string"
+        runtimes = value.split()
     seen = set()
     for runtime in runtimes:
         if not isinstance(runtime, str) or runtime != runtime.strip() or not runtime:
             return "Compatibility runtimes must contain only non-empty strings"
         if runtime == UNSPECIFIED_RUNTIME:
-            return "Compatibility must not declare unspecified; omit compatibility metadata instead"
+            return "Compatibility must not declare unspecified; omit runtime metadata instead"
         if runtime not in RUNTIME_IDS:
             return f"Unsupported compatibility runtime '{runtime}'. Allowed runtimes: {', '.join(sorted(RUNTIME_IDS))}"
         if runtime in seen:
