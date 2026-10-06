@@ -42,7 +42,9 @@ PLUGIN_RUNTIME = "codex"
 QUOTED_CONTEXT_RE = re.compile(r"quoted|trace|tool output|引用|引述|日志记录", re.I)
 GOVERNANCE_CONTEXT_RE = re.compile(r"governance|audit|skill 治理|技能治理|审计", re.I)
 FRONTMATTER_KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*:")
-PORTABLE_FRONTMATTER_KEYS = {"name", "description", "license", "metadata", "allowed-tools"}
+PORTABLE_FRONTMATTER_KEYS = {
+    "name", "description", "license", "metadata", "allowed-tools", "compatibility"
+}
 
 
 class ReconcileError(RuntimeError):
@@ -325,6 +327,22 @@ def _validate_frontmatter_extensions(policy: dict, sources: dict[str, Path]) -> 
             raise ReconcileError(f"invalid frontmatter in {skill_file}: {exc}") from exc
         if not isinstance(data, dict):
             raise ReconcileError(f"frontmatter is not a mapping: {skill_file}")
+        if "compatibility" in data:
+            compatibility = data["compatibility"]
+            # Standard compatibility is environment text. Existing legacy
+            # mappings remain an explicit, per-skill extension exception.
+            legacy_exception = (
+                isinstance(compatibility, dict)
+                and "compatibility" in allowed_by_skill.get(name, set())
+            )
+            if not legacy_exception and (
+                not isinstance(compatibility, str)
+                or not 1 <= len(compatibility.strip()) <= 500
+            ):
+                raise ReconcileError(
+                    f"{skill_file} compatibility must be a non-empty string of at most "
+                    "500 characters; legacy mappings require an explicit extension exception"
+                )
         keys = set(data)
         unexpected = keys - PORTABLE_FRONTMATTER_KEYS - allowed_by_skill.get(name, set())
         if unexpected:
@@ -352,9 +370,14 @@ def _resolved_link(path: Path) -> Path:
     return target if target.is_absolute() else (path.parent / target).resolve()
 
 
-def _validate_removable_link(path: Path, expected: Path) -> bool:
+def _validate_removable_link(
+    path: Path, expected: Path, managed_previous: Path | None = None
+) -> bool:
     if path.is_symlink():
-        if _resolved_link(path) != expected.resolve():
+        allowed = {expected.resolve()}
+        if managed_previous is not None:
+            allowed.add(managed_previous.resolve())
+        if _resolved_link(path) not in allowed:
             raise ReconcileError(f"refusing to remove unexpected symlink: {path}")
         return True
     if path.exists():
@@ -489,6 +512,7 @@ def build_plan(
         profile_names=profile_names,
         managed_names=managed_names,
         runtime_mirror_names=runtime_mirrors,
+        validate_budget=False,
     )
     cold = set(classification.cold_names)
     hidden = set(classification.hidden_names)
@@ -564,6 +588,19 @@ def build_plan(
             text_updates[source / "SKILL.md"] = updated
             hardened.append(skill)
 
+    # Exposure determines what to harden, but its budget must describe the
+    # proposed result, including longer or shorter trigger overrides. No writes
+    # have happened when this final validation rejects an oversized catalog.
+    classification = classify_exposure(
+        policy,
+        exposed_sources,
+        project_names=set(scope_map),
+        profile_names=profile_names,
+        managed_names=managed_names,
+        runtime_mirror_names=runtime_mirrors,
+        text_overrides=text_updates,
+    )
+
     global_links: list[str] = []
     global_creations: list[tuple[str, str]] = []
     global_replacements: list[tuple[str, str]] = []
@@ -576,10 +613,20 @@ def build_plan(
             global_path = home / "skills" / skill
             if _validate_removable_link(global_path, source):
                 global_links.append(str(global_path))
+
+    # Reconcile the difference between existing managed projections and the
+    # desired scopes. A known project root remains governed even when its skill
+    # or profile binding becomes empty. Unknown links are conflicts, never owned.
+    for skill in sorted(set(canonical_sources) | blocked):
+        source_file = canonical_sources.get(skill, skills_root / skill / "SKILL.md")
+        source = source_file.parent
+        desired_roots = set(scope_roots.get(skill, ()))
         for owner in declared_project_roots:
             for runtime_dir in governed_dirs:
+                if owner in desired_roots and runtime_dir in projection_dirs:
+                    continue
                 project_path = owner / runtime_dir / "skills" / skill
-                if _validate_removable_link(project_path, source):
+                if _validate_removable_link(project_path, source, skills_root / skill):
                     project_removals.append(str(project_path))
 
     for skill in sorted(hidden):

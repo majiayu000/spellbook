@@ -13,6 +13,13 @@ try:
 finally:
     sys.path.remove(str(ROOT / "scripts"))
 
+DOCTOR_SCRIPTS = ROOT / "skills" / "skill-ecosystem-doctor" / "scripts"
+sys.path.insert(0, str(DOCTOR_SCRIPTS))
+try:
+    import ecosystem_reconcile
+finally:
+    sys.path.remove(str(DOCTOR_SCRIPTS))
+
 
 def load_quick_validate():
     script = ROOT / "skills" / "skill-creator" / "scripts" / "quick_validate.py"
@@ -230,6 +237,7 @@ class RuntimeCompatibilityTests(unittest.TestCase):
                 self.assertTrue(all(isinstance(k, str) and isinstance(v, str)
                                     for k, v in frontmatter["metadata"].items()))
                 self.assertEqual(quick_validate.validate_skill(path.parent), (True, "Skill is valid!"))
+                ecosystem_reconcile._validate_frontmatter_extensions({}, {name: path})
                 with patched_yaml(None):
                     fallback, messages = validate_skills.parse_frontmatter(path)
                 self.assertFalse(messages)

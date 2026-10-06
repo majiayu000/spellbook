@@ -56,13 +56,25 @@ Deployed exposure fields are:
 | `profiles` | Named, mutually exclusive groups retained for on-demand or project use. |
 | `profile_scopes` | Exact project roots mapped to profile names. |
 | `profile_scope_globs` | Dynamic project/worktree globs mapped to profile names. |
-| `exposure_budget` | Maximum managed-global Skill count and description characters. |
+| `exposure_budget` | Maximum managed-global Skill count and description characters after planned trigger hardening or overrides. |
 | `plugin_states` | Exact configured plugin IDs mapped to enabled booleans. |
 | `evidence_policy` | Read-only evidence controls such as the bulk-audit threshold. |
 
 Every canonical registry Skill must resolve to one class: global, project,
 profile, cold, review, or hidden. Profile names may not overlap. With
 `default_scope: "review"`, undeclared Skills stay retained but unprojected.
+
+Reconciliation removes revoked managed projections from every project root still
+declared by an exact binding or matching glob, including empty bindings. When
+removing an entire project or profile binding, retain its root with an empty
+array for one reconcile/apply before deleting the root from policy. A root that
+is no longer declared cannot be discovered from policy alone. Unexpected links
+and physical files cause a conflict and are preserved.
+
+Standard `compatibility` environment text is portable frontmatter: a non-empty
+string of at most 500 characters. Legacy `compatibility` mappings still require
+an explicit per-Skill `frontmatter_extension_exceptions` entry. Other unknown
+frontmatter keys also remain subject to that exception policy.
 
 Use `ecosystem_reconcile.py` for dry-run/apply exposure changes and
 `ecosystem_split.py` for declared progressive-disclosure moves. These commands

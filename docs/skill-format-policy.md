@@ -22,6 +22,13 @@ File skills remain valid when the full instruction is short and self-contained. 
 
 The install name is always `<name>`. A directory skill and file skill with the same install name are invalid.
 
+Cleanup and uninstall remove only links to the managed checkout. A file skill's
+wrapper directory is removed only when empty; notes, resources, and other user
+files alongside `SKILL.md` are preserved. If those files prevent a directory
+layout replacement, the installer reports the remaining path and skips that
+skill. Existing unmanaged files, directories, and symlinks are also reported as
+conflicts and are not counted as installed skills.
+
 ## Registry Behavior
 
 `scripts/validate_skills.py` discovers both layouts and records the layout in the generated registry `format` field:

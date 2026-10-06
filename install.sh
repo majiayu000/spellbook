@@ -287,19 +287,8 @@ prune_stale_managed_skills_from_dir() {
             continue
         fi
 
-        local target
-        if [ -L "$skill_path" ]; then
-            target=$(read_managed_target "$skill_path")
-            if is_managed_path "$target"; then
-                rm -f "$skill_path"
-                pruned=$((pruned + 1))
-            fi
-        elif [ -d "$skill_path" ] && [ -L "$skill_path/SKILL.md" ]; then
-            target=$(read_managed_target "$skill_path/SKILL.md")
-            if is_managed_path "$target"; then
-                rm -rf "$skill_path"
-                pruned=$((pruned + 1))
-            fi
+        if remove_managed_skill_link "$skill_path"; then
+            pruned=$((pruned + 1))
         fi
     done
 
@@ -319,19 +308,8 @@ prune_all_managed_skills_from_dir() {
     for skill_path in "$skills_dir"/*; do
         [ -e "$skill_path" ] || [ -L "$skill_path" ] || continue
 
-        local target
-        if [ -L "$skill_path" ]; then
-            target=$(read_managed_target "$skill_path")
-            if is_managed_path "$target"; then
-                rm -f "$skill_path"
-                pruned=$((pruned + 1))
-            fi
-        elif [ -d "$skill_path" ] && [ -L "$skill_path/SKILL.md" ]; then
-            target=$(read_managed_target "$skill_path/SKILL.md")
-            if is_managed_path "$target"; then
-                rm -rf "$skill_path"
-                pruned=$((pruned + 1))
-            fi
+        if remove_managed_skill_link "$skill_path"; then
+            pruned=$((pruned + 1))
         fi
     done
 
@@ -348,23 +326,34 @@ prune_legacy_codex_skills() {
     prune_all_managed_skills_from_dir "$LEGACY_CODEX_SKILLS_DIR" "legacy Codex"
 }
 
-prune_managed_skill_target() {
-    local skills_dir="$1"
-    local skill_name="$2"
-    local target="$skills_dir/$skill_name"
+remove_managed_skill_link() {
+    local target="$1"
     local linked_skill
 
     if [ -L "$target" ]; then
         linked_skill=$(read_managed_target "$target")
         if is_managed_path "$linked_skill"; then
-            rm -f "$target"
+            rm -f "$target" || error "Unable to remove managed symlink: $target"
+            return 0
         fi
     elif [ -d "$target" ] && [ -L "$target/SKILL.md" ]; then
         linked_skill=$(read_managed_target "$target/SKILL.md")
         if is_managed_path "$linked_skill"; then
-            rm -rf "$target"
+            rm -f "$target/SKILL.md" || error "Unable to remove managed symlink: $target/SKILL.md"
+            # Ownership of the entry link does not imply ownership of user files
+            # stored alongside it. Remove only an empty wrapper directory.
+            rmdir "$target" 2>/dev/null || warn "Preserving remaining files in $target"
+            return 0
         fi
     fi
+    return 1
+}
+
+prune_managed_skill_target() {
+    if remove_managed_skill_link "$1/$2"; then
+        return 0
+    fi
+    return 0
 }
 
 prepare_directory_skill_target() {
@@ -372,14 +361,15 @@ prepare_directory_skill_target() {
     local skill_name="$2"
     local target="$skills_dir/$skill_name"
 
-    if [ -L "$target" ]; then
-        rm -f "$target"
-    elif [ -d "$target" ] && [ -L "$target/SKILL.md" ]; then
-        local linked_skill
-        linked_skill=$(read_managed_target "$target/SKILL.md")
-        if is_managed_path "$linked_skill"; then
-            rm -rf "$target"
+    if [ -e "$target" ] || [ -L "$target" ]; then
+        if ! remove_managed_skill_link "$target"; then
+            warn "Skipping $skill_name: unmanaged install target $target"
+            return 1
         fi
+    fi
+    if [ -e "$target" ] || [ -L "$target" ]; then
+        warn "Skipping $skill_name: remaining files prevent replacing $target"
+        return 1
     fi
 }
 
@@ -389,7 +379,26 @@ prepare_file_skill_target() {
     local target="$skills_dir/$skill_name"
 
     if [ -L "$target" ]; then
-        rm -f "$target"
+        if ! remove_managed_skill_link "$target"; then
+            warn "Skipping $skill_name: unmanaged install target $target"
+            return 1
+        fi
+    elif [ -e "$target" ] && [ ! -d "$target" ]; then
+        warn "Skipping $skill_name: unmanaged install target $target"
+        return 1
+    fi
+
+    local entry="$target/SKILL.md"
+    if [ -L "$entry" ]; then
+        local linked_skill
+        linked_skill=$(read_managed_target "$entry")
+        if ! is_managed_path "$linked_skill"; then
+            warn "Skipping $skill_name: unmanaged install entry $entry"
+            return 1
+        fi
+    elif [ -e "$entry" ]; then
+        warn "Skipping $skill_name: unmanaged install entry $entry"
+        return 1
     fi
 
     mkdir -p "$target"
@@ -415,7 +424,9 @@ install_all_skills_to_dir() {
             if ! skill_supports_runtime "$skill_dir/SKILL.md" "$runtime_id"; then
                 continue
             fi
-            prepare_directory_skill_target "$skills_dir" "$skill_name"
+            if ! prepare_directory_skill_target "$skills_dir" "$skill_name"; then
+                continue
+            fi
             ln -sfn "$skill_dir" "$skills_dir/$skill_name"
             count=$((count + 1))
         fi
@@ -428,7 +439,9 @@ install_all_skills_to_dir() {
             if ! skill_supports_runtime "$skill_file" "$runtime_id"; then
                 continue
             fi
-            prepare_file_skill_target "$skills_dir" "$skill_name"
+            if ! prepare_file_skill_target "$skills_dir" "$skill_name"; then
+                continue
+            fi
             ln -sfn "$skill_file" "$skills_dir/$skill_name/SKILL.md"
             count=$((count + 1))
         fi
@@ -474,7 +487,9 @@ install_skills_to_dir() {
                 warn "  ✗ $skill (not compatible with $runtime_name)"
                 continue
             fi
-            prepare_directory_skill_target "$skills_dir" "$skill"
+            if ! prepare_directory_skill_target "$skills_dir" "$skill"; then
+                continue
+            fi
             ln -sfn "$INSTALL_DIR/skills/$skill" "$skills_dir/$skill"
             count=$((count + 1))
             info "  ✓ $skill"
@@ -485,7 +500,9 @@ install_skills_to_dir() {
                 warn "  ✗ $skill (not compatible with $runtime_name)"
                 continue
             fi
-            prepare_file_skill_target "$skills_dir" "$skill"
+            if ! prepare_file_skill_target "$skills_dir" "$skill"; then
+                continue
+            fi
             ln -sfn "$INSTALL_DIR/skills/$skill.SKILL.md" "$skills_dir/$skill/SKILL.md"
             count=$((count + 1))
             info "  ✓ $skill"
@@ -554,16 +571,8 @@ uninstall_from_skills_dir() {
     for skill_path in "$skills_dir"/*; do
         [ -e "$skill_path" ] || [ -L "$skill_path" ] || continue
 
-        if [ -L "$skill_path" ]; then
-            target=$(read_managed_target "$skill_path")
-            if is_managed_path "$target"; then
-                rm -f "$skill_path"
-            fi
-        elif [ -d "$skill_path" ] && [ -L "$skill_path/SKILL.md" ]; then
-            target=$(read_managed_target "$skill_path/SKILL.md")
-            if is_managed_path "$target"; then
-                rm -rf "$skill_path"
-            fi
+        if remove_managed_skill_link "$skill_path"; then
+            continue
         fi
     done
 }

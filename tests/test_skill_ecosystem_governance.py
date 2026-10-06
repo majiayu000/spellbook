@@ -523,6 +523,162 @@ def test_reconcile_removes_quarantined_and_retired_links(tmp_path: Path) -> None
     assert (project / ".agents" / "skills" / "project-skill").is_symlink()
 
 
+@pytest.mark.parametrize("transition", ["review", "profile", "move", "glob", "global"])
+def test_reconcile_removes_revoked_project_projections(tmp_path: Path, transition: str) -> None:
+    registry = tmp_path / "registry"
+    source = write_skill(registry / "skills", "demo")
+    write_state(registry, ["demo"])
+    project = tmp_path / "project"
+    other = tmp_path / "work-other"
+    project.mkdir()
+    other.mkdir()
+    homes = {runtime: tmp_path / runtime for runtime in ("codex", "claude")}
+    policy = {
+        "default_scope": "review",
+        "trigger_boundary": {"clause": " Trigger only when explicitly requested."},
+        "project_scopes": {str(project): ["demo"], str(other): []},
+    }
+    if transition == "profile":
+        policy["project_scopes"][str(project)] = []
+        policy["profiles"] = {"work": ["demo"]}
+        policy["profile_scopes"] = {str(project): ["work"]}
+    elif transition == "glob":
+        policy["project_scope_globs"] = {str(tmp_path / "work-*"): ["demo"]}
+    reconcile.apply_plan(*reconcile.build_plan(registry, policy, runtime_homes=homes))
+    source_before = (source / "SKILL.md").read_bytes()
+
+    if transition == "profile":
+        policy["profile_scopes"][str(project)] = []
+    elif transition == "glob":
+        policy["project_scope_globs"][str(tmp_path / "work-*")] = []
+    else:
+        policy["project_scopes"][str(project)] = []
+        if transition == "move":
+            policy["project_scopes"][str(other)] = ["demo"]
+        elif transition == "global":
+            policy["global_allowlist"] = ["demo"]
+
+    plan, text_updates, state_updates = reconcile.build_plan(registry, policy, runtime_homes=homes)
+    revoked = other if transition == "glob" else project
+    expected = {str(revoked / runtime / "skills" / "demo") for runtime in (".agents", ".claude")}
+    assert set(plan.project_links_to_remove) == expected
+    reconcile.apply_plan(plan, text_updates, state_updates)
+    assert all(not Path(path).is_symlink() for path in expected)
+    assert (source / "SKILL.md").read_bytes() == source_before
+    if transition in {"move", "glob"}:
+        retained = other if transition == "move" else project
+        for runtime in (".agents", ".claude"):
+            assert (retained / runtime / "skills" / "demo").resolve() == source
+    repeated, repeated_text, _ = reconcile.build_plan(registry, policy, runtime_homes=homes)
+    assert repeated.project_links_to_remove == ()
+    assert repeated.project_links_to_create == ()
+    assert repeated.project_links_to_replace == ()
+    assert repeated_text == {}
+
+
+def test_revoked_project_preserves_unknown_link_and_reports_conflict(tmp_path: Path) -> None:
+    registry = tmp_path / "registry"
+    source = write_skill(registry / "skills", "demo")
+    write_state(registry, ["demo"])
+    project = tmp_path / "project"
+    target = project / ".agents" / "skills" / "demo"
+    target.parent.mkdir(parents=True)
+    user_source = write_skill(tmp_path / "user", "demo")
+    target.symlink_to(user_source)
+    before = (source / "SKILL.md").read_bytes()
+    policy = {
+        "default_scope": "review",
+        "trigger_boundary": {"clause": " Trigger only when explicitly requested."},
+        "project_scopes": {str(project): []},
+    }
+    with pytest.raises(reconcile.ReconcileError, match="unexpected symlink"):
+        reconcile.build_plan(registry, policy, runtime_homes={
+            "codex": tmp_path / "codex", "claude": tmp_path / "claude"
+        })
+    assert target.is_symlink()
+    assert target.resolve() == user_source
+    assert (source / "SKILL.md").read_bytes() == before
+
+
+@pytest.mark.parametrize("skill_count", [1, 2])
+@pytest.mark.parametrize("managed", [False, True])
+def test_reconcile_rejects_final_description_budget_before_any_write(
+    tmp_path: Path, skill_count: int, managed: bool
+) -> None:
+    registry = tmp_path / "registry"
+    (registry / "skills").mkdir(parents=True)
+    sources = registry / "skills" if not managed else tmp_path / "managed"
+    names = [f"demo-{index}" for index in range(skill_count)]
+    skills = {name: write_skill(sources, name, "Test") for name in names}
+    write_state(registry, names)
+    homes = {runtime: tmp_path / runtime for runtime in ("codex", "claude")}
+    policy = {
+        "trigger_boundary": {"clause": " Only an explicit request."},
+        "exposure_budget": {"max_managed_description_chars": 4 * skill_count},
+    }
+    if managed:
+        policy["managed_global_sources"] = {
+            name: {"source": str(skill), "runtimes": ["codex"]}
+            for name, skill in skills.items()
+        }
+    before = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+
+    with pytest.raises(reconcile.ExposureError, match="managed description budget exceeded"):
+        reconcile.build_plan(registry, policy, runtime_homes=homes)
+
+    assert {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()} == before
+    assert all(not home.exists() for home in homes.values())
+
+
+@pytest.mark.parametrize("new_clause", [" Only explicit.", " Only an explicit request."])
+@pytest.mark.parametrize("old_clause", [" Short.", " This was a substantially longer trigger restriction."])
+def test_reconcile_budget_and_plan_use_override_result(
+    tmp_path: Path, new_clause: str, old_clause: str
+) -> None:
+    registry = tmp_path / "registry"
+    source = write_skill(registry / "skills", "demo", "Test" + old_clause)
+    write_state(registry, ["demo"])
+    homes = {runtime: tmp_path / runtime for runtime in ("codex", "claude")}
+    expected_chars = len("Test" + new_clause)
+    policy = {
+        "trigger_boundary": {"clause": old_clause, "overrides": {"demo": new_clause}},
+        "exposure_budget": {"max_managed_description_chars": expected_chars},
+    }
+
+    plan, text_updates, state_updates = reconcile.build_plan(registry, policy, runtime_homes=homes)
+    assert plan.managed_description_chars == expected_chars
+    reconcile.apply_plan(plan, text_updates, state_updates)
+    assert reconcile._frontmatter_description((source / "SKILL.md").read_text(), source / "SKILL.md")[0] == "Test" + new_clause
+    repeated, repeated_text, _ = reconcile.build_plan(registry, policy, runtime_homes=homes)
+    assert repeated.managed_description_chars == expected_chars
+    assert repeated_text == {}
+
+
+@pytest.mark.parametrize("value", ["null", "false", "123", '""', '"   "', '"' + "x" * 501 + '"'])
+def test_doctor_rejects_invalid_standard_compatibility(tmp_path: Path, value: str) -> None:
+    source = write_skill(tmp_path, "demo") / "SKILL.md"
+    source.write_text(source.read_text().replace("description:", f"compatibility: {value}\ndescription:", 1))
+    with pytest.raises(reconcile.ReconcileError, match="compatibility must be a non-empty string"):
+        reconcile._validate_frontmatter_extensions({}, {"demo": source})
+
+
+def test_doctor_legacy_compatibility_still_needs_extension_exception(tmp_path: Path) -> None:
+    source = write_skill(tmp_path, "demo") / "SKILL.md"
+    source.write_text(source.read_text().replace("description:", "compatibility: {runtimes: [codex]}\ndescription:", 1))
+    with pytest.raises(reconcile.ReconcileError, match="legacy mappings require an explicit extension exception"):
+        reconcile._validate_frontmatter_extensions({}, {"demo": source})
+    reconcile._validate_frontmatter_extensions(
+        {"frontmatter_extension_exceptions": {"compatibility": ["demo"]}}, {"demo": source}
+    )
+
+
+def test_doctor_standard_compatibility_does_not_allow_unknown_extensions(tmp_path: Path) -> None:
+    source = write_skill(tmp_path, "demo") / "SKILL.md"
+    source.write_text(source.read_text().replace("description:", 'compatibility: "Python 3"\nprivate-extra: true\ndescription:', 1))
+    with pytest.raises(reconcile.ReconcileError, match="unapproved frontmatter extensions"):
+        reconcile._validate_frontmatter_extensions({}, {"demo": source})
+
+
 def test_split_is_idempotent(tmp_path: Path) -> None:
     registry = tmp_path / "registry"
     skill_file = registry / "skills" / "sample" / "SKILL.md"
