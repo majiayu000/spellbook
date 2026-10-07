@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -61,13 +62,14 @@ def parse_number(value: str, mapping: dict[str, float], field: str) -> float:
     normalized = str(value).strip().lower()
     if normalized in mapping:
         return mapping[normalized]
-    if normalized.endswith("%"):
-        return float(normalized[:-1]) / 100
     try:
-        return float(normalized)
+        number = float(normalized[:-1]) / 100 if normalized.endswith("%") else float(normalized)
     except ValueError as exc:
         allowed = ", ".join(sorted(mapping)) or "number"
         raise ValueError(f"{field} must be numeric or one of: {allowed}") from exc
+    if not math.isfinite(number):
+        raise ValueError(f"{field} must be finite")
+    return number
 
 
 def parse_confidence(value: str) -> float:
@@ -107,6 +109,8 @@ def read_features(path: Path) -> list[dict[str, object]]:
         if effort <= 0:
             raise ValueError(f"effort must be positive for {row['name']}")
         score = (reach * impact * confidence) / effort
+        if not math.isfinite(score):
+            raise ValueError(f"RICE score must be finite for {row['name']}")
         features.append(
             {
                 "name": row["name"].strip(),
@@ -200,7 +204,7 @@ def main() -> int:
         return 1
 
     if args.output == "json":
-        print(json.dumps({"features": features_with_selection(features, args.capacity), "roadmap": roadmap(features, args.capacity)}, indent=2))
+        print(json.dumps({"features": features_with_selection(features, args.capacity), "roadmap": roadmap(features, args.capacity)}, indent=2, allow_nan=False))
     elif args.output == "csv":
         ranked = features_with_selection(features, args.capacity)
         writer = csv.DictWriter(sys.stdout, fieldnames=list(ranked[0]))
