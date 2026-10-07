@@ -457,8 +457,6 @@ def build_plan(
     projection_homes = tuple(runtime_homes[runtime] for runtime in policy_runtimes)
     governed_homes = tuple(runtime_homes[runtime] for runtime in governed)
     projection_dirs = tuple(runtime_project_dir(runtime) for runtime in policy_runtimes)
-    # Sweep known runtime directories even after projection policy shrinks.
-    governed_dirs = tuple(runtime_project_dir(runtime) for runtime in RUNTIME_HOME_DIRS)
     retired = _policy_name_set(policy, "retired")
     quarantined = _policy_name_set(policy, "quarantined")
     blocked = retired | quarantined
@@ -628,8 +626,8 @@ def build_plan(
             source = (source_root / skill if relative is not None else
                       canonical_sources.get(skill, skills_root / skill / "SKILL.md").parent)
             desired_roots = set(scope_roots.get(skill, ()))
-            for runtime_dir in governed_dirs:
-                if owner in desired_roots and runtime_dir in projection_dirs:
+            for runtime_dir in projection_dirs:
+                if owner in desired_roots:
                     continue
                 project_path = owner / runtime_dir / "skills" / skill
                 if _validate_removable_link(project_path, source, skills_root / skill):

@@ -50,6 +50,13 @@ check_prerequisites() {
         error "Git is not installed. Please install git first."
     fi
 
+    if ! command -v python3 &> /dev/null; then
+        error "Python 3 is not installed. Please install Python 3 first (see docs/installation.md)."
+    fi
+    if ! python3 -c 'import yaml' &> /dev/null; then
+        error "Spellbook requires PyYAML for Python 3. Install PyYAML in the environment used by python3, then retry (see docs/installation.md)."
+    fi
+
     success "Prerequisites check passed"
 }
 

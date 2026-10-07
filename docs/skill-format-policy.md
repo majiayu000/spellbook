@@ -13,7 +13,12 @@ File skills remain valid when the full instruction is short and self-contained. 
 
 ## Installer Behavior
 
-`install.sh` installs both layouts into each selected runtime target:
+`install.sh` requires Git, a selected Claude Code/Codex runtime, Python 3, and
+PyYAML in the `python3` environment. Its prerequisite check fails before
+checkout, directory, or link writes if Python/PyYAML is missing; see the
+[installation guide](./installation.md#advanced-cross-runtime-installer).
+
+It installs both layouts into each selected runtime target:
 
 | Source | Installed as |
 |---|---|

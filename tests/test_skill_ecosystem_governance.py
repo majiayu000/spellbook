@@ -1025,7 +1025,7 @@ def test_projection_runtimes_allows_explicit_no_projection_mode(
 
 
 @pytest.mark.parametrize("runtimes", [["codex"], ["claude"], []])
-def test_project_projection_runtime_shrink_removes_owned_links(tmp_path: Path, runtimes: list[str]) -> None:
+def test_project_projection_runtime_shrink_preserves_links_without_ownership_records(tmp_path: Path, runtimes: list[str]) -> None:
     registry = tmp_path / "registry"
     source = write_skill(registry / "skills", "demo")
     write_state(registry, ["demo"])
@@ -1040,9 +1040,9 @@ def test_project_projection_runtime_shrink_removes_owned_links(tmp_path: Path, r
     assert all(link.is_symlink() for link in links.values())
     policy["projection_runtimes"] = runtimes
     plan, text, state = reconcile.build_plan(registry, policy, runtime_homes=homes)
-    assert set(plan.project_links_to_remove) == {str(link) for runtime, link in links.items() if runtime not in runtimes}
+    assert plan.project_links_to_remove == ()
     reconcile.apply_plan(plan, text, state)
-    assert {runtime for runtime, link in links.items() if link.is_symlink()} == set(runtimes)
+    assert all(link.is_symlink() for link in links.values())
     repeated, _, _ = reconcile.build_plan(registry, policy, runtime_homes=homes)
     assert repeated.project_links_to_remove == ()
 
@@ -1059,8 +1059,9 @@ def test_project_runtime_shrink_preserves_unknown_user_link(tmp_path: Path) -> N
     policy = _base_policy()
     policy["project_scopes"] = {str(project): ["demo"]}
     policy["projection_runtimes"] = ["codex"]
-    with pytest.raises(reconcile.ReconcileError, match="unexpected symlink"):
-        reconcile.build_plan(registry, policy, runtime_homes={"codex": tmp_path / "codex"})
+    plan, text, state = reconcile.build_plan(registry, policy, runtime_homes={"codex": tmp_path / "codex"})
+    assert str(link) not in plan.project_links_to_remove
+    reconcile.apply_plan(plan, text, state)
     assert link.resolve() == other
 
 def test_legacy_policy_projection_roots_follow_projection_runtimes(
@@ -1136,3 +1137,21 @@ def test_legacy_policy_manages_physical_agents_catalog_without_projecting(
     assert "physical_projection_unpinned" not in {
         finding["code"] for finding in result["findings"]
     }
+
+
+@pytest.mark.parametrize("runtime", ["gemini", "cursor"])
+def test_never_governed_canonical_user_link_is_preserved(tmp_path: Path, runtime: str) -> None:
+    registry = tmp_path / "registry"
+    source = write_skill(registry / "skills", "demo")
+    write_state(registry, [])
+    project = tmp_path / "project"
+    link = project / model.runtime_project_dir(runtime) / "skills" / "demo"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(source)
+    policy = _base_policy()
+    policy["project_scopes"] = {str(project): ["demo"]}
+    policy["projection_runtimes"] = ["codex"]
+    plan, text, state = reconcile.build_plan(registry, policy, runtime_homes={"codex": tmp_path / "codex"})
+    assert str(link) not in plan.project_links_to_remove
+    reconcile.apply_plan(plan, text, state)
+    assert link.is_symlink() and link.resolve() == source

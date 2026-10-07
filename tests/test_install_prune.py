@@ -257,14 +257,17 @@ class InstallPruneTests(unittest.TestCase):
                         if not has_pyyaml:
                             self.assertIn("requires PyYAML", output)
                 if not has_pyyaml:
+                    before = sorted(str(path.relative_to(home)) for path in home.rglob("*"))
                     result = subprocess.run([
-                        "bash", "-c", f'source {shlex.quote(str(ROOT / "install.sh"))}; '
-                        'setup_directories; install_skills_to_dir "$CODEX_SKILLS_DIR" "Codex" codex-only'
+                        "bash", str(ROOT / "install.sh"), "--target", "codex", "--skills", "codex-only"
                     ], cwd=home, env=env, text=True, capture_output=True, check=False)
                     output = result.stdout + result.stderr
                     self.assertEqual(result.returncode, 1, output)
                     self.assertIn("requires PyYAML", output)
+                    self.assertIn("Checking prerequisites", output)
+                    self.assertNotIn("Prerequisites check passed", output)
                     self.assertNotIn("Installed", output)
+                    self.assertEqual(sorted(str(path.relative_to(home)) for path in home.rglob("*")), before)
                     self.assertFalse(os.path.lexists(home / ".agents/skills/codex-only"))
 
     def test_invalid_standard_metadata_stops_installer_before_install(self):
