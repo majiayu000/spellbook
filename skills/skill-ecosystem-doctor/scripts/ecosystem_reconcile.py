@@ -373,10 +373,11 @@ def _resolved_link(path: Path) -> Path:
 
 
 def _validate_removable_link(
-    path: Path, expected: Path, managed_previous: Path | None = None
+    path: Path, expected: Path, managed_previous: Path | None = None,
+    *managed_sources: Path,
 ) -> bool:
     if path.is_symlink():
-        allowed = {expected.resolve()}
+        allowed = {expected.resolve(), *(source.resolve() for source in managed_sources)}
         if managed_previous is not None:
             allowed.add(managed_previous.resolve())
         if _resolved_link(path) not in allowed:
@@ -624,12 +625,21 @@ def build_plan(
         for skill in sorted(blocked):
             source = (source_root / skill if relative is not None else
                       canonical_sources.get(skill, skills_root / skill / "SKILL.md").parent)
+            # Glob-created worktrees use the primary project's source too.
+            # Retirement removes active scopes, so use the explicitly declared
+            # source roots rather than looking up the secondary root as owner.
+            declared_sources = tuple(
+                Path(primary).expanduser() / relative / skill
+                for primary, relative in policy.get("project_source_roots", {}).items()
+            )
             desired_roots = set(scope_roots.get(skill, ()))
             for runtime_dir in projection_dirs:
                 if owner in desired_roots:
                     continue
                 project_path = owner / runtime_dir / "skills" / skill
-                if _validate_removable_link(project_path, source, skills_root / skill):
+                if _validate_removable_link(
+                    project_path, source, skills_root / skill, *declared_sources
+                ):
                     project_removals.append(str(project_path))
 
     for skill in sorted(hidden):

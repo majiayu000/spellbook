@@ -1174,3 +1174,45 @@ def test_empty_scope_preserves_never_managed_canonical_link(tmp_path: Path, runt
     assert plan.project_links_to_remove == ()
     reconcile.apply_plan(plan, text, state)
     assert link.is_symlink() and link.resolve() == source
+
+
+@pytest.mark.parametrize("transition", ["retired", "quarantined"])
+@pytest.mark.parametrize("registry_copy", [False, True])
+def test_blocked_glob_projection_preserves_primary_external_source(tmp_path: Path, transition: str, registry_copy: bool) -> None:
+    registry = tmp_path / "registry"
+    (registry / "skills").mkdir(parents=True)
+    if registry_copy:
+        write_skill(registry / "skills", "demo")
+    write_state(registry, ["demo"])
+    project = tmp_path / "project"
+    other = tmp_path / "work-other"
+    project.mkdir()
+    other.mkdir()
+    source = write_skill(project / "source-skills", "demo")
+    homes = {runtime: tmp_path / runtime for runtime in ("codex", "claude")}
+    policy = {
+        "default_scope": "review",
+        "trigger_boundary": {"clause": " Trigger only when explicitly requested."},
+        "project_scopes": {str(project): ["demo"]},
+        "project_source_roots": {str(project): "source-skills"},
+        "project_scope_globs": {str(tmp_path / "work-*"): ["demo"]},
+    }
+    reconcile.apply_plan(*reconcile.build_plan(registry, policy, runtime_homes=homes))
+    before = (source / "SKILL.md").read_bytes()
+    policy["project_scopes"][str(project)] = []
+    policy["project_scope_globs"][str(tmp_path / "work-*")] = []
+    policy[transition] = ["demo"]
+    plan, text_updates, state_updates = reconcile.build_plan(registry, policy, runtime_homes=homes)
+    expected = {str(root / runtime / "skills" / "demo") for root in (project, other) for runtime in (".agents", ".claude")}
+    assert set(plan.project_links_to_remove) == expected
+    reconcile.apply_plan(plan, text_updates, state_updates)
+    assert all(not Path(path).is_symlink() for path in expected)
+    assert (source / "SKILL.md").read_bytes() == before
+    repeated, _, _ = reconcile.build_plan(registry, policy, runtime_homes=homes)
+    assert repeated.project_links_to_remove == ()
+    foreign = write_skill(tmp_path / "foreign", "demo")
+    target = other / ".agents" / "skills" / "demo"
+    target.symlink_to(foreign, target_is_directory=True)
+    with pytest.raises(reconcile.ReconcileError, match="unexpected symlink"):
+        reconcile.build_plan(registry, policy, runtime_homes=homes)
+    assert target.resolve() == foreign.resolve()
