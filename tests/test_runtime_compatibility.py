@@ -217,18 +217,30 @@ class RuntimeCompatibilityTests(unittest.TestCase):
                 self.assertFalse(quick_validate.validate_skill(skill_dir)[0])
 
     def test_compatibility_length_uses_parsed_text_before_whitespace_normalization(self):
-        value = "a" + "   a" * 200
-        for yaml_parser in (validate_skills.yaml, None):
-            with self.subTest(fallback=yaml_parser is None), TemporaryDirectory() as temp_dir:
-                root = Path(temp_dir)
-                skill_dir, entry = write_skill(root, compatibility=f'compatibility: "{value}"')
-                with patched_root(root), patched_yaml(yaml_parser):
-                    frontmatter, parse_messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
-                    messages = validate_skills.validate_entries([entry])
-                self.assertFalse(parse_messages, parse_messages)
-                self.assertEqual(frontmatter["compatibility"], value)
-                self.assertTrue(any("at most 500 characters" in message for message in messages), messages)
-                self.assertFalse(quick_validate.validate_skill(skill_dir)[0])
+        values = ("a" + "   a" * 200, " " + "x" * 500, "x" * 500 + " ", " " + "x" * 500 + " ")
+        for value in values:
+            for yaml_parser in (validate_skills.yaml, None):
+                with self.subTest(fallback=yaml_parser is None, length=len(value)), TemporaryDirectory() as temp_dir:
+                    root = Path(temp_dir)
+                    skill_dir, entry = write_skill(root, compatibility=f'compatibility: "{value}"')
+                    with patched_root(root), patched_yaml(yaml_parser):
+                        frontmatter, parse_messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
+                        messages = validate_skills.validate_entries([entry])
+                    self.assertFalse(parse_messages, parse_messages)
+                    self.assertEqual(frontmatter["compatibility"], value)
+                    self.assertTrue(any("at most 500 characters" in message for message in messages), messages)
+                    self.assertFalse(quick_validate.validate_skill(skill_dir)[0])
+                    with self.assertRaisesRegex(ecosystem_reconcile.ReconcileError, "500 characters"):
+                        ecosystem_reconcile._validate_frontmatter_extensions({}, {skill_dir.name: skill_dir / "SKILL.md"})
+
+    def test_compatibility_limit_counts_whitespace_without_rejecting_valid_text(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            skill_dir, entry = write_skill(root, compatibility='compatibility: " ' + 'x' * 498 + ' "')
+            with patched_root(root):
+                self.assertFalse(validate_skills.validate_entries([entry]))
+            self.assertEqual(quick_validate.validate_skill(skill_dir), (True, "Skill is valid!"))
+            ecosystem_reconcile._validate_frontmatter_extensions({}, {skill_dir.name: skill_dir / "SKILL.md"})
 
     def test_legacy_mapping_remains_readable_by_both_validators(self):
         with TemporaryDirectory() as temp_dir:

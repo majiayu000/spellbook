@@ -34,7 +34,7 @@ def validate_compatibility(
             return messages + [error(f"{path} compatibility.runtimes must be a non-empty list")]
     else:
         if "compatibility" in frontmatter and (
-            not isinstance(compatibility, str) or not 1 <= len(compatibility.strip()) <= 500
+            not isinstance(compatibility, str) or not compatibility.strip() or len(compatibility) > 500
         ):
             messages.append(error(f"{path} compatibility must be a non-empty string of at most 500 characters"))
         if not declared:

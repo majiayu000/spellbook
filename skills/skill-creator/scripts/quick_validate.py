@@ -32,7 +32,7 @@ def validate_compatibility(frontmatter):
             return "Compatibility runtimes must be a non-empty list"
     else:
         if 'compatibility' in frontmatter and (
-            not isinstance(compatibility, str) or not 1 <= len(compatibility.strip()) <= 500
+            not isinstance(compatibility, str) or not compatibility.strip() or len(compatibility) > 500
         ):
             return "Compatibility must be a non-empty string of at most 500 characters"
         if not declared:

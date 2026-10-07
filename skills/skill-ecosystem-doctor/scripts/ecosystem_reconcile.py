@@ -339,7 +339,7 @@ def _validate_frontmatter_extensions(policy: dict, sources: dict[str, Path]) -> 
             )
             if not legacy_exception and (
                 not isinstance(compatibility, str)
-                or not 1 <= len(compatibility.strip()) <= 500
+                or not compatibility.strip() or len(compatibility) > 500
             ):
                 raise ReconcileError(
                     f"{skill_file} compatibility must be a non-empty string of at most "
