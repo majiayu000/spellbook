@@ -318,6 +318,10 @@ def parse_frontmatter(path: Path) -> tuple[dict[str, object], list[str]]:
 
 
 def discover_skills() -> list[SkillEntry]:
+    if yaml is None:
+        raise RuntimeError(
+            "Skill discovery requires PyYAML. Install PyYAML in the Python environment running this command."
+        )
     entries: list[SkillEntry] = []
 
     for skill_dir in sorted(path for path in SKILLS_DIR.iterdir() if path.is_dir()):
