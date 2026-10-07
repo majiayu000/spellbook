@@ -218,7 +218,7 @@ class InstallPruneTests(unittest.TestCase):
                     for name in ("unrestricted", "portable"):
                         self.assertTrue((home / runtime_path / name / "SKILL.md").is_file())
 
-    def test_runtime_filter_works_without_pyyaml(self):
+    def test_runtime_filter_requires_pyyaml_and_preserves_runtime_selection(self):
         declarations = (
             'compatibility: Requires Codex.\nmetadata:\n  spellbook-runtimes: "codex"',
             'metadata:\n    spellbook-runtimes: codex',
@@ -226,25 +226,46 @@ class InstallPruneTests(unittest.TestCase):
             'compatibility: { runtimes: [codex] }',
             'compatibility: {runtimes:  [codex]}',
         )
-        for declaration in declarations:
-            with self.subTest(declaration=declaration), tempfile.TemporaryDirectory() as tmp:
+        for declaration, has_pyyaml in (
+            (declaration, has_pyyaml)
+            for declaration in declarations
+            for has_pyyaml in (True, False)
+        ):
+            with self.subTest(declaration=declaration, pyyaml=has_pyyaml), tempfile.TemporaryDirectory() as tmp:
                 home = Path(tmp)
                 source = self.write_skill(home / ".spellbook/skills", "codex-only", declaration)
                 bin_dir = home / "bin"
                 bin_dir.mkdir()
                 python = bin_dir / "python3"
-                python.write_text(f'#!/bin/sh\nexec {shlex.quote(sys.executable)} -S "$@"\n', encoding="utf-8")
+                site_option = "" if has_pyyaml else "-S "
+                python.write_text(f'#!/bin/sh\nexec {shlex.quote(sys.executable)} {site_option}"$@"\n', encoding="utf-8")
                 python.chmod(0o755)
                 env = os.environ.copy()
                 env["HOME"] = str(home)
                 env["PATH"] = str(bin_dir) + os.pathsep + env["PATH"]
+                env.pop("CODEX_SKILLS_DIR", None)
+                if not has_pyyaml:
+                    env.pop("PYTHONPATH", None)
                 for runtime, expected in (("codex", 0), ("claude_code", 1)):
                     with self.subTest(runtime=runtime):
                         result = subprocess.run([
                             "bash", "-c", f'source {shlex.quote(str(ROOT / "install.sh"))}; '
                             f'skill_supports_runtime {shlex.quote(str(source / "SKILL.md"))} {runtime}'
                         ], cwd=home, env=env, text=True, capture_output=True, check=False)
-                        self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+                        output = result.stdout + result.stderr
+                        self.assertEqual(result.returncode, expected if has_pyyaml else 1, output)
+                        if not has_pyyaml:
+                            self.assertIn("requires PyYAML", output)
+                if not has_pyyaml:
+                    result = subprocess.run([
+                        "bash", "-c", f'source {shlex.quote(str(ROOT / "install.sh"))}; '
+                        'setup_directories; install_skills_to_dir "$CODEX_SKILLS_DIR" "Codex" codex-only'
+                    ], cwd=home, env=env, text=True, capture_output=True, check=False)
+                    output = result.stdout + result.stderr
+                    self.assertEqual(result.returncode, 1, output)
+                    self.assertIn("requires PyYAML", output)
+                    self.assertNotIn("Installed", output)
+                    self.assertFalse(os.path.lexists(home / ".agents/skills/codex-only"))
 
     def test_invalid_standard_metadata_stops_installer_before_install(self):
         for declaration in (

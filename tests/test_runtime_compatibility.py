@@ -232,6 +232,26 @@ class RuntimeCompatibilityTests(unittest.TestCase):
             self.assertEqual(quick_validate.validate_skill(skill_dir), (True, "Skill is valid!"))
             ecosystem_reconcile._validate_frontmatter_extensions({}, {skill_dir.name: skill_dir / "SKILL.md"})
 
+    def test_quoted_multiline_compatibility_keeps_blank_lines_in_length(self):
+        for quote in ("'", '"'):
+            with self.subTest(quote=quote), TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                declaration = f"compatibility: {quote}x\n" + "\n" * 500 + f"x{quote}"
+                skill_dir, entry = write_skill(root, compatibility=declaration)
+                with patched_root(root):
+                    frontmatter, parse_messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
+                    messages = validate_skills.validate_entries([entry])
+                self.assertFalse(parse_messages, parse_messages)
+                self.assertEqual(frontmatter["compatibility"], "x" + "\n" * 500 + "x")
+                self.assertTrue(any("at most 500 characters" in message for message in messages), messages)
+                self.assertFalse(quick_validate.validate_skill(skill_dir)[0])
+                with self.assertRaisesRegex(ecosystem_reconcile.ReconcileError, "500 characters"):
+                    ecosystem_reconcile._validate_frontmatter_extensions({}, {skill_dir.name: skill_dir / "SKILL.md"})
+                with patched_root(root), patched_yaml(None):
+                    frontmatter, messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
+                self.assertEqual(frontmatter, {})
+                self.assertTrue(any("requires PyYAML" in message for message in messages), messages)
+
     def test_fallback_requires_yaml_for_compatibility_block_scalars(self):
         for marker in (">-", "|-"):
             with self.subTest(marker=marker), TemporaryDirectory() as temp_dir:
