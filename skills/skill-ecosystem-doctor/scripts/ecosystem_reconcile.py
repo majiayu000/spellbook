@@ -615,14 +615,13 @@ def build_plan(
             if _validate_removable_link(global_path, source):
                 global_links.append(str(global_path))
 
-    # Reconcile the difference between existing managed projections and the
-    # desired scopes. A known project root remains governed even when its skill
-    # or profile binding becomes empty. Unknown links are conflicts, never owned.
+    # Explicit retirement/quarantine authorizes removing matching projections.
+    # Scope changes have no historical root-skill ownership records: a canonical
+    # link may be user-created, so leave those links for manual confirmation.
     for owner in declared_project_roots:
         relative = policy.get("project_source_roots", {}).get(str(owner))
         source_root = owner / relative if relative is not None else skills_root
-        prior_names = {path.parent.name for path in source_root.glob("*/SKILL.md")}
-        for skill in sorted(set(canonical_sources) | blocked | prior_names):
+        for skill in sorted(blocked):
             source = (source_root / skill if relative is not None else
                       canonical_sources.get(skill, skills_root / skill / "SKILL.md").parent)
             desired_roots = set(scope_roots.get(skill, ()))

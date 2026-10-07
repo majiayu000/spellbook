@@ -524,7 +524,7 @@ def test_reconcile_removes_quarantined_and_retired_links(tmp_path: Path) -> None
 
 
 @pytest.mark.parametrize("transition", ["review", "profile", "move", "glob", "global"])
-def test_reconcile_removes_revoked_project_projections(tmp_path: Path, transition: str) -> None:
+def test_reconcile_preserves_scope_changed_project_links_without_ownership(tmp_path: Path, transition: str) -> None:
     registry = tmp_path / "registry"
     source = write_skill(registry / "skills", "demo")
     write_state(registry, ["demo"])
@@ -561,9 +561,9 @@ def test_reconcile_removes_revoked_project_projections(tmp_path: Path, transitio
     plan, text_updates, state_updates = reconcile.build_plan(registry, policy, runtime_homes=homes)
     revoked = other if transition == "glob" else project
     expected = {str(revoked / runtime / "skills" / "demo") for runtime in (".agents", ".claude")}
-    assert set(plan.project_links_to_remove) == expected
+    assert plan.project_links_to_remove == ()
     reconcile.apply_plan(plan, text_updates, state_updates)
-    assert all(not Path(path).is_symlink() for path in expected)
+    assert all(Path(path).is_symlink() for path in expected)
     assert (source / "SKILL.md").read_bytes() == source_before
     if transition in {"move", "glob"}:
         retained = other if transition == "move" else project
@@ -607,9 +607,9 @@ def test_reconcile_revokes_external_project_source(tmp_path: Path, transition: s
         policy["project_source_roots"][str(other)] = "source-skills"
     plan, text_updates, state_updates = reconcile.build_plan(registry, policy, runtime_homes=homes)
     expected = {str(project / runtime / "skills" / "demo") for runtime in (".agents", ".claude")}
-    assert set(plan.project_links_to_remove) == expected
+    assert set(plan.project_links_to_remove) == (expected if transition == "retired" else set())
     reconcile.apply_plan(plan, text_updates, state_updates)
-    assert all(not Path(path).is_symlink() for path in expected)
+    assert all(Path(path).is_symlink() == (transition != "retired") for path in expected)
     assert (source / "SKILL.md").read_bytes() == before
     repeated, _, _ = reconcile.build_plan(registry, policy, runtime_homes=homes)
     assert repeated.project_links_to_remove == ()
@@ -630,10 +630,11 @@ def test_revoked_project_preserves_unknown_link_and_reports_conflict(tmp_path: P
         "trigger_boundary": {"clause": " Trigger only when explicitly requested."},
         "project_scopes": {str(project): []},
     }
-    with pytest.raises(reconcile.ReconcileError, match="unexpected symlink"):
-        reconcile.build_plan(registry, policy, runtime_homes={
-            "codex": tmp_path / "codex", "claude": tmp_path / "claude"
-        })
+    plan, text, state = reconcile.build_plan(registry, policy, runtime_homes={
+        "codex": tmp_path / "codex", "claude": tmp_path / "claude"
+    })
+    assert plan.project_links_to_remove == ()
+    reconcile.apply_plan(plan, text, state)
     assert target.is_symlink()
     assert target.resolve() == user_source
     assert (source / "SKILL.md").read_bytes() == before
@@ -1153,5 +1154,23 @@ def test_never_governed_canonical_user_link_is_preserved(tmp_path: Path, runtime
     policy["projection_runtimes"] = ["codex"]
     plan, text, state = reconcile.build_plan(registry, policy, runtime_homes={"codex": tmp_path / "codex"})
     assert str(link) not in plan.project_links_to_remove
+    reconcile.apply_plan(plan, text, state)
+    assert link.is_symlink() and link.resolve() == source
+
+
+@pytest.mark.parametrize("runtime", ["codex", "claude"])
+def test_empty_scope_preserves_never_managed_canonical_link(tmp_path: Path, runtime: str) -> None:
+    registry = tmp_path / "registry"
+    source = write_skill(registry / "skills", "demo")
+    write_state(registry, [])
+    project = tmp_path / "project"
+    link = project / model.runtime_project_dir(runtime) / "skills" / "demo"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(source)
+    policy = _base_policy()
+    policy["project_scopes"] = {str(project): []}
+    policy["projection_runtimes"] = [runtime]
+    plan, text, state = reconcile.build_plan(registry, policy, runtime_homes={name: tmp_path / name for name in ("codex", "claude")})
+    assert plan.project_links_to_remove == ()
     reconcile.apply_plan(plan, text, state)
     assert link.is_symlink() and link.resolve() == source

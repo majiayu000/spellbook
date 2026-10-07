@@ -64,18 +64,16 @@ Every canonical registry Skill must resolve to one class: global, project,
 profile, cold, review, or hidden. Profile names may not overlap. With
 `default_scope: "review"`, undeclared Skills stay retained but unprojected.
 
-Reconciliation removes revoked managed projections from every project root still
-declared by an exact binding or matching glob, including empty bindings, within
-the currently declared `projection_runtimes` only. A canonical target does not
-prove that a link in another runtime was managed by this policy. The existing
-state has no historical project-link ownership records, so links in removed or
-never-governed runtimes are preserved. After shrinking `projection_runtimes`,
-inspect those old links and confirm ownership manually before removing them;
-the reconcile plan does not claim or delete them automatically. When
-removing an entire project or profile binding, retain its root with an empty
-array for one reconcile/apply before deleting the root from policy. A root that
-is no longer declared cannot be discovered from policy alone. Unexpected links
-and physical files cause a conflict and are preserved.
+Reconciliation removes matching project links for explicit `retired` or
+`quarantined` skills within the currently declared `projection_runtimes`.
+Ordinary scope changes do not prove historical root-skill ownership: even a
+link to a canonical source can have been created by the user. Those project
+links are preserved, including links at empty bindings. Links in removed or
+never-governed runtimes are also preserved, for both project and global homes.
+After changing scopes or shrinking `projection_runtimes`, inspect the old links
+and confirm ownership manually before removing them. The reconcile plan does
+not claim or delete them automatically. Unexpected links and physical files at
+a requested projection location cause a conflict and are preserved.
 
 Standard `compatibility` environment text is portable frontmatter: a non-empty
 string of at most 500 characters. Legacy `compatibility` mappings still require
