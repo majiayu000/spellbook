@@ -61,7 +61,9 @@ fixture 的测试自身只有 `1 passed, 1 skipped`，不作为审计质量或�
 
 Bun、Zod、ESM 与严格类型检查是激活观察。API 的行为、状态和错误响应才是任务完成
 证据。这个案例没有无技能组，因此不能给出收益差值。完整输入条件、源码、测试和
-原始验收记录见证据包的 `typescript-case/EVIDENCE.md`。
+验收摘要见证据包的 `typescript-case/EVIDENCE.md`。该文件记录当时报告的计数与状态码，
+包内没有原始 `bun test` / typecheck 输出或 HTTP smoke 脚本与输出；这些结果不能仅凭
+该摘要独立复验，也不计作本轮重新完成的检查。
 
 ```bash
 cd typescript-case

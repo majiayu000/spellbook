@@ -24,8 +24,8 @@ ground truth.
 To run the fixture's own tests in isolation:
 
 ```bash
-cd fixture
-uv run --with-requirements requirements.txt python -m pytest tests
+cd /absolute/path/to/the/isolated-fixture-copy
+PYTHONDONTWRITEBYTECODE=1 uv run --with-requirements requirements.txt python -m pytest -p no:cacheprovider tests
 ```
 
 ## Reports and repeat runs
