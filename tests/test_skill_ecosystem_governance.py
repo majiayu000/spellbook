@@ -1023,6 +1023,46 @@ def test_projection_runtimes_allows_explicit_no_projection_mode(
     assert plan.project_links_to_replace == ()
 
 
+
+@pytest.mark.parametrize("runtimes", [["codex"], ["claude"], []])
+def test_project_projection_runtime_shrink_removes_owned_links(tmp_path: Path, runtimes: list[str]) -> None:
+    registry = tmp_path / "registry"
+    source = write_skill(registry / "skills", "demo")
+    write_state(registry, ["demo"])
+    project = tmp_path / "project"
+    project.mkdir()
+    homes = {runtime: tmp_path / runtime for runtime in ("codex", "claude")}
+    policy = _base_policy()
+    policy["project_scopes"] = {str(project): ["demo"]}
+    reconcile.apply_plan(*reconcile.build_plan(registry, policy, runtime_homes=homes))
+    links = {runtime: project / model.runtime_project_dir(runtime) / "skills" / "demo"
+             for runtime in homes}
+    assert all(link.is_symlink() for link in links.values())
+    policy["projection_runtimes"] = runtimes
+    plan, text, state = reconcile.build_plan(registry, policy, runtime_homes=homes)
+    assert set(plan.project_links_to_remove) == {str(link) for runtime, link in links.items() if runtime not in runtimes}
+    reconcile.apply_plan(plan, text, state)
+    assert {runtime for runtime, link in links.items() if link.is_symlink()} == set(runtimes)
+    repeated, _, _ = reconcile.build_plan(registry, policy, runtime_homes=homes)
+    assert repeated.project_links_to_remove == ()
+
+
+def test_project_runtime_shrink_preserves_unknown_user_link(tmp_path: Path) -> None:
+    registry = tmp_path / "registry"
+    write_skill(registry / "skills", "demo")
+    write_state(registry, ["demo"])
+    other = write_skill(tmp_path / "user", "demo")
+    project = tmp_path / "project"
+    link = project / ".claude" / "skills" / "demo"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(other)
+    policy = _base_policy()
+    policy["project_scopes"] = {str(project): ["demo"]}
+    policy["projection_runtimes"] = ["codex"]
+    with pytest.raises(reconcile.ReconcileError, match="unexpected symlink"):
+        reconcile.build_plan(registry, policy, runtime_homes={"codex": tmp_path / "codex"})
+    assert link.resolve() == other
+
 def test_legacy_policy_projection_roots_follow_projection_runtimes(
     tmp_path: Path,
 ) -> None:

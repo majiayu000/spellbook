@@ -457,7 +457,8 @@ def build_plan(
     projection_homes = tuple(runtime_homes[runtime] for runtime in policy_runtimes)
     governed_homes = tuple(runtime_homes[runtime] for runtime in governed)
     projection_dirs = tuple(runtime_project_dir(runtime) for runtime in policy_runtimes)
-    governed_dirs = tuple(runtime_project_dir(runtime) for runtime in governed)
+    # Sweep known runtime directories even after projection policy shrinks.
+    governed_dirs = tuple(runtime_project_dir(runtime) for runtime in RUNTIME_HOME_DIRS)
     retired = _policy_name_set(policy, "retired")
     quarantined = _policy_name_set(policy, "quarantined")
     blocked = retired | quarantined

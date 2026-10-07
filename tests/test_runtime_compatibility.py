@@ -99,37 +99,27 @@ class RuntimeCompatibilityTests(unittest.TestCase):
             self.assertIn("| Name | Category | Format | Lang | Runtime | Tags | Path | Description |", doc)
             self.assertIn("| codex, portable |", doc)
 
-    def test_fallback_parser_accepts_block_runtime_metadata_without_pyyaml(self):
-        with TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            skill_dir, entry = write_skill(
-                root,
-                compatibility="compatibility:\n  runtimes:\n    - codex\n    - portable",
-            )
+    def test_frontmatter_requires_pyyaml_instead_of_guessing_scalar_types(self):
+        for raw in ('false', 'null', '123', '"false"', '"null"', '"123"'):
+            with self.subTest(raw=raw), TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                skill_dir, entry = write_skill(root, compatibility=f"compatibility: {raw}")
+                with patched_root(root), patched_yaml(None):
+                    frontmatter, messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
+                    validation = validate_skills.validate_entries([entry])
+                self.assertEqual(frontmatter, {})
+                self.assertTrue(any("requires PyYAML" in message for message in messages), messages)
+                self.assertTrue(any("requires PyYAML" in message for message in validation), validation)
 
-            with patched_root(root), patched_yaml(None):
-                frontmatter, parse_messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
-                messages = validate_skills.validate_entries([entry])
-
-            errors = [message for message in messages + parse_messages if message.startswith("ERROR:")]
-            self.assertFalse(errors, errors)
-            self.assertEqual(frontmatter["compatibility"], {"runtimes": ["codex", "portable"]})
-
-    def test_fallback_parser_strips_runtime_inline_comments_without_pyyaml(self):
-        with TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            skill_dir, entry = write_skill(
-                root,
-                compatibility="compatibility:\n  runtimes:\n    - codex # Codex-only",
-            )
-
-            with patched_root(root), patched_yaml(None):
-                frontmatter, parse_messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
-                messages = validate_skills.validate_entries([entry])
-
-            errors = [message for message in messages + parse_messages if message.startswith("ERROR:")]
-            self.assertFalse(errors, errors)
-            self.assertEqual(frontmatter["compatibility"], {"runtimes": ["codex"]})
+    def test_pyyaml_distinguishes_plain_scalars_from_quoted_text(self):
+        for raw in ('false', 'null', '123', '"false"', '"null"', '"123"'):
+            with self.subTest(raw=raw), TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                skill_dir, entry = write_skill(root, compatibility=f"compatibility: {raw}")
+                with patched_root(root):
+                    messages = validate_skills.validate_entries([entry])
+                self.assertEqual(bool(messages), not raw.startswith('"'), messages)
+                self.assertEqual(quick_validate.validate_skill(skill_dir)[0], raw.startswith('"'))
 
     def test_absent_metadata_exports_unspecified_runtime(self):
         entry = validate_skills.SkillEntry(
@@ -164,7 +154,7 @@ class RuntimeCompatibilityTests(unittest.TestCase):
                     self.assertTrue(any(expected in message for message in messages), messages)
 
     def test_standard_text_and_metadata_preserve_registry_and_quick_validation(self):
-        for yaml_parser in (validate_skills.yaml, None):
+        for yaml_parser in (validate_skills.yaml,):
             with self.subTest(fallback=yaml_parser is None), TemporaryDirectory() as temp_dir:
                 root = Path(temp_dir)
                 skill_dir, entry = write_skill(root, compatibility=(
@@ -219,7 +209,7 @@ class RuntimeCompatibilityTests(unittest.TestCase):
     def test_compatibility_length_uses_parsed_text_before_whitespace_normalization(self):
         values = ("a" + "   a" * 200, " " + "x" * 500, "x" * 500 + " ", " " + "x" * 500 + " ")
         for value in values:
-            for yaml_parser in (validate_skills.yaml, None):
+            for yaml_parser in (validate_skills.yaml,):
                 with self.subTest(fallback=yaml_parser is None, length=len(value)), TemporaryDirectory() as temp_dir:
                     root = Path(temp_dir)
                     skill_dir, entry = write_skill(root, compatibility=f'compatibility: "{value}"')
@@ -253,7 +243,7 @@ class RuntimeCompatibilityTests(unittest.TestCase):
                     self.assertEqual(frontmatter["compatibility"], "x" * 498)
                 with patched_root(root), patched_yaml(None):
                     _, messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
-                    self.assertTrue(any("block scalars require PyYAML" in message for message in messages), messages)
+                    self.assertTrue(any("requires PyYAML" in message for message in messages), messages)
                     self.assertTrue(validate_skills.validate_entries([entry]))
 
     def test_legacy_mapping_remains_readable_by_both_validators(self):
@@ -280,10 +270,8 @@ class RuntimeCompatibilityTests(unittest.TestCase):
                 ecosystem_reconcile._validate_frontmatter_extensions({}, {name: path})
                 with patched_yaml(None):
                     fallback, messages = validate_skills.parse_frontmatter(path)
-                self.assertFalse(messages)
-                self.assertEqual(fallback["metadata"], frontmatter["metadata"])
-                self.assertEqual(validate_skills.compatibility_object(fallback),
-                                 validate_skills.compatibility_object(frontmatter))
+                self.assertEqual(fallback, {})
+                self.assertTrue(any("requires PyYAML" in message for message in messages), messages)
 
     def test_fallback_metadata_never_silently_drops_runtime_declarations(self):
         cases = [
@@ -305,7 +293,7 @@ class RuntimeCompatibilityTests(unittest.TestCase):
             _, entry = write_skill(root, compatibility='compatibility: {runtimes: [codex], unknown: yes}')
             with patched_root(root), patched_yaml(None):
                 messages = validate_skills.validate_entries([entry])
-            self.assertTrue(any("unsupported compatibility mapping" in message for message in messages), messages)
+            self.assertTrue(any("requires PyYAML" in message for message in messages), messages)
 
     def test_fallback_parser_does_not_silently_drop_flow_metadata(self):
         with TemporaryDirectory() as temp_dir:
@@ -313,7 +301,7 @@ class RuntimeCompatibilityTests(unittest.TestCase):
             _, entry = write_skill(root, compatibility='metadata: {spellbook-runtimes: codex}')
             with patched_root(root), patched_yaml(None):
                 messages = validate_skills.validate_entries([entry])
-            self.assertTrue(any("metadata must be a YAML mapping" in message for message in messages), messages)
+            self.assertTrue(any("requires PyYAML" in message for message in messages), messages)
 
 
 if __name__ == "__main__":
