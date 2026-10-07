@@ -1,7 +1,9 @@
 ---
 name: codex
 description: Use when the user asks to run Codex CLI (codex exec, codex resume) or references OpenAI Codex for code analysis, refactoring, or automated editing
-compatibility: {runtimes: [claude_code]}
+compatibility: Designed for Claude Code with an installed and authenticated Codex CLI.
+metadata:
+  spellbook-runtimes: "claude_code"
 ---
 
 # Codex Skill Guide

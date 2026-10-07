@@ -82,8 +82,9 @@ def expand_profile_scopes(policy: dict) -> tuple[dict, set[str]]:
     return expanded, profile_skills
 
 
-def _description_length(skill_file: Path) -> int:
-    text = skill_file.read_text(encoding="utf-8")
+def _description_length(skill_file: Path, text: str | None = None) -> int:
+    if text is None:
+        text = skill_file.read_text(encoding="utf-8")
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
         raise ExposureError(f"Skill has no frontmatter: {skill_file}")
@@ -105,6 +106,8 @@ def classify_exposure(
     profile_names: set[str],
     managed_names: set[str],
     runtime_mirror_names: set[str],
+    text_overrides: dict[Path, str] | None = None,
+    validate_budget: bool = True,
 ) -> ExposureClassification:
     default_scope = policy.get("default_scope", "global")
     if default_scope not in {"global", "review"}:
@@ -134,7 +137,11 @@ def classify_exposure(
         review_names = unclassified
     hidden_names = cold_names | project_names | profile_names | review_names
     effective_global = global_names | reserved_global
-    description_chars = sum(_description_length(sources[name]) for name in effective_global)
+    overrides = text_overrides or {}
+    description_chars = sum(
+        _description_length(sources[name], overrides.get(sources[name]))
+        for name in effective_global
+    )
 
     budget = policy.get("exposure_budget", {})
     if not isinstance(budget, dict):
@@ -147,11 +154,11 @@ def classify_exposure(
     ):
         if value is not None and (not isinstance(value, int) or value <= 0):
             raise ExposureError(f"exposure_budget.{field} must be a positive integer")
-    if max_count is not None and len(effective_global) > max_count:
+    if validate_budget and max_count is not None and len(effective_global) > max_count:
         raise ExposureError(
             f"managed global Skill budget exceeded: {len(effective_global)} > {max_count}"
         )
-    if max_chars is not None and description_chars > max_chars:
+    if validate_budget and max_chars is not None and description_chars > max_chars:
         raise ExposureError(
             f"managed description budget exceeded: {description_chars} > {max_chars}"
         )

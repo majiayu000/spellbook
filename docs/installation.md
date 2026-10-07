@@ -27,7 +27,13 @@ The five maintained starting workflows are listed in the repository
 ## Advanced Cross-Runtime Installer
 
 Use `install.sh` when you need explicit runtime target paths, a non-interactive
-shell flow, or the repository's Claude Code agents.
+shell flow, or the repository's Claude Code agents. In addition to Git and the
+selected runtime above, this installer requires Python 3 (`python3`) with
+[PyYAML](https://pyyaml.org/wiki/PyYAMLDocumentation) installed in that same Python
+environment. It checks these dependencies before cloning, creating directories,
+or installing links. If PyYAML is missing, install it using your Python
+environment's package management, then rerun the installer; the installer does
+not install Python packages automatically.
 
 ```bash
 # Install skills for both Claude Code and Codex

@@ -56,13 +56,29 @@ Deployed exposure fields are:
 | `profiles` | Named, mutually exclusive groups retained for on-demand or project use. |
 | `profile_scopes` | Exact project roots mapped to profile names. |
 | `profile_scope_globs` | Dynamic project/worktree globs mapped to profile names. |
-| `exposure_budget` | Maximum managed-global Skill count and description characters. |
+| `exposure_budget` | Maximum managed-global Skill count and description characters after planned trigger hardening or overrides. |
 | `plugin_states` | Exact configured plugin IDs mapped to enabled booleans. |
 | `evidence_policy` | Read-only evidence controls such as the bulk-audit threshold. |
 
 Every canonical registry Skill must resolve to one class: global, project,
 profile, cold, review, or hidden. Profile names may not overlap. With
 `default_scope: "review"`, undeclared Skills stay retained but unprojected.
+
+Reconciliation removes matching project links for explicit `retired` or
+`quarantined` skills within the currently declared `projection_runtimes`.
+Ordinary scope changes do not prove historical root-skill ownership: even a
+link to a canonical source can have been created by the user. Those project
+links are preserved, including links at empty bindings. Links in removed or
+never-governed runtimes are also preserved, for both project and global homes.
+After changing scopes or shrinking `projection_runtimes`, inspect the old links
+and confirm ownership manually before removing them. The reconcile plan does
+not claim or delete them automatically. Unexpected links and physical files at
+a requested projection location cause a conflict and are preserved.
+
+Standard `compatibility` environment text is portable frontmatter: a non-empty
+string of at most 500 characters. Legacy `compatibility` mappings still require
+an explicit per-Skill `frontmatter_extension_exceptions` entry. Other unknown
+frontmatter keys also remain subject to that exception policy.
 
 Use `ecosystem_reconcile.py` for dry-run/apply exposure changes and
 `ecosystem_split.py` for declared progressive-disclosure moves. These commands

@@ -50,6 +50,13 @@ check_prerequisites() {
         error "Git is not installed. Please install git first."
     fi
 
+    if ! command -v python3 &> /dev/null; then
+        error "Python 3 is not installed. Please install Python 3 first (see docs/installation.md)."
+    fi
+    if ! python3 -c 'import yaml' &> /dev/null; then
+        error "Spellbook requires PyYAML for Python 3. Install PyYAML in the environment used by python3, then retry (see docs/installation.md)."
+    fi
+
     success "Prerequisites check passed"
 }
 
@@ -213,158 +220,31 @@ skill_supports_runtime() {
         error "python3 is required for runtime compatibility filtering."
     fi
 
-    python3 - "$skill_md" "$runtime_id" <<'PY' || status=$?
+    # Prefer the managed checkout (also works for curl | bash); sourced tests
+    # and direct checkout use can use the parser next to this installer.
+    local helper_dir="$INSTALL_DIR/scripts"
+    if [ ! -f "$helper_dir/skill_frontmatter.py" ]; then
+        helper_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/scripts"
+    fi
+
+    python3 - "$skill_md" "$runtime_id" "$helper_dir" <<'PY' || status=$?
 import sys
-import re
 from pathlib import Path
+
+sys.path.insert(0, sys.argv[3])
+import skill_frontmatter
+from runtime_compatibility import compatibility_object, validate_compatibility
 
 skill_md = Path(sys.argv[1])
 runtime_id = sys.argv[2]
-allowed_runtimes = {"claude_code", "codex", "portable"}
-
-
-def metadata_error(message):
-    print(f"ERROR: {skill_md} {message}", file=sys.stderr)
+skill_frontmatter.ROOT = skill_md.parent
+frontmatter, messages = skill_frontmatter.parse_frontmatter(skill_md)
+messages.extend(validate_compatibility(frontmatter, str(skill_md), skill_frontmatter.error))
+if messages:
+    print("\n".join(messages), file=sys.stderr)
     sys.exit(2)
-
-
-def strip_quotes(value):
-    value = value.strip()
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
-        return value[1:-1]
-    return value
-
-
-def strip_inline_comment(line):
-    in_single_quote = False
-    in_double_quote = False
-    escaped = False
-    for index, char in enumerate(line):
-        if escaped:
-            escaped = False
-            continue
-        if char == "\\":
-            escaped = True
-            continue
-        if char == "'" and not in_double_quote:
-            in_single_quote = not in_single_quote
-            continue
-        if char == '"' and not in_single_quote:
-            in_double_quote = not in_double_quote
-            continue
-        if (
-            char == "#"
-            and not in_single_quote
-            and not in_double_quote
-            and (index == 0 or line[index - 1].isspace())
-        ):
-            return line[:index].rstrip()
-    return line
-
-
-def parse_inline_list(value):
-    value = value.strip()
-    if value == "[]":
-        return []
-    if not (value.startswith("[") and value.endswith("]")):
-        return None
-    inner = value[1:-1].strip()
-    if not inner:
-        return []
-    return [strip_quotes(item.strip()) for item in inner.split(",") if item.strip()]
-
-
-def parse_flow_compatibility(value):
-    match = re.fullmatch(r"\{\s*runtimes\s*:\s*(\[.*\])\s*\}", value)
-    if not match:
-        metadata_error("compatibility must be a YAML mapping with runtimes")
-    parsed = parse_inline_list(match.group(1))
-    if parsed is None:
-        metadata_error("compatibility.runtimes must be a list")
-    return parsed
-
-
-text = skill_md.read_text(encoding="utf-8")
-if not text.startswith("---\n"):
-    metadata_error("is missing YAML frontmatter")
-
-end = text.find("\n---", 4)
-if end == -1:
-    metadata_error("has unterminated YAML frontmatter")
-
-compatibility_seen = False
-runtimes = None
-current_key = None
-in_runtime_list = False
-
-for raw_line in text[4:end].splitlines():
-    line = strip_inline_comment(raw_line).rstrip()
-    if not line.strip() or line.lstrip().startswith("#"):
-        continue
-
-    key_match = re.match(r"^([A-Za-z0-9_-]+):(?:\s*(.*))?$", line)
-    if key_match:
-        current_key = key_match.group(1)
-        in_runtime_list = False
-        if current_key != "compatibility":
-            continue
-
-        compatibility_seen = True
-        raw_value = (key_match.group(2) or "").strip()
-        if not raw_value:
-            continue
-        if raw_value.startswith("{"):
-            runtimes = parse_flow_compatibility(raw_value)
-            continue
-        metadata_error("compatibility must be a YAML mapping")
-
-    if current_key != "compatibility" or not line.startswith("  "):
-        continue
-
-    nested_match = re.match(r"^  ([A-Za-z0-9_-]+):(?:\s*(.*))?$", line)
-    if nested_match:
-        nested_key = nested_match.group(1)
-        if nested_key != "runtimes":
-            metadata_error(f"has unsupported compatibility key: {nested_key}")
-        in_runtime_list = True
-        raw_value = (nested_match.group(2) or "").strip()
-        if not raw_value:
-            runtimes = []
-            continue
-        parsed = parse_inline_list(raw_value)
-        if parsed is None:
-            metadata_error("compatibility.runtimes must be a list")
-        runtimes = parsed
-        continue
-
-    list_match = re.match(r"^    -\s*(.*)$", line)
-    if list_match and in_runtime_list:
-        if runtimes is None:
-            runtimes = []
-        runtimes.append(strip_quotes(list_match.group(1).strip()))
-        continue
-
-    metadata_error(f"has unsupported compatibility line: {line}")
-
-if not compatibility_seen:
-    sys.exit(0)
-
-if not isinstance(runtimes, list) or not runtimes:
-    metadata_error("compatibility.runtimes must be a non-empty list")
-
-seen = set()
-for runtime in runtimes:
-    if runtime != runtime.strip() or not runtime:
-        metadata_error("compatibility.runtimes entries must be non-empty strings")
-    if runtime == "unspecified":
-        metadata_error("must not declare unspecified; omit compatibility metadata instead")
-    if runtime not in allowed_runtimes:
-        metadata_error(f"has unsupported runtime {runtime}")
-    if runtime in seen:
-        metadata_error(f"declares duplicate runtime {runtime}")
-    seen.add(runtime)
-
-if "portable" in runtimes or runtime_id in runtimes:
+runtimes = compatibility_object(frontmatter)["runtimes"]
+if "unspecified" in runtimes or "portable" in runtimes or runtime_id in runtimes:
     sys.exit(0)
 sys.exit(10)
 PY
@@ -414,19 +294,8 @@ prune_stale_managed_skills_from_dir() {
             continue
         fi
 
-        local target
-        if [ -L "$skill_path" ]; then
-            target=$(read_managed_target "$skill_path")
-            if is_managed_path "$target"; then
-                rm -f "$skill_path"
-                pruned=$((pruned + 1))
-            fi
-        elif [ -d "$skill_path" ] && [ -L "$skill_path/SKILL.md" ]; then
-            target=$(read_managed_target "$skill_path/SKILL.md")
-            if is_managed_path "$target"; then
-                rm -rf "$skill_path"
-                pruned=$((pruned + 1))
-            fi
+        if remove_managed_skill_link "$skill_path"; then
+            pruned=$((pruned + 1))
         fi
     done
 
@@ -446,19 +315,8 @@ prune_all_managed_skills_from_dir() {
     for skill_path in "$skills_dir"/*; do
         [ -e "$skill_path" ] || [ -L "$skill_path" ] || continue
 
-        local target
-        if [ -L "$skill_path" ]; then
-            target=$(read_managed_target "$skill_path")
-            if is_managed_path "$target"; then
-                rm -f "$skill_path"
-                pruned=$((pruned + 1))
-            fi
-        elif [ -d "$skill_path" ] && [ -L "$skill_path/SKILL.md" ]; then
-            target=$(read_managed_target "$skill_path/SKILL.md")
-            if is_managed_path "$target"; then
-                rm -rf "$skill_path"
-                pruned=$((pruned + 1))
-            fi
+        if remove_managed_skill_link "$skill_path"; then
+            pruned=$((pruned + 1))
         fi
     done
 
@@ -475,23 +333,34 @@ prune_legacy_codex_skills() {
     prune_all_managed_skills_from_dir "$LEGACY_CODEX_SKILLS_DIR" "legacy Codex"
 }
 
-prune_managed_skill_target() {
-    local skills_dir="$1"
-    local skill_name="$2"
-    local target="$skills_dir/$skill_name"
+remove_managed_skill_link() {
+    local target="$1"
     local linked_skill
 
     if [ -L "$target" ]; then
         linked_skill=$(read_managed_target "$target")
         if is_managed_path "$linked_skill"; then
-            rm -f "$target"
+            rm -f "$target" || error "Unable to remove managed symlink: $target"
+            return 0
         fi
     elif [ -d "$target" ] && [ -L "$target/SKILL.md" ]; then
         linked_skill=$(read_managed_target "$target/SKILL.md")
         if is_managed_path "$linked_skill"; then
-            rm -rf "$target"
+            rm -f "$target/SKILL.md" || error "Unable to remove managed symlink: $target/SKILL.md"
+            # Ownership of the entry link does not imply ownership of user files
+            # stored alongside it. Remove only an empty wrapper directory.
+            rmdir "$target" 2>/dev/null || warn "Preserving remaining files in $target"
+            return 0
         fi
     fi
+    return 1
+}
+
+prune_managed_skill_target() {
+    if remove_managed_skill_link "$1/$2"; then
+        return 0
+    fi
+    return 0
 }
 
 prepare_directory_skill_target() {
@@ -499,14 +368,15 @@ prepare_directory_skill_target() {
     local skill_name="$2"
     local target="$skills_dir/$skill_name"
 
-    if [ -L "$target" ]; then
-        rm -f "$target"
-    elif [ -d "$target" ] && [ -L "$target/SKILL.md" ]; then
-        local linked_skill
-        linked_skill=$(read_managed_target "$target/SKILL.md")
-        if is_managed_path "$linked_skill"; then
-            rm -rf "$target"
+    if [ -e "$target" ] || [ -L "$target" ]; then
+        if ! remove_managed_skill_link "$target"; then
+            warn "Skipping $skill_name: unmanaged install target $target"
+            return 1
         fi
+    fi
+    if [ -e "$target" ] || [ -L "$target" ]; then
+        warn "Skipping $skill_name: remaining files prevent replacing $target"
+        return 1
     fi
 }
 
@@ -516,7 +386,26 @@ prepare_file_skill_target() {
     local target="$skills_dir/$skill_name"
 
     if [ -L "$target" ]; then
-        rm -f "$target"
+        if ! remove_managed_skill_link "$target"; then
+            warn "Skipping $skill_name: unmanaged install target $target"
+            return 1
+        fi
+    elif [ -e "$target" ] && [ ! -d "$target" ]; then
+        warn "Skipping $skill_name: unmanaged install target $target"
+        return 1
+    fi
+
+    local entry="$target/SKILL.md"
+    if [ -L "$entry" ]; then
+        local linked_skill
+        linked_skill=$(read_managed_target "$entry")
+        if ! is_managed_path "$linked_skill"; then
+            warn "Skipping $skill_name: unmanaged install entry $entry"
+            return 1
+        fi
+    elif [ -e "$entry" ]; then
+        warn "Skipping $skill_name: unmanaged install entry $entry"
+        return 1
     fi
 
     mkdir -p "$target"
@@ -542,7 +431,9 @@ install_all_skills_to_dir() {
             if ! skill_supports_runtime "$skill_dir/SKILL.md" "$runtime_id"; then
                 continue
             fi
-            prepare_directory_skill_target "$skills_dir" "$skill_name"
+            if ! prepare_directory_skill_target "$skills_dir" "$skill_name"; then
+                continue
+            fi
             ln -sfn "$skill_dir" "$skills_dir/$skill_name"
             count=$((count + 1))
         fi
@@ -555,7 +446,9 @@ install_all_skills_to_dir() {
             if ! skill_supports_runtime "$skill_file" "$runtime_id"; then
                 continue
             fi
-            prepare_file_skill_target "$skills_dir" "$skill_name"
+            if ! prepare_file_skill_target "$skills_dir" "$skill_name"; then
+                continue
+            fi
             ln -sfn "$skill_file" "$skills_dir/$skill_name/SKILL.md"
             count=$((count + 1))
         fi
@@ -601,7 +494,9 @@ install_skills_to_dir() {
                 warn "  ✗ $skill (not compatible with $runtime_name)"
                 continue
             fi
-            prepare_directory_skill_target "$skills_dir" "$skill"
+            if ! prepare_directory_skill_target "$skills_dir" "$skill"; then
+                continue
+            fi
             ln -sfn "$INSTALL_DIR/skills/$skill" "$skills_dir/$skill"
             count=$((count + 1))
             info "  ✓ $skill"
@@ -612,7 +507,9 @@ install_skills_to_dir() {
                 warn "  ✗ $skill (not compatible with $runtime_name)"
                 continue
             fi
-            prepare_file_skill_target "$skills_dir" "$skill"
+            if ! prepare_file_skill_target "$skills_dir" "$skill"; then
+                continue
+            fi
             ln -sfn "$INSTALL_DIR/skills/$skill.SKILL.md" "$skills_dir/$skill/SKILL.md"
             count=$((count + 1))
             info "  ✓ $skill"
@@ -681,16 +578,8 @@ uninstall_from_skills_dir() {
     for skill_path in "$skills_dir"/*; do
         [ -e "$skill_path" ] || [ -L "$skill_path" ] || continue
 
-        if [ -L "$skill_path" ]; then
-            target=$(read_managed_target "$skill_path")
-            if is_managed_path "$target"; then
-                rm -f "$skill_path"
-            fi
-        elif [ -d "$skill_path" ] && [ -L "$skill_path/SKILL.md" ]; then
-            target=$(read_managed_target "$skill_path/SKILL.md")
-            if is_managed_path "$target"; then
-                rm -rf "$skill_path"
-            fi
+        if remove_managed_skill_link "$skill_path"; then
+            continue
         fi
     done
 }
@@ -820,12 +709,14 @@ main() {
                 install_supported_agents
                 ;;
             --list)
+                check_prerequisites
                 setup_repo
                 check_skill_conflicts
                 list_skills
                 exit 0
                 ;;
             --validate)
+                check_prerequisites
                 setup_repo
                 check_skill_conflicts
                 validate_registry

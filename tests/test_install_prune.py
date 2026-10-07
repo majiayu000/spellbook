@@ -1,5 +1,7 @@
 import os
 import subprocess
+import sys
+import shlex
 import tempfile
 import unittest
 from pathlib import Path
@@ -191,6 +193,103 @@ class InstallPruneTests(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_standard_metadata_filters_install_and_prune_like_legacy_mapping(self):
+        for declaration in (
+            'compatibility: {runtimes: [codex]}',
+            'compatibility: Requires Codex.\nmetadata:\n  spellbook-runtimes: "codex"',
+        ):
+            with self.subTest(declaration=declaration), tempfile.TemporaryDirectory() as tmp:
+                home = Path(tmp)
+                source_skills = home / ".spellbook" / "skills"
+                self.write_skill(source_skills, "runtime-only", declaration)
+                self.write_skill(source_skills, "unrestricted", 'compatibility: Requires Python.')
+                self.write_skill(source_skills, "portable", 'metadata:\n  spellbook-runtimes: "portable"')
+                env = os.environ.copy()
+                env["HOME"] = str(home)
+                env.pop("CODEX_SKILLS_DIR", None)
+                result = subprocess.run([
+                    "bash", "-c", 'source ./install.sh; TARGET=all; setup_directories; install_all_skills'
+                ], cwd=ROOT, env=env, text=True, capture_output=True, check=False)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertFalse((home / ".claude/skills/runtime-only").exists())
+                self.assertTrue((home / ".agents/skills/runtime-only/SKILL.md").is_file())
+                for runtime_path in (".claude/skills", ".agents/skills"):
+                    for name in ("unrestricted", "portable"):
+                        self.assertTrue((home / runtime_path / name / "SKILL.md").is_file())
+
+    def test_runtime_filter_requires_pyyaml_and_preserves_runtime_selection(self):
+        declarations = (
+            'compatibility: Requires Codex.\nmetadata:\n  spellbook-runtimes: "codex"',
+            'metadata:\n    spellbook-runtimes: codex',
+            'compatibility: {runtimes: [codex]}',
+            'compatibility: { runtimes: [codex] }',
+            'compatibility: {runtimes:  [codex]}',
+        )
+        for declaration, has_pyyaml in (
+            (declaration, has_pyyaml)
+            for declaration in declarations
+            for has_pyyaml in (True, False)
+        ):
+            with self.subTest(declaration=declaration, pyyaml=has_pyyaml), tempfile.TemporaryDirectory() as tmp:
+                home = Path(tmp)
+                source = self.write_skill(home / ".spellbook/skills", "codex-only", declaration)
+                bin_dir = home / "bin"
+                bin_dir.mkdir()
+                python = bin_dir / "python3"
+                site_option = "" if has_pyyaml else "-S "
+                python.write_text(f'#!/bin/sh\nexec {shlex.quote(sys.executable)} {site_option}"$@"\n', encoding="utf-8")
+                python.chmod(0o755)
+                env = os.environ.copy()
+                env["HOME"] = str(home)
+                env["PATH"] = str(bin_dir) + os.pathsep + env["PATH"]
+                env.pop("CODEX_SKILLS_DIR", None)
+                if not has_pyyaml:
+                    env.pop("PYTHONPATH", None)
+                for runtime, expected in (("codex", 0), ("claude_code", 1)):
+                    with self.subTest(runtime=runtime):
+                        result = subprocess.run([
+                            "bash", "-c", f'source {shlex.quote(str(ROOT / "install.sh"))}; '
+                            f'skill_supports_runtime {shlex.quote(str(source / "SKILL.md"))} {runtime}'
+                        ], cwd=home, env=env, text=True, capture_output=True, check=False)
+                        output = result.stdout + result.stderr
+                        self.assertEqual(result.returncode, expected if has_pyyaml else 1, output)
+                        if not has_pyyaml:
+                            self.assertIn("requires PyYAML", output)
+                if not has_pyyaml:
+                    before = sorted(str(path.relative_to(home)) for path in home.rglob("*"))
+                    result = subprocess.run([
+                        "bash", str(ROOT / "install.sh"), "--target", "codex", "--skills", "codex-only"
+                    ], cwd=home, env=env, text=True, capture_output=True, check=False)
+                    output = result.stdout + result.stderr
+                    self.assertEqual(result.returncode, 1, output)
+                    self.assertIn("requires PyYAML", output)
+                    self.assertIn("Checking prerequisites", output)
+                    self.assertNotIn("Prerequisites check passed", output)
+                    self.assertNotIn("Installed", output)
+                    self.assertEqual(sorted(str(path.relative_to(home)) for path in home.rglob("*")), before)
+                    self.assertFalse(os.path.lexists(home / ".agents/skills/codex-only"))
+
+    def test_invalid_standard_metadata_stops_installer_before_install(self):
+        for declaration in (
+            'metadata:\n  spellbook-runtimes: "unknown_host"',
+            'metadata:\n  spellbook-runtimes: "codex codex"',
+            'metadata:\n  spellbook-runtimes: "unspecified"',
+            'metadata:\n  spellbook-runtimes: ""',
+        ):
+            with self.subTest(declaration=declaration), tempfile.TemporaryDirectory() as tmp:
+                home = Path(tmp)
+                source_skills = home / ".spellbook" / "skills"
+                self.write_skill(source_skills, "invalid", declaration)
+                env = os.environ.copy()
+                env["HOME"] = str(home)
+                result = subprocess.run([
+                    "bash", "-c", 'source ./install.sh; setup_directories; '
+                    'install_skills_to_dir "$CLAUDE_SKILLS_DIR" "Claude Code" invalid'
+                ], cwd=ROOT, env=env, text=True, capture_output=True, check=False)
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn("Invalid runtime compatibility", result.stdout + result.stderr)
+                self.assertFalse((home / ".claude/skills/invalid").exists())
 
     def test_selected_incompatible_skill_prunes_managed_link(self):
         with tempfile.TemporaryDirectory() as tmp:

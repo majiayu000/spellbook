@@ -42,7 +42,9 @@ PLUGIN_RUNTIME = "codex"
 QUOTED_CONTEXT_RE = re.compile(r"quoted|trace|tool output|引用|引述|日志记录", re.I)
 GOVERNANCE_CONTEXT_RE = re.compile(r"governance|audit|skill 治理|技能治理|审计", re.I)
 FRONTMATTER_KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*:")
-PORTABLE_FRONTMATTER_KEYS = {"name", "description", "license", "metadata", "allowed-tools"}
+PORTABLE_FRONTMATTER_KEYS = {
+    "name", "description", "license", "metadata", "allowed-tools", "compatibility"
+}
 
 
 class ReconcileError(RuntimeError):
@@ -279,17 +281,19 @@ def _project_sources(
     configured = policy.get("project_source_roots", {})
     if not isinstance(configured, dict):
         raise ReconcileError("project_source_roots must be an object")
-    unknown = set(configured) - {str(root) for root in scope_map.values()}
+    unknown = set(configured) - {
+        str(Path(root).expanduser()) for root in policy.get("project_scopes", {})
+    }
     if unknown:
         raise ReconcileError(f"project source root has no matching scope: {sorted(unknown)}")
+    if any(not isinstance(relative, str) or not relative for relative in configured.values()):
+        raise ReconcileError("project source paths must be non-empty strings")
     result: dict[str, Path] = {}
     for skill, owner in scope_map.items():
         relative = configured.get(str(owner))
         if relative is None:
             source = registry / "skills" / skill
         else:
-            if not isinstance(relative, str) or not relative:
-                raise ReconcileError("project source paths must be non-empty strings")
             source = owner / relative / skill
         if not (source / "SKILL.md").is_file():
             raise ReconcileError(f"project source is missing: {source}")
@@ -325,6 +329,22 @@ def _validate_frontmatter_extensions(policy: dict, sources: dict[str, Path]) -> 
             raise ReconcileError(f"invalid frontmatter in {skill_file}: {exc}") from exc
         if not isinstance(data, dict):
             raise ReconcileError(f"frontmatter is not a mapping: {skill_file}")
+        if "compatibility" in data:
+            compatibility = data["compatibility"]
+            # Standard compatibility is environment text. Existing legacy
+            # mappings remain an explicit, per-skill extension exception.
+            legacy_exception = (
+                isinstance(compatibility, dict)
+                and "compatibility" in allowed_by_skill.get(name, set())
+            )
+            if not legacy_exception and (
+                not isinstance(compatibility, str)
+                or not compatibility.strip() or len(compatibility) > 500
+            ):
+                raise ReconcileError(
+                    f"{skill_file} compatibility must be a non-empty string of at most "
+                    "500 characters; legacy mappings require an explicit extension exception"
+                )
         keys = set(data)
         unexpected = keys - PORTABLE_FRONTMATTER_KEYS - allowed_by_skill.get(name, set())
         if unexpected:
@@ -352,9 +372,15 @@ def _resolved_link(path: Path) -> Path:
     return target if target.is_absolute() else (path.parent / target).resolve()
 
 
-def _validate_removable_link(path: Path, expected: Path) -> bool:
+def _validate_removable_link(
+    path: Path, expected: Path, managed_previous: Path | None = None,
+    *managed_sources: Path,
+) -> bool:
     if path.is_symlink():
-        if _resolved_link(path) != expected.resolve():
+        allowed = {expected.resolve(), *(source.resolve() for source in managed_sources)}
+        if managed_previous is not None:
+            allowed.add(managed_previous.resolve())
+        if _resolved_link(path) not in allowed:
             raise ReconcileError(f"refusing to remove unexpected symlink: {path}")
         return True
     if path.exists():
@@ -432,7 +458,6 @@ def build_plan(
     projection_homes = tuple(runtime_homes[runtime] for runtime in policy_runtimes)
     governed_homes = tuple(runtime_homes[runtime] for runtime in governed)
     projection_dirs = tuple(runtime_project_dir(runtime) for runtime in policy_runtimes)
-    governed_dirs = tuple(runtime_project_dir(runtime) for runtime in governed)
     retired = _policy_name_set(policy, "retired")
     quarantined = _policy_name_set(policy, "quarantined")
     blocked = retired | quarantined
@@ -489,6 +514,7 @@ def build_plan(
         profile_names=profile_names,
         managed_names=managed_names,
         runtime_mirror_names=runtime_mirrors,
+        validate_budget=False,
     )
     cold = set(classification.cold_names)
     hidden = set(classification.hidden_names)
@@ -564,6 +590,19 @@ def build_plan(
             text_updates[source / "SKILL.md"] = updated
             hardened.append(skill)
 
+    # Exposure determines what to harden, but its budget must describe the
+    # proposed result, including longer or shorter trigger overrides. No writes
+    # have happened when this final validation rejects an oversized catalog.
+    classification = classify_exposure(
+        policy,
+        exposed_sources,
+        project_names=set(scope_map),
+        profile_names=profile_names,
+        managed_names=managed_names,
+        runtime_mirror_names=runtime_mirrors,
+        text_overrides=text_updates,
+    )
+
     global_links: list[str] = []
     global_creations: list[tuple[str, str]] = []
     global_replacements: list[tuple[str, str]] = []
@@ -576,10 +615,31 @@ def build_plan(
             global_path = home / "skills" / skill
             if _validate_removable_link(global_path, source):
                 global_links.append(str(global_path))
-        for owner in declared_project_roots:
-            for runtime_dir in governed_dirs:
+
+    # Explicit retirement/quarantine authorizes removing matching projections.
+    # Scope changes have no historical root-skill ownership records: a canonical
+    # link may be user-created, so leave those links for manual confirmation.
+    for owner in declared_project_roots:
+        relative = policy.get("project_source_roots", {}).get(str(owner))
+        source_root = owner / relative if relative is not None else skills_root
+        for skill in sorted(blocked):
+            source = (source_root / skill if relative is not None else
+                      canonical_sources.get(skill, skills_root / skill / "SKILL.md").parent)
+            # Glob-created worktrees use the primary project's source too.
+            # Retirement removes active scopes, so use the explicitly declared
+            # source roots rather than looking up the secondary root as owner.
+            declared_sources = tuple(
+                Path(primary).expanduser() / relative / skill
+                for primary, relative in policy.get("project_source_roots", {}).items()
+            )
+            desired_roots = set(scope_roots.get(skill, ()))
+            for runtime_dir in projection_dirs:
+                if owner in desired_roots:
+                    continue
                 project_path = owner / runtime_dir / "skills" / skill
-                if _validate_removable_link(project_path, source):
+                if _validate_removable_link(
+                    project_path, source, skills_root / skill, *declared_sources
+                ):
                     project_removals.append(str(project_path))
 
     for skill in sorted(hidden):
