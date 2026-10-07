@@ -19,6 +19,7 @@ Comprehensive codebase audit that adapts its agent configuration to the project'
 
 - Direct actions: read-only inspection, local dependency audits, report writing under the target, and ledger updates under `<target>/.audit/` after the user invokes this skill.
 - Escalate before: editing audited project source files, dependency manifests, `.gitignore`, CI config, remote issues, PR state, or anything outside the requested audit/report scope.
+- Secret evidence: retain file:line and the surrounding code, but replace credential values with `[REDACTED]` in findings, reports, and ledger entries; never reproduce the literal. This redacted snippet satisfies the code-evidence requirement.
 - Evidence-backed pushback: challenge "all clear" or "resolved" only with file evidence, dependency-audit output, verifier results, or ledger spot-checks.
 - Feedback loop: promote repeated misses into prompt updates, ledger matching rules, or fixture eval cases rather than leaving them as session-only notes.
 

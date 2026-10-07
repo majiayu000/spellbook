@@ -30,11 +30,14 @@ uv run --with-requirements requirements.txt python -m pytest tests
 
 ## Reports and repeat runs
 
-The skill is read-only by default. Save the returned report outside the target and confirm
-source hashes did not change. Never edit or delete files in the original fixture as cleanup.
+Evals 1–3 explicitly override the skill's default report and ledger writes with a no-write
+request. Save their returned report outside the target and confirm target hashes did not
+change. A normal skill invocation permits reports under the target and `.audit/` ledger
+updates. Never edit or delete files in the original fixture as cleanup.
 
 Eval 4 requires an explicit request to persist a report and ledger in the isolated copy on
-both runs. Preserve that copy and both reports for checking stable IDs, `first_seen`, and
+both runs. Give reports distinct paths (`audit-report-run-1.md` and `audit-report-run-2.md`)
+even when the runs share a date. Preserve that copy and both reports for checking stable IDs, `first_seen`, and
 `still-open` classifications. Do not interpret a missed finding as resolved without reading
 the affected source. The historical agent-count/output wording is not an acceptance gate;
 local passes and explicitly authorized agents follow the current skill contract.

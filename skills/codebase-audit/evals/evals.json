@@ -1,6 +1,6 @@
 {
   "skill_name": "codebase-audit",
-  "notes": "Run against an isolated copy of fixture. Ground truth stays outside the target and is scored only after the agent finishes. Match by file+category; pass >=8/10 must_detect. Default runs are read-only; eval 4 explicitly authorizes report/ledger persistence in the copy.",
+  "notes": "Run against an isolated copy of fixture. Ground truth stays outside the target and is scored only after the agent finishes. Match by file+category; pass >=8/10 must_detect. Evals 1–3 explicitly override default report/ledger writes with no-write requests; eval 4 explicitly authorizes report/ledger persistence in the copy.",
   "evals": [
     {
       "id": 1,
@@ -11,7 +11,7 @@
     {
       "id": 2,
       "prompt": "Use codebase-audit for an explicit quick repository-wide health check of <TARGET_DIR>, the isolated fixture copy. Do not write target files.",
-      "expected_output": "Quick mode with Silent Degradation & Security and Data Integrity & Registry local passes; no verify pass; findings labeled unverified. Must catch registry mismatch (#1), except-pass (#2), warning+fallback (#3), hardcoded key location (#5), without reproducing the key value.",
+      "expected_output": "Quick mode with Silent Degradation & Security and Data Integrity & Registry local passes; no verify pass; findings labeled unverified. Must catch registry mismatch (#1), except-pass (#2), warning+fallback (#3), hardcoded key location (#5), with file:line and an assignment snippet whose value is replaced by [REDACTED], never the key value.",
       "files": []
     },
     {
@@ -22,7 +22,7 @@
     },
     {
       "id": 4,
-      "prompt": "Use the same isolated <TARGET_DIR> copy for two full codebase-audit runs with tests and concurrency. Explicitly persist each report and .audit/findings.json in that copy; keep the first ledger for the second run. Do not change application code. Keep both reports as evidence.",
+      "prompt": "Use the same isolated <TARGET_DIR> copy for two full codebase-audit runs with tests and concurrency. Explicitly persist each report and .audit/findings.json in that copy; keep the first ledger for the second run. Do not change application code. Save the first report as audit-report-run-1.md and the second as audit-report-run-2.md, overriding the date-only default path. Keep both reports as evidence.",
       "expected_output": "Ledger diff exercised: previously found items classified 'still-open' (ids and first_seen preserved), no false 'resolved' entries. Report contains a 'Delta vs Previous Audit' section.",
       "files": []
     }

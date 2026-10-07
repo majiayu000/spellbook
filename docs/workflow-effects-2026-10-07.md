@@ -34,7 +34,9 @@
 额外发现逐条核对，未因它们不在目录中就判为误报。快照非原子写入、整数 ID 经 JSON
 往返改变类型、未实现上传、共享 fallback 等有源码/探针证据。没有确认条件说明之下的
 错误断言，但这不是独立盲评的“误报率为零”：技能组 M17 的多线程竞争探针失败，仍为
-未证实风险；无技能组多进程 ID 冲突的部署影响也依赖尚未提供的多进程条件。
+未证实风险。证据包 runtime JSON 曾含一条与报告失败记录冲突的成功交错结果，已撤回
+该条，不作为复现证据；没有补造新的探针结果。无技能组多进程 ID 冲突的部署影响也依赖
+尚未提供的多进程条件。
 
 技能组 heartbeat 在约 2.034 秒才恢复，确认同步 sleep 阻塞共享 event loop；这是夹具
 运行结果。不能把仅见“计数器未加锁”直接当成单线程协程已发生竞争。
@@ -106,13 +108,10 @@ Registry 的正确主仓 remote 为 `majiayu000/claude-skill-registry`；本机
 - 测试中的 mock/Codex trace 夹具只算合同回归，不称为真实模型效果。
 - 未修改 Loom；没有验证 Panel、桌面 UI、其他平台或完整 CI。
 
-已有维护修复也已核对并复用其验收证据，没有重复实现：
-[恢复保留文件与恢复副本 #719](https://github.com/majiayu000/loom/pull/719) 的 head
-`a355fab33ebcc17b451dbe9aa578f103e3727404`、
-[同一路径重复编辑的 debounce #728](https://github.com/majiayu000/loom/pull/728) 的 head
-`5d67a9530a1059b34795d2b6dabd1a2591883c6e`，对应 CI 与 Team App runs 均已通过。
-这是 GitHub 连接器对指定 head 的实际查询结果；两个 PR 仍为 draft、尚未合并，不能
-算进本次 main 或已发布版本。记录见证据包 `loom-existing-pr-checks.json`。
+证据包 `loom-existing-pr-checks.json` 保存了四个 workflow run 的成功响应，但没有
+对应查询的 PR 编号、head SHA、draft 或合并状态。它只能证明这些 run 的记录状态为
+success，不能绑定到特定维护 PR，也不能证明 PR 当时或当前的状态；本次不据此声称
+已有维护修复已完成验收或进入 main/发布版本。
 
 ## 交付与后续维护
 

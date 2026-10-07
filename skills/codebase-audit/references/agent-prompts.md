@@ -8,7 +8,7 @@
 READ-ONLY AUDIT — you must not create, modify, or delete any file. Your only output is findings.
 Exclude from analysis: node_modules/, vendor/, target/, dist/, build/, .git/, lockfiles, and generated code.
 Output ONLY a JSON object: {"findings": [{"category": str, "severity": "critical"|"high"|"medium",
-"file": str, "line": int, "summary": str, "evidence": str (quote the actual code),
+"file": str, "line": int, "summary": str, "evidence": str (quote the actual code, replacing credential values with [REDACTED]),
 "evidence_type": "observed"|"inferred", "confidence": "high"|"medium"|"low",
 "fix_suggestion": str}]}.
 Critical requires direct observed evidence. Inference chains longer than two steps must be confidence <= medium.
