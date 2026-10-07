@@ -81,6 +81,39 @@ Older Spellbook versions installed Codex skills under `~/.codex/skills`; reinsta
 
 ---
 
+## Use `.agents/skills` in Claude Code
+
+Checked on October 7, 2026: Claude Code's [instruction documentation](https://code.claude.com/docs/en/memory#agentsmd) supports `AGENTS.md` directly from v2.1.277. By default it loads these files only when no `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` exists in the working directory or its ancestors. You can choose to load both in the Project instructions setting. If direct support is unavailable, put `@AGENTS.md` in a neighboring `CLAUDE.md`.
+
+Skills use separate discovery paths: the [documented locations](https://code.claude.com/docs/en/skills#choose-where-skills-load) include `.claude/skills` and `~/.claude/skills`, but not `.agents/skills`. For a repository that already keeps its skills in `.agents/skills`, run this from the repository root **only if `.claude/skills` does not already exist**, including as a symlink:
+
+```bash
+mkdir -p .claude
+ln -s ../.agents/skills .claude/skills
+```
+
+Both paths now expose the same directory. Changes affect both tools, so you cannot add a Claude-only skill there. If you already have `.claude/skills`, keep it and link only the shared skill instead (replace `my-skill` with an existing skill directory):
+
+```bash
+ln -s ../../.agents/skills/my-skill .claude/skills/my-skill
+```
+
+The official skills documentation supports individual skill-directory symlinks. On macOS, Claude Code 2.1.234 listed a test skill in its CLI initialization event with either link layout; without a link, the same command was unknown. Model execution could not be verified because that installation was not logged in. Restart Claude Code, check `/` for your skill, and invoke it to verify your own environment.
+
+On Windows, [directory symlinks use `mklink /D`](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/mklink), and creating symlinks can require Developer Mode or Administrator privileges. Git's `core.symlinks` setting also affects checkout. Windows loading was not tested here; teams can use separate target entries instead:
+
+```bash
+# From a Spellbook checkout; installs selected skills at user scope
+./install.sh --target all --skills typescript-project,python-project
+
+# Or use the skills CLI and select Claude Code and Codex when prompted
+npx skills add majiayu000/spellbook --skill typescript-project
+```
+
+The installer creates entries in `~/.claude/skills` and `~/.agents/skills` pointing to its shared source checkout. It does not synchronize arbitrary project directories. These instructions describe local Claude Code CLI use; other session types can have different loading rules.
+
+---
+
 ## Pick a Workflow
 
 Start with a small bundle that matches the job, then add more skills when the workflow sticks.
