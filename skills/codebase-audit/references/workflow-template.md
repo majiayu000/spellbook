@@ -71,7 +71,9 @@ function verifyPrompt(target, f) {
     'Open the file and its callers/guards/config. Actively try to REFUTE the finding: ' +
     'is there a guard clause, configuration, caller-side handling, or dead-code condition ' +
     'that makes this a non-issue? Set confirmed=false unless the code clearly supports the claim. ' +
-    'In reason, cite file:line for whatever you found.'
+    'In reason, cite file:line for whatever you found. Never reproduce credentials, tokens, ' +
+    'private keys or other secret values in any output. Redact them consistently in reasons, ' +
+    'evidence and summaries while retaining the file:line and enough non-secret context to verify the finding.'
 }
 
 const results = await pipeline(

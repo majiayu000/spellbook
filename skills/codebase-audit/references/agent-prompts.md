@@ -11,6 +11,7 @@ Output ONLY a JSON object: {"findings": [{"category": str, "severity": "critical
 "file": str, "line": int, "summary": str, "evidence": str (quote the actual code),
 "evidence_type": "observed"|"inferred", "confidence": "high"|"medium"|"low",
 "fix_suggestion": str}]}.
+Replace credential values with [REDACTED] in every output field, including summary, evidence, and fix_suggestion; never quote or repeat a credential.
 Critical requires direct observed evidence. Inference chains longer than two steps must be confidence <= medium.
 No prose outside the JSON. (When launched via Workflow with a schema, the harness enforces this shape.)
 ```
