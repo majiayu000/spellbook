@@ -14,6 +14,17 @@ description: Modern TypeScript project architecture guide for 2025. Use when cre
 - **No backwards compatibility** — Delete, don't deprecate. Change directly, no shims
 - **LiteLLM for LLM APIs** — Use LiteLLM proxy for all LLM integrations, unless specific SDK required
 
+## Gotchas
+
+- Bun, Zod, directory layout and LiteLLM choices are activation observations, not proof of
+  task success. Check valid inputs, invalid inputs, state changes and the actual error contract.
+- A template can pass service tests and still fail `typecheck`; the maintained template's
+  `noUnusedLocals` caught an unused configuration helper in the October 2026 case. Run both.
+- `latest` dependency declarations do not pin a reproduced run. Keep the generated lockfile
+  with its evidence and record actual installed versions. Don't claim another runtime passed.
+- A configured proxy URL is not a live model result. Without a provider, verify independent
+  application behavior and explicitly leave the LLM check pending.
+
 ---
 
 ## No Backwards Compatibility

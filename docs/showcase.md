@@ -2,6 +2,11 @@
 
 These examples are quick checks after installing Spellbook. Pick one workflow, paste the prompt into Claude Code or Codex, and inspect the plan or file changes before letting the agent edit.
 
+The [October 7 workflow evidence](workflow-effects-2026-10-07.md) includes a blind audit
+comparison, a working TODO API, runtime versions and a reproducible evidence bundle. It separates
+skill activation from task outcomes, records misses and unverified risks, and leaves model cost
+unknown when usage was unavailable. These are fixture/case results, not external user outcomes.
+
 ## Codebase Audit
 
 Install:

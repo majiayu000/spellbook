@@ -23,12 +23,6 @@ function getEnvNumber(key: string, defaultValue: number): number {
   return num;
 }
 
-function getEnvBool(key: string, defaultValue: boolean): boolean {
-  const value = process.env[key];
-  if (value === undefined) return defaultValue;
-  return value === 'true' || value === '1';
-}
-
 export const config = {
   env: getEnv('NODE_ENV', 'development') as 'development' | 'staging' | 'production',
   port: getEnvNumber('PORT', 3000),
