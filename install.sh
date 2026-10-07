@@ -709,12 +709,14 @@ main() {
                 install_supported_agents
                 ;;
             --list)
+                check_prerequisites
                 setup_repo
                 check_skill_conflicts
                 list_skills
                 exit 0
                 ;;
             --validate)
+                check_prerequisites
                 setup_repo
                 check_skill_conflicts
                 validate_registry
