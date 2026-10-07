@@ -71,7 +71,8 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
     def finish_quoted_scalar() -> None:
         nonlocal quoted_key, quote_char, quoted_parts
         if quoted_key is not None:
-            frontmatter[quoted_key] = normalize_scalar(" ".join(part for part in quoted_parts if part))
+            value = " ".join(part for part in quoted_parts if part)
+            frontmatter[quoted_key] = value if quoted_key == "compatibility" else normalize_scalar(value)
         quoted_key = None
         quote_char = None
         quoted_parts = []
@@ -121,7 +122,8 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
                     }
                 continue
 
-            frontmatter[current_key] = normalize_scalar(strip_quotes(stripped_value)) if stripped_value else {}
+            value = strip_quotes(stripped_value)
+            frontmatter[current_key] = (value if current_key == "compatibility" else normalize_scalar(value)) if stripped_value else {}
             continue
 
         if current_key == "metadata" and line.startswith(" "):
@@ -188,7 +190,8 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
         if current_key and line.startswith("  "):
             value = frontmatter.get(current_key)
             if isinstance(value, str):
-                frontmatter[current_key] = normalize_scalar(f"{value} {strip_quotes(line)}")
+                continued = f"{value} {strip_quotes(line)}"
+                frontmatter[current_key] = continued if current_key == "compatibility" else normalize_scalar(continued)
             continue
 
         messages.append(error(f"{path.relative_to(ROOT)} has unsupported frontmatter line: {line}"))
@@ -218,6 +221,7 @@ def parse_frontmatter(path: Path) -> tuple[dict[str, object], list[str]]:
             return {}, [error(f"{path.relative_to(ROOT)} has invalid YAML frontmatter: {exc}")]
         if not isinstance(parsed, dict):
             return {}, [error(f"{path.relative_to(ROOT)} frontmatter must be a YAML mapping")]
-        return {str(key): normalize_scalar(value) for key, value in parsed.items()}, []
+        return {str(key): value if key == "compatibility" else normalize_scalar(value)
+                for key, value in parsed.items()}, []
 
     return fallback_parse_frontmatter(frontmatter_text, path)

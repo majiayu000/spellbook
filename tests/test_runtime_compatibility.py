@@ -216,6 +216,20 @@ class RuntimeCompatibilityTests(unittest.TestCase):
                 self.assertTrue(any(message.startswith("ERROR:") for message in messages), messages)
                 self.assertFalse(quick_validate.validate_skill(skill_dir)[0])
 
+    def test_compatibility_length_uses_parsed_text_before_whitespace_normalization(self):
+        value = "a" + "   a" * 200
+        for yaml_parser in (validate_skills.yaml, None):
+            with self.subTest(fallback=yaml_parser is None), TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                skill_dir, entry = write_skill(root, compatibility=f'compatibility: "{value}"')
+                with patched_root(root), patched_yaml(yaml_parser):
+                    frontmatter, parse_messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
+                    messages = validate_skills.validate_entries([entry])
+                self.assertFalse(parse_messages, parse_messages)
+                self.assertEqual(frontmatter["compatibility"], value)
+                self.assertTrue(any("at most 500 characters" in message for message in messages), messages)
+                self.assertFalse(quick_validate.validate_skill(skill_dir)[0])
+
     def test_legacy_mapping_remains_readable_by_both_validators(self):
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

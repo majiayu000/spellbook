@@ -576,6 +576,45 @@ def test_reconcile_removes_revoked_project_projections(tmp_path: Path, transitio
     assert repeated_text == {}
 
 
+@pytest.mark.parametrize("transition", ["review", "retired", "move"])
+@pytest.mark.parametrize("registry_copy", [False, True])
+def test_reconcile_revokes_external_project_source(tmp_path: Path, transition: str, registry_copy: bool) -> None:
+    registry = tmp_path / "registry"
+    (registry / "skills").mkdir(parents=True)
+    if registry_copy:
+        write_skill(registry / "skills", "demo")
+    write_state(registry, ["demo"])
+    project = tmp_path / "project"
+    other = tmp_path / "other"
+    project.mkdir()
+    other.mkdir()
+    source = write_skill(project / "source-skills", "demo")
+    homes = {runtime: tmp_path / runtime for runtime in ("codex", "claude")}
+    policy = {
+        "default_scope": "review",
+        "trigger_boundary": {"clause": " Trigger only when explicitly requested."},
+        "project_scopes": {str(project): ["demo"], str(other): []},
+        "project_source_roots": {str(project): "source-skills"},
+    }
+    reconcile.apply_plan(*reconcile.build_plan(registry, policy, runtime_homes=homes))
+    before = (source / "SKILL.md").read_bytes()
+    policy["project_scopes"][str(project)] = []
+    if transition == "retired":
+        policy["retired"] = ["demo"]
+    elif transition == "move":
+        write_skill(other / "source-skills", "demo")
+        policy["project_scopes"][str(other)] = ["demo"]
+        policy["project_source_roots"][str(other)] = "source-skills"
+    plan, text_updates, state_updates = reconcile.build_plan(registry, policy, runtime_homes=homes)
+    expected = {str(project / runtime / "skills" / "demo") for runtime in (".agents", ".claude")}
+    assert set(plan.project_links_to_remove) == expected
+    reconcile.apply_plan(plan, text_updates, state_updates)
+    assert all(not Path(path).is_symlink() for path in expected)
+    assert (source / "SKILL.md").read_bytes() == before
+    repeated, _, _ = reconcile.build_plan(registry, policy, runtime_homes=homes)
+    assert repeated.project_links_to_remove == ()
+
+
 def test_revoked_project_preserves_unknown_link_and_reports_conflict(tmp_path: Path) -> None:
     registry = tmp_path / "registry"
     source = write_skill(registry / "skills", "demo")

@@ -281,17 +281,19 @@ def _project_sources(
     configured = policy.get("project_source_roots", {})
     if not isinstance(configured, dict):
         raise ReconcileError("project_source_roots must be an object")
-    unknown = set(configured) - {str(root) for root in scope_map.values()}
+    unknown = set(configured) - {
+        str(Path(root).expanduser()) for root in policy.get("project_scopes", {})
+    }
     if unknown:
         raise ReconcileError(f"project source root has no matching scope: {sorted(unknown)}")
+    if any(not isinstance(relative, str) or not relative for relative in configured.values()):
+        raise ReconcileError("project source paths must be non-empty strings")
     result: dict[str, Path] = {}
     for skill, owner in scope_map.items():
         relative = configured.get(str(owner))
         if relative is None:
             source = registry / "skills" / skill
         else:
-            if not isinstance(relative, str) or not relative:
-                raise ReconcileError("project source paths must be non-empty strings")
             source = owner / relative / skill
         if not (source / "SKILL.md").is_file():
             raise ReconcileError(f"project source is missing: {source}")
@@ -617,11 +619,14 @@ def build_plan(
     # Reconcile the difference between existing managed projections and the
     # desired scopes. A known project root remains governed even when its skill
     # or profile binding becomes empty. Unknown links are conflicts, never owned.
-    for skill in sorted(set(canonical_sources) | blocked):
-        source_file = canonical_sources.get(skill, skills_root / skill / "SKILL.md")
-        source = source_file.parent
-        desired_roots = set(scope_roots.get(skill, ()))
-        for owner in declared_project_roots:
+    for owner in declared_project_roots:
+        relative = policy.get("project_source_roots", {}).get(str(owner))
+        source_root = owner / relative if relative is not None else skills_root
+        prior_names = {path.parent.name for path in source_root.glob("*/SKILL.md")}
+        for skill in sorted(set(canonical_sources) | blocked | prior_names):
+            source = (source_root / skill if relative is not None else
+                      canonical_sources.get(skill, skills_root / skill / "SKILL.md").parent)
+            desired_roots = set(scope_roots.get(skill, ()))
             for runtime_dir in governed_dirs:
                 if owner in desired_roots and runtime_dir in projection_dirs:
                     continue
