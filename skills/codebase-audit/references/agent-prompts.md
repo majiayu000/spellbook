@@ -8,9 +8,10 @@
 READ-ONLY AUDIT — you must not create, modify, or delete any file. Your only output is findings.
 Exclude from analysis: node_modules/, vendor/, target/, dist/, build/, .git/, lockfiles, and generated code.
 Output ONLY a JSON object: {"findings": [{"category": str, "severity": "critical"|"high"|"medium",
-"file": str, "line": int, "summary": str, "evidence": str (quote the actual code, replacing credential values with [REDACTED]),
+"file": str, "line": int, "summary": str, "evidence": str (quote the actual code),
 "evidence_type": "observed"|"inferred", "confidence": "high"|"medium"|"low",
 "fix_suggestion": str}]}.
+Replace credential values with [REDACTED] in every output field, including summary, evidence, and fix_suggestion; never quote or repeat a credential.
 Critical requires direct observed evidence. Inference chains longer than two steps must be confidence <= medium.
 No prose outside the JSON. (When launched via Workflow with a schema, the harness enforces this shape.)
 ```
