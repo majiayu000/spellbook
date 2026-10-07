@@ -78,6 +78,6 @@ to standard consumers. Do not declare both forms together. The registry's
 existing `compatibility.runtimes` JSON object, ordering, search output, and runtime
 filtering stay unchanged; the registry is not SKILL.md frontmatter.
 
-The dependency-free fallback parser supports the block `metadata` form shown
-above. Use PyYAML for other YAML forms. Standard conformance is a format check,
+Frontmatter parsing requires PyYAML; missing PyYAML is a validation error.
+CI installs this dependency before validation. Standard conformance is a format check,
 not proof that every host loads or executes a skill successfully.
