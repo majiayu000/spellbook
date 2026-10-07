@@ -112,6 +112,11 @@ def fallback_parse_frontmatter(frontmatter_text: str, path: Path) -> tuple[dict[
                 quoted_parts = [stripped_value[1:]]
                 continue
 
+            if current_key == "compatibility" and stripped_value[:1] in {"|", ">"}:
+                return frontmatter, messages + [
+                    error(f"{path.relative_to(ROOT)} compatibility block scalars require PyYAML")
+                ]
+
             if current_key == "compatibility" and stripped_value.startswith("{"):
                 flow_match = re.fullmatch(r"\{\s*runtimes\s*:\s*\[(.*)\]\s*\}", stripped_value)
                 if flow_match is None:

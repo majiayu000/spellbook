@@ -242,6 +242,20 @@ class RuntimeCompatibilityTests(unittest.TestCase):
             self.assertEqual(quick_validate.validate_skill(skill_dir), (True, "Skill is valid!"))
             ecosystem_reconcile._validate_frontmatter_extensions({}, {skill_dir.name: skill_dir / "SKILL.md"})
 
+    def test_fallback_requires_yaml_for_compatibility_block_scalars(self):
+        for marker in (">-", "|-"):
+            with self.subTest(marker=marker), TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                skill_dir, entry = write_skill(root, compatibility=f"compatibility: {marker}\n  " + "x" * 498)
+                with patched_root(root):
+                    frontmatter, messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
+                    self.assertFalse(messages)
+                    self.assertEqual(frontmatter["compatibility"], "x" * 498)
+                with patched_root(root), patched_yaml(None):
+                    _, messages = validate_skills.parse_frontmatter(skill_dir / "SKILL.md")
+                    self.assertTrue(any("block scalars require PyYAML" in message for message in messages), messages)
+                    self.assertTrue(validate_skills.validate_entries([entry]))
+
     def test_legacy_mapping_remains_readable_by_both_validators(self):
         with TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
