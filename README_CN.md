@@ -79,6 +79,39 @@ Claude Code 仍是一等支持目标，也是用户搜索和认知入口。项�
 
 ---
 
+## 在 Claude Code 中使用 `.agents/skills`
+
+2026 年 10 月 7 日核对：[官方指令文档](https://code.claude.com/docs/en/memory#agentsmd)说明，Claude Code 从 v2.1.277 起支持直接读取 `AGENTS.md`。默认条件是当前目录及其祖先目录中没有 `CLAUDE.md`、`.claude/CLAUDE.md` 或 `CLAUDE.local.md`。可以在 Project instructions 设置中选择同时加载两种文件。无法直接加载时，在相邻的 `CLAUDE.md` 中写入 `@AGENTS.md`。
+
+Skills 使用另一套发现路径：[官方列出的目录](https://code.claude.com/docs/en/skills#choose-where-skills-load)包含 `.claude/skills` 和 `~/.claude/skills`，没有 `.agents/skills`。如果仓库已经把 skills 放在 `.agents/skills`，可以在仓库根目录执行下面的命令，**前提是 `.claude/skills` 尚不存在，也不是已有软链接**：
+
+```bash
+mkdir -p .claude
+ln -s ../.agents/skills .claude/skills
+```
+
+两个路径会指向同一个目录，修改会同时影响两种工具，因此不能在其中加入仅供 Claude 使用的 skill。如果已有 `.claude/skills`，保留它，只链接需要共享的 skill（将 `my-skill` 替换为已有 skill 的目录名）：
+
+```bash
+ln -s ../../.agents/skills/my-skill .claude/skills/my-skill
+```
+
+官方 skills 文档支持单个 skill 目录的软链接。本机 macOS 上，Claude Code 2.1.234 的 CLI 初始化事件在两种链接布局下都列出了测试 skill；不建链接时，同一命令显示 unknown。该安装未登录，模型执行尚未验证。重启 Claude Code，在 `/` 列表中确认 skill，再调用一次，以验证自己的环境。
+
+Windows 的目录软链接使用 [`mklink /D`](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/mklink)，创建软链接可能需要 Developer Mode 或管理员权限；Git 的 `core.symlinks` 设置也会影响检出。这里没有验证 Windows 加载，团队可以使用分别安装到目标目录的方式：
+
+```bash
+# 在 Spellbook checkout 中运行，将所选 skills 安装到用户级目录
+./install.sh --target all --skills typescript-project,python-project
+
+# 或使用 skills CLI，在提示中选择 Claude Code 和 Codex
+npx skills add majiayu000/spellbook --skill typescript-project
+```
+
+安装器会在 `~/.claude/skills` 与 `~/.agents/skills` 创建指向共享源码 checkout 的条目，不会同步任意项目目录。以上说明针对本地 Claude Code CLI；其他会话类型可能使用不同的加载规则。
+
+---
+
 ## 选择工作流
 
 先安装一个贴近当前任务的小组合，跑通后再扩展更多 skills。
