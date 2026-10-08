@@ -198,6 +198,9 @@ Output from the executor agent. Located at `<run-dir>/outputs/metrics.json`.
 
 Wall clock timing for a run. Located at `<run-dir>/timing.json`.
 
+`total_tokens` is a measured token count, including a valid count of `0`.
+Omit it or use `null` when unavailable; character counts are not token counts.
+
 **How to capture:** When a subagent task completes, the task notification includes `total_tokens` and `duration_ms`. Save these immediately — they are not persisted anywhere else and cannot be recovered after the fact.
 
 ```json
@@ -301,6 +304,23 @@ Output from Benchmark mode. Located at `benchmarks/<timestamp>/benchmark.json`.
   - `with_skill` / `without_skill`: Each contains `pass_rate`, `time_seconds`, `tokens` objects with `mean` and `stddev` fields
   - `delta`: Difference strings like `"+0.50"`, `"+13.0"`, `"+1700"`
 - `notes`: Freeform observations from the analyzer
+
+**Token measurement contract:** `runs[].result.tokens` uses
+`grading.json`'s `timing.total_tokens` first, then the sibling `timing.json`'s
+`total_tokens` when the first value is missing or `null`. Token lookup is
+independent of duration lookup. A measured `0` is preserved. If neither source
+provides a measurement, `tokens` is `null`; `execution_metrics.output_chars`
+remains a character count in `grading.json` and is never substituted for tokens.
+
+The token summary keeps the existing `mean`, `stddev`, `min`, and `max` keys.
+They are all `null` if the configuration has no loaded runs or **any** loaded run
+has unknown tokens, even when other runs have measurements. This avoids
+presenting a partial sample as the complete configuration. Individual known
+measurements remain available under `runs`. `delta.tokens` is `null` unless both
+configuration token means are known; otherwise it remains a signed string.
+Markdown renders unknown tokens as `N/A` and the viewer uses `—`. Consumers
+must handle these nulls; complete token measurements retain the numeric shape.
+These rules apply only to tokens, not the other metrics or run discovery.
 
 **Important:** The viewer reads these field names exactly. Using `config` instead of `configuration`, or putting `pass_rate` at the top level of a run instead of nested under `result`, will cause the viewer to show empty/zero values. Always reference this schema when generating benchmark.json manually.
 
