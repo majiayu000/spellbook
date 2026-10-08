@@ -1,0 +1,4 @@
+interface:
+  display_name: "模型推理优化系统"
+  short_description: "把模型复现、性能剖析、显存优化与画质回归组织成可验证的实验闭环"
+  default_prompt: "使用 $model-inference-optimize 优化这个模型的真实推理链路，先建立基线和质量标准，再定位瓶颈并完成可复现的对比。"

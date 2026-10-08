@@ -918,6 +918,23 @@
     ]
   },
   {
+    "name": "model-inference-optimize",
+    "category": "AI & Agent Workflow",
+    "format": "directory",
+    "path": "skills/model-inference-optimize/SKILL.md",
+    "description": "优化实际模型推理链路，将正确性对齐、分段 profiling、显存与数据搬运、TensorRT/ONNX/PyTorch 后端、attention/kernel、FP8/compile、缓存与少步采样、质量回归、GPU 成本和服务验收串成同一实验闭环。当用户要求推理提速、降低显存或 GPU 成本、复现模型效果、定位 GPU 利用率低、优化图像/视频/扩散模型或自托管 LLM 时使用，提供 model inference performance optimization 的脱敏案例。纯 API 调用、提示词或 token 用量优化，以及电脑卡顿，不进入本技能的模型推理实验流程。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "backend",
+      "performance"
+    ]
+  },
+  {
     "name": "multi-ai-research",
     "category": "AI & Agent Workflow",
     "format": "directory",
