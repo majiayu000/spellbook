@@ -404,8 +404,10 @@ Spellbook 中的每个技能都遵循以下原则：
 
 ## 发布状态
 
-Spellbook 目前处于 pre-1.0 发布准备阶段。尚未切出编号 GitHub release
-tag；当前安装路径使用仓库 `main` 分支。发布历史见 [更新日志](./CHANGELOG.md)。
+Spellbook 目前处于 pre-1.0 发布准备阶段。首个编号 release tag 为
+[v0.1.0](https://github.com/majiayu000/spellbook/releases/tag/v0.1.0)。
+当前安装路径仍使用仓库 `main` 分支。
+发布历史见 [更新日志](./CHANGELOG.md)。
 
 当前限制：
 
