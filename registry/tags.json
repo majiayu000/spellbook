@@ -1,12 +1,12 @@
 {
-  "total_skills": 109,
+  "total_skills": 110,
   "total_tags": 37,
   "tag_counts": {
     "3d-modeling": 2,
     "agent": 15,
     "architecture": 15,
     "auth": 3,
-    "backend": 12,
+    "backend": 13,
     "blender": 2,
     "browser": 4,
     "code-review": 17,
@@ -23,7 +23,7 @@
     "javascript": 5,
     "multi-ai": 7,
     "observability": 3,
-    "performance": 8,
+    "performance": 9,
     "product-management": 4,
     "prompt": 2,
     "proxy": 4,
@@ -95,6 +95,7 @@
       "dev-architecture-playbook",
       "gemma4-local-deploy",
       "harmonyos-app",
+      "model-inference-optimize",
       "release-engineering",
       "rust-best-practices"
     ],
@@ -238,6 +239,7 @@
     ],
     "performance": [
       "dev-architecture-playbook",
+      "model-inference-optimize",
       "optimize-network",
       "performance-capacity",
       "react-best-practices",

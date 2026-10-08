@@ -116,6 +116,7 @@ CATEGORY_BY_NAME = {
     "codex-log-guard": "Operations & Deploy",
     "config-secrets-environments": "Operations & Deploy",
     "codex-retrospective": "AI & Agent Workflow",
+    "model-inference-optimize": "AI & Agent Workflow",
     "multi-ai-research": "AI & Agent Workflow",
     "multi-model-orchestrator": "AI & Agent Workflow",
     "sol-luna-router": "AI & Agent Workflow",

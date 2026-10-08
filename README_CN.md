@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>109 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>110 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-109-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-110-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -189,6 +189,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`threads`](./skills/threads/) | Codex 原生子 agent 与并行 GitHub 队列通道 |
 | [`codex-fluent`](./skills/codex-fluent/) | Codex session 清理、归档策略与交接纪律 |
 | [`codex-retrospective`](./skills/codex-retrospective/) | 让 Codex 复盘近期历史以改进行为 |
+| [`model-inference-optimize`](./skills/model-inference-optimize/) | 从真实瓶颈优化模型推理，联合验证质量与成本，附脱敏案例 |
 | [`brainstorming`](./skills/brainstorming/) | 通过苏格拉底式对话打磨设计与架构 |
 
 参见 [`docs/agent-reliability-trio.md`](./docs/agent-reliability-trio.md) 了解 Reliable Skill + Context Engineering + Review Gate 组合流程。

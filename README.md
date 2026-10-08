@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>109 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>110 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-109-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-110-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -192,6 +192,7 @@ Skills for orchestrating, guarding, and maintaining AI agent workflows — the c
 | [`threads`](./skills/threads/) | Codex-native subagents and parallel GitHub queue lanes |
 | [`codex-fluent`](./skills/codex-fluent/) | Codex session hygiene, archive strategy, and handoff discipline |
 | [`codex-retrospective`](./skills/codex-retrospective/) | Codex self-review of recent history to improve behavior |
+| [`model-inference-optimize`](./skills/model-inference-optimize/) | Profile and optimize model inference with quality and cost checks, using anonymized cases |
 | [`brainstorming`](./skills/brainstorming/) | Socratic dialogue for design refinement and architecture exploration |
 
 See [`docs/agent-reliability-trio.md`](./docs/agent-reliability-trio.md) for the Reliable Skill + Context Engineering + Review Gate workflow.
