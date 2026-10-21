@@ -126,6 +126,7 @@ CATEGORY_BY_NAME = {
     "review-gate": "AI & Agent Workflow",
     "skill-creator": "AI & Agent Workflow",
     "skill-audit": "AI & Agent Workflow",
+    "skill-checkup": "AI & Agent Workflow",
     "skill-ecosystem-doctor": "AI & Agent Workflow",
     "skill-lifeguard": "AI & Agent Workflow",
     "skill-usage-stats": "AI & Agent Workflow",
