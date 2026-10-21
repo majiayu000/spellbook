@@ -188,7 +188,7 @@ Skills for orchestrating, guarding, and maintaining AI agent workflows — the c
 | [`skill-lifeguard`](./skills/skill-lifeguard/) | Add reliable-skill contracts, checkpoints, smoke hooks, and drift signals |
 | [`review-gate`](./skills/review-gate/) | Produce review packs and require human approval before landing agent changes |
 | [`skill-audit`](./skills/skill-audit/) | Audit, design, categorize, and measure agent skills |
-| [`skill-checkup`](./skills/skill-checkup/) | Read-only report of broken, competing, heavy, and unused installed skills |
+| [`skill-checkup`](./skills/skill-checkup/) | Find broken, drifted, competing and one-sided skills across Claude Code and Codex |
 | [`skill-ecosystem-doctor`](./skills/skill-ecosystem-doctor/) | Govern canonical sources, projections, retirement, quarantine, and cross-runtime verification |
 | [`threads`](./skills/threads/) | Codex-native subagents and parallel GitHub queue lanes |
 | [`codex-fluent`](./skills/codex-fluent/) | Codex session hygiene, archive strategy, and handoff discipline |
