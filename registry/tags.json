@@ -1,9 +1,9 @@
 {
-  "total_skills": 110,
+  "total_skills": 111,
   "total_tags": 37,
   "tag_counts": {
     "3d-modeling": 2,
-    "agent": 15,
+    "agent": 16,
     "architecture": 15,
     "auth": 3,
     "backend": 13,
@@ -57,6 +57,7 @@
       "review-agent-harness",
       "review-gate",
       "skill-audit",
+      "skill-checkup",
       "skill-ecosystem-doctor",
       "skill-usage-stats",
       "sol-luna-router",
