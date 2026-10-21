@@ -1431,7 +1431,7 @@
     "category": "AI & Agent Workflow",
     "format": "directory",
     "path": "skills/skill-checkup/SKILL.md",
-    "description": "Read-only checkup of the agent skills installed on this machine: which are broken (dead links, missing files or commands, diverged copies), competing for the same requests, heavy on Claude Code's skill-listing budget, or unused, plus repeated requests no skill covers and descriptions that miss what their skill already handles. Use when the user asks to check, audit or tidy their skills, asks why a skill did not trigger, or wants to test a reworded description against past requests. Not for agent config health or raw usage rankings (skill-usage-stats) or policy-driven ownership, exposure and retirement repairs (skill-ecosystem-doctor).",
+    "description": "Read-only checkup of installed agent skills across Claude Code and Codex: broken links or files, same-name copies that drifted apart, descriptions that compete or miss requests their skill already handles, and skills loaded by both agents but used by only one. Use when the user asks to check, audit or tidy their skills, compare Claude Code and Codex skills, asks why a skill did not trigger, or wants to test a reworded description against past requests. For unused Claude Code skills and token cost alone, Claude Code's /skill-doctor is enough. Not for agent config health or raw usage rankings (skill-usage-stats) or policy-driven ownership, exposure and retirement repairs (skill-ecosystem-doctor).",
     "language": "en",
     "compatibility": {
       "runtimes": [

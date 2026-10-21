@@ -1,6 +1,6 @@
 ---
 name: skill-checkup
-description: "Read-only checkup of the agent skills installed on this machine: which are broken (dead links, missing files or commands, diverged copies), competing for the same requests, heavy on Claude Code's skill-listing budget, or unused, plus repeated requests no skill covers and descriptions that miss what their skill already handles. Use when the user asks to check, audit or tidy their skills, asks why a skill did not trigger, or wants to test a reworded description against past requests. Not for agent config health or raw usage rankings (skill-usage-stats) or policy-driven ownership, exposure and retirement repairs (skill-ecosystem-doctor)."
+description: "Read-only checkup of installed agent skills across Claude Code and Codex: broken links or files, same-name copies that drifted apart, descriptions that compete or miss requests their skill already handles, and skills loaded by both agents but used by only one. Use when the user asks to check, audit or tidy their skills, compare Claude Code and Codex skills, asks why a skill did not trigger, or wants to test a reworded description against past requests. For unused Claude Code skills and token cost alone, Claude Code's /skill-doctor is enough. Not for agent config health or raw usage rankings (skill-usage-stats) or policy-driven ownership, exposure and retirement repairs (skill-ecosystem-doctor)."
 ---
 
 # Skill Checkup
@@ -23,10 +23,10 @@ Code and Codex session logs.
 From the user's current project, so project-level skills are included:
 
 ```bash
-uvx --from git+https://github.com/majiayu000/skill-checkup@v0.1.1 skill-checkup
+uvx --from git+https://github.com/majiayu000/skill-checkup@v0.2.0 skill-checkup
 ```
 
-Without `uvx`: `pipx run --spec git+https://github.com/majiayu000/skill-checkup@v0.1.1 skill-checkup`.
+Without `uvx`: `pipx run --spec git+https://github.com/majiayu000/skill-checkup@v0.2.0 skill-checkup`.
 
 It prints a summary table and the top five actions, and writes the full report to
 `./skill-checkup-report.md`. The first run reads up to 90 days of logs and can take a
@@ -42,7 +42,7 @@ Useful options:
 ## Check a reworded description
 
 ```bash
-uvx --from git+https://github.com/majiayu000/skill-checkup@v0.1.1 skill-checkup replay <skill> --description "<new wording>"
+uvx --from git+https://github.com/majiayu000/skill-checkup@v0.2.0 skill-checkup replay <skill> --description "<new wording>"
 ```
 
 Compare the `current` and `new` rows: higher hit@3 with similar steals@1 is better. The
@@ -54,8 +54,9 @@ numbers are a lexical proxy, so compare rows rather than reading absolute values
 |---|---|
 | Broken | Fix first. Diverged copies: compare, keep one source, make the others identical. |
 | Competing | Merge, or rewrite both descriptions so their boundaries differ. |
-| Heavy | Shorten the longest descriptions; Claude Code drops the least-used descriptions first. |
-| Unused | Archive candidates. Keep emergency tools even if unused. |
+| One-sided | Loaded by both agents, used by one. Delete the idle copy only when the report says it's safe; when it says the copy is shared, turn the skill off in Claude Code's `/skills` menu instead. Copies in `~/.agents/skills` may also serve Cursor or Gemini CLI. |
+| Unused | Archive candidates. Keep emergency tools even if unused. In Claude Code, `/skill-doctor` gives the same list with token costs. |
+| Heavy | An estimate; `/context` shows the measured listing size. On a 1M-token model it rarely matters. |
 | New skill candidates | Repeated requests worth a skill; confirm with the user before writing one. An item marked "already handled in the body of X" means rewording X's description, not a new skill. |
 | Appendix (silent) | Low confidence: mentions and requests look alike. Treat as leads only. |
 
@@ -64,4 +65,5 @@ numbers are a lexical proxy, so compare rows rather than reading absolute values
 - Sessions started by `claude -p`, Agent SDK hosts or `codex exec` count as usage but are excluded from request analysis.
 - A Codex turn that reads 8+ skills is treated as an inventory sweep and not counted as use.
 - "Unused" only means no use in this machine's logs in the window.
+- The default budget estimate assumes a 200k-token window; pass `--context-tokens 1000000` for 1M-token models.
 - Optional config `~/.config/skill-checkup/config.json` can list deprecated directories and accepted known issues.
