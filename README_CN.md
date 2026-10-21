@@ -185,7 +185,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`skill-lifeguard`](./skills/skill-lifeguard/) | 为高价值 skill 增加可靠性契约、检查点、烟测钩子与漂移信号 |
 | [`review-gate`](./skills/review-gate/) | 在 agent 变更落地前产出 review pack 并要求人工批准 |
 | [`skill-audit`](./skills/skill-audit/) | 审计、设计、分类并度量 agent skills |
-| [`skill-checkup`](./skills/skill-checkup/) | 只读体检已装 skill：坏了的、互相抢触发的、没触发的、占预算的、没用过的 |
+| [`skill-checkup`](./skills/skill-checkup/) | 只读体检已装 skill：坏了的、互相抢触发的、占预算的、没用过的 |
 | [`skill-ecosystem-doctor`](./skills/skill-ecosystem-doctor/) | 治理真源、投影、退役、隔离与跨 Runtime 验证 |
 | [`threads`](./skills/threads/) | Codex 原生子 agent 与并行 GitHub 队列通道 |
 | [`codex-fluent`](./skills/codex-fluent/) | Codex session 清理、归档策略与交接纪律 |
