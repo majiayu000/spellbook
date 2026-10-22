@@ -23,10 +23,10 @@ Code and Codex session logs.
 From the user's current project, so project-level skills are included:
 
 ```bash
-uvx --from git+https://github.com/majiayu000/skill-checkup@v0.2.0 skill-checkup
+uvx --from git+https://github.com/majiayu000/skill-checkup@v0.2.1 skill-checkup
 ```
 
-Without `uvx`: `pipx run --spec git+https://github.com/majiayu000/skill-checkup@v0.2.0 skill-checkup`.
+Without `uvx`: `pipx run --spec git+https://github.com/majiayu000/skill-checkup@v0.2.1 skill-checkup`.
 
 It prints a summary table and the top five actions, and writes the full report to
 `./skill-checkup-report.md`. The first run reads up to 90 days of logs and can take a
@@ -42,7 +42,7 @@ Useful options:
 ## Check a reworded description
 
 ```bash
-uvx --from git+https://github.com/majiayu000/skill-checkup@v0.2.0 skill-checkup replay <skill> --description "<new wording>"
+uvx --from git+https://github.com/majiayu000/skill-checkup@v0.2.1 skill-checkup replay <skill> --description "<new wording>"
 ```
 
 Compare the `current` and `new` rows: higher hit@3 with similar steals@1 is better. The
