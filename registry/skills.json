@@ -156,6 +156,20 @@
     ]
   },
   {
+    "name": "avoidance-coach",
+    "category": "Content & Research",
+    "format": "directory",
+    "path": "skills/avoidance-coach/SKILL.md",
+    "description": "Guide a self-help conversation for someone stuck in an avoidance loop: low mood, emptiness, stress, or loneliness they escape from with games, scrolling, or other distractions instead of facing. Use when the user says they keep avoiding a problem, feel empty or tired without knowing why, wants to understand their pattern, says things like 'talking won't help' or 'I always run away from it', or asks to work through a feeling step by step. Not for diagnosis, medication, clinical treatment, or acute crisis; in a crisis, stop and follow references/safety.md.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": []
+  },
+  {
     "name": "blender-editable-3d",
     "category": "Content & Research",
     "format": "directory",

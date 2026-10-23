@@ -322,6 +322,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 |------|------|
 | [`xiaohongshu`](./skills/xiaohongshu/) | 小红书内容创作与发布 |
 | [`trip-planner`](./skills/trip-planner/) | 旅行行程规划 |
+| [`avoidance-coach`](./skills/avoidance-coach/) | 打破回避循环的自助练习教练（CBT/DBT/ACT，不替代心理治疗） |
 | [`weekly`](./skills/weekly/) | 整合 Git、Claude Code、Codex session 生成周报 |
 | [`xiaohongshu-netfeel-guardian`](./skills/xiaohongshu-netfeel-guardian/) | 去除 Claude 中文内容的翻译腔，恢复母语网感 |
 

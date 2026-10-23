@@ -325,6 +325,7 @@ Deploy models and diagnose local and remote environments.
 |-------|-------------|
 | [`xiaohongshu`](./skills/xiaohongshu/) | Xiaohongshu content creation & publishing |
 | [`trip-planner`](./skills/trip-planner/) | Travel itinerary planning |
+| [`avoidance-coach`](./skills/avoidance-coach/) | Self-help coach for breaking avoidance loops (CBT/DBT/ACT, not therapy) |
 | [`weekly`](./skills/weekly/) | Weekly report from Git, Claude Code, and Codex sessions |
 | [`xiaohongshu-netfeel-guardian`](./skills/xiaohongshu-netfeel-guardian/) | Remove translation-tone from Claude's Chinese content for native readability |
 
