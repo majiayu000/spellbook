@@ -1,5 +1,22 @@
 [
   {
+    "name": "agent-qa-testing",
+    "category": "Delivery Workflow",
+    "format": "directory",
+    "path": "skills/agent-qa-testing/SKILL.md",
+    "description": "Use when a project uses agent-qa and the user asks to validate its YAML, run a selected regression test, or triage a failed/healed run with memidex evidence. For a general app feature inventory, use app-user-story-qa.",
+    "language": "en",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "agent",
+      "testing"
+    ]
+  },
+  {
     "name": "agentsmd-optimize",
     "category": "AI & Agent Workflow",
     "format": "directory",
