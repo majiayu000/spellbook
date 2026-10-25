@@ -73,6 +73,7 @@ CATEGORY_BY_NAME = {
     "data-contract-migrations": "API & Backend",
     "structured-logging-lite": "API & Backend",
     # Delivery workflow
+    "agent-qa-testing": "Delivery Workflow",
     "app-user-story-qa": "Delivery Workflow",
     "codebase-audit": "Delivery Workflow",
     "contribution-architect": "Delivery Workflow",
