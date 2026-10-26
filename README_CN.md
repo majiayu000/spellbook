@@ -277,7 +277,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`product-ux-expert`](./skills/product-ux-expert/) | UX 评估、启发式、可访问性 |
 | [`frontend-design`](./skills/frontend-design/) | Web 前端设计模式 |
 | [`illustrated-gallery`](./skills/illustrated-gallery/) | 插画网站设计模板与整屏 ASCII 字符转场 |
-| [`ascii-backdrop`](./skills/ascii-backdrop/) | 把任意主体做成会动的 ASCII 背景：字符或彩色方块两种印法，可选鼠标互动 |
+| [`ascii-backdrop`](./skills/ascii-backdrop/) | 把任意主体做成会动的 ASCII 背景：字符、方向字符、形状匹配、Braille、抖动、彩色方块六种印法，光标光晕、CRT 叠层、文字解码与图片溶解 |
 | [`ui-designer`](./skills/ui-designer/) | 从 UI 截图和参考图提取设计系统 |
 | [`ui-design-system`](./skills/ui-design-system/) | 设计系统工具包与设计交付支持 |
 | [`web-artifacts-builder`](./skills/web-artifacts-builder/) | Claude.ai HTML 组件 |

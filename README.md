@@ -280,7 +280,7 @@ Skills for using multiple coding agents and CLI tools together.
 | [`product-ux-expert`](./skills/product-ux-expert/) | UX evaluation, heuristics, accessibility |
 | [`frontend-design`](./skills/frontend-design/) | Web frontend design patterns |
 | [`illustrated-gallery`](./skills/illustrated-gallery/) | Illustrated website template with full-frame ASCII transitions |
-| [`ascii-backdrop`](./skills/ascii-backdrop/) | Animated ASCII backdrop from any subject, as glyphs or colour tiles, with optional cursor interaction |
+| [`ascii-backdrop`](./skills/ascii-backdrop/) | Animated ASCII backdrop from any subject: glyph, edge, shape-matched, braille, dither or tile modes, cursor glow, CRT finish, text decode and image dissolve |
 | [`ui-designer`](./skills/ui-designer/) | Extract design systems from UI screenshots and references |
 | [`ui-design-system`](./skills/ui-design-system/) | Design system toolkit and design-dev handoff support |
 | [`web-artifacts-builder`](./skills/web-artifacts-builder/) | Claude.ai HTML artifacts |

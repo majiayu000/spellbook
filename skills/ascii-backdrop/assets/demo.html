@@ -38,6 +38,13 @@
   .ctl button[aria-pressed="true"] { color: var(--bg); background: var(--accent); border-color: var(--accent); }
   .ctl input { display: none; }
   .ctl .sep { width: 1px; background: var(--line); margin: 0 4px; }
+  .ctl .group { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+  .ctl { flex-direction: column; align-items: center; }
+  .card { position: absolute; right: 20px; bottom: calc(110px + env(safe-area-inset-bottom, 0px)); width: 240px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel); backdrop-filter: blur(8px); }
+  .card .frame { position: relative; aspect-ratio: 16 / 10; max-width: 100%; }
+  .card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .card p { margin: 0; padding: 8px 10px; font: 400 11px var(--mono); color: var(--dim); }
+  @media (max-width: 900px) { .card { display: none; } }
   @media (max-width: 640px) { .app { grid-template-columns: 1fr; } .rail { display: none; } .hist { display: none; } }
 </style>
 
@@ -47,26 +54,45 @@
   <main>
     <div class="hist">ascii-backdrop<kbd>demo</kbd></div>
     <div class="hello">Backdrop demo</div>
-    <h1>any subject, <span>in characters</span></h1>
+    <h1 id="title">any subject, in characters</h1>
     <div class="box">
       <textarea placeholder="Type here. The backdrop fades behind this box so text stays readable." aria-label="Sample input"></textarea>
-      <div class="row"><span class="pill">＋</span><span class="pill">glyph · tile</span><span class="grow"></span><span>move or click to interact</span><span class="send">↗</span></div>
+      <div class="row"><span class="pill">＋</span><span class="pill" id="modeLabel">glyph</span><span class="grow"></span><span>move or click to interact</span><span class="send">↗</span></div>
     </div>
     <div class="chips"><span>presets</span><span>text</span><span>image or video</span><span>custom draw()</span></div>
+    <figure class="card" aria-label="Image reveal example">
+      <div class="frame"><img id="revealImg" alt="Generated landscape used for the reveal example"></div>
+      <p>hover: characters dissolve into the image</p>
+    </figure>
     <div class="ctl" role="toolbar" aria-label="Backdrop">
-      <button data-s="tiles">tiles</button>
-      <button data-s="jellyfish">jellyfish</button>
-      <button data-s="school">school</button>
-      <button data-s="cloud">cloud</button>
-      <button data-s="strands">kelp</button>
-      <button data-s="fire">fire</button>
-      <button data-s="solid">solid</button>
-      <button data-s="text">text</button>
-      <label>image…<input type="file" accept="image/*,video/*" id="file"></label>
-      <span class="sep"></span>
-      <button data-p="abyss">abyss</button>
-      <button data-p="ember">ember</button>
-      <button data-p="mono">mono</button>
+      <div class="group">
+        <button data-s="tiles">tiles</button>
+        <button data-s="jellyfish">jellyfish</button>
+        <button data-s="school">school</button>
+        <button data-s="cloud">cloud</button>
+        <button data-s="strands">kelp</button>
+        <button data-s="fire">fire</button>
+        <button data-s="solid">wireframe</button>
+        <button data-s="sdf">3D solid</button>
+        <button data-s="field">field</button>
+        <button data-s="text">text</button>
+        <label>image…<input type="file" accept="image/*,video/*" id="file"></label>
+      </div>
+      <div class="group">
+        <button data-r="ramp">ramp</button>
+        <button data-r="edges">edges</button>
+        <button data-r="shape">shape match</button>
+        <button data-r="braille">braille</button>
+        <button data-r="dither">dither</button>
+        <button data-k="kana" aria-pressed="false">kana</button>
+        <button data-c="crt" aria-pressed="false">crt</button>
+        <span class="sep"></span>
+        <button data-p="abyss">abyss</button>
+        <button data-p="ember">ember</button>
+        <button data-p="mono">mono</button>
+        <button data-p="phosphor">phosphor</button>
+        <button data-p="amber">amber</button>
+      </div>
     </div>
   </main>
 </div>
@@ -74,11 +100,7 @@
 <script src="ascii-backdrop.js"></script>
 <script>
   const S = AsciiBackdrop.subjects;
-  const PALETTES = {
-    abyss: ['#2b2552', '#4a5fbf', '#58c9c2', '#d8fff6'],
-    ember: ['#3a1410', '#a3341c', '#f08a2c', '#fff1c8'],
-    mono: ['#1b1f26', '#4b5563', '#9ca3af', '#f3f4f6'],
-  };
+  const PALETTES = AsciiBackdrop.PALETTES;
   // One composition for every subject: a hero below the prompt, one above, two faded at the sides.
   function scene(make) {
     return [
@@ -88,6 +110,7 @@
       { subject: make(4), x: 0.87, y: 0.45, scale: 0.42, depth: 0.55, timeOffset: 6, drift: { x: 0.015, y: 0.025, phase: 1 } },
     ];
   }
+  const plasma = (u, v, t) => 0.5 + 0.5 * Math.sin(10 * u + t) * Math.cos(8 * v - t * 0.7) * Math.sin(6 * Math.hypot(u, v) - t * 1.3);
   const SCENES = {
     jellyfish: () => scene((seed) => S.jellyfish({ seed, tentacles: 6 + seed })),
     school: () => scene((seed) => S.school({ seed })),
@@ -95,6 +118,8 @@
     strands: () => [{ subject: S.strands({ count: 14, seed: 1 }), x: 0.3, y: 0.8, scale: 0.9, depth: 0.9 }, { subject: S.strands({ count: 10, seed: 2 }), x: 0.78, y: 0.82, scale: 0.8, depth: 0.6 }],
     fire: () => [{ subject: S.rising({ seed: 5 }), x: 0.5, y: 0.66, scale: 1.0, depth: 1, speed: 1.6 }, { subject: S.rising({ seed: 8, count: 40 }), x: 0.15, y: 0.5, scale: 0.6, depth: 0.45 }, { subject: S.rising({ seed: 9, count: 40 }), x: 0.86, y: 0.5, scale: 0.6, depth: 0.5 }],
     solid: () => scene((seed) => S.solid({ seed, shape: seed % 2 ? 'icosa' : 'cube' })),
+    sdf: () => [{ subject: S.sdf({ shape: 'torus' }), x: 0.53, y: 0.8, scale: 0.7, depth: 1 }, { subject: S.sdf({ shape: 'sphere', spin: 0.3 }), x: 0.14, y: 0.3, scale: 0.45, depth: 0.6 }, { subject: S.sdf({ shape: 'box', spin: 0.45 }), x: 0.86, y: 0.32, scale: 0.45, depth: 0.7 }],
+    field: () => [{ subject: S.field(plasma, { resolution: 0.6 }), x: 0.5, y: 0.5, scale: 2.2, depth: 0.85 }],
     // Tile mode: coloured bodies over glyph ripples; move the cursor near one or click anywhere.
     tiles: () => ({
       options: { background: '#1b1a18', grid: 'dots', palette: ['#34322f', '#5f5c56', '#9a968e', '#e6e2da'], clear: { x: 0.5, y: 0.46, rx: 0.3, ry: 0.2, strength: 0.6 } },
@@ -107,27 +132,39 @@
   };
 
   const BASE = { background: '#05070b', grid: 'lines', clear: { x: 0.5, y: 0.46, rx: 0.3, ry: 0.2, strength: 0.85 } };
-  let palName = 'abyss';
+  const state = { scene: 'tiles', render: 'ramp', pal: 'abyss', kana: false, crt: false, image: null };
   const bd = AsciiBackdrop.create(document.getElementById('bd'), {
     interactive: true,
+    pointerGlow: { radius: 110, strength: 0.35 },
     clear: BASE.clear,
-    layers: SCENES.jellyfish(),
   });
   bd.start();
   window.BD = bd;
 
-  const press = (attr, val) => document.querySelectorAll(`[data-${attr}]`).forEach((b) => b.setAttribute('aria-pressed', b.dataset[attr] === val));
-  function pick(name) {
-    const sc = SCENES[name]();
+  const press = (attr, val) => document.querySelectorAll(`[data-${attr}]`).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset[attr] === val)));
+  // Re-apply everything from state: scene layers, then the render mode on every non-tile layer.
+  function apply() {
+    const sc = state.image ? [{ subject: S.image(state.image, { motion: 'float' }), x: 0.5, y: 0.62, scale: 1.15, depth: 1 }] : SCENES[state.scene]();
     const layers = Array.isArray(sc) ? sc : sc.layers;
-    bd.set(Object.assign({}, BASE, { palette: PALETTES[palName] }, sc.options || {}));
+    const mode = state.render === 'braille' || state.render === 'dither' ? state.render : 'glyph';
+    for (const L of layers) if ((L.mode || 'glyph') !== 'tile') L.mode = mode;
+    bd.set(Object.assign({}, BASE, { palette: PALETTES[state.pal] }, (!Array.isArray(sc) && sc.options) || {}, {
+      ramp: state.kana ? AsciiBackdrop.RAMPS.katakana : AsciiBackdrop.RAMPS.dense,
+      glyph: { edges: state.render === 'edges', match: state.render === 'shape' ? 'shape' : 'ramp' },
+      crt: state.crt ? { scanlines: 0.16, glow: 0.35, vignette: 0.35, flicker: 0.03 } : null,
+    }));
     bd.setLayers(layers);
-    press('s', name);
-    try { localStorage.setItem('bd-s', name); } catch (e) {}
+    press('s', state.image ? '' : state.scene); press('r', state.render); press('p', state.pal);
+    document.querySelector('[data-k]').setAttribute('aria-pressed', String(state.kana));
+    document.querySelector('[data-c]').setAttribute('aria-pressed', String(state.crt));
+    document.getElementById('modeLabel').textContent = state.render;
+    try { localStorage.setItem('bd-state', JSON.stringify(Object.assign({}, state, { image: null }))); } catch (e) {}
   }
-  function pal(name) { palName = name; bd.set({ palette: PALETTES[name] }); press('p', name); }
-  document.querySelectorAll('[data-s]').forEach((b) => b.addEventListener('click', () => pick(b.dataset.s)));
-  document.querySelectorAll('[data-p]').forEach((b) => b.addEventListener('click', () => pal(b.dataset.p)));
+  document.querySelectorAll('[data-s]').forEach((b) => b.addEventListener('click', () => { state.scene = b.dataset.s; state.image = null; apply(); }));
+  document.querySelectorAll('[data-r]').forEach((b) => b.addEventListener('click', () => { state.render = b.dataset.r; apply(); }));
+  document.querySelectorAll('[data-p]').forEach((b) => b.addEventListener('click', () => { state.pal = b.dataset.p; apply(); }));
+  document.querySelector('[data-k]').addEventListener('click', () => { state.kana = !state.kana; apply(); });
+  document.querySelector('[data-c]').addEventListener('click', () => { state.crt = !state.crt; apply(); });
   document.getElementById('file').addEventListener('change', (e) => {
     const f = e.target.files[0];
     if (!f) return;
@@ -135,12 +172,28 @@
     let el;
     if (f.type.startsWith('video/')) { el = document.createElement('video'); el.src = url; el.muted = true; el.loop = true; el.playsInline = true; el.play(); }
     else { el = new Image(); el.src = url; }
-    bd.set(Object.assign({}, BASE, { palette: PALETTES[palName] }));
-    bd.setLayers([{ subject: S.image(el, { motion: 'float' }), x: 0.5, y: 0.62, scale: 1.15, depth: 1 }]);
-    press('s', '');
+    state.image = el;
+    apply();
   });
-  let saved = 'jellyfish';
-  try { saved = localStorage.getItem('bd-s') || saved; } catch (e) {}
-  pal('abyss');
-  pick(SCENES[saved] ? saved : 'tiles');
+  try { Object.assign(state, JSON.parse(localStorage.getItem('bd-state') || '{}'), { image: null }); } catch (e) {}
+  if (!SCENES[state.scene]) state.scene = 'tiles';
+  apply();
+
+  // Title decodes on load and again on hover.
+  AsciiBackdrop.scramble(document.getElementById('title'), { trigger: 'load' });
+  AsciiBackdrop.scramble(document.getElementById('title'), { trigger: 'hover' });
+
+  // Reveal example: paint a small landscape in a canvas, use it as a same-origin image, dissolve on hover.
+  (function () {
+    const c = document.createElement('canvas'); c.width = 480; c.height = 300;
+    const x = c.getContext('2d');
+    const sky = x.createLinearGradient(0, 0, 0, 300); sky.addColorStop(0, '#1d2b4f'); sky.addColorStop(0.6, '#c9707a'); sky.addColorStop(1, '#f2c98a');
+    x.fillStyle = sky; x.fillRect(0, 0, 480, 300);
+    x.fillStyle = '#ffe9b8'; x.beginPath(); x.arc(330, 170, 46, 0, Math.PI * 2); x.fill();
+    const hill = (col, base, amp, f) => { x.fillStyle = col; x.beginPath(); x.moveTo(0, 300); for (let i = 0; i <= 480; i += 8) x.lineTo(i, base - amp * Math.sin(i / f) - amp * 0.5 * Math.sin(i / (f * 0.37))); x.lineTo(480, 300); x.fill(); };
+    hill('#5b4a6e', 210, 26, 60); hill('#33304a', 240, 20, 45); hill('#1a1a26', 270, 12, 30);
+    const img = document.getElementById('revealImg');
+    img.src = c.toDataURL();
+    AsciiBackdrop.reveal(img, { trigger: 'hover', pattern: 'center' });
+  })();
 </script>
