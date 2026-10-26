@@ -1,6 +1,6 @@
 ---
 name: ascii-backdrop
-description: "Turn any subject into an animated ASCII-character backdrop behind a UI, like a dark AI prompt page with jellyfish drawn in drifting characters, or a pond of pixel-tile koi that swim away from the cursor. The subject is open-ended: creatures, objects, particles, smoke, a word or logo, an image or video, or your own canvas draw function. Two print modes can be mixed: glyphs (brightness sets density) and tiles (coloured squares in the subject's own colours), with optional pointer and click interaction. Ships a dependency-free JS engine plus HTML and React wiring, with tunable glyph ramp, palette, density, depth layers and a clear zone that keeps text readable. Use when the user asks for an ASCII background, ASCII art animation, character-rain or glyph backdrop, or says 'make X into an animated ASCII background' / 'ASCII 背景' / '字符画动效'."
+description: "Turn any subject into an animated ASCII-character backdrop behind a UI, like a dark AI prompt page with jellyfish drawn in drifting characters, or a swarm of colour-tile bodies that veer away from the cursor. The subject is open-ended: creatures, objects, particles, smoke, a word or logo, an image or video, or your own canvas draw function. Two print modes can be mixed: glyphs (brightness sets density) and tiles (coloured squares in the subject's own colours), with optional pointer and click interaction. Ships a dependency-free JS engine plus HTML and React wiring, with tunable glyph ramp, palette, density, depth layers and a clear zone that keeps text readable. Use when the user asks for an ASCII background, ASCII art animation, character-rain or glyph backdrop, or says 'make X into an animated ASCII background' / 'ASCII 背景' / '字符画动效'."
 ---
 
 # ASCII Backdrop
@@ -11,7 +11,7 @@ A subject paints brightness; the engine prints that brightness as characters. An
 
 Every frame, each layer's subject draws itself in white on a tiny offscreen canvas where one pixel is one character cell on screen. The engine reads each pixel's brightness, picks a glyph from a density ramp (default ` .':-=+ot%SX8@`), and colours it from a palette. Cells above `highlight` print as filled boxes, and a layer's `depth` dims it, which gives depth for free. A `clear` zone fades glyphs around the UI so headings and inputs stay readable.
 
-Each layer also picks a print mode. The default `mode: 'glyph'` prints characters; `mode: 'tile'` prints rounded squares in the colours the subject actually paints (that is how koi keep their orange, white and black patterns). Both can share a scene, for example glyph ripples under tile koi.
+Each layer also picks a print mode. The default `mode: 'glyph'` prints characters; `mode: 'tile'` prints rounded squares in the colours the subject actually paints (paint three colours and the tiles show three colours). Both can share a scene, for example glyph ripples under colour-tile bodies.
 
 With `interactive: true`, a subject's `draw(ctx, t, s, env)` also receives `env.pointer` (the cursor in that layer's local units) and `env.clicks` (recent clicks with their age), enough for fleeing, following or click ripples.
 
@@ -28,7 +28,7 @@ Changing the subject means changing one draw function. The engine does not chang
 1. **Choose the subject.** Ask what it should say (a brand mascot, a product, a mood) instead of assuming a creature. Pick the source in this order:
    - Existing image, SVG, video or logo: `subjects.image(src, { invert, motion })`. Use `invert: true` for dark art on a light background.
    - A word, name or emoji: `subjects.text('…')`.
-   - A preset fits: `jellyfish`, `school` (many small bodies), `cloud` (smoke, nebula), `strands` (kelp, hair; `flip: true` for flames), `rising` (fire, bubbles, sparks; `fall: true` for snow or rain), `solid` (spinning wireframe); for tile layers `koi` (fish that dart away from the cursor), and for glyph layers `ripples` (ambient rings plus a ring per click).
+   - A preset fits: `jellyfish`, `school` (many small bodies), `cloud` (smoke, nebula), `strands` (kelp, hair; `flip: true` for flames), `rising` (fire, bubbles, sparks; `fall: true` for snow or rain), `solid` (spinning wireframe); for tile layers `wanderers` (tapered segmented bodies that wander and veer away from the cursor; colours are configurable), and for glyph layers `ripples` (ambient rings plus a ring per click).
    - Nothing fits: write `subjects.custom((ctx, t, s) => { … })` (see "Write a subject"). Presets are starting points, not the menu.
 2. **Compose the layers.** `layers` is an array of `{ subject, x, y, scale, depth, drift, speed, timeOffset, rotate }`; `x` and `y` are 0–1 of the screen. A layout that works: one hero below the input, one above it, two faint ones at the sides (`depth` 0.4–0.6). Give repeats different `seed` or `timeOffset` values so they do not move in sync.
 3. **Palette and clear zone.** `palette` lists 3–5 colours from dark to bright; `background` matches the page. Aim `clear: { x, y, rx, ry, strength }` at the heading and input.
@@ -66,12 +66,12 @@ const bd = AsciiBackdrop.create(canvas, {
   tile: { size: 12, gap: 2, radius: 2 },            // square size, gap, corner radius
   layers: [
     { subject: S.ripples(), x: 0.5, y: 0.5, scale: 1.9, depth: 0.7 },             // glyph ripples
-    { subject: S.koi({ count: 7 }), mode: 'tile', x: 0.5, y: 0.5, scale: 1.7 },  // tile koi
+    { subject: S.wanderers({ count: 7 }), mode: 'tile', x: 0.5, y: 0.5, scale: 1.7 },  // tile bodies
   ],
 });
 ```
 
-- Tile layers paint real colours, not white. Use dark grey instead of pure black for dark markings; pure black reads as empty.
+- Tile layers paint real colours, not white. Use dark grey instead of pure black for dark markings; pure black reads as empty. Pass your own colours with `wanderers({ colors: [{ base, mark, accent }] })`.
 - `tile.color: 'palette'` maps tiles to the palette by brightness instead; `tile.glyphs` sets how often a small glyph (`·o•`) appears inside a tile.
 - Read interaction from `env` instead of storing state in the subject. Write fleeing as "the closer the cursor, the further the push" so any moment can still be sampled directly.
 

@@ -462,15 +462,15 @@
       };
     },
 
-    // Koi for tile layers ({ mode: 'tile' }): wandering fish in their own colours that dart away from the cursor.
-    koi({ count = 6, seed = 7, patterns } = {}) {
-      const P = patterns || [
-        { base: '#ece8e1', spot: '#e8742a', ink: null },      // white with orange
-        { base: '#e8742a', spot: '#ece8e1', ink: '#2e2c2a' }, // orange, white and black
-        { base: '#ece8e1', spot: '#d9552b', ink: '#2e2c2a' },
-        { base: '#f0b24a', spot: '#f6e7c8', ink: null },      // gold
+    // For tile layers ({ mode: 'tile' }): tapered, segmented bodies that wander on smooth paths in their own
+    // colours and veer away from the cursor. Pass your own colour sets; each is { base, mark, accent }.
+    wanderers({ count = 6, seed = 7, colors } = {}) {
+      const P = colors || [
+        { base: '#e6e2da', mark: '#9aa7b8', accent: null },
+        { base: '#c9d3cf', mark: '#6f8f8a', accent: '#3a3f44' },
+        { base: '#d9c7a7', mark: '#efe6d6', accent: null },
+        { base: '#b9b3c9', mark: '#e6e2da', accent: '#45414f' },
       ];
-      const rgb = (h, a) => { const [r, g, b] = hexRgb(h); return `rgba(${r},${g},${b},${a})`; };
       return {
         draw(ctx, t, s, env) {
           for (let i = 0; i < count; i++) {
@@ -484,7 +484,7 @@
             const [x2, y2] = path(t + 0.2);
             let dir = Math.atan2(y2 - y, x2 - x);
             const len = s * (0.1 + 0.04 * h(3));
-            if (env && env.pointer) { // flee: push away and turn away, strongest when the cursor is close
+            if (env && env.pointer) { // veer away: push and turn, strongest when the cursor is close
               const dx = x - env.pointer.x, dy = y - env.pointer.y, d = Math.hypot(dx, dy) || 1;
               const k = Math.exp(-((d / (len * 1.6)) ** 2));
               x += (dx / d) * len * 0.9 * k;
@@ -502,29 +502,13 @@
             }
             ctx.save();
             ctx.globalAlpha *= deep;
-            // tail fan and pectoral fins first, body over them
-            const tl = spine[N], tdir = Math.atan2(spine[N - 1][1] - tl[1], spine[N - 1][0] - tl[0]) + Math.PI;
-            const fan = Math.sin(beat - 4) * 0.5;
-            ctx.fillStyle = rgb(pat.spot, 0.95);
-            ctx.beginPath();
-            ctx.moveTo(tl[0], tl[1]);
-            ctx.lineTo(tl[0] + Math.cos(tdir + 0.55 + fan) * len * 0.42, tl[1] + Math.sin(tdir + 0.55 + fan) * len * 0.42);
-            ctx.lineTo(tl[0] + Math.cos(tdir - 0.55 + fan) * len * 0.42, tl[1] + Math.sin(tdir - 0.55 + fan) * len * 0.42);
-            ctx.fill();
-            ctx.fillStyle = rgb('#d8d4cc', 0.45);
-            for (const side of [-1, 1]) {
-              const [fx, fy] = spine[4], a = dir + side * (1.9 + 0.3 * Math.sin(beat * 0.7));
-              ctx.beginPath();
-              ctx.ellipse(fx + Math.cos(a) * len * 0.12, fy + Math.sin(a) * len * 0.12, len * 0.12, len * 0.05, a, 0, TAU);
-              ctx.fill();
-            }
             for (let k = N; k >= 0; k--) {
               const u = k / N;
               const prof = u < 0.2 ? 0.7 + 1.5 * u : 1 - (u - 0.2) * 1.05;
               const r = len * 0.21 * Math.max(prof, 0.12);
-              const spot = hash(i * 7 + Math.floor(u * 5), seed, 9) < 0.5;
-              const ink = pat.ink && hash(i * 13 + k, seed, 10) < 0.18;
-              ctx.fillStyle = ink ? pat.ink : spot && u > 0.08 ? pat.spot : pat.base;
+              const mark = hash(i * 7 + Math.floor(u * 5), seed, 9) < 0.5;
+              const accent = pat.accent && hash(i * 13 + k, seed, 10) < 0.18;
+              ctx.fillStyle = accent ? pat.accent : mark && u > 0.08 ? pat.mark : pat.base;
               ctx.beginPath();
               ctx.arc(spine[k][0], spine[k][1], r, 0, TAU);
               ctx.fill();

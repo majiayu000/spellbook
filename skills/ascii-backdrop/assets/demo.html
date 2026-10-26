@@ -45,16 +45,16 @@
 <div class="app">
   <nav class="rail" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><span class="sp"></span><i></i><i></i></nav>
   <main>
-    <div class="hist">History<kbd>Ctrl K</kbd></div>
-    <div class="hello">Good evening</div>
-    <h1>plan tomorrow’s <span>priorities</span></h1>
+    <div class="hist">ascii-backdrop<kbd>demo</kbd></div>
+    <div class="hello">Backdrop demo</div>
+    <h1>any subject, <span>in characters</span></h1>
     <div class="box">
-      <textarea placeholder="Ask anything…" aria-label="Prompt"></textarea>
-      <div class="row"><span class="pill">＋</span><span class="pill">✦ Auto</span><span class="grow"></span><span>↵ send · ⇧↵ new line</span><span class="send">↗</span></div>
+      <textarea placeholder="Type here. The backdrop fades behind this box so text stays readable." aria-label="Sample input"></textarea>
+      <div class="row"><span class="pill">＋</span><span class="pill">glyph · tile</span><span class="grow"></span><span>move or click to interact</span><span class="send">↗</span></div>
     </div>
-    <div class="chips"><span>/explore ideas</span><span>/refine my writing</span><span>/plan a project</span><span>/research a topic</span></div>
+    <div class="chips"><span>presets</span><span>text</span><span>image or video</span><span>custom draw()</span></div>
     <div class="ctl" role="toolbar" aria-label="Backdrop">
-      <button data-s="pond">koi pond</button>
+      <button data-s="tiles">tiles</button>
       <button data-s="jellyfish">jellyfish</button>
       <button data-s="school">school</button>
       <button data-s="cloud">cloud</button>
@@ -95,12 +95,12 @@
     strands: () => [{ subject: S.strands({ count: 14, seed: 1 }), x: 0.3, y: 0.8, scale: 0.9, depth: 0.9 }, { subject: S.strands({ count: 10, seed: 2 }), x: 0.78, y: 0.82, scale: 0.8, depth: 0.6 }],
     fire: () => [{ subject: S.rising({ seed: 5 }), x: 0.5, y: 0.66, scale: 1.0, depth: 1, speed: 1.6 }, { subject: S.rising({ seed: 8, count: 40 }), x: 0.15, y: 0.5, scale: 0.6, depth: 0.45 }, { subject: S.rising({ seed: 9, count: 40 }), x: 0.86, y: 0.5, scale: 0.6, depth: 0.5 }],
     solid: () => scene((seed) => S.solid({ seed, shape: seed % 2 ? 'icosa' : 'cube' })),
-    // Tile mode: koi in their own colours over glyph ripples; move the cursor near a fish or click the water.
-    pond: () => ({
+    // Tile mode: coloured bodies over glyph ripples; move the cursor near one or click anywhere.
+    tiles: () => ({
       options: { background: '#1b1a18', grid: 'dots', palette: ['#34322f', '#5f5c56', '#9a968e', '#e6e2da'], clear: { x: 0.5, y: 0.46, rx: 0.3, ry: 0.2, strength: 0.6 } },
       layers: [
         { subject: S.ripples(), x: 0.5, y: 0.5, scale: 1.9, depth: 0.7 },
-        { subject: S.koi({ count: 7 }), mode: 'tile', x: 0.5, y: 0.5, scale: 1.7, depth: 1 },
+        { subject: S.wanderers({ count: 7 }), mode: 'tile', x: 0.5, y: 0.5, scale: 1.7, depth: 1 },
       ],
     }),
     text: () => [{ subject: S.text('hello'), x: 0.5, y: 0.82, scale: 1.1, depth: 1 }, { subject: S.text('✦'), x: 0.15, y: 0.3, scale: 0.6, depth: 0.5 }, { subject: S.text('∞'), x: 0.86, y: 0.35, scale: 0.6, depth: 0.5 }],
@@ -142,5 +142,5 @@
   let saved = 'jellyfish';
   try { saved = localStorage.getItem('bd-s') || saved; } catch (e) {}
   pal('abyss');
-  pick(SCENES[saved] ? saved : 'pond');
+  pick(SCENES[saved] ? saved : 'tiles');
 </script>
