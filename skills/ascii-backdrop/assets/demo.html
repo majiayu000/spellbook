@@ -1,0 +1,146 @@
+<title>ASCII Backdrop</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #05070b; --panel: rgba(14, 18, 26, 0.72); --line: rgba(160, 200, 255, 0.12);
+    --fg: #e6edf5; --dim: #8a96a8; --accent: #8fd9cf; --accent2: #b9a6ff;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace; --sans: Geist, system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); overflow: hidden; }
+  #bd { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .app { position: relative; z-index: 1; height: 100%; display: grid; grid-template-columns: 56px 1fr; }
+  .rail { border-right: 1px solid var(--line); background: rgba(5, 7, 11, 0.55); display: flex; flex-direction: column; align-items: center; gap: 18px; padding-block: 18px; }
+  .rail i { width: 18px; height: 18px; border: 1.4px solid var(--dim); border-radius: 5px; opacity: .7; }
+  .rail i:first-child { border-color: var(--fg); background: rgba(255,255,255,.06); }
+  .rail .sp { flex: 1; }
+  main { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .hist { position: absolute; top: 18px; right: 20px; font: 400 12px var(--sans); color: var(--dim); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; background: var(--panel); backdrop-filter: blur(8px); }
+  .hist kbd { font: 400 10px var(--mono); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; margin-left: 8px; }
+  .hello { font: 400 12px var(--mono); color: var(--dim); display: flex; align-items: center; gap: 8px; }
+  .hello::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  h1 { margin: 0; font-weight: 300; font-size: clamp(30px, 4.4vw, 52px); letter-spacing: -0.02em; text-wrap: balance; text-align: center; }
+  h1 span { background: linear-gradient(90deg, var(--accent2), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .box { width: min(560px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 16px 12px; backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+  .box textarea { width: 100%; resize: none; border: 0; outline: 0; background: none; color: var(--fg); font: 400 14px var(--sans); height: 44px; }
+  .box textarea::placeholder { color: var(--dim); }
+  .row { display: flex; align-items: center; gap: 10px; font: 400 11px var(--mono); color: var(--dim); }
+  .row .grow { flex: 1; }
+  .pill { border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; color: var(--fg); }
+  .send { width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--line); display: grid; place-items: center; color: var(--fg); }
+  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .chips span { font: 400 11px var(--mono); color: var(--dim); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; background: var(--panel); backdrop-filter: blur(6px); }
+  .ctl { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+  .ctl button, .ctl label { font: 400 11px var(--mono); color: var(--dim); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; backdrop-filter: blur(6px); }
+  .ctl button[aria-pressed="true"] { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+  .ctl input { display: none; }
+  .ctl .sep { width: 1px; background: var(--line); margin: 0 4px; }
+  @media (max-width: 640px) { .app { grid-template-columns: 1fr; } .rail { display: none; } .hist { display: none; } }
+</style>
+
+<canvas id="bd" aria-hidden="true"></canvas>
+<div class="app">
+  <nav class="rail" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><span class="sp"></span><i></i><i></i></nav>
+  <main>
+    <div class="hist">History<kbd>Ctrl K</kbd></div>
+    <div class="hello">Good evening</div>
+    <h1>plan tomorrow’s <span>priorities</span></h1>
+    <div class="box">
+      <textarea placeholder="Ask anything…" aria-label="Prompt"></textarea>
+      <div class="row"><span class="pill">＋</span><span class="pill">✦ Auto</span><span class="grow"></span><span>↵ send · ⇧↵ new line</span><span class="send">↗</span></div>
+    </div>
+    <div class="chips"><span>/explore ideas</span><span>/refine my writing</span><span>/plan a project</span><span>/research a topic</span></div>
+    <div class="ctl" role="toolbar" aria-label="Backdrop">
+      <button data-s="pond">koi pond</button>
+      <button data-s="jellyfish">jellyfish</button>
+      <button data-s="school">school</button>
+      <button data-s="cloud">cloud</button>
+      <button data-s="strands">kelp</button>
+      <button data-s="fire">fire</button>
+      <button data-s="solid">solid</button>
+      <button data-s="text">text</button>
+      <label>image…<input type="file" accept="image/*,video/*" id="file"></label>
+      <span class="sep"></span>
+      <button data-p="abyss">abyss</button>
+      <button data-p="ember">ember</button>
+      <button data-p="mono">mono</button>
+    </div>
+  </main>
+</div>
+
+<script src="ascii-backdrop.js"></script>
+<script>
+  const S = AsciiBackdrop.subjects;
+  const PALETTES = {
+    abyss: ['#2b2552', '#4a5fbf', '#58c9c2', '#d8fff6'],
+    ember: ['#3a1410', '#a3341c', '#f08a2c', '#fff1c8'],
+    mono: ['#1b1f26', '#4b5563', '#9ca3af', '#f3f4f6'],
+  };
+  // One composition for every subject: a hero below the prompt, one above, two faded at the sides.
+  function scene(make) {
+    return [
+      { subject: make(1), x: 0.56, y: 0.76, scale: 0.72, depth: 1, drift: { x: 0.01, y: 0.012, phase: 0 } },
+      { subject: make(2), x: 0.5, y: 0.17, scale: 0.5, depth: 0.8, drift: { x: 0.015, y: 0.015, phase: 2 } },
+      { subject: make(3), x: 0.15, y: 0.3, scale: 0.42, depth: 0.45, timeOffset: 3, drift: { x: 0.02, y: 0.02, phase: 4 } },
+      { subject: make(4), x: 0.87, y: 0.45, scale: 0.42, depth: 0.55, timeOffset: 6, drift: { x: 0.015, y: 0.025, phase: 1 } },
+    ];
+  }
+  const SCENES = {
+    jellyfish: () => scene((seed) => S.jellyfish({ seed, tentacles: 6 + seed })),
+    school: () => scene((seed) => S.school({ seed })),
+    cloud: () => scene((seed) => S.cloud({ seed })),
+    strands: () => [{ subject: S.strands({ count: 14, seed: 1 }), x: 0.3, y: 0.8, scale: 0.9, depth: 0.9 }, { subject: S.strands({ count: 10, seed: 2 }), x: 0.78, y: 0.82, scale: 0.8, depth: 0.6 }],
+    fire: () => [{ subject: S.rising({ seed: 5 }), x: 0.5, y: 0.66, scale: 1.0, depth: 1, speed: 1.6 }, { subject: S.rising({ seed: 8, count: 40 }), x: 0.15, y: 0.5, scale: 0.6, depth: 0.45 }, { subject: S.rising({ seed: 9, count: 40 }), x: 0.86, y: 0.5, scale: 0.6, depth: 0.5 }],
+    solid: () => scene((seed) => S.solid({ seed, shape: seed % 2 ? 'icosa' : 'cube' })),
+    // Tile mode: koi in their own colours over glyph ripples; move the cursor near a fish or click the water.
+    pond: () => ({
+      options: { background: '#1b1a18', grid: 'dots', palette: ['#34322f', '#5f5c56', '#9a968e', '#e6e2da'], clear: { x: 0.5, y: 0.46, rx: 0.3, ry: 0.2, strength: 0.6 } },
+      layers: [
+        { subject: S.ripples(), x: 0.5, y: 0.5, scale: 1.9, depth: 0.7 },
+        { subject: S.koi({ count: 7 }), mode: 'tile', x: 0.5, y: 0.5, scale: 1.7, depth: 1 },
+      ],
+    }),
+    text: () => [{ subject: S.text('hello'), x: 0.5, y: 0.82, scale: 1.1, depth: 1 }, { subject: S.text('✦'), x: 0.15, y: 0.3, scale: 0.6, depth: 0.5 }, { subject: S.text('∞'), x: 0.86, y: 0.35, scale: 0.6, depth: 0.5 }],
+  };
+
+  const BASE = { background: '#05070b', grid: 'lines', clear: { x: 0.5, y: 0.46, rx: 0.3, ry: 0.2, strength: 0.85 } };
+  let palName = 'abyss';
+  const bd = AsciiBackdrop.create(document.getElementById('bd'), {
+    interactive: true,
+    clear: BASE.clear,
+    layers: SCENES.jellyfish(),
+  });
+  bd.start();
+  window.BD = bd;
+
+  const press = (attr, val) => document.querySelectorAll(`[data-${attr}]`).forEach((b) => b.setAttribute('aria-pressed', b.dataset[attr] === val));
+  function pick(name) {
+    const sc = SCENES[name]();
+    const layers = Array.isArray(sc) ? sc : sc.layers;
+    bd.set(Object.assign({}, BASE, { palette: PALETTES[palName] }, sc.options || {}));
+    bd.setLayers(layers);
+    press('s', name);
+    try { localStorage.setItem('bd-s', name); } catch (e) {}
+  }
+  function pal(name) { palName = name; bd.set({ palette: PALETTES[name] }); press('p', name); }
+  document.querySelectorAll('[data-s]').forEach((b) => b.addEventListener('click', () => pick(b.dataset.s)));
+  document.querySelectorAll('[data-p]').forEach((b) => b.addEventListener('click', () => pal(b.dataset.p)));
+  document.getElementById('file').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    let el;
+    if (f.type.startsWith('video/')) { el = document.createElement('video'); el.src = url; el.muted = true; el.loop = true; el.playsInline = true; el.play(); }
+    else { el = new Image(); el.src = url; }
+    bd.set(Object.assign({}, BASE, { palette: PALETTES[palName] }));
+    bd.setLayers([{ subject: S.image(el, { motion: 'float' }), x: 0.5, y: 0.62, scale: 1.15, depth: 1 }]);
+    press('s', '');
+  });
+  let saved = 'jellyfish';
+  try { saved = localStorage.getItem('bd-s') || saved; } catch (e) {}
+  pal('abyss');
+  pick(SCENES[saved] ? saved : 'pond');
+</script>
