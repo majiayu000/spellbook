@@ -136,6 +136,8 @@
   }
 
   /* ---------- engine ---------- */
+  // Keep image readiness internal: reduced-motion instances redraw only when their sources load.
+  const imageSources = new WeakMap();
   function create(canvas, options) {
     options = options || {};
     const o = Object.assign({}, DEFAULTS, options);
@@ -145,8 +147,24 @@
     const glowCanvas = document.createElement('canvas');
     let pal = paletteFn(o.palette);
     let W = 0, H = 0, dpr = 1;
-    let raf = 0, running = false, last = 0, t0 = performance.now(), tFrozen = null;
+    let raf = 0, running = false, destroyed = false, last = 0, t0 = performance.now(), tFrozen = null;
     const reduced = reducedMotion();
+    const watchedSources = new Set();
+    function redrawSource() { if (wanted) frame(performance.now(), true); }
+    function watchSources() {
+      if (!reduced) return;
+      const sources = new Set(o.layers.map((L) => L && imageSources.get(L.subject)).filter(Boolean));
+      for (const source of watchedSources) if (!sources.has(source)) {
+        source.removeEventListener('load', redrawSource);
+        source.removeEventListener('loadeddata', redrawSource);
+        watchedSources.delete(source);
+      }
+      for (const source of sources) if (!watchedSources.has(source) && source.addEventListener) {
+        source.addEventListener('load', redrawSource);
+        source.addEventListener('loadeddata', redrawSource);
+        watchedSources.add(source);
+      }
+    }
     // One pass per print mode; each samples its own offscreen canvas with sx×sy samples per cell.
     function makePass(mode) {
       const c = document.createElement('canvas');
@@ -443,6 +461,7 @@
     }
 
     function frame(now, force) {
+      if (destroyed) return;
       if (!force && running) raf = requestAnimationFrame(frame);
       if (!force && now - last < 1000 / o.fps) return;
       last = now;
@@ -456,6 +475,8 @@
       if (paintSource(passes.dither, t, now)) drawDither(passes.dither);
       if (paintSource(passes.tile, t, now)) drawTiles(passes.tile, t);
       if (o.crt) drawCrt(t);
+      // Emitted only after a complete backdrop frame, for external performance measurement.
+      canvas.dispatchEvent(new Event('ascii-backdrop:frame', { bubbles: true }));
     }
 
     // The canvas sits behind the UI, so listen on the window.
@@ -483,6 +504,7 @@
 
     if (ro) ro.observe(canvas); else root.addEventListener('resize', resize);
     document.addEventListener('visibilitychange', onVis);
+    watchSources();
     resize();
 
     return {
@@ -494,13 +516,21 @@
           else o[k] = patch[k];
         }
         if (patch.palette) pal = paletteFn(o.palette);
+        if (patch.layers) watchSources();
         if (['palette', 'grid', 'background', 'cell', 'tile', 'dither', 'glyph'].some((k) => k in patch)) resize();
         if (!running) frame(performance.now(), true);
       },
-      setLayers(layers) { o.layers = layers; if (!running) frame(performance.now(), true); },
-      snapshot(t) { tFrozen = t; frame(performance.now(), true); tFrozen = null; },
+      setLayers(layers) { o.layers = layers; watchSources(); if (!running) frame(performance.now(), true); },
+      snapshot(t) { const previous = tFrozen; tFrozen = t; frame(performance.now(), true); tFrozen = previous; },
       destroy() {
+        destroyed = true;
         stop(); ro && ro.disconnect();
+        root.removeEventListener('resize', resize);
+        for (const source of watchedSources) {
+          source.removeEventListener('load', redrawSource);
+          source.removeEventListener('loadeddata', redrawSource);
+        }
+        watchedSources.clear();
         document.removeEventListener('visibilitychange', onVis);
         root.removeEventListener('pointermove', onMove);
         root.removeEventListener('pointerdown', onDown);
@@ -885,9 +915,11 @@
         const w = img.videoWidth || img.naturalWidth || img.width, h = img.videoHeight || img.naturalHeight || img.height;
         if (!w || !h) return null;
         if (!invert) return { el: img, w, h };
-        if (tintedFor !== img.src) {
-          tinted = document.createElement('canvas'); tinted.width = w; tinted.height = h;
+        if (!tinted || tintedFor !== img.src || !('naturalWidth' in img)) {
+          if (!tinted) tinted = document.createElement('canvas');
+          if (tinted.width !== w || tinted.height !== h) { tinted.width = w; tinted.height = h; }
           const c = tinted.getContext('2d');
+          c.globalCompositeOperation = 'source-over'; c.clearRect(0, 0, w, h);
           c.drawImage(img, 0, 0);
           c.globalCompositeOperation = 'difference'; c.fillStyle = '#fff'; c.fillRect(0, 0, w, h);
           c.globalCompositeOperation = 'destination-in'; c.drawImage(img, 0, 0); // keep transparent areas empty
@@ -895,7 +927,7 @@
         }
         return { el: tinted, w, h };
       }
-      return {
+      const subject = {
         draw(ctx, t, s) {
           const p = prepared();
           if (!p) return;
@@ -908,6 +940,8 @@
           ctx.restore();
         },
       };
+      imageSources.set(subject, img);
+      return subject;
     },
   };
 
@@ -966,7 +1000,9 @@
     const sample = document.createElement('canvas');
     const sx = sample.getContext('2d', { willReadFrequently: true });
     let lum = null, cols = 0, rows = 0, W = 0, H = 0, dpr = 1, p = 0, target = 0, raf = 0;
+    let destroyed = false, loadStarted = false;
     function prepare() {
+      if (destroyed) return;
       const r = img.getBoundingClientRect();
       if (!r.width || !(img.naturalWidth || img.videoWidth)) return;
       dpr = Math.min(root.devicePixelRatio || 1, 2);
@@ -979,6 +1015,7 @@
       lum = new Float32Array(cols * rows);
       for (let i = 0; i < cols * rows; i++) lum[i] = (0.2126 * d[i * 4] + 0.7152 * d[i * 4 + 1] + 0.0722 * d[i * 4 + 2]) / 255;
       draw();
+      if (o.trigger === 'load' && !loadStarted) { loadStarted = true; animateTo(1); }
     }
     function order(x, y) { // 0 = dissolves first, 1 = last
       const u = x / cols, v = y / rows, n = hash(x, y, 77) * 0.15;
@@ -1008,6 +1045,7 @@
       }
     }
     function animateTo(to) {
+      if (destroyed) return;
       target = to;
       cancelAnimationFrame(raf);
       if (reducedMotion()) { p = to; draw(); return; }
@@ -1031,13 +1069,15 @@
     if (o.trigger === 'scroll') root.addEventListener('scroll', onScroll, { passive: true });
     const ro = root.ResizeObserver ? new ResizeObserver(() => { prepare(); if (o.trigger === 'scroll') onScroll(); }) : null;
     if (img.complete === false && img.addEventListener) img.addEventListener('load', prepare, { once: true });
-    ro ? ro.observe(img) : prepare();
-    if (o.trigger === 'load') setTimeout(() => animateTo(1), 300);
+    if (ro) ro.observe(img);
+    prepare();
     return {
       progress(v) { cancelAnimationFrame(raf); p = target = clamp(v, 0, 1); draw(); },
       play: enter, rewind: leave,
       destroy() {
+        destroyed = true;
         cancelAnimationFrame(raf); ro && ro.disconnect(); cv.remove();
+        img.removeEventListener('load', prepare);
         host.removeEventListener('pointerenter', enter); host.removeEventListener('pointerleave', leave);
         root.removeEventListener('scroll', onScroll);
       },
