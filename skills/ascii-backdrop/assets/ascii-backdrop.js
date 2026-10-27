@@ -483,11 +483,17 @@
     function onMove(e) { const r = canvas.getBoundingClientRect(); pointer.x = e.clientX - r.left; pointer.y = e.clientY - r.top; pointer.active = true; }
     function onLeave() { pointer.active = false; }
     function onDown(e) { onMove(e); clicks.push({ x: pointer.x, y: pointer.y, at: performance.now() }); if (clicks.length > 8) clicks.shift(); }
-    if (o.interactive) {
-      root.addEventListener('pointermove', onMove, { passive: true });
-      root.addEventListener('pointerdown', onDown, { passive: true });
-      document.addEventListener('pointerleave', onLeave);
+    function syncInteraction() {
+      root.removeEventListener('pointermove', onMove);
+      root.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('pointerleave', onLeave);
+      if (o.interactive && !destroyed) {
+        root.addEventListener('pointermove', onMove, { passive: true });
+        root.addEventListener('pointerdown', onDown, { passive: true });
+        document.addEventListener('pointerleave', onLeave);
+      } else { pointer.active = false; clicks = []; }
     }
+    syncInteraction();
 
     const ro = root.ResizeObserver ? new ResizeObserver(resize) : null;
     function onVis() { if (document.hidden) pause(); else if (wanted) start(); }
@@ -517,6 +523,7 @@
         }
         if (patch.palette) pal = paletteFn(o.palette);
         if (patch.layers) watchSources();
+        if ('interactive' in patch) syncInteraction();
         if (['palette', 'grid', 'background', 'cell', 'tile', 'dither', 'glyph'].some((k) => k in patch)) resize();
         if (!running) frame(performance.now(), true);
       },
@@ -532,9 +539,7 @@
         }
         watchedSources.clear();
         document.removeEventListener('visibilitychange', onVis);
-        root.removeEventListener('pointermove', onMove);
-        root.removeEventListener('pointerdown', onDown);
-        document.removeEventListener('pointerleave', onLeave);
+        syncInteraction();
       },
     };
   }
@@ -1029,6 +1034,7 @@
       if (!lum) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
+      if (reducedMotion()) return;
       ctx.font = o.font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       const R = o.ramp.length - 1, [r, g, b] = hexRgb(o.color), tick = Math.floor(performance.now() / 60);
       const pp = p * (1 + o.band); // progress runs a band past 1 so the last cells clear fully

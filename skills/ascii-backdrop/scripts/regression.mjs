@@ -186,6 +186,79 @@ try {
     assert.deepEqual(evidence, { lateDraws: 0, lateRafs: 0, detached: true }); return evidence;
   });
 
+  for (const slow of [false, true]) await test(`reduced reveal stays visible through hover and scroll (${slow ? 'delayed' : 'cached'})`, async (page) => {
+    const evidence = await page.evaluate(async (slow) => {
+      const img = document.querySelector('#img'); img.src = '/image-' + (slow ? 'slow-reduced' : 'fast-reduced');
+      if (!slow) await img.decode();
+      const hover = AsciiBackdrop.reveal(img);
+      if (slow) await img.decode();
+      // Allow the actual image load and ResizeObserver callbacks to prepare both paths.
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const opaquePixels = () => {
+        const cv = img.nextElementSibling;
+        const data = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+        let n = 0; for (let i = 3; i < data.length; i += 4) if (data[i]) n++;
+        return n;
+      };
+      const initial = opaquePixels();
+      img.parentElement.dispatchEvent(new PointerEvent('pointerenter'));
+      const entered = opaquePixels();
+      img.parentElement.dispatchEvent(new PointerEvent('pointerleave'));
+      const left = opaquePixels();
+      hover.rewind(); hover.progress(0);
+      const manual = opaquePixels();
+      hover.destroy();
+      img.parentElement.style.marginTop = '2000px';
+      const scroll = AsciiBackdrop.reveal(img, { trigger: 'scroll' });
+      dispatchEvent(new Event('scroll'));
+      const belowViewport = opaquePixels();
+      img.parentElement.style.marginTop = '0px';
+      dispatchEvent(new Event('scroll'));
+      const inViewport = opaquePixels();
+      scroll.destroy();
+      return { initial, entered, left, manual, belowViewport, inViewport };
+    }, slow);
+    assert.ok(Object.values(evidence).every((count) => count === 0), JSON.stringify(evidence));
+    return evidence;
+  }, { reducedMotion: 'reduce' });
+
+  await test('interactive option reconciles pointer listeners across toggles and destroy', async (page) => {
+    await page.evaluate(() => {
+      window.ResizeObserver = undefined;
+      window.layoutReads = 0; window.lastEnv = null;
+      const canvas = document.querySelector('#bd');
+      const originalRect = canvas.getBoundingClientRect.bind(canvas);
+      canvas.getBoundingClientRect = () => { layoutReads++; return originalRect(); };
+      window.engine = AsciiBackdrop.create(canvas, {
+        layers: [{ subject: { draw(c, t, s, env) { lastEnv = { pointer: env.pointer, clicks: env.clicks.length }; } } }],
+      });
+    });
+    const evidence = [];
+    for (const [index, interactive] of [false, true, false, true].entries()) {
+      await page.evaluate((enabled) => {
+        engine.set({ interactive: enabled });
+        if (enabled) engine.set({ interactive: enabled }); // repeated set must not duplicate listeners
+        layoutReads = 0;
+      }, interactive);
+      await page.mouse.move(48 + index, 50);
+      await page.mouse.down(); await page.mouse.up();
+      evidence.push(await page.evaluate(() => {
+        engine.snapshot(0);
+        return { interactive: engine.options.interactive, reads: layoutReads, ...lastEnv };
+      }));
+    }
+    await page.evaluate(() => { engine.destroy(); layoutReads = 0; });
+    await page.mouse.move(70, 70); await page.mouse.down(); await page.mouse.up();
+    const afterDestroy = await page.evaluate(() => layoutReads);
+    const detail = JSON.stringify({ phases: evidence, afterDestroy });
+    for (const phase of evidence) {
+      if (phase.interactive) assert.ok(phase.reads === 2 && phase.pointer && phase.clicks === 1, detail);
+      else assert.ok(phase.reads === 0 && phase.pointer === null && phase.clicks === 0, detail);
+    }
+    assert.equal(afterDestroy, 0, detail);
+    return { phases: evidence, afterDestroy };
+  });
+
   await test('completed-frame signal tracks low fps and stop', async (page) => {
     const evidence = await page.evaluate(async () => {
       let draws = 0, signals = 0;
