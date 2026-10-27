@@ -4,21 +4,28 @@ Pick one tool per session based on what surfaced.
 
 | What surfaced | Tool |
 |---|---|
-| Automatic escape when upset (games, scrolling) | Pause-and-name |
+| Automatic, low-risk escape when upset (games, scrolling) | Pause-and-name |
 | A sticky belief ("talking won't help", "I'm not good enough") | Thought record |
 | A big tangled pile of worries | Sort and pick the smallest step |
 | Loneliness, feeling unseen, never sharing feelings | The "say it" experiment |
 
 ## Pause-and-Name
 
-Goal: put a short gap between the feeling and the escape. Do not ban the escape.
+Goal: put a short gap between the feeling and a low-risk escape.
+
+First check what the behavior is and its current safety and cost. This tool is
+only for low-risk coping. Do not endorse binge drinking, drug misuse, gambling,
+self-harm, or behavior causing serious financial, health, or relationship harm
+after a pause. Instead offer a safe regulation step, such as feet on the floor
+and naming the feeling, then help choose a safer next action or human support.
+Follow `safety.md` for current danger.
 
 1. When the urge to escape shows up, stop for about one minute.
 2. Ask: "What am I feeling right now?" Offer emotion words if needed: irritated,
    empty, anxious, lonely, tired, ashamed.
 3. Ask: "Where did it start?" "I don't know, just annoyed" is a valid answer.
-4. Then go ahead and escape if they still want to. The aim is choosing, not
-   abstaining.
+4. If it is low-risk and its cost is manageable, they can choose that break.
+   The aim is choosing, not abstaining.
 5. Once calm, come back and look at the problem for a few minutes.
 
 Repeated over days, this shows the user their triggers.
@@ -29,18 +36,24 @@ Based on Beck's cognitive therapy and Burns' cognitive distortions. One step per
 
 1. **Situation:** what happened, as a camera would record it. No interpretation.
 2. **Automatic thought:** the raw first thought.
-3. **Emotion:** name it and rate it 0-10.
+3. **Emotion:** name it and rate its intensity (0 = none, 10 = strongest
+   imaginable).
 4. **Evidence for:** take the thought seriously first.
 5. **Evidence against:** "Has this been true every time?" "What would you tell
    a friend who thought this?"
 6. **Balanced thought:** "It's true that ..., and it's also true that ..."
-7. **Re-rate:** the emotion, 0-10. Any change is fine, including none.
+7. **Re-rate:** the same emotion on the same intensity scale. Any change is
+   fine, including none.
 
 Classify the distortion silently (for example fortune telling or mind
 reading). Do not lecture about it.
 
-If the user has never tested the belief, skip to the "say it" experiment, since
-evidence against an untested prediction is thin by definition.
+For an untested prediction about talking or sharing feelings, offer the
+"say it" experiment if a safe person and channel are available. For other
+beliefs, continue the thought record or agree on a small, safe experiment that
+tests that specific prediction. For example, "I can't solve any of these
+problems" could be tested by trying one manageable practice problem, not by
+disclosing a feeling. Do not treat one result as a verdict on the user's worth.
 
 ## Sort And Pick The Smallest Step
 
