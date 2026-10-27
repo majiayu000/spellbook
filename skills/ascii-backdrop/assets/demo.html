@@ -161,7 +161,17 @@
     document.getElementById('modeLabel').textContent = state.render;
     try { localStorage.setItem('bd-state', JSON.stringify(Object.assign({}, state, { image: null }))); } catch (e) {}
   }
-  document.querySelectorAll('[data-s]').forEach((b) => b.addEventListener('click', () => { state.scene = b.dataset.s; state.image = null; apply(); }));
+  function releaseUpload() {
+    const el = state.image;
+    state.image = null;
+    if (!el) return;
+    const url = el.src, video = el.tagName === 'VIDEO';
+    if (video) el.pause();
+    el.removeAttribute('src');
+    if (video) el.load();
+    URL.revokeObjectURL(url);
+  }
+  document.querySelectorAll('[data-s]').forEach((b) => b.addEventListener('click', () => { releaseUpload(); state.scene = b.dataset.s; apply(); }));
   document.querySelectorAll('[data-r]').forEach((b) => b.addEventListener('click', () => { state.render = b.dataset.r; apply(); }));
   document.querySelectorAll('[data-p]').forEach((b) => b.addEventListener('click', () => { state.pal = b.dataset.p; apply(); }));
   document.querySelector('[data-k]').addEventListener('click', () => { state.kana = !state.kana; apply(); });
@@ -169,12 +179,16 @@
   document.getElementById('file').addEventListener('change', (e) => {
     const f = e.target.files[0];
     if (!f) return;
+    releaseUpload();
     const url = URL.createObjectURL(f);
     let el;
-    if (f.type.startsWith('video/')) { el = document.createElement('video'); el.src = url; el.muted = true; el.loop = true; el.playsInline = true; el.play(); }
+    if (f.type.startsWith('video/')) { el = document.createElement('video'); el.src = url; el.muted = true; el.loop = true; el.playsInline = true; }
     else { el = new Image(); el.src = url; }
     state.image = el;
     apply();
+    if (el.tagName === 'VIDEO') el.play().catch((error) => {
+      if (state.image === el) console.error('Uploaded video playback failed:', error);
+    });
   });
   try { Object.assign(state, JSON.parse(localStorage.getItem('bd-state') || '{}'), { image: null }); } catch (e) {}
   if (!SCENES[state.scene]) state.scene = 'tiles';

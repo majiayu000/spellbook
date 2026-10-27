@@ -254,6 +254,43 @@ try {
     return { initial, resized };
   });
 
+  await test('viewport-only image movement repositions reveal and destroy removes listener', async (page) => {
+    await page.evaluate(async () => {
+      const css = document.createElement('style');
+      css.textContent = '.host{width:240px;height:auto;padding:24px 30px}#img{display:block;width:180px;height:120px}@media(max-width:640px){.host{padding:12px 10px}}';
+      document.head.append(css);
+      const img = document.querySelector('#img'); img.src = '/image-responsive'; await img.decode();
+      const caption = document.createElement('p'); caption.textContent = 'Caption below the image'; img.parentElement.append(caption);
+      window.resizeListeners = new Set();
+      const add = window.addEventListener.bind(window), remove = window.removeEventListener.bind(window);
+      window.addEventListener = (type, listener, ...args) => { if (type === 'resize') resizeListeners.add(listener); return add(type, listener, ...args); };
+      window.removeEventListener = (type, listener, ...args) => { if (type === 'resize') resizeListeners.delete(listener); return remove(type, listener, ...args); };
+      window.revealer = AsciiBackdrop.reveal(img, { trigger: 'manual' });
+      window.mask = img.nextElementSibling;
+    });
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const bounds = () => page.evaluate(() => {
+      const rect = (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
+      return { image: rect(document.querySelector('#img')), mask: rect(mask), listeners: resizeListeners.size };
+    });
+    const wide = await bounds();
+    await page.setViewportSize({ width: 390, height: 720 });
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const narrow = await bounds();
+    await page.screenshot({ path: path.join(out, 'reveal-viewport-narrow.png') });
+    await page.evaluate(() => revealer.destroy());
+    await page.setViewportSize({ width: 900, height: 720 });
+    const destroyed = await page.evaluate(() => ({ listeners: resizeListeners.size, detached: !mask.isConnected }));
+    const detail = JSON.stringify({ wide, narrow, destroyed });
+    assert.notEqual(wide.image.x, narrow.image.x, detail);
+    assert.equal(wide.image.width, narrow.image.width, detail);
+    assert.equal(wide.image.height, narrow.image.height, detail);
+    assert.deepEqual(wide.mask, wide.image, detail); assert.deepEqual(narrow.mask, narrow.image, detail);
+    assert.equal(wide.listeners, 1, detail); assert.equal(narrow.listeners, 1, detail);
+    assert.deepEqual(destroyed, { listeners: 0, detached: true }, detail);
+    return { wide, narrow, destroyed };
+  }, { viewport: { width: 900, height: 720 } });
+
   await test('interactive option reconciles pointer listeners across toggles and destroy', async (page) => {
     await page.evaluate(() => {
       window.ResizeObserver = undefined;
@@ -310,6 +347,83 @@ try {
     assert.equal(evidence.afterStop, 0); return evidence;
   });
 
+  await test('60Hz rounded timestamps preserve 24 and 30fps pacing and forced snapshots', async (page) => {
+    const evidence = await page.evaluate(() => {
+      window.ResizeObserver = undefined;
+      let now = 0, pending = null;
+      const nativeRaf = requestAnimationFrame, nativeCancel = cancelAnimationFrame;
+      const nowDescriptor = Object.getOwnPropertyDescriptor(performance, 'now');
+      Object.defineProperty(performance, 'now', { configurable: true, value: () => now });
+      window.requestAnimationFrame = (callback) => { pending = callback; return 1; };
+      window.cancelAnimationFrame = () => { pending = null; };
+      const results = [];
+      try {
+        for (const fps of [24, 30]) {
+          now = 0;
+          let draws = 0, signals = 0;
+          const times = [], canvas = document.querySelector('#bd');
+          const onFrame = () => signals++;
+          canvas.addEventListener('ascii-backdrop:frame', onFrame);
+          const engine = AsciiBackdrop.create(canvas, { fps, grid: false,
+            layers: [{ subject: { draw(c, t) { draws++; times.push(t); } } }] });
+          try {
+            engine.start();
+            const initial = { draws, signals };
+            for (let frame = 1; frame <= 600; frame++) {
+              now = Math.round(frame * (1000 / 60) * 10) / 10;
+              const callback = pending; pending = null; callback(now);
+            }
+            const active = { draws: draws - initial.draws, signals: signals - initial.signals };
+            engine.stop();
+            const beforeSnapshots = signals;
+            engine.snapshot(7); engine.snapshot(8);
+            results.push({ fps, simulatedMs: now, active,
+              forcedFrames: signals - beforeSnapshots, snapshotTimes: times.slice(-2) });
+          } finally { engine.destroy(); canvas.removeEventListener('ascii-backdrop:frame', onFrame); }
+        }
+      } finally {
+        window.requestAnimationFrame = nativeRaf; window.cancelAnimationFrame = nativeCancel;
+        if (nowDescriptor) Object.defineProperty(performance, 'now', nowDescriptor); else delete performance.now;
+      }
+      return results;
+    });
+    for (const result of evidence) {
+      assert.ok(Math.abs(result.active.draws - result.fps * 10) <= 1, JSON.stringify(evidence));
+      assert.equal(result.active.signals, result.active.draws, JSON.stringify(evidence));
+      assert.equal(result.forcedFrames, 2, JSON.stringify(evidence));
+      assert.deepEqual(result.snapshotTimes, [7, 8], JSON.stringify(evidence));
+    }
+    return evidence;
+  });
+
+  await test('real Chrome completed frames track 24 and 30fps', async (page) => {
+    const evidence = await page.evaluate(async () => {
+      const results = [], canvas = document.querySelector('#bd');
+      for (const fps of [24, 30]) {
+        let draws = 0, signals = 0;
+        const onFrame = () => signals++;
+        canvas.addEventListener('ascii-backdrop:frame', onFrame);
+        const engine = AsciiBackdrop.create(canvas, { fps, grid: false,
+          layers: [{ subject: { draw() { draws++; } } }] });
+        try {
+          engine.start();
+          const initial = { draws, signals }, start = performance.now();
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          const elapsedMs = performance.now() - start;
+          engine.stop();
+          results.push({ target: fps, draws: draws - initial.draws, signals: signals - initial.signals,
+            elapsedMs, actualFps: (signals - initial.signals) * 1000 / elapsedMs });
+        } finally { engine.destroy(); canvas.removeEventListener('ascii-backdrop:frame', onFrame); }
+      }
+      return results;
+    });
+    for (const result of evidence) {
+      assert.equal(result.signals, result.draws, JSON.stringify(evidence));
+      assert.ok(Math.abs(result.actualFps - result.target) < 2, JSON.stringify(evidence));
+    }
+    return evidence;
+  });
+
   await test('failed initialization emits no completed frames', async (page) => {
     const evidence = await page.evaluate(() => {
       let signals = 0, failed = false;
@@ -319,6 +433,67 @@ try {
       return { failed, signals };
     });
     assert.deepEqual(evidence, { failed: true, signals: 0 }); return evidence;
+  });
+
+  await test('demo releases replaced uploads and cancels pending playback', async (page) => {
+    await page.addInitScript(() => {
+      window.uploadUrls = []; window.revokedUrls = []; window.uploadVideos = []; window.uploadRejections = [];
+      const create = URL.createObjectURL.bind(URL), revoke = URL.revokeObjectURL.bind(URL);
+      URL.createObjectURL = (blob) => { const url = create(blob); uploadUrls.push(url); return url; };
+      URL.revokeObjectURL = (url) => { revokedUrls.push(url); return revoke(url); };
+      const play = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function (...args) { uploadVideos.push(this); return play.apply(this, args); };
+      addEventListener('unhandledrejection', (event) => uploadRejections.push(event.reason.name));
+    });
+    await page.goto(origin + '/demo');
+    const bytes = await page.evaluate(async () => {
+      const canvas = document.createElement('canvas'); canvas.width = canvas.height = 32;
+      const ctx = canvas.getContext('2d'), stream = canvas.captureStream(20), chunks = [];
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8' });
+      recorder.ondataavailable = (event) => chunks.push(event.data);
+      recorder.start();
+      let frame = 0;
+      const timer = setInterval(() => { ctx.fillStyle = `rgb(${frame++ * 20 % 255},100,180)`; ctx.fillRect(0, 0, 32, 32); }, 40);
+      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => { recorder.onstop = r; recorder.stop(); });
+      clearInterval(timer); stream.getTracks().forEach((track) => track.stop());
+      return Array.from(new Uint8Array(await new Blob(chunks).arrayBuffer()));
+    });
+    const buffer = Buffer.from(bytes);
+    await writeFile(path.join(out, 'upload-fixture.webm'), buffer);
+    const uploadVideo = async (name) => {
+      await page.setInputFiles('#file', { name, mimeType: 'video/webm', buffer });
+      await page.waitForFunction(() => uploadVideos.length && !uploadVideos.at(-1).paused && uploadVideos.at(-1).readyState >= 2);
+    };
+    await uploadVideo('first.webm');
+    await page.click('[data-p="ember"]'); await page.click('[data-r="braille"]');
+    const retained = await page.evaluate(() => ({ created: uploadUrls.length, revoked: revokedUrls.length, playing: !uploadVideos[0].paused }));
+    await page.click('[data-s="jellyfish"]');
+    const preset = await page.evaluate(() => ({ paused: uploadVideos[0].paused, src: uploadVideos[0].getAttribute('src'), revoked: revokedUrls.length }));
+    await uploadVideo('second.webm'); await uploadVideo('replacement.webm');
+    const replaced = await page.evaluate(() => ({ paused: uploadVideos[1].paused, src: uploadVideos[1].getAttribute('src'),
+      created: uploadUrls.length, revoked: revokedUrls.length, currentPlaying: !uploadVideos[2].paused }));
+    await page.setInputFiles('#file', { name: 'image.svg', mimeType: 'image/svg+xml', buffer: Buffer.from(svg) });
+    // Both changes and preset selection occur in one task, before the real media load/play promises settle.
+    await page.evaluate(({ bytes, svg }) => {
+      const input = document.querySelector('#file');
+      const change = (file) => { const data = new DataTransfer(); data.items.add(file); input.files = data.files; input.dispatchEvent(new Event('change', { bubbles: true })); };
+      change(new File([new Uint8Array(bytes)], 'pending.webm', { type: 'video/webm' }));
+      change(new File([svg], 'pending.svg', { type: 'image/svg+xml' }));
+      document.querySelector('[data-s="jellyfish"]').click();
+    }, { bytes, svg });
+    await page.waitForTimeout(250);
+    const final = await page.evaluate(() => ({ created: uploadUrls.length, revoked: revokedUrls.length,
+      uniqueRevoked: new Set(revokedUrls).size, allRevoked: uploadUrls.every((url) => revokedUrls.includes(url)),
+      videos: uploadVideos.map((video) => ({ paused: video.paused, src: video.getAttribute('src') })), rejections: uploadRejections }));
+    const detail = JSON.stringify({ retained, preset, replaced, final });
+    assert.deepEqual(retained, { created: 1, revoked: 0, playing: true }, detail);
+    assert.deepEqual(preset, { paused: true, src: null, revoked: 1 }, detail);
+    assert.deepEqual(replaced, { paused: true, src: null, created: 3, revoked: 2, currentPlaying: true }, detail);
+    assert.ok(final.created === 6 && final.revoked === 6 && final.uniqueRevoked === 6 && final.allRevoked, detail);
+    assert.ok(final.videos.every((video) => video.paused && video.src === null), detail);
+    assert.deepEqual(final.rejections, [], detail);
+    return { retained, preset, replaced, final };
   });
 
   await test('phone uses device viewport and responsive rail', async (page) => {

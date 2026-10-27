@@ -463,8 +463,9 @@
     function frame(now, force) {
       if (destroyed) return;
       if (!force && running) raf = requestAnimationFrame(frame);
-      if (!force && now - last < 1000 / o.fps) return;
-      last = now;
+      const interval = 1000 / o.fps, elapsed = now - last;
+      if (!force && elapsed < interval) return;
+      last = force ? now : now - (elapsed % interval);
       const t = tFrozen ?? (now - t0) / 1000;
       clicks = clicks.filter((c) => now - c.at < 6000);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1072,9 +1073,11 @@
     }
     const enter = () => animateTo(1), leave = () => animateTo(0);
     const host = img.parentElement;
+    function onResize() { prepare(); if (o.trigger === 'scroll') onScroll(); }
     if (o.trigger === 'hover') { host.addEventListener('pointerenter', enter); host.addEventListener('pointerleave', leave); }
     if (o.trigger === 'scroll') root.addEventListener('scroll', onScroll, { passive: true });
-    const ro = root.ResizeObserver ? new ResizeObserver(() => { prepare(); if (o.trigger === 'scroll') onScroll(); }) : null;
+    root.addEventListener('resize', onResize);
+    const ro = root.ResizeObserver ? new ResizeObserver(onResize) : null;
     if (img.complete === false && img.addEventListener) img.addEventListener('load', prepare, { once: true });
     if (ro) ro.observe(img);
     prepare();
@@ -1087,6 +1090,7 @@
         img.removeEventListener('load', prepare);
         host.removeEventListener('pointerenter', enter); host.removeEventListener('pointerleave', leave);
         root.removeEventListener('scroll', onScroll);
+        root.removeEventListener('resize', onResize);
       },
     };
   }
