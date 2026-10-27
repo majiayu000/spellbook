@@ -999,7 +999,7 @@
       font: '500 11px "JetBrains Mono", ui-monospace, Menlo, monospace' }, opts);
     const cv = document.createElement('canvas');
     cv.setAttribute('aria-hidden', 'true');
-    Object.assign(cv.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', pointerEvents: 'none' });
+    Object.assign(cv.style, { position: 'absolute', pointerEvents: 'none' });
     img.insertAdjacentElement('afterend', cv);
     const ctx = cv.getContext('2d');
     const sample = document.createElement('canvas');
@@ -1012,6 +1012,7 @@
       if (!r.width || !(img.naturalWidth || img.videoWidth)) return;
       dpr = Math.min(root.devicePixelRatio || 1, 2);
       W = r.width; H = r.height;
+      Object.assign(cv.style, { left: img.offsetLeft + 'px', top: img.offsetTop + 'px', width: W + 'px', height: H + 'px' });
       cv.width = W * dpr; cv.height = H * dpr;
       cols = Math.ceil(W / o.cell.w); rows = Math.ceil(H / o.cell.h);
       sample.width = cols; sample.height = rows;

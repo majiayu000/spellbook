@@ -222,6 +222,38 @@ try {
     return evidence;
   }, { reducedMotion: 'reduce' });
 
+  await test('reveal overlay follows image bounds inside padded bordered captioned parent', async (page) => {
+    await page.evaluate(async () => {
+      const img = document.querySelector('#img'), host = img.parentElement;
+      Object.assign(host.style, { width: '280px', height: 'auto', padding: '24px 30px 18px 22px', border: '6px solid #a565fc' });
+      Object.assign(img.style, { display: 'block', width: '180px', height: '120px', marginLeft: '11px' });
+      const caption = document.createElement('p'); caption.id = 'caption'; caption.textContent = 'Caption stays outside the reveal mask';
+      Object.assign(caption.style, { margin: '12px 0 0', height: '32px', background: '#154c32', color: 'white' });
+      host.append(caption);
+      img.src = '/image-layout'; await img.decode();
+      window.revealer = AsciiBackdrop.reveal(img, { trigger: 'manual' });
+    });
+    const bounds = () => page.evaluate(() => {
+      const img = document.querySelector('#img'), cv = img.nextElementSibling;
+      const image = img.getBoundingClientRect(), mask = cv.getBoundingClientRect(), caption = document.querySelector('#caption').getBoundingClientRect();
+      const rect = (r) => ({ x: r.x, y: r.y, width: r.width, height: r.height });
+      const overlap = Math.max(0, Math.min(mask.right, caption.right) - Math.max(mask.left, caption.left)) *
+        Math.max(0, Math.min(mask.bottom, caption.bottom) - Math.max(mask.top, caption.top));
+      return { image: rect(image), mask: rect(mask), captionOverlap: overlap };
+    });
+    const initial = await bounds();
+    await page.screenshot({ path: path.join(out, 'reveal-layout-initial.png') });
+    await page.evaluate(() => Object.assign(document.querySelector('#img').style, { width: '220px', height: '140px' }));
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const resized = await bounds();
+    await page.screenshot({ path: path.join(out, 'reveal-layout-resized.png') });
+    for (const stage of [initial, resized]) {
+      assert.ok(Object.keys(stage.image).every((key) => Math.abs(stage.image[key] - stage.mask[key]) < 0.5), JSON.stringify({ initial, resized }));
+      assert.equal(stage.captionOverlap, 0, JSON.stringify({ initial, resized }));
+    }
+    return { initial, resized };
+  });
+
   await test('interactive option reconciles pointer listeners across toggles and destroy', async (page) => {
     await page.evaluate(() => {
       window.ResizeObserver = undefined;
