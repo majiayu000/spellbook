@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>111 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>113 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-111-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-113-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -185,6 +185,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`skill-lifeguard`](./skills/skill-lifeguard/) | 为高价值 skill 增加可靠性契约、检查点、烟测钩子与漂移信号 |
 | [`review-gate`](./skills/review-gate/) | 在 agent 变更落地前产出 review pack 并要求人工批准 |
 | [`skill-audit`](./skills/skill-audit/) | 审计、设计、分类并度量 agent skills |
+| [`skill-checkup`](./skills/skill-checkup/) | 跨 Claude Code 和 Codex 体检 skill：坏了的、副本分叉的、互相抢的、只在一边用的 |
 | [`skill-ecosystem-doctor`](./skills/skill-ecosystem-doctor/) | 治理真源、投影、退役、隔离与跨 Runtime 验证 |
 | [`threads`](./skills/threads/) | Codex 原生子 agent 与并行 GitHub 队列通道 |
 | [`codex-fluent`](./skills/codex-fluent/) | Codex session 清理、归档策略与交接纪律 |
@@ -247,6 +248,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 
 | 技能 | 描述 |
 |------|------|
+| [`agent-qa-testing`](./skills/agent-qa-testing/) | Web/移动端回归测试与结果排查，支持先进的 memidex 记忆引擎和自我改进 |
 | [`app-user-story-qa`](./skills/app-user-story-qa/) | 端到端应用功能盘点、单一 tracker、用户故事测试、修复与复测闭环 |
 | [`test-driven-development`](./skills/test-driven-development/) | 强制 RED-GREEN-REFACTOR 的 TDD 纪律 |
 | [`comprehensive-testing`](./skills/comprehensive-testing/) | 测试金字塔、单元/集成/E2E/属性测试与框架最佳实践 |

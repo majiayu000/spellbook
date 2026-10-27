@@ -73,6 +73,7 @@ CATEGORY_BY_NAME = {
     "data-contract-migrations": "API & Backend",
     "structured-logging-lite": "API & Backend",
     # Delivery workflow
+    "agent-qa-testing": "Delivery Workflow",
     "app-user-story-qa": "Delivery Workflow",
     "codebase-audit": "Delivery Workflow",
     "contribution-architect": "Delivery Workflow",
@@ -126,6 +127,7 @@ CATEGORY_BY_NAME = {
     "review-gate": "AI & Agent Workflow",
     "skill-creator": "AI & Agent Workflow",
     "skill-audit": "AI & Agent Workflow",
+    "skill-checkup": "AI & Agent Workflow",
     "skill-ecosystem-doctor": "AI & Agent Workflow",
     "skill-lifeguard": "AI & Agent Workflow",
     "skill-usage-stats": "AI & Agent Workflow",
