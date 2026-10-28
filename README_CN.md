@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>112 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>113 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-112-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-113-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -323,6 +323,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 |------|------|
 | [`xiaohongshu`](./skills/xiaohongshu/) | 小红书内容创作与发布 |
 | [`trip-planner`](./skills/trip-planner/) | 旅行行程规划 |
+| [`avoidance-coach`](./skills/avoidance-coach/) | 打破回避循环的自助练习教练（CBT/DBT/ACT，不替代心理治疗） |
 | [`weekly`](./skills/weekly/) | 整合 Git、Claude Code、Codex session 生成周报 |
 | [`xiaohongshu-netfeel-guardian`](./skills/xiaohongshu-netfeel-guardian/) | 去除 Claude 中文内容的翻译腔，恢复母语网感 |
 

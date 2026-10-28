@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>112 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>113 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-112-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-113-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -326,6 +326,7 @@ Deploy models and diagnose local and remote environments.
 |-------|-------------|
 | [`xiaohongshu`](./skills/xiaohongshu/) | Xiaohongshu content creation & publishing |
 | [`trip-planner`](./skills/trip-planner/) | Travel itinerary planning |
+| [`avoidance-coach`](./skills/avoidance-coach/) | Self-help coach for breaking avoidance loops (CBT/DBT/ACT, not therapy) |
 | [`weekly`](./skills/weekly/) | Weekly report from Git, Claude Code, and Codex sessions |
 | [`xiaohongshu-netfeel-guardian`](./skills/xiaohongshu-netfeel-guardian/) | Remove translation-tone from Claude's Chinese content for native readability |
 
