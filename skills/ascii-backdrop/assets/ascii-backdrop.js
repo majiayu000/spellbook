@@ -918,6 +918,7 @@
       if (typeof source === 'string') { img = new Image(); img.crossOrigin = 'anonymous'; img.src = source; }
       let tinted = null, tintedFor = null;
       function prepared() {
+        if ('naturalWidth' in img && (!img.complete || !img.naturalWidth || !img.naturalHeight)) return null;
         const w = img.videoWidth || img.naturalWidth || img.width, h = img.videoHeight || img.naturalHeight || img.height;
         if (!w || !h) return null;
         if (!invert) return { el: img, w, h };
@@ -1011,17 +1012,47 @@
     function prepare() {
       if (destroyed) return;
       const r = img.getBoundingClientRect();
-      if (!r.width || !(img.naturalWidth || img.videoWidth)) return;
+      if (!img.complete || !img.naturalWidth || !img.naturalHeight) return;
+      const style = root.getComputedStyle(img);
+      const leftInset = parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
+      const topInset = parseFloat(style.borderTopWidth) + parseFloat(style.paddingTop);
+      W = r.width - leftInset - parseFloat(style.borderRightWidth) - parseFloat(style.paddingRight);
+      H = r.height - topInset - parseFloat(style.borderBottomWidth) - parseFloat(style.paddingBottom);
+      if (W <= 0 || H <= 0) return;
       dpr = Math.min(root.devicePixelRatio || 1, 2);
-      W = r.width; H = r.height;
-      Object.assign(cv.style, { left: img.offsetLeft + 'px', top: img.offsetTop + 'px', width: W + 'px', height: H + 'px' });
+      const left = img.offsetLeft + leftInset + 'px', top = img.offsetTop + topInset + 'px';
+      Object.assign(cv.style, { left, top, width: W + 'px', height: H + 'px' });
       cv.width = W * dpr; cv.height = H * dpr;
       cols = Math.ceil(W / o.cell.w); rows = Math.ceil(H / o.cell.h);
       sample.width = cols; sample.height = rows;
-      sx.drawImage(img, 0, 0, cols, rows);
+      let drawW = W, drawH = H;
+      if (style.objectFit !== 'fill') {
+        let scale = Math.min(W / img.naturalWidth, H / img.naturalHeight);
+        if (style.objectFit === 'cover') scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+        if (style.objectFit === 'none') scale = 1;
+        if (style.objectFit === 'scale-down') scale = Math.min(1, scale);
+        drawW = img.naturalWidth * scale; drawH = img.naturalHeight * scale;
+      }
+      // Keep CSS math intact; ask the browser to resolve it after substituting
+      // percentages against the free space (negative for a cover crop).
+      const position = style.objectPosition;
+      let depth = 0, split = position.length;
+      for (let i = 0; i < position.length; i++) {
+        if (position[i] === '(') depth++;
+        else if (position[i] === ')') depth--;
+        else if (position[i] === ' ' && depth === 0) { split = i; break; }
+      }
+      const offset = (value, free) => value.replace(/([+-]?(?:\d*\.)?\d+(?:e[+-]?\d+)?)%/gi,
+        (_, percent) => `calc(${Number(percent) * free / 100}px)`);
+      cv.style.left = offset(position.slice(0, split), W - drawW);
+      cv.style.top = offset(position.slice(split + 1), H - drawH);
+      const resolved = root.getComputedStyle(cv), x = parseFloat(resolved.left), y = parseFloat(resolved.top);
+      Object.assign(cv.style, { left, top });
+      sx.drawImage(img, x * cols / W, y * rows / H, drawW * cols / W, drawH * rows / H);
       const d = sx.getImageData(0, 0, cols, rows).data;
       lum = new Float32Array(cols * rows);
-      for (let i = 0; i < cols * rows; i++) lum[i] = (0.2126 * d[i * 4] + 0.7152 * d[i * 4 + 1] + 0.0722 * d[i * 4 + 2]) / 255;
+      for (let i = 0; i < cols * rows; i++) lum[i] = d[i * 4 + 3] === 0 ? -1 :
+        (0.2126 * d[i * 4] + 0.7152 * d[i * 4 + 1] + 0.0722 * d[i * 4 + 2]) / 255;
       draw();
       if (o.trigger === 'load' && !loadStarted) { loadStarted = true; animateTo(1); }
     }
@@ -1042,12 +1073,13 @@
       const R = o.ramp.length - 1, [r, g, b] = hexRgb(o.color), tick = Math.floor(performance.now() / 60);
       const pp = p * (1 + o.band); // progress runs a band past 1 so the last cells clear fully
       for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+        const v = lum[y * cols + x];
+        if (v < 0) continue; // transparent image pixels and object-fit letterboxes
         const k = Math.min(1, order(x, y));
         if (pp > k + o.band) continue; // fully revealed: the image shows through
         const edge = pp > k; // inside the moving band: bright noise glyphs over the picture
         const X = x * o.cell.w, Y = y * o.cell.h;
         if (!edge) { ctx.fillStyle = o.background; ctx.fillRect(X, Y, o.cell.w, o.cell.h); }
-        const v = lum[y * cols + x];
         const ch = edge ? SCRAMBLE_CHARS[Math.floor(hash(x, y, tick) * SCRAMBLE_CHARS.length)] : o.ramp[Math.max(1, Math.round(v * R))];
         ctx.fillStyle = `rgba(${r},${g},${b},${edge ? 0.95 : 0.25 + v * 0.75})`;
         ctx.fillText(ch, X + o.cell.w / 2, Y + o.cell.h / 2);
@@ -1079,7 +1111,7 @@
     if (o.trigger === 'scroll') root.addEventListener('scroll', onScroll, { passive: true });
     root.addEventListener('resize', onResize);
     const ro = root.ResizeObserver ? new ResizeObserver(onResize) : null;
-    if (img.complete === false && img.addEventListener) img.addEventListener('load', prepare, { once: true });
+    img.addEventListener('load', prepare);
     if (ro) ro.observe(img);
     prepare();
     return {

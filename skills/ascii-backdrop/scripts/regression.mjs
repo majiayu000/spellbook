@@ -18,6 +18,10 @@ const server = createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
     res.end(`<svg xmlns="http://www.w3.org/2000/svg" width="${wide ? 192 : 96}" height="96"><rect width="100%" height="100%" fill="${wide ? 'white' : 'black'}"/></svg>`); return;
   }
+  if (req.url === '/fit-bands.svg') {
+    res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+    res.end('<svg xmlns="http://www.w3.org/2000/svg" width="384" height="96"><rect width="384" height="96" fill="black"/><rect x="96" width="192" height="96" fill="white"/></svg>'); return;
+  }
   if (req.url.startsWith('/image')) {
     if (req.url.includes('slow')) await new Promise((r) => setTimeout(r, 1800));
     res.writeHead(200, { 'Content-Type': 'image/svg+xml' }); res.end(svg); return;
@@ -143,6 +147,80 @@ try {
     assert.deepEqual([evidence.second.width, evidence.second.height], [192, 96]);
     return evidence;
   }, { viewport: { width: 600, height: 700 } });
+
+  await test('pending image attributes do not poison the inverted cache', async (page) => {
+    await page.evaluate(() => {
+      window.pendingImage = new Image(96, 96); pendingImage.src = '/image-slow-explicit';
+      window.pendingSubject = AsciiBackdrop.subjects.image(pendingImage, { invert: true, motion: 'none' });
+      const target = document.querySelector('#bd'); target.width = target.height = 96;
+      window.samplePending = () => {
+        const ctx = target.getContext('2d'); ctx.clearRect(0, 0, 96, 96);
+        ctx.save(); ctx.translate(48, 48); pendingSubject.draw(ctx, 0, 96); ctx.restore();
+        return [...ctx.getImageData(48, 48, 1, 1).data];
+      };
+      window.pendingBefore = samplePending();
+    });
+    await page.waitForFunction(() => pendingImage.complete && pendingImage.naturalWidth === 96);
+    const evidence = await page.evaluate(() => ({ before: pendingBefore, after: samplePending() }));
+    assert.deepEqual(evidence.after, [0, 0, 0, 255], JSON.stringify(evidence));
+    return evidence;
+  });
+
+  await test('reveal resamples same-size source replacements and removes load listener', async (page) => {
+    await page.evaluate(async () => {
+      window.revealImage = document.querySelector('#img'); revealImage.src = '/responsive-black.svg';
+      await revealImage.decode();
+      window.samples = [];
+      const original = CanvasRenderingContext2D.prototype.getImageData;
+      CanvasRenderingContext2D.prototype.getImageData = function (...args) {
+        const value = original.apply(this, args); samples.push(value.data[0]); return value;
+      };
+      window.revealInstance = AsciiBackdrop.reveal(revealImage, { trigger: 'manual' });
+    });
+    await page.waitForTimeout(100);
+    await page.evaluate(async () => { revealImage.src = '/image-white-replacement'; await revealImage.decode(); });
+    await page.waitForTimeout(100);
+    const evidence = await page.evaluate(() => ({ first: samples[0], last: samples.at(-1), preparations: samples.length }));
+    assert.equal(evidence.first, 0); assert.equal(evidence.last, 255, JSON.stringify(evidence));
+    await page.evaluate(async () => { revealInstance.destroy(); window.afterDestroy = samples.length;
+      revealImage.src = '/responsive-black.svg'; await revealImage.decode(); });
+    await page.waitForTimeout(100);
+    const retained = await page.evaluate(() => samples.length - afterDestroy);
+    assert.equal(retained, 0, 'destroy must remove the persistent load listener');
+    return { ...evidence, preparesAfterDestroy: retained };
+  });
+
+  for (const [fit, position, leftPixel, centerPixel, topAlpha] of [
+    ['cover', '50% 50%', 255, 255, 255], ['contain', '50% 50%', 0, 255, 0],
+    ['cover', '0% 50%', 0, 0, 255], ['cover', 'right 10px top 50%', 0, 0, 255],
+    ['cover', 'min(10px, 20%) 50%', 0, 255, 255], ['none', '50% 50%', 255, 255, 0],
+    ['scale-down', '50% 50%', 0, 255, 0], ['fill', '50% 50%', 0, 255, 255],
+  ]) await test(`reveal samples object-fit ${fit} at ${position} content box`, async (page) => {
+    const evidence = await page.evaluate(async ({ fit, position }) => {
+      const img = document.querySelector('#img');
+      img.style.cssText = `width:192px;height:192px;object-fit:${fit};object-position:${position};border:4px solid red;padding:6px`;
+      if (!img.style.objectPosition) throw new Error('invalid fixture object-position: ' + position);
+      img.src = '/fit-bands.svg'; await img.decode();
+      const original = CanvasRenderingContext2D.prototype.getImageData;
+      window.fitSample = null;
+      CanvasRenderingContext2D.prototype.getImageData = function (...args) {
+        const value = original.apply(this, args);
+        const at = (x, y) => [...value.data.slice((y * value.width + x) * 4, (y * value.width + x) * 4 + 4)];
+        window.fitSample = { left: at(0, Math.floor(value.height / 2)), center: at(Math.floor(value.width / 2), Math.floor(value.height / 2)),
+          top: at(Math.floor(value.width / 2), 0) };
+        return value;
+      };
+      const instance = AsciiBackdrop.reveal(img, { trigger: 'manual', cell: { w: 8, h: 8 } });
+      const box = document.querySelector('.host canvas').getBoundingClientRect(), r = img.getBoundingClientRect();
+      const result = { sample: fitSample, box: { width: box.width, height: box.height, left: box.left - r.left, top: box.top - r.top } };
+      instance.destroy(); return result;
+    }, { fit, position });
+    assert.deepEqual(evidence.box, { width: 192, height: 192, left: 10, top: 10 }, JSON.stringify(evidence));
+    assert.equal(evidence.sample.center[0], centerPixel, JSON.stringify(evidence));
+    assert.equal(evidence.sample.left[0], leftPixel, JSON.stringify(evidence));
+    assert.equal(evidence.sample.top[3], topAlpha, JSON.stringify(evidence));
+    return evidence;
+  });
 
   await test('inverted playing video refreshes pixels', async (page) => {
     const evidence = await page.evaluate(async () => {
@@ -479,7 +557,7 @@ try {
       HTMLMediaElement.prototype.play = function (...args) { uploadVideos.push(this); return play.apply(this, args); };
       addEventListener('unhandledrejection', (event) => uploadRejections.push(event.reason.name));
     });
-    await page.goto(origin + '/demo');
+    await page.goto(origin + '/demo', { waitUntil: 'domcontentloaded' });
     const bytes = await page.evaluate(async () => {
       const canvas = document.createElement('canvas'); canvas.width = canvas.height = 32;
       const ctx = canvas.getContext('2d'), stream = canvas.captureStream(20), chunks = [];
@@ -531,7 +609,7 @@ try {
   });
 
   await test('phone uses device viewport and responsive rail', async (page) => {
-    await page.goto(origin + '/demo');
+    await page.goto(origin + '/demo', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(500);
     const evidence = await page.evaluate(() => ({ width: document.documentElement.clientWidth,
       phoneLayout: matchMedia('(max-width: 640px)').matches, rail: getComputedStyle(document.querySelector('.rail')).display }));
