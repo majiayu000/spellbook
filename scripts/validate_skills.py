@@ -157,6 +157,7 @@ CATEGORY_BY_NAME = {
     "humanizer": "Content & Research",
     "slides": "Content & Research",
     "trip-planner": "Content & Research",
+    "avoidance-coach": "Content & Research",
     "weekly": "Content & Research",
     "xray": "Content & Research",
     "xiaohongshu": "Content & Research",
