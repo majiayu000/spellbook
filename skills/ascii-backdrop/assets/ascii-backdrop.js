@@ -921,7 +921,8 @@
         const w = img.videoWidth || img.naturalWidth || img.width, h = img.videoHeight || img.naturalHeight || img.height;
         if (!w || !h) return null;
         if (!invert) return { el: img, w, h };
-        if (!tinted || tintedFor !== img.src || !('naturalWidth' in img)) {
+        const selectedSource = img.currentSrc || img.src;
+        if (!tinted || tintedFor !== selectedSource || tinted.width !== w || tinted.height !== h || !('naturalWidth' in img)) {
           if (!tinted) tinted = document.createElement('canvas');
           if (tinted.width !== w || tinted.height !== h) { tinted.width = w; tinted.height = h; }
           const c = tinted.getContext('2d');
@@ -929,7 +930,7 @@
           c.drawImage(img, 0, 0);
           c.globalCompositeOperation = 'difference'; c.fillStyle = '#fff'; c.fillRect(0, 0, w, h);
           c.globalCompositeOperation = 'destination-in'; c.drawImage(img, 0, 0); // keep transparent areas empty
-          tintedFor = img.src;
+          tintedFor = selectedSource;
         }
         return { el: tinted, w, h };
       }

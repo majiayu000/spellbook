@@ -13,6 +13,11 @@ const out = path.resolve(process.argv[2] || 'ascii-regression');
 await mkdir(out, { recursive: true });
 const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" fill="white"/></svg>';
 const server = createServer(async (req, res) => {
+  if (req.url.startsWith('/responsive-')) {
+    const wide = req.url.includes('white');
+    res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+    res.end(`<svg xmlns="http://www.w3.org/2000/svg" width="${wide ? 192 : 96}" height="96"><rect width="100%" height="100%" fill="${wide ? 'white' : 'black'}"/></svg>`); return;
+  }
   if (req.url.startsWith('/image')) {
     if (req.url.includes('slow')) await new Promise((r) => setTimeout(r, 1800));
     res.writeHead(200, { 'Content-Type': 'image/svg+xml' }); res.end(svg); return;
@@ -109,6 +114,35 @@ try {
     assert.equal(evidence.first[0], 255); assert.equal(evidence.second[0], 0, JSON.stringify(evidence));
     return evidence;
   });
+
+  await test('inverted responsive image follows picture candidate and dimensions', async (page) => {
+    await page.evaluate(async () => {
+      const picture = document.createElement('picture'), source = document.createElement('source');
+      source.media = '(min-width: 800px)'; source.srcset = '/responsive-white.svg';
+      window.responsiveImage = new Image(); responsiveImage.src = '/responsive-black.svg';
+      picture.append(source, responsiveImage); document.body.append(picture);
+      await responsiveImage.decode();
+      window.responsiveSubject = AsciiBackdrop.subjects.image(responsiveImage, { invert: true, motion: 'none' });
+      const target = document.querySelector('#bd'); target.width = target.height = 192;
+      window.sampleResponsive = () => {
+        const ctx = target.getContext('2d'); ctx.clearRect(0, 0, 192, 192);
+        ctx.save(); ctx.translate(96, 96); responsiveSubject.draw(ctx, 0, 192); ctx.restore();
+        return { pixel: [...ctx.getImageData(96, 96, 1, 1).data], src: responsiveImage.src,
+          currentSrc: responsiveImage.currentSrc, width: responsiveImage.naturalWidth, height: responsiveImage.naturalHeight };
+      };
+      window.firstResponsive = sampleResponsive();
+    });
+    await page.setViewportSize({ width: 1000, height: 700 });
+    await page.waitForFunction(() => responsiveImage.currentSrc.endsWith('/responsive-white.svg') &&
+      responsiveImage.complete && responsiveImage.naturalWidth === 192);
+    const evidence = await page.evaluate(() => ({ first: firstResponsive, second: sampleResponsive() }));
+    assert.equal(evidence.first.pixel[0], 255, JSON.stringify(evidence));
+    assert.equal(evidence.second.pixel[0], 0, JSON.stringify(evidence));
+    assert.equal(evidence.first.src, evidence.second.src, 'fallback src must remain unchanged');
+    assert.notEqual(evidence.first.currentSrc, evidence.second.currentSrc);
+    assert.deepEqual([evidence.second.width, evidence.second.height], [192, 96]);
+    return evidence;
+  }, { viewport: { width: 600, height: 700 } });
 
   await test('inverted playing video refreshes pixels', async (page) => {
     const evidence = await page.evaluate(async () => {
