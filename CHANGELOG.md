@@ -17,7 +17,7 @@ Use this section for notable changes after the latest numbered release.
 
 ### Added
 
-<!-- none yet -->
+- `ascii-backdrop`: animated ASCII-character backdrop for UI pages; any subject (presets, text, image, video or a custom canvas draw function), printed as brightness, edge or shape-matched glyphs, braille, ordered dither or colour tiles, with cursor glow, a CRT finish, text decode and image-dissolve helpers, from a dependency-free engine, demo page and screenshot check script.
 
 ### Changed
 

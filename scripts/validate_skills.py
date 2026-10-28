@@ -98,6 +98,7 @@ CATEGORY_BY_NAME = {
     "figma-to-react": "UI/UX & Frontend",
     "frontend-design": "UI/UX & Frontend",
     "illustrated-gallery": "UI/UX & Frontend",
+    "ascii-backdrop": "UI/UX & Frontend",
     "playwright-automation": "UI/UX & Frontend",
     "ui-designer": "UI/UX & Frontend",
     "ui-design-system": "UI/UX & Frontend",
