@@ -1,5 +1,5 @@
 {
-  "total_skills": 114,
+  "total_skills": 115,
   "total_tags": 37,
   "tag_counts": {
     "3d-modeling": 2,
@@ -10,7 +10,7 @@
     "blender": 2,
     "browser": 4,
     "code-review": 17,
-    "content": 9,
+    "content": 10,
     "database": 4,
     "debugging": 11,
     "deploy": 4,
@@ -20,7 +20,7 @@
     "frontend": 18,
     "go": 3,
     "harmonyos": 1,
-    "javascript": 6,
+    "javascript": 7,
     "multi-ai": 7,
     "observability": 3,
     "performance": 9,
@@ -133,6 +133,7 @@
     "content": [
       "ascii-backdrop",
       "build-product-demo",
+      "code-film",
       "github-trending",
       "humanizer",
       "slides",
@@ -222,6 +223,7 @@
     ],
     "javascript": [
       "ascii-backdrop",
+      "code-film",
       "figma-to-code",
       "figma-to-react",
       "npm-supply-chain-check",

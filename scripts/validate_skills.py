@@ -162,6 +162,7 @@ CATEGORY_BY_NAME = {
     "xray": "Content & Research",
     "xiaohongshu": "Content & Research",
     "xiaohongshu-netfeel-guardian": "Content & Research",
+    "code-film": "Content & Research",
 }
 
 
