@@ -17,6 +17,7 @@ Use this section for notable changes after the latest numbered release.
 
 ### Added
 
+- `code-film`: make story-driven animated short films from code; a single three.js HTML file renders picture and sound from time `t` to MP4, with story and craft guides, reusable characters, and render, stills and check scripts.
 - `ascii-backdrop`: animated ASCII-character backdrop for UI pages; any subject (presets, text, image, video or a custom canvas draw function), printed as brightness, edge or shape-matched glyphs, braille, ordered dither or colour tiles, with cursor glow, a CRT finish, text decode and image-dissolve helpers, from a dependency-free engine, demo page and screenshot check script.
 
 ### Changed
