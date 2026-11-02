@@ -1,0 +1,9 @@
+{
+  "name": "form-motion-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Headless browser checks for the form-motion skill. Install with PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install; any local Chromium works.",
+  "dependencies": {
+    "playwright": "1.56.1"
+  }
+}

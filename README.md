@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>115 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>119 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-115-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-119-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -258,6 +258,7 @@ Disciplined end-to-end delivery: testing, commits, health checks, and contributi
 | [`git-commit-smart`](./skills/git-commit-smart/) | Generate meaningful conventional commit messages from diff |
 | [`push-all`](./skills/push-all/) | Stage, commit, and push all changes after safety checks |
 | [`project-health-auditor`](./skills/project-health-auditor/) | Codebase health, tech debt, dependency, and project risk analysis |
+| [`loop-close`](./skills/loop-close/) | Close the loop on a feature, study or experiment: name the decision it supports and the quit condition up front, then end with adopt / reject / needs-evidence and archive it |
 | [`contribution-architect`](./skills/contribution-architect/) | Move from bug fixes to architectural improvements and debt discovery |
 
 ### Cross-Tool Interop
@@ -281,6 +282,9 @@ Skills for using multiple coding agents and CLI tools together.
 | [`frontend-design`](./skills/frontend-design/) | Web frontend design patterns |
 | [`illustrated-gallery`](./skills/illustrated-gallery/) | Illustrated website template with full-frame ASCII transitions |
 | [`ascii-backdrop`](./skills/ascii-backdrop/) | Animated ASCII backdrop from any subject: glyph, edge, shape-matched, braille, dither or tile modes, cursor glow, CRT finish, text decode and image dissolve |
+| [`code-built-3d`](./skills/code-built-3d/) | Build 3D scenes from code-made parts and take them apart: technical-illustration render, isometric camera moves, shell removal, exploded views with a parts list, endless chunked generation; demo is an endless apartment tower |
+| [`form-motion`](./skills/form-motion/) | Ten restrained, hand-following UI micro-interactions (morphing button, liquid tab indicator, elastic slider, command palette, drag reorder and more), each with its prompt, knobs and an automated pointer/keyboard acceptance script |
+| [`hud-interface`](./skills/hud-interface/) | Game-HUD style pages: ink-and-paper with one accent, slanted tags, giant outline numbers, ring text, tilted cards, a liquid-marble shader backdrop, and optional HTML-in-Canvas glass panels with a plain-DOM fallback |
 | [`ui-designer`](./skills/ui-designer/) | Extract design systems from UI screenshots and references |
 | [`ui-design-system`](./skills/ui-design-system/) | Design system toolkit and design-dev handoff support |
 | [`web-artifacts-builder`](./skills/web-artifacts-builder/) | Claude.ai HTML artifacts |

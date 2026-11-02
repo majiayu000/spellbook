@@ -1,0 +1,43 @@
+/* HUD skin for the form-motion samples (paper + ink + one mint accent, condensed italic display type).
+   It targets only the test hooks (data-form, data-part, ARIA roles), so it works on any implementation that kept them.
+   It changes colour, type, border and shadow only — never size, position, transform or transition of a hooked part —
+   so the motion and every verify.mjs check stay the same. Use: link it after the sample's own CSS and set
+   <html data-skin="hud">. Fonts: Barlow Condensed, JetBrains Mono (Google Fonts), with system fallbacks. */
+:root[data-skin="hud"] {
+  --hud-paper: #eeeeea; --hud-paper-2: #f8f8f5; --hud-ink: #121312; --hud-muted: #7d807c; --hud-hair: rgba(18, 19, 18, .18);
+  --hud-tint: #8fdcc4; --hud-tint-ink: #0d3b2f;
+  --hud-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --hud-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+[data-skin="hud"] body { background: var(--hud-paper); color: var(--hud-ink);
+  background-image: repeating-linear-gradient(90deg, var(--hud-hair) 0 1px, transparent 1px 80px), repeating-linear-gradient(0deg, var(--hud-hair) 0 1px, transparent 1px 80px); background-size: auto; }
+[data-skin="hud"] [data-form] { font-family: var(--hud-display); color: var(--hud-ink); }
+[data-skin="hud"] [data-form] :is(h1, h2, h3, strong, b) { font-style: italic; font-weight: 800; letter-spacing: .02em; }
+[data-skin="hud"] [data-form] :is(small, time, [data-part="value"], [data-part="state"], [data-part="live"]) { font-family: var(--hud-mono); letter-spacing: .04em; }
+
+/* 01 · morph: ink slab, upright uppercase label. */
+[data-skin="hud"] [data-part="shell"] { background: var(--hud-ink) !important; color: var(--hud-paper-2) !important; font: italic 800 15px var(--hud-display); letter-spacing: .08em; text-transform: uppercase; }
+/* 02 · tabs: ink indicator, inverted label on top. */
+[data-skin="hud"] [data-form="02"] [role="tab"] { font: italic 800 15px var(--hud-display); letter-spacing: .06em; text-transform: uppercase; }
+[data-skin="hud"] [data-part="indicator"] { background: var(--hud-ink) !important; }
+[data-skin="hud"] [data-form="02"] [role="tab"][aria-selected="true"] { color: var(--hud-paper-2); }
+/* 03 · range: hairline track, ink fill, mint value. */
+[data-skin="hud"] [data-part="track"] { background: var(--hud-hair) !important; }
+[data-skin="hud"] [data-part="fill"] { background: var(--hud-ink) !important; }
+/* 04 · switch: paper knob with an ink rim; mint when on. */
+[data-skin="hud"] [data-part="knob"] { background: var(--hud-paper-2) !important; box-shadow: 0 0 0 1.5px var(--hud-ink) !important; }
+[data-skin="hud"] [role="switch"][aria-checked="true"] { background-color: var(--hud-tint) !important; }
+/* 05 / 10 · cards, 06 · toasts, 08 · rows: paper slabs with an ink hairline and a hard offset shadow. */
+[data-skin="hud"] :is([data-part="card"], [data-part="toast"], [data-part="row"]) {
+  background-color: var(--hud-paper-2) !important; border: 1px solid var(--hud-ink) !important; box-shadow: 3px 4px 0 rgba(18, 19, 18, .14) !important; }
+[data-skin="hud"] [data-part="row"] { font-weight: 700; }
+[data-skin="hud"] :is([data-part="add"], [data-part="replay"], [data-part="trigger"]) { background: var(--hud-ink) !important; color: var(--hud-paper-2) !important; font: italic 800 14px var(--hud-display); letter-spacing: .08em; text-transform: uppercase; }
+/* 07 · command dialog: square-ish ink frame, mint selection. */
+[data-skin="hud"] [data-form="07"] dialog { background: var(--hud-paper-2); border: 1px solid var(--hud-ink); box-shadow: 6px 8px 0 rgba(18, 19, 18, .16); }
+[data-skin="hud"] [data-form="07"] dialog input { font-family: var(--hud-mono); }
+[data-skin="hud"] [role="option"][aria-selected="true"] { background: var(--hud-tint) !important; color: var(--hud-tint-ink) !important; }
+/* 09 / 10 · tooltips: ink chip, mono figures. */
+[data-skin="hud"] [role="tooltip"] { background: var(--hud-ink) !important; color: var(--hud-paper-2) !important; font-family: var(--hud-mono); border-radius: 2px !important; }
+/* 10 · chart: ink line. */
+[data-skin="hud"] [data-part="line"] { stroke: var(--hud-ink) !important; }
+[data-skin="hud"] :focus-visible { outline: 2px solid var(--hud-tint) !important; outline-offset: 2px; }

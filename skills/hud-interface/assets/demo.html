@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN" data-hud-level="quiet">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>拆解台 · HUD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,700;0,800;1,700;1,800&family=JetBrains+Mono:wght@500&family=Noto+Sans+SC:wght@600;700;900&display=swap">
+<link rel="stylesheet" href="hud.css">
+<style>
+  body { margin: 0; min-height: 100vh; background: var(--hud-paper); padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); box-sizing: border-box; }
+  .shell { max-width: 1440px; margin: 0 auto; padding: 14px 18px 12px; display: flex; flex-direction: column; gap: 14px; }
+  .strip { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .strip .clock { margin: 0 auto; }
+  .levels { display: inline-flex; border: 1px solid var(--hud-line); }
+  .levels button { all: unset; cursor: pointer; padding: 0 10px; min-height: 28px; display: inline-flex; align-items: center; font: 500 10px var(--hud-mono); letter-spacing: .08em; }
+  .levels button[aria-checked="true"] { background: var(--hud-ink); color: var(--hud-paper-2); }
+  .levels button:focus-visible { outline: 2px solid var(--hud-tint); outline-offset: 1px; }
+  .grid { display: grid; grid-template-columns: 228px minmax(0, 1fr) minmax(0, 430px); gap: 22px; align-items: start; }
+
+  .rail { display: flex; flex-direction: column; gap: 16px; }
+  .brand { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; border-bottom: 2px solid var(--hud-ink); padding-bottom: 8px; }
+  .brand b { font: 900 30px/1 var(--hud-cjk); }
+  .events { display: grid; grid-template-columns: 40px 1fr; gap: 2px 8px; }
+  .events b { color: var(--hud-ink-2); font-weight: 500; }
+  .lanes { display: grid; grid-template-columns: 34px 1fr 22px; gap: 5px 8px; align-items: center; font: 600 11px var(--hud-cjk); }
+  .lanes i { height: 4px; background: var(--hud-hair); position: relative; }
+  .lanes i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--v); background: var(--hud-ink); }
+
+  .center { position: relative; min-height: 560px; overflow: clip; overflow-clip-margin: 14px; }
+  .center .hud-ring { width: 520px; height: 520px; left: 50%; top: 70px; margin-left: -260px; opacity: .32; }
+  .head { position: relative; display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+  .head .stack { display: flex; flex-direction: column; gap: 8px; padding-bottom: 6px; }
+  .vtext { position: absolute; right: 0; top: 0; writing-mode: vertical-rl; font: 500 10px var(--hud-mono); letter-spacing: .3em; color: var(--hud-muted); }
+  .cards { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 22px; margin-top: 26px; padding-right: 26px; }
+  .cards .hud-card { cursor: default; }
+  .cards .hud-card:nth-child(even) { margin-top: 26px; }
+  .card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .card-title { font: 700 16px/1.3 var(--hud-cjk); margin: 6px 0 4px; }
+
+  .right { display: flex; flex-direction: column; gap: 14px; }
+  .date { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .date .hud-num { font-size: clamp(48px, 5.2vw, 82px); }
+  .date .hud-num small { font-size: .55em; }
+  .detail { min-height: 44px; padding: 8px 10px; border-top: 1px solid var(--hud-hair); }
+  .detail strong { font: 700 14px var(--hud-cjk); display: block; margin-bottom: 2px; }
+
+  .foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--hud-hair); padding-top: 8px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (max-width: 1100px) {
+    .grid { grid-template-columns: 200px minmax(0, 1fr); }
+    .right { grid-column: 1 / -1; }
+  }
+  @media (max-width: 720px) {
+    .shell { padding: 12px; }
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    .hud-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .hud-nav button { font-size: 20px; }
+    .center { min-height: 0; }
+    .center .hud-ring, .vtext { display: none; }
+    .cards { grid-template-columns: minmax(0, 1fr); padding-right: 0; }
+    .cards .hud-card:nth-child(even) { margin-top: 0; }
+    .hud-log-row { grid-template-columns: 58px minmax(0, 1fr) auto; }
+    .rail-extra { display: none; }
+  }
+</style>
+</head>
+<body class="hud">
+<canvas class="hud-backdrop" aria-hidden="true"></canvas>
+
+<div class="shell hud-frame">
+  <div class="strip">
+    <span class="hud-meta">Bench-03 · Teardown console · Rev 2</span>
+    <span class="hud-meta clock" id="clock" data-hud-tick>--:--:--</span>
+    <div class="levels" role="radiogroup" aria-label="效果强度">
+      <button role="radio" data-level="quiet" aria-checked="true">QUIET</button>
+      <button role="radio" data-level="normal" aria-checked="false">NORMAL</button>
+      <button role="radio" data-level="loud" aria-checked="false">LOUD</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <aside class="rail">
+      <div class="brand"><b>拆解台</b><span class="hud-tag is-tint">ON BENCH</span></div>
+      <nav aria-label="分区"><ul class="hud-nav" id="nav"></ul></nav>
+      <div class="rail-extra">
+        <p class="hud-meta" style="margin:0 0 6px">Events</p>
+        <div class="events hud-meta" id="events"></div>
+      </div>
+      <div class="rail-extra">
+        <p class="hud-meta" style="margin:0 0 6px">Lanes</p>
+        <div class="lanes" id="lanes"></div>
+      </div>
+      <div class="hud-ruler rail-extra"></div>
+    </aside>
+
+    <main class="center">
+      <div class="hud-ring" id="ring"></div>
+      <div class="head">
+        <span class="hud-num is-outline" id="secNo">03</span>
+        <div class="stack">
+          <span class="hud-tag" id="secTag">STEPS</span>
+          <h1 class="hud-cjk" id="secTitle" style="margin:0">拆解顺序</h1>
+        </div>
+        <span class="vtext" aria-hidden="true">TKL · 87 KEYS · GASKET MOUNT</span>
+      </div>
+      <p class="hud-meta" id="secMeta" style="margin:10px 0 0"></p>
+      <div class="cards" id="cards"></div>
+    </main>
+
+    <section class="right" aria-label="零件清单">
+      <div class="date">
+        <span class="hud-num" id="date">2026<small>/</small>10<small>/</small>27</span>
+        <div style="display:flex;gap:10px;align-items:center"><span class="hud-meta">Parts 112 · Screws 6 · Bags 9</span><span class="hud-tag" id="weekday">TUE</span></div>
+      </div>
+      <div class="hud-log" id="panel">
+        <div class="hud-log-head"><span>零件清单 · Parts</span><span class="hud-tag is-live" style="margin-left:auto">LIVE</span></div>
+        <div id="rows"></div>
+        <div class="detail" id="detail" aria-live="polite"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="hud-bar">
+    <div class="hud-counter"><span>PARTS</span><b id="cParts">112</b></div>
+    <div class="hud-counter"><span>STEP</span><b id="cStep">07<small style="font-size:.5em">/14</small></b></div>
+    <div class="hud-counter"><span>TIME</span><b id="cTime" data-hud-tick>00:42</b></div>
+    <div class="hud-meters" id="meters"></div>
+  </div>
+
+  <div class="foot">
+    <span class="hud-meta">Shapes only — no product names · Units mm</span>
+    <span class="hud-meta" id="bc" style="color:var(--hud-ink)"></span>
+  </div>
+</div>
+<p class="sr" aria-live="polite" id="announce"></p>
+
+<script src="hud.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const SECTIONS = [
+  { no: '01', tag: 'OVERVIEW', zh: '概况', title: '整机概况', meta: '87 键 · 铝外壳 · 垫片结构 · 开拆于 09:12',
+    cards: [['A1', '外壳', '上下两片铝壳，6 颗螺丝', '2 PCS'], ['A2', '定位板', '垫片夹在外壳与定位板之间', '1 PC'], ['A3', '主板', '热插拔座，USB-C 小板分离', '2 PCS'], ['A4', '消音层', '三层：板下、壳底、小板旁', '3 PCS']] },
+  { no: '02', tag: 'PARTS', zh: '零件', title: '零件分袋', meta: '9 袋 · 每袋贴编号 · 螺丝单独计数',
+    cards: [['B1', '键帽', '按行装袋 R1–R5，空格单独', '87 PCS'], ['B2', '轴体', '拔出后按列插回泡棉', '87 PCS'], ['B3', '卫星轴', '2u ×3，6.25u ×1', '4 SETS'], ['B4', '螺丝', 'M2×4 ×6，磁吸盘', '6 PCS']] },
+  { no: '03', tag: 'STEPS', zh: '步骤', title: '拆解顺序', meta: '共 14 步 · 当前第 07 步 · 预计剩 18 分钟',
+    cards: [['S05', '拔键帽', '从四角开始，拔键器垂直上提', '04:12'], ['S06', '拧外壳螺丝', '对角顺序，先松后取', '01:40'], ['S07', '取出定位板总成', '垫片朝上，别碰排线', '进行中', true], ['S08', '断开 USB-C 小板', '先拔排线，再抬小板', '—'], ['S09', '拔轴体', '拔轴器夹上下卡扣', '—'], ['S10', '拆卫星轴', '先记下钢丝的方向', '—']] },
+  { no: '04', tag: 'TOOLS', zh: '工具', title: '工具位', meta: '5 件 · 全部归位',
+    cards: [['T1', '拔键器', '钢丝式，不刮键帽侧面', 'POS 1'], ['T2', '拔轴器', '双爪，压卡扣用', 'POS 2'], ['T3', '十字螺丝刀', 'PH00，磁性头', 'POS 3'], ['T4', '撬片', '塑料，只撬垫片', 'POS 4']] },
+  { no: '05', tag: 'NOTES', zh: '笔记', title: '拆解笔记', meta: '3 条 · 装回时按反序',
+    cards: [['N1', '排线很短', '抬定位板前先断开', '!'], ['N2', '空格卫星轴', '钢丝方向记下再拆', '!'], ['N3', '泡棉有背胶', '只揭一半，别撕破', '—']] },
+];
+const PARTS = [
+  ['K-01', '键帽', 87, 'R1–R5 已装袋', 'tint'], ['S-01', '轴体', 87, '拔出 0 / 87', ''], ['ST-1', '卫星轴', 4, '2u ×3 · 6.25u ×1', ''],
+  ['P-01', '定位板', 1, '正在取出 · 垫片 12 枚', 'tint'], ['PCB', '主板', 1, '热插拔 · 待断开小板', ''], ['F-01', '消音层', 3, '板下 / 壳底 / 小板旁', ''], ['SC', '螺丝', 6, 'M2×4 · 磁吸盘', ''],
+];
+let current = 2;
+
+// Nav
+const nav = $('#nav');
+SECTIONS.forEach((s, i) => {
+  const li = document.createElement('li'); const b = document.createElement('button');
+  b.innerHTML = `${s.tag}<small>${s.zh}</small><i>${s.no}</i>`; b.onclick = () => show(i);
+  li.append(b); nav.append(li);
+});
+function show(i) {
+  current = i; const s = SECTIONS[i];
+  nav.querySelectorAll('button').forEach((b, k) => k === i ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+  $('#secNo').textContent = s.no; $('#secTag').textContent = s.tag; $('#secTitle').textContent = s.title; $('#secMeta').textContent = s.meta;
+  $('#cards').innerHTML = s.cards.map(([no, t, d, v, cur], k) => `<article class="hud-card${cur ? ' is-current' : ''}" tabindex="0" style="--r:${[-2.2, 1.6, -1.1, 2.4, -1.8, 1.2][k % 6]}deg">
+      <div class="card-top"><span class="hud-card-no">${no}</span><span class="hud-meta">${v}</span></div>
+      <div class="card-title">${t}</div><div class="hud-meta" style="text-transform:none">${d}</div></article>`).join('');
+  $('#announce').textContent = `${s.zh}：${s.title}`;
+}
+
+// Parts list (lives inside the glass panel when HTML-in-Canvas is on)
+const rows = $('#rows');
+PARTS.forEach(([code, name, qty, note, tint], i) => {
+  const b = document.createElement('button'); b.className = 'hud-log-row' + (tint ? ' is-tint' : ''); b.setAttribute('aria-pressed', 'false');
+  b.innerHTML = `<b>${code}<small>BAG ${String(i + 1).padStart(2, '0')}</small></b><span>${name}<span class="hud-meta" style="display:block;text-transform:none">${note}</span></span><span class="hud-meta">×${qty}</span>`;
+  b.onclick = () => pick(i); rows.append(b);
+});
+function pick(i) {
+  rows.querySelectorAll('.hud-log-row').forEach((r, k) => r.setAttribute('aria-pressed', String(k === i)));
+  const [code, name, qty, note] = PARTS[i];
+  $('#detail').innerHTML = `<strong>${code} · ${name} ×${qty}</strong><span class="hud-meta" style="text-transform:none">${note}</span>`;
+}
+
+// Rail data, meters, ring, barcode
+$('#events').innerHTML = [['09:12', 'OPEN CASE'], ['09:16', 'KEYCAPS OFF'], ['09:31', 'SCREWS 6/6'], ['09:44', 'PLATE LIFT']].map(([t, e]) => `<span>${t}</span><b>${e}</b>`).join('');
+$('#lanes').innerHTML = [['键帽', 100], ['螺丝', 100], ['定位板', 60], ['主板', 0], ['轴体', 0]].map(([n, v]) => `<span>${n}</span><i style="--v:${v}%"></i><span class="hud-meta">${v}</span>`).join('');
+$('#meters').innerHTML = [['已拆', 58, ''], ['已装袋', 52, ''], ['待确认', 9, 'is-signal']].map(([n, v, c]) => `<span>${n}</span><i class="${c}" style="--v:${v}%"></i><em>${v}%</em>`).join('');
+Hud.ring($('#ring'), 'EXPLODE ORDER · FASTENERS · LAYERS · BAG LABELS · REVERSE TO REBUILD', { size: 440, font: 11 });
+Hud.barcode($('#bc'), 'BENCH-03-TKL', { bars: 60, height: 16 });
+
+// Clock and elapsed time (logic only; nothing animates per frame here)
+const started = Date.now() - 42 * 60e3;
+const tick = () => {
+  const d = new Date(); $('#clock').textContent = d.toTimeString().slice(0, 8);
+  const m = Math.floor((Date.now() - started) / 60e3); $('#cTime').textContent = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+};
+tick(); setInterval(tick, 1000);
+
+// Noise level
+document.querySelectorAll('.levels button').forEach(b => b.onclick = () => {
+  document.documentElement.dataset.hudLevel = b.dataset.level;
+  document.querySelectorAll('.levels button').forEach(x => x.setAttribute('aria-checked', String(x === b)));
+});
+
+show(current); pick(3);
+Hud.backdrop($('.hud-backdrop'));
+Hud.glass($('#panel'));
+</script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+/* HUD interface kit: tokens and components. Monochrome paper + ink, one accent (--hud-tint), one alarm
+   (--hud-signal, only for LIVE / errors). Fonts: Barlow Condensed (display), JetBrains Mono (meta),
+   Noto Sans SC (CJK). Load them from Google Fonts or let the fallbacks take over. */
+:root {
+  --hud-paper: #eeeeea; --hud-paper-2: #f8f8f5; --hud-ink: #121312; --hud-ink-2: #3b3d3b; --hud-muted: #7d807c;
+  --hud-line: #121312; --hud-hair: rgba(18, 19, 18, .18); --hud-tint: #8fdcc4; --hud-tint-ink: #0d3b2f; --hud-signal: #e5484d;
+  --hud-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  --hud-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --hud-cjk: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --hud-skew: -12deg;
+  color-scheme: light;
+}
+.hud { font-family: var(--hud-display); color: var(--hud-ink); font-synthesis: none; -webkit-font-smoothing: antialiased; }
+.hud-backdrop { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; display: block;
+  background: radial-gradient(120% 90% at 30% 20%, var(--hud-paper-2), var(--hud-paper) 55%, color-mix(in srgb, var(--hud-paper), var(--hud-tint) 22%)); }
+
+/* Frame: hairline inset border with corner ticks. */
+.hud-frame { position: relative; border: 1px solid var(--hud-line); border-radius: 14px; background: color-mix(in srgb, var(--hud-paper-2) 55%, transparent); backdrop-filter: blur(2px); }
+.hud-frame::before, .hud-frame::after { content: ""; position: absolute; width: 14px; height: 14px; border: 2px solid var(--hud-line); pointer-events: none; }
+.hud-frame::before { top: -5px; left: -5px; border-right: 0; border-bottom: 0; }
+.hud-frame::after { bottom: -5px; right: -5px; border-left: 0; border-top: 0; }
+
+/* Tiny monospaced metadata. */
+.hud-meta { font: 500 10px/1.35 var(--hud-mono); letter-spacing: .04em; color: var(--hud-muted); text-transform: uppercase; font-variant-numeric: tabular-nums; }
+
+/* Skewed black label; content is skewed back so text stays upright. */
+.hud-tag { display: inline-flex; align-items: center; gap: .5em; padding: .16em .7em; background: var(--hud-ink); color: var(--hud-paper-2);
+  font: italic 800 13px/1.1 var(--hud-display); letter-spacing: .08em; text-transform: uppercase; transform: skewX(var(--hud-skew)); }
+.hud-tag > * , .hud-tag { white-space: nowrap; }
+.hud-tag.is-live { background: var(--hud-signal); }
+.hud-tag.is-tint { background: var(--hud-tint); color: var(--hud-tint-ink); }
+
+/* Giant numerals: solid or outlined. */
+.hud-num { font: italic 800 clamp(56px, 9vw, 150px)/.8 var(--hud-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.hud-num.is-outline { color: transparent; -webkit-text-stroke: 1.5px var(--hud-ink); }
+.hud-cjk { font: 900 clamp(32px, 4.4vw, 64px)/1 var(--hud-cjk); letter-spacing: .02em; }
+
+/* Stacked nav: index, display word, CJK sub-label; the current item becomes a skewed ink block. */
+.hud-nav { display: flex; flex-direction: column; gap: 2px; list-style: none; margin: 0; padding: 0; }
+.hud-nav button { all: unset; box-sizing: border-box; position: relative; display: flex; align-items: baseline; gap: 8px; width: 100%; min-height: 44px; padding: 4px 10px; cursor: pointer;
+  font: italic 800 26px/1 var(--hud-display); letter-spacing: .01em; text-transform: uppercase; color: var(--hud-ink-2); isolation: isolate; }
+.hud-nav button::before { content: ""; position: absolute; inset: 3px 0; background: var(--hud-ink); transform: skewX(var(--hud-skew)) scaleX(0); transform-origin: left; transition: transform .28s cubic-bezier(.23, 1, .32, 1); z-index: -1; }
+.hud-nav button small { font: 700 11px var(--hud-cjk); letter-spacing: .1em; color: var(--hud-muted); }
+.hud-nav button i { margin-left: auto; font: 500 10px var(--hud-mono); font-style: normal; color: var(--hud-muted); }
+.hud-nav button[aria-current="page"] { color: var(--hud-paper-2); }
+.hud-nav button[aria-current="page"]::before { transform: skewX(var(--hud-skew)) scaleX(1); }
+.hud-nav button[aria-current="page"] small, .hud-nav button[aria-current="page"] i { color: var(--hud-tint); }
+.hud-nav button:hover:not([aria-current]) { color: var(--hud-ink); }
+.hud-nav button:focus-visible { outline: 2px solid var(--hud-tint); outline-offset: 2px; }
+
+/* Ring of text, slowly turning. */
+.hud-ring { position: absolute; pointer-events: none; color: var(--hud-ink-2); }
+.hud-ring svg { width: 100%; height: 100%; display: block; animation: hud-spin 90s linear infinite; font-family: var(--hud-mono); letter-spacing: .3em; }
+.hud-ring svg text { fill: currentColor; }
+@keyframes hud-spin { to { transform: rotate(360deg); } }
+
+/* Paper cards set at small angles; they straighten on hover or focus. */
+.hud-card { position: relative; background: var(--hud-paper-2); border: 1px solid var(--hud-line); padding: 10px 12px 10px 14px;
+  box-shadow: 3px 4px 0 rgba(18, 19, 18, .12); transform: rotate(var(--r, 0deg)); transition: transform .35s cubic-bezier(.23, 1, .32, 1), box-shadow .35s; }
+.hud-card:hover, .hud-card:focus-within, .hud-card:focus-visible { transform: rotate(0deg) translateY(-3px); box-shadow: 6px 8px 0 rgba(18, 19, 18, .16); }
+.hud-card:focus-visible { outline: 2px solid var(--hud-tint); outline-offset: 3px; }
+.hud-card .hud-card-no { font: italic 800 30px/1 var(--hud-display); }
+.hud-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--hud-ink); }
+.hud-card.is-current::before { background: var(--hud-tint); }
+
+/* Log table: header bar in ink, one category highlighted in the accent. */
+.hud-log { background: var(--hud-paper-2); border: 1px solid var(--hud-line); }
+.hud-log-head { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: var(--hud-ink); color: var(--hud-paper-2); font: italic 800 14px var(--hud-display); letter-spacing: .06em; text-transform: uppercase; }
+.hud-log-row { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; min-height: 44px; padding: 6px 10px;
+  border-bottom: 1px solid var(--hud-hair); cursor: pointer; font: 600 14px/1.25 var(--hud-cjk); }
+.hud-log-row > b { font: italic 800 15px/1 var(--hud-display); letter-spacing: .04em; }
+.hud-log-row > b small { display: block; margin-top: 3px; font: 500 9px var(--hud-mono); color: var(--hud-muted); letter-spacing: .04em; }
+.hud-log-row.is-tint { background: color-mix(in srgb, var(--hud-tint) 70%, var(--hud-paper-2)); }
+.hud-log-row[aria-pressed="true"] { box-shadow: inset 4px 0 0 var(--hud-ink); background: color-mix(in srgb, var(--hud-tint) 92%, var(--hud-paper-2)); }
+.hud-log-row:hover { background: color-mix(in srgb, var(--hud-tint) 35%, var(--hud-paper-2)); }
+.hud-log-row:focus-visible { outline: 2px solid var(--hud-ink); outline-offset: -2px; }
+
+/* Bottom bar: ink ground, big italic counters, horizontal meters. */
+.hud-bar { background: var(--hud-ink); color: var(--hud-paper-2); border-radius: 10px; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: center; }
+.hud-counter { display: flex; align-items: baseline; gap: 8px; }
+.hud-counter span { font: 500 10px var(--hud-mono); color: #9a9d99; letter-spacing: .08em; }
+.hud-counter b { font: italic 800 44px/1 var(--hud-display); font-variant-numeric: tabular-nums; }
+.hud-meters { display: grid; grid-template-columns: auto minmax(80px, 1fr) 28px; gap: 4px 10px; align-items: center; flex: 1 1 260px; font: 600 11px var(--hud-cjk); }
+.hud-meters i { height: 6px; background: rgba(255, 255, 255, .12); position: relative; }
+.hud-meters i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--v, 0%); background: var(--hud-tint); transition: width .6s cubic-bezier(.23, 1, .32, 1); }
+.hud-meters i.is-signal::after { background: var(--hud-signal); }
+.hud-meters em { font: 500 10px var(--hud-mono); font-style: normal; color: #9a9d99; text-align: right; }
+
+/* Ruler ticks. */
+.hud-ruler { height: 10px; background: repeating-linear-gradient(90deg, var(--hud-ink) 0 1px, transparent 1px 8px) bottom / 100% 5px no-repeat,
+  repeating-linear-gradient(90deg, var(--hud-ink) 0 1px, transparent 1px 40px) bottom / 100% 10px no-repeat; opacity: .5; }
+
+/* Glass canvas takes the panel's place; the panel inside keeps its layout. */
+.hud-glass-canvas { display: block; width: 100%; }
+.hud-glass-canvas > [drawable] { width: 100%; }
+
+/* Noise budget: quiet hides decoration that only adds noise. */
+:root[data-hud-level="quiet"] .hud-loud-only { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-ring svg { animation: none; }
+  .hud-card, .hud-nav button::before, .hud-meters i::after { transition: none; }
+}

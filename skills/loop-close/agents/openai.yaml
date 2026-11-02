@@ -1,0 +1,4 @@
+interface:
+  display_name: "闭环推进"
+  short_description: "把功能、调研或活动从目标、验收到数据复盘做成闭环，并写下决定"
+  default_prompt: "使用 $loop-close 把这件事做成闭环：先填功能卡和失败判定，再按八步推进，最后写出复盘决定。"

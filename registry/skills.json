@@ -358,6 +358,22 @@
     ]
   },
   {
+    "name": "code-built-3d",
+    "category": "UI/UX & Frontend",
+    "format": "directory",
+    "path": "skills/code-built-3d/SKILL.md",
+    "description": "用代码从零件搭 3D 场景并能反过来拆开：每个物件是一个往 Assembly 里加零件的函数（盒子、圆柱、球、线），渲染成技术插画（白灰三档面、细黑描边、白雾），正交等距相机在镜头之间连续运镜，外壳可以降下去露出内部，选中的部分能爆炸成零件并列出零件清单，场景按块无限生成。零图片、零外部资源，three.js 已内置。演示是「无尽楼」：向上无尽的公寓楼，电梯一直往上走，点任意一层进去看、拆开。当用户说「用代码搭一个 3D 场景」「等距 3D 城市」「做成 Train of Thoughts 那种」「全程代码生成不要图片」「能剖开 / 去壳 / 爆炸的 3D」「无限生成的场景」「three.js 做构造」时使用。只在明确请求时触发，忽略顺带提及。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "javascript"
+    ]
+  },
+  {
     "name": "code-film",
     "category": "Content & Research",
     "format": "directory",
@@ -720,6 +736,22 @@
     ]
   },
   {
+    "name": "form-motion",
+    "category": "UI/UX & Frontend",
+    "format": "directory",
+    "path": "skills/form-motion/SKILL.md",
+    "description": "FORM UI 动效词典：10 个克制、跟手、可访问的界面微交互，每个都配原始提示词、可改项、验收标准和自动验收脚本——连续形变按钮、液体标签指示器、弹性滑块、柔性开关、原位展开卡片、层叠通知、命令面板、拖动排序、跟随提示、自绘折线图。共用一个从当前位置和速度重定向的阻尼弹簧。当用户说「按钮自己变成加载和完成」「选中条像软糖追过去」「拖到头还能拽一点」「开关圆点拉长」「卡片原位展开」「通知层叠」「Cmd+K 命令面板」「拖动排序」「提示跟随鼠标」「折线自己画出来」，或点名 FORM 动效库、要把某个样例用到自己的页面时使用。只在明确请求时触发，忽略顺带提及。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "frontend"
+    ]
+  },
+  {
     "name": "frontend-design",
     "category": "UI/UX & Frontend",
     "format": "directory",
@@ -838,6 +870,23 @@
     "tags": [
       "backend",
       "harmonyos"
+    ]
+  },
+  {
+    "name": "hud-interface",
+    "category": "UI/UX & Frontend",
+    "format": "directory",
+    "path": "skills/hud-interface/SKILL.md",
+    "description": "游戏 HUD 式界面：黑白纸墨加一个薄荷强调色，斜切黑标签、空心巨型数字、粗黑汉字标题、环形转动文字、歪着摆的纸卡片、黑色底栏大斜体计数和条形表，背后是流动的液体大理石着色器；可选用 HTML-in-Canvas 把真实 DOM 面板画进 WebGL 再做玻璃折射和色散（Chrome 实验开关，不支持时自动退回普通 DOM）。带噪音档位 quiet / normal / loud，默认 quiet。适合拆解台、零件清单、机器人或任务控制台这类要有「仪表感」的页面。当用户说「游戏 HUD 风格」「做成仪表板那种酷炫界面」「HTML-in-Canvas」「把 DOM 画进 WebGL」「液体大理石背景」「斜切标签 / 巨型数字 / 环形文字」时使用。只在明确请求时触发，忽略顺带提及。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "browser",
+      "frontend"
     ]
   },
   {
@@ -983,6 +1032,22 @@
       "multi-ai",
       "proxy",
       "security"
+    ]
+  },
+  {
+    "name": "loop-close",
+    "category": "Delivery Workflow",
+    "format": "directory",
+    "path": "skills/loop-close/SKILL.md",
+    "description": "闭环推进一件事（功能、调研、文档、增长活动、开源项目）：定目标与失败判定 → 走通任务 → 定规则 → 实现 → 验收 → 发布触达 → 看数据 → 复盘决策，结论回写。用户说「闭环」「功能卡」「复盘」「这件事怎么做完」时使用。一次性小改动、单纯写 PRD（prd-master）、只做指标设计（product-analytics）不触发。 Use when explicitly requested; ignore mentions/traces.",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "documentation"
     ]
   },
   {

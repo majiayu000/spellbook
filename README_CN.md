@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>115 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>119 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-115-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-119-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -255,6 +255,7 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`git-commit-smart`](./skills/git-commit-smart/) | 基于 diff 自动生成规范的 conventional commit |
 | [`push-all`](./skills/push-all/) | 安全检查后暂存、提交并推送全部改动 |
 | [`project-health-auditor`](./skills/project-health-auditor/) | 代码库健康、技术债、依赖与项目风险分析 |
+| [`loop-close`](./skills/loop-close/) | 功能、调研、实验的闭环方法：开工先写清要支撑的决定和放弃条件，收尾写出采用 / 否定 / 待验证并存档 |
 | [`contribution-architect`](./skills/contribution-architect/) | 从修 bug 进阶到架构改进与技术债挖掘 |
 
 ### 跨工具互操作
@@ -278,6 +279,9 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`frontend-design`](./skills/frontend-design/) | Web 前端设计模式 |
 | [`illustrated-gallery`](./skills/illustrated-gallery/) | 插画网站设计模板与整屏 ASCII 字符转场 |
 | [`ascii-backdrop`](./skills/ascii-backdrop/) | 把任意主体做成会动的 ASCII 背景：字符、方向字符、形状匹配、Braille、抖动、彩色方块六种印法，光标光晕、CRT 叠层、文字解码与图片溶解 |
+| [`code-built-3d`](./skills/code-built-3d/) | 用代码从零件搭 3D 场景并能拆开：技术插画渲染、等距运镜、去壳、爆炸成零件清单、按块无限生成；演示是向上无尽的公寓楼 |
+| [`form-motion`](./skills/form-motion/) | 10 个克制、跟手的界面微交互（形变按钮、液体标签、弹性滑块、命令面板、拖动排序等），每个配提示词、可改项和真实指针/键盘的自动验收脚本 |
+| [`hud-interface`](./skills/hud-interface/) | 游戏 HUD 式页面：纸墨加一个强调色、斜切标签、空心巨型数字、环形文字、歪卡片、液体大理石着色器背景，可选 HTML-in-Canvas 玻璃面板并自动退回普通 DOM |
 | [`ui-designer`](./skills/ui-designer/) | 从 UI 截图和参考图提取设计系统 |
 | [`ui-design-system`](./skills/ui-design-system/) | 设计系统工具包与设计交付支持 |
 | [`web-artifacts-builder`](./skills/web-artifacts-builder/) | Claude.ai HTML 组件 |

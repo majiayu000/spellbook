@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>无尽楼</title>
+<style>
+  :root { --bg: #f3f3f0; --ink: #1d1e1d; --muted: #77796f; --hair: rgba(29, 30, 29, .22); --paper: #fbfbf9;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; color-scheme: light; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--sans); overflow: hidden; }
+  canvas#stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .hud { position: fixed; pointer-events: none; }
+  .title { top: max(18px, env(safe-area-inset-top)); left: max(18px, env(safe-area-inset-left)); }
+  .title b { display: block; font-size: 22px; letter-spacing: .12em; }
+  .title span { font: 10px/1.6 var(--mono); letter-spacing: .14em; color: var(--muted); text-transform: uppercase; }
+  .counter { top: max(18px, env(safe-area-inset-top)); right: max(18px, env(safe-area-inset-right)); text-align: right; }
+  .counter b { display: block; font: 600 34px/1 var(--mono); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .counter span { font: 10px var(--mono); letter-spacing: .14em; color: var(--muted); }
+  .bar { bottom: max(16px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); display: flex; gap: 0; pointer-events: auto; background: var(--paper); border: 1px solid var(--ink); max-width: calc(100vw - 32px); overflow-x: auto; }
+  .bar button { all: unset; cursor: pointer; padding: 0 14px; min-height: 40px; display: inline-flex; align-items: center; font: 11px var(--mono); letter-spacing: .1em; white-space: nowrap; border-right: 1px solid var(--hair); }
+  .bar button:last-child { border-right: 0; }
+  .bar button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .bar button:disabled { color: #b5b6ae; cursor: default; }
+  .bar button:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }
+  [hidden] { display: none !important; }
+  #labels { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  .bubble { position: absolute; left: 0; top: 0; display: flex; align-items: flex-start; gap: 6px; margin: -40px 0 0 -14px; }
+  .bubble .face { width: 26px; height: 26px; background: var(--paper); border: 1px solid var(--ink); display: grid; place-items: center; position: relative; }
+  .bubble .face::after { content: ""; position: absolute; left: 8px; bottom: -6px; border: 5px solid transparent; border-top-color: var(--ink); border-bottom: 0; }
+  .bubble .say { display: none; background: var(--paper); border: 1px solid var(--ink); padding: 4px 7px; max-width: 170px; }
+  .bubble .say b { display: block; font: 600 9px var(--mono); letter-spacing: .12em; color: var(--muted); }
+  .bubble .say span { font: 12px/1.35 var(--sans); }
+  #labels.near .bubble .say { display: block; }
+  .tag { position: absolute; left: 0; top: 0; margin: -10px 0 0 8px; font: 10px var(--mono); letter-spacing: .1em; background: var(--paper); border: 1px solid var(--ink); padding: 2px 6px; white-space: nowrap; }
+  .tag.hover { background: var(--ink); color: var(--paper); }
+  .parts { right: max(18px, env(safe-area-inset-right)); top: 90px; width: 230px; max-height: calc(100vh - 170px); overflow: auto; background: var(--paper); border: 1px solid var(--ink); pointer-events: auto; font: 11px/1.5 var(--mono); }
+  .parts h2 { margin: 0; padding: 6px 10px; font: 600 11px var(--mono); letter-spacing: .12em; background: var(--ink); color: var(--paper); }
+  .parts ol { margin: 0; padding: 6px 10px 8px 30px; }
+  .parts li span { color: var(--muted); }
+  .hint { bottom: max(66px, calc(env(safe-area-inset-bottom) + 66px)); left: 50%; transform: translateX(-50%); font: 10px var(--mono); letter-spacing: .12em; color: var(--muted); white-space: nowrap; }
+  @media (max-width: 640px) { .parts { left: 16px; right: 16px; width: auto; top: auto; bottom: 120px; max-height: 34vh; } .counter b { font-size: 26px; } .hint { display: none; } }
+</style>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/" } }</script>
+</head>
+<body>
+<canvas id="stage" aria-label="一栋向上无尽延伸的公寓楼，剖开能看见每层房间，由代码实时生成"></canvas>
+<div id="labels"></div>
+<div class="hud title"><b>无尽楼</b><span>Endless tower · 全部由代码生成</span></div>
+<div class="hud counter"><b id="floorNo">03F</b><span id="floorName">电梯在</span></div>
+<div class="hud hint" id="hint">点任意一层进去看 · 拖不动是正常的，镜头会自己走</div>
+<section class="hud parts" id="parts" hidden aria-live="polite"><h2 id="partsTitle">零件清单</h2><ol id="partsList"></ol></section>
+<nav class="hud bar" aria-label="镜头">
+  <button data-shot="wide">远景</button>
+  <button data-shot="ride">跟电梯</button>
+  <button data-shot="room">进这一层</button>
+  <button id="explodeBtn" disabled>拆开</button>
+  <button id="tourBtn" aria-pressed="true">自动巡游</button>
+</nav>
+
+<script type="module">
+import { THREE, createLook, createStage, Director, picker, outline, labels, streamer, exploder, setShell, dispose, ease, reduced } from './kit.js';
+import { H, TW, TD, BAND, floorParts, bandParts, cab as buildCab } from './tower.js';
+
+const look = createLook();
+const stage = createStage(document.getElementById('stage'), look);
+const { scene, camera, renderer } = stage;
+const layer = document.getElementById('labels');
+const L = labels(stage, layer);
+const CABX = TW / 2 + 1.5, LIFT = 3.6;
+
+/* ---------- elevator: travel one floor, wait, repeat ---------- */
+const TRAVEL = 2.6, DWELL = 1.6, START = 3;
+let simT = 0;
+const cabFloor = () => reduced.matches ? START : START + Math.floor(simT / (TRAVEL + DWELL)) + ease(Math.min(1, (simT % (TRAVEL + DWELL)) / TRAVEL));
+const cabObj = buildCab(look); const cabRoot = cabObj.a.build(); scene.add(cabRoot);
+const face = (mood = 0) => `<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="9" cy="9" r="7.3"/><circle cx="6.5" cy="7.4" r=".6" fill="currentColor"/><circle cx="11.5" cy="7.4" r=".6" fill="currentColor"/>${mood ? '<path d="M6 11.6h6"/>' : '<path d="M5.8 10.8c1.6 1.9 4.8 1.9 6.4 0"/>'}</svg>`;
+function bubble(name, line, mood) { const el = document.createElement('div'); el.className = 'bubble'; el.innerHTML = `<div class="face">${face(mood)}</div><div class="say"><b>${name}</b><span>${line}</span></div>`; return el; }
+const cabHead = new THREE.Vector3();
+L.add(bubble('乘客', '再上一层就到了。', 0), () => cabHead.copy(cabObj.head).add(cabRoot.position), { maxFog: 0.5 });
+
+/* ---------- floors and neighbour bands ---------- */
+const hitGeo = new THREE.BoxGeometry(TW, H - 0.3, TD), hitMat = new THREE.MeshBasicMaterial({ visible: false });
+const floors = streamer({ size: 1, ahead: 15, behind: 11,
+  make(n) {
+    const p = floorParts(n, look), g = new THREE.Group(); g.position.y = n * H; g.name = `${n}F`;
+    const shell = p.sh.build(), fu = p.fu.build();
+    g.add(p.st.build(), shell, fu); scene.add(g);
+    const hit = new THREE.Mesh(hitGeo, hitMat); hit.position.y = (H - 0.3) / 2; hit.userData.floor = n; hit.userData.keepGeometry = true; g.add(hit);
+    const f = { n, p, g, shell, fu, hit, cut: 1, lift: 0, removers: [] };
+    p.people.forEach((pp, i) => f.removers.push(L.add(bubble(pp.name, pp.line, (n + i) % 3 === 0), () => pp.head.clone().add(g.position), { when: () => f.cut < 0.35 })));
+    const tag = document.createElement('div'); tag.className = 'tag'; tag.textContent = `${String(n).padStart(2, '0')}F · ${p.zh}`; f.tag = tag;
+    f.removers.push(L.add(tag, () => new THREE.Vector3(TW / 2, g.position.y + H - 0.4, TD / 2), { when: () => f.cut < 0.35 || hovered === n }));
+    return f;
+  },
+  drop(n, f) { f.removers.forEach(r => r()); dispose(f.g); },
+});
+const bands = streamer({ size: BAND, ahead: 4, behind: 3,
+  make(b) { const o = bandParts(b, look).build(); scene.add(o); return o; },
+  drop(b, o) { dispose(o); },
+});
+
+/* ---------- camera shots and the tour ---------- */
+const shots = {
+  wide: () => ({ target: [-3, cabFloor() * H + 2, -4], zoom: 0.5, az: 45, el: 30 }),
+  ride: () => ({ target: [CABX - 1, cabFloor() * H + 1.4, 0], zoom: 1.2, az: 40, el: 24 }),
+  room: n => ({ target: [-0.2, n * H + 1.2, -0.2], zoom: 3, az: 44, el: 30 }),
+  side: () => ({ target: [CABX - 3.5, cabFloor() * H + 1, 0], zoom: 0.82, az: 20, el: 14 }),
+  top: () => ({ target: [-1, cabFloor() * H - 3, -1], zoom: 0.68, az: 62, el: 50 }),
+};
+const TOUR = [['wide', 8], ['ride', 9], ['room', 7], ['side', 7], ['top', 6]];
+const director = new Director(camera, shots.wide());
+const S = { shot: 'wide', focus: START, tour: !reduced.matches, tourI: 0, tourLeft: TOUR[0][1], exploded: 0, explodeTo: 0, explode: null };
+function go(shot, n, dur = 2.6) {
+  S.shot = shot; if (shot === 'room') S.focus = n ?? Math.round(cabFloor());
+  director.go(shot === 'room' ? shots.room(S.focus) : shots[shot](), dur);
+  if (shot !== 'room' && S.explodeTo) setExplode(false);
+  document.querySelectorAll('[data-shot]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.shot === shot)));
+  document.getElementById('explodeBtn').disabled = shot !== 'room';
+}
+function setTour(on) { S.tour = on && !reduced.matches; document.getElementById('tourBtn').setAttribute('aria-pressed', String(S.tour)); if (S.tour) { S.tourLeft = TOUR[S.tourI][1]; } }
+
+/* ---------- explode the focused floor into its parts ---------- */
+function setExplode(on) {
+  const f = floors.live.get(S.focus); if (!f) return;
+  const btn = document.getElementById('explodeBtn'), panel = document.getElementById('parts');
+  if (on) {
+    if (!S.explode) { f.fu.removeFromParent(); dispose(f.fu); f.fu = f.p.fu.build({ separate: true }); f.g.add(f.fu); S.explode = { f, set: exploder(f.fu, { spread: 0.5, lift: 1.5, bounds: new THREE.Box3(new THREE.Vector3(-TW / 2 + 0.3, 0, -TD / 2 + 0.3), new THREE.Vector3(TW / 2 - 0.2, 9, TD / 2 + 0.6)) }) }; }
+    S.explodeTo = 1; btn.textContent = '装回去';
+    const counts = new Map(); for (const m of f.p.fu.manifest()) { const k = m.name.replace(/^.+·/, '人·'); const c = counts.get(k) || { n: 0, size: m.size }; c.n++; counts.set(k, c); }
+    document.getElementById('partsTitle').textContent = `${String(f.n).padStart(2, '0')}F ${f.p.zh} · ${f.p.fu.parts.length} 个零件`;
+    document.getElementById('partsList').innerHTML = [...counts].map(([k, c]) => `<li>${k}${c.n > 1 ? ' ×' + c.n : ''} <span>${c.size.map(v => v.toFixed(1)).join('×')}</span></li>`).join('');
+    panel.hidden = false;
+  } else { S.explodeTo = 0; btn.textContent = '拆开'; panel.hidden = true; }
+}
+
+/* ---------- pointer: hover outlines a floor, click goes in ---------- */
+const box = outline(look); scene.add(box);
+let hovered = null;
+picker(stage, () => [...floors.live.values()].map(f => f.hit), {
+  hover(o) {
+    hovered = o ? o.userData.floor : null;
+    for (const f of floors.live.values()) f.tag.classList.toggle('hover', f.n === hovered);
+    if (o) { o.updateWorldMatrix(true, false); box.fit(new THREE.Box3().setFromObject(o)); } else box.visible = false;
+  },
+  click(o) { if (o) { setTour(false); go('room', o.userData.floor); } else if (S.shot === 'room') { setTour(true); go('wide'); } },
+});
+document.querySelectorAll('[data-shot]').forEach(b => b.onclick = () => { setTour(false); go(b.dataset.shot); });
+document.getElementById('explodeBtn').onclick = () => setExplode(!S.explodeTo);
+document.getElementById('tourBtn').onclick = () => setTour(!S.tour);
+addEventListener('keydown', e => { if (e.key === 'Escape') { setTour(true); go('wide'); } });
+
+/* ---------- frame ---------- */
+const floorNo = document.getElementById('floorNo'), floorName = document.getElementById('floorName');
+function tick(dt) {
+  if (!reduced.matches) simT += dt;
+  const cf = cabFloor(); cabRoot.position.set(CABX, cf * H + 0.02, 0);
+  floors.update(cf + 0.5); bands.update(cf);
+  if (S.tour) {
+    S.tourLeft -= dt;
+    if (S.tourLeft <= 0) { S.tourI = (S.tourI + 1) % TOUR.length; S.tourLeft = TOUR[S.tourI][1]; go(TOUR[S.tourI][0]); }
+  }
+  if (S.shot !== 'room') director.follow(shots[S.shot]().target);
+  const c = director.update(dt);
+  look.uniforms.uFocusY.value = c.target.y;
+  for (const f of floors.live.values()) {
+    const open = S.shot === 'room' ? f.n === S.focus : Math.abs(f.n - cf) < (S.shot === 'wide' || S.shot === 'top' ? 0.6 : 1.25);
+    f.cut += ((open ? 0 : 1) - f.cut) * (reduced.matches ? 1 : Math.min(1, dt * 3.2)); setShell(f.shell, f.cut);
+    // Looking into a room, the floors above lift away like a drawer pulled up, so the ceiling does not hide it.
+    const lift = S.shot === 'room' && f.n > S.focus ? LIFT : 0;
+    f.lift += (lift - f.lift) * (reduced.matches ? 1 : Math.min(1, dt * 2.6)); f.g.position.y = f.n * H + f.lift;
+  }
+  if (S.explode) {
+    S.exploded += (S.explodeTo - S.exploded) * (reduced.matches ? 1 : Math.min(1, dt * 3)); S.explode.set(ease(S.exploded));
+    if (!S.explodeTo && S.exploded < 0.002) { const f = S.explode.f; f.fu.removeFromParent(); dispose(f.fu); f.fu = f.p.fu.build(); f.g.add(f.fu); S.explode = null; S.exploded = 0; }
+  }
+  layer.classList.toggle('near', c.zoom > 1.6);
+  const shown = S.shot === 'room' ? S.focus : Math.round(cf); const fl = floors.live.get(shown);
+  floorNo.textContent = String(shown).padStart(2, '0') + 'F'; floorName.textContent = (S.shot === 'room' ? '正在看 · ' : '电梯在 · ') + (fl ? fl.p.zh : '');
+}
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  tick(dt); renderer.render(scene, camera); L.update(look.uniforms.uFocusY.value, look.uniforms.uVFar.value);
+  requestAnimationFrame(frame);
+}
+go('wide', null, 0); requestAnimationFrame(frame);
+reduced.addEventListener('change', () => setTour(!reduced.matches));
+
+// Test hooks for scripts/check.mjs (every scene built with this kit exposes the same window.__scene shape).
+window.__scene = {
+  state: () => ({ shot: S.shot, focus: S.focus, tour: S.tour, cab: cabFloor(), exploded: S.exploded, chunks: floors.live.size + bands.live.size,
+    objects: (() => { let k = 0; scene.traverse(() => k++); return k; })(), camera: camera.position.toArray().map(v => +v.toFixed(2)) }),
+  floor: n => { const f = floors.live.get(n); return f && { cut: f.cut, lift: f.lift }; },
+  // Screen position (CSS px) of the middle of floor n's front wall — the part of it a viewer sees and clicks.
+  screenOf: n => { const v = new THREE.Vector3(0, n * H + H / 2, TD / 2).project(camera), c = renderer.domElement; return [(v.x + 1) / 2 * c.clientWidth, (1 - v.y) / 2 * c.clientHeight]; },
+  advance(sec, step = 1 / 30) { for (let t = 0; t < sec; t += step) tick(step); renderer.render(scene, camera); L.update(look.uniforms.uFocusY.value, look.uniforms.uVFar.value); },
+  go, setExplode, setTour, scene, look, camera,
+};
+</script>
+</body>
+</html>

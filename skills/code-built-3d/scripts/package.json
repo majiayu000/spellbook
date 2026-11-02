@@ -1,0 +1,9 @@
+{
+  "name": "code-built-3d-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Headless browser checks for the code-built-3d skill. Install with PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install; any local Chromium works.",
+  "dependencies": {
+    "playwright": "1.56.1"
+  }
+}

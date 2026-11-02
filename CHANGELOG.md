@@ -17,6 +17,10 @@ Use this section for notable changes after the latest numbered release.
 
 ### Added
 
+- `code-built-3d`: build 3D scenes from code-made parts and take them apart (technical-illustration render, isometric camera, shell removal, exploded views with parts list, endless chunks), with a vendored three.js, an endless-tower demo and a headless check script.
+- `form-motion`: ten UI micro-interactions defined by prompts, sharing one retargetable damped spring, with an offline reference catalog and a real pointer/keyboard acceptance script (155 checks).
+- `hud-interface`: game-HUD style page shell with a liquid-marble shader backdrop and optional HTML-in-Canvas glass panels, with a demo and a headless check script.
+- `loop-close`: work-loop method that fixes the decision, metric and quit condition before starting and ends every study or feature with adopt / reject / needs-evidence.
 - `code-film`: make story-driven animated short films from code; a single three.js HTML file renders picture and sound from time `t` to MP4, with story and craft guides, reusable characters, and render, stills and check scripts.
 - `ascii-backdrop`: animated ASCII-character backdrop for UI pages; any subject (presets, text, image, video or a custom canvas draw function), printed as brightness, edge or shape-matched glyphs, braille, ordered dither or colour tiles, with cursor glow, a CRT finish, text decode and image-dissolve helpers, from a dependency-free engine, demo page and screenshot check script.
 
