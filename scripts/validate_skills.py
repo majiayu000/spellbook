@@ -167,6 +167,8 @@ CATEGORY_BY_NAME = {
     "xiaohongshu": "Content & Research",
     "xiaohongshu-netfeel-guardian": "Content & Research",
     "code-film": "Content & Research",
+    "motion-stack": "Content & Research",
+    "repo-film": "Content & Research",
 }
 
 

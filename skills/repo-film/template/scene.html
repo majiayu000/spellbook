@@ -1,0 +1,429 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>repo-film</title>
+<style>
+@font-face { font-family: 'SFMono'; src: url('./fonts/SFNSMono.ttf'); }
+@font-face { font-family: 'SFText'; src: url('./fonts/SFNS.ttf'); }
+:root { --bg: #07090c; --ink: #e8ecef; --dim: #7d8791; --accent: #2dd4bf; --warn: #f59e0b; }
+html, body { margin: 0; background: var(--bg); overflow: hidden; }
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg);
+  font-family: 'SFText', 'PingFang SC', sans-serif; color: var(--ink); }
+.layer { position: absolute; inset: 0; }
+.mono { font-family: 'SFMono', ui-monospace, monospace; }
+#grid { background-image: radial-gradient(#ffffff10 1.2px, transparent 1.2px); background-size: 36px 36px; }
+#dawn { background: radial-gradient(120% 60% at 50% 115%, #f59e0b40 0%, #fb923c18 35%, transparent 70%); opacity: 0; }
+canvas { position: absolute; inset: 0; }
+#hud { position: absolute; left: 36px; top: 30px; padding: 20px 30px 22px; background: #07090ce6; border: 1px solid #ffffff14; border-radius: 16px; }
+#hud .clk { font-size: 64px; font-weight: 600; letter-spacing: -1px; }
+#hud .clk .colon { color: var(--accent); }
+#hud .sub { font-size: 20px; color: var(--dim); letter-spacing: 2px; margin-top: 4px; }
+#hud .cnt { font-size: 22px; color: var(--dim); margin-top: 14px; }
+#hud .cnt b { color: var(--accent); font-size: 34px; font-weight: 600; margin-right: 6px; }
+#big { position: absolute; left: 0; right: 0; top: 440px; text-align: center; opacity: 0; }
+#big .zh { font-size: 88px; font-weight: 800; letter-spacing: 2px; text-shadow: 0 0 40px #000, 0 0 80px #000; }
+#big .en { font-size: 30px; color: #b8c2cc; margin-top: 14px; text-shadow: 0 0 20px #000; }
+#flash { background: #fff; opacity: 0; mix-blend-mode: screen; }
+/* map */
+#mapview { opacity: 0; }
+#cam { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+#cam .base { position: absolute; left: 0; top: 0; opacity: 0; }
+.tile { position: absolute; background-repeat: no-repeat; border-radius: 10px; }
+.ring { position: absolute; border: 3px solid var(--accent); border-radius: 14px; box-shadow: 0 0 0 6px #2dd4bf22, 0 0 40px #2dd4bf55; opacity: 0; }
+.ring.warn { border-color: var(--warn); box-shadow: 0 0 0 6px #f59e0b22, 0 0 40px #f59e0b66; }
+#chip { position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%); background: #07090ce8; border: 1px solid #2dd4bf66;
+  border-radius: 999px; padding: 18px 40px; text-align: center; white-space: nowrap; opacity: 0; }
+#chip .zh { font-size: 38px; font-weight: 600; }
+#chip .en { font-size: 22px; color: var(--dim); margin-top: 4px; }
+#vignette { background: radial-gradient(130% 100% at 50% 50%, transparent 60%, #000b 100%); }
+/* end */
+#end { opacity: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#logo { display: flex; align-items: center; gap: 30px; font-size: 104px; font-weight: 700; letter-spacing: -2px; }
+#dot { width: 70px; height: 70px; border-radius: 50%; border: 8px solid var(--accent); box-sizing: border-box; position: relative; }
+#dot::after { content: ''; position: absolute; inset: 14px; border-radius: 50%; background: var(--accent); }
+#tag { font-size: 44px; margin-top: 40px; font-weight: 600; }
+#tagen { font-size: 26px; color: var(--dim); margin-top: 12px; }
+#install { margin-top: 56px; font-size: 26px; background: #11161c; border: 1px solid #263039; border-radius: 12px; padding: 22px 36px; line-height: 1.7; }
+#install .p { color: var(--accent); }
+#meta { margin-top: 34px; font-size: 24px; color: var(--dim); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="layer" id="grid"></div>
+  <div class="layer" id="dawn"></div>
+  <div class="layer" id="mapview">
+    <div id="cam"></div>
+    <div class="layer" id="vignette"></div>
+    <div id="chip"><div class="zh"></div><div class="en"></div></div>
+  </div>
+  <canvas id="cv" width="1920" height="1080"></canvas>
+  <div id="hud"><div class="clk mono" id="clk"></div><div class="sub mono" id="sub"></div><div class="cnt"><b class="mono" id="nc">0</b>个提交　<b class="mono" id="ns">0</b>条分支</div></div>
+  <div id="big"><div class="zh"></div><div class="en"></div></div>
+  <div class="layer" id="flash"></div>
+  <div class="layer" id="end">
+    <div id="logo"><div id="dot"></div><span id="title"></span></div>
+    <div id="tag"></div>
+    <div id="tagen"></div>
+    <div id="install" class="mono"></div>
+    <div id="meta"></div>
+  </div>
+</div>
+<script src="./node_modules/tone/build/Tone.js"></script>
+<script src="./assets/film.js"></script>
+<script>
+const FILM = window.FILM, MAP = FILM.hasMap;
+const END = MAP ? 20.5 : 9.9;                 // end card starts here
+const W = 1920, H = 1080, FPS = 30, DUR = +(END + 3.5).toFixed(2);
+const $ = s => document.querySelector(s);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lin = (t, a, b) => clamp((t - a) / (b - a));
+const eio = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const eout = x => 1 - Math.pow(1 - x, 3);
+const ein = x => x * x * x;
+const back = x => { const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const mix = (a, b, k) => a + (b - a) * k;
+function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+
+// ---------------- the night as a flowchart: real git lanes ----------------
+const G0 = 0.35, G1 = 7.0;                 // film seconds in which the graph grows
+const SQ0 = 6.9, SQ1 = 8.1;                 // the timeline squeezes into one overview
+const MORPH0 = 9.4, MORPH1 = 11.0;          // graph → chain
+const LY = 230;
+let night, rects, nodes = [], edges = [], chainTargets = [], chainPaths = [];
+const TYPE = { feat: '#2dd4bf', fix: '#f59e0b', docs: '#a78bfa', refactor: '#60a5fa', style: '#60a5fa', test: '#60a5fa', merge: '#e8ecef' };
+const LANE = { 0: '#2dd4bf', 1: '#a78bfa', '-1': '#f59e0b', 2: '#f472b6', '-2': '#60a5fa' };
+const DX = t => mix(250, 64, eio(lin(t, SQ0, SQ1)));
+const nx = (n, t) => n.xi * DX(t), ny = n => -n.lane * LY;
+
+function build() {
+  const C = night.commits, N = C.length;
+  const K1 = Math.min(...C.filter(c => c.lane !== 0).map(c => c.x)) - 1, T1 = 1.9;   // the lone main-line stretch flies by
+  const at = k => k <= K1 ? G0 + (T1 - G0) * Math.pow(k / K1, 0.8) : T1 + (G1 - T1) * (1 - Math.pow(1 - (k - K1) / (N - 1 - K1), 1.6));
+  nodes.push({ kind: 'start', xi: -1.6, lane: 0, at: 0.12, label: FILM.startLabel, color: '#2dd4bf' });
+  C.forEach(c => nodes.push({ kind: c.merge ? 'merge' : 'commit', xi: c.x, lane: c.lane, at: at(c.x), label: c.label,
+    tag: c.t + '  ' + c.type, color: c.merge ? LANE[c.lane] : (TYPE[c.type] || '#2dd4bf'), lc: LANE[c.lane], time: c.t }));
+  C.forEach((c, k) => {
+    if (!c.p.length) edges.push({ a: 0, b: k + 1, main: true });
+    c.p.forEach((p, j) => edges.push({ a: p + 1, b: k + 1, main: c.lane === 0 && C[p].lane === 0 && j === 0, color: LANE[c.lane === 0 && j > 0 ? C[p].lane : c.lane] }));
+  });
+  build.lanes = [...new Set(C.map(c => c.lane))];
+  build.segs = night.segments;
+}
+function headAt(t) {
+  let i = 0; while (i < nodes.length - 1 && nodes[i + 1].at <= t) i++;
+  const a = nodes[i], b = nodes[Math.min(i + 1, nodes.length - 1)];
+  const k = b.at > a.at ? clamp((t - a.at) / (b.at - a.at)) : 0;
+  return { x: mix(nx(a, t), nx(b, t), eio(k)), y: mix(ny(a), ny(b), eio(k)) };
+}
+function gcam(t) {
+  // follow the newest work: x along the head, y through the lanes it has been on lately (pulled toward main)
+  let hx = 0, hy = 0; const S = 16;
+  for (let j = 0; j < S; j++) { const h = headAt(t - 1.2 * j / S); if (j < 10) hx += h.x / 10; hy += h.y / S; }
+  const lo = Math.min(...build.lanes), hi = Math.max(...build.lanes);
+  const followY = clamp(hy * 0.6, -Math.max(0, hi - 1.5) * LY, Math.max(0, -lo - 1.5) * LY);
+  const cy = mix(followY, -(lo + hi) / 2 * LY, eio(lin(t, SQ0 - 0.6, SQ1 + 0.2)));
+  const w = (nodes.length) * DX(t) + 300, h = (hi - lo) * LY + 260;
+  const fit = Math.min(W / w, H / h) * 0.94;
+  const z = eio(lin(t, SQ0 - 0.6, SQ1 + 0.2));
+  const near = Math.min(0.82, H * 0.86 / (Math.min(hi - lo, 6) * LY + 260));   // more lanes → step back a little
+  const s = mix(near, fit, z) * (1 + 0.03 * lin(t, SQ1, MORPH0));
+  const cx = mix(hx - 260, (nodes.length - 2) * DX(t) / 2, z);
+  return { s, x: W / 2 - cx * s, y: H / 2 - cy * s };
+}
+
+// ---------------- the morning map ----------------
+let MAPW = 1600, tiles = [], rings = [];
+const shots = [
+  { t: MORPH1 - 0.3, r: [40, 1235, 1520, 520] },  // chain (the graph lands here)
+  { t: 13.4, r: [40, 990, 1520, 250] },           // milestone track
+  { t: 15.6, r: [40, 90, 1520, 910] },            // headline + decisions
+  { t: 17.9, r: [40, 60, 1520, 2300] },           // the whole page
+];
+const chips = [
+  [11.2, 13.0, '下一步被什么卡住', 'What blocks the next milestone'],
+  [13.6, 15.3, '你在哪个里程碑', 'Where you are on the road'],
+  [15.8, 17.6, '一句话：昨晚变了什么，什么在等你', 'One line: what changed, what needs you'],
+  [18.1, 19.9, '一个 HTML 文件，双击就开，不联网', 'One HTML file. Double-click. No server.'],
+];
+function camFor(t) {
+  let i = 0; while (i < shots.length - 1 && t >= shots[i + 1].t - 0.8) i++;
+  const cur = shots[i], prev = shots[Math.max(0, i - 1)];
+  const k = i === 0 ? 1 : eio(lin(t, cur.t - 0.8, cur.t));
+  const r = cur.r.map((v, j) => mix(prev.r[j], v, k));
+  const s = Math.min(W * 0.92 / r[2], H * 0.92 / r[3]);
+  return { s, x: W / 2 - (r[0] + r[2] / 2) * s, y: H / 2 - (r[1] + r[3] / 2) * s };
+}
+function tile(b, at, kind) {
+  const el = document.createElement('div'); el.className = 'tile';
+  Object.assign(el.style, { left: b.x + 'px', top: b.y + 'px', width: b.w + 'px', height: b.h + 'px',
+    backgroundImage: 'url(assets/map.png)', backgroundSize: MAPW + 'px auto', backgroundPosition: `${-b.x}px ${-b.y}px` });
+  $('#cam').appendChild(el); tiles.push({ el, at, kind });
+}
+function ring(b, from, to, warn, p = 8) {
+  const el = document.createElement('div'); el.className = 'ring' + (warn ? ' warn' : '');
+  Object.assign(el.style, { left: b.x - p + 'px', top: b.y - p + 'px', width: b.w + 2 * p + 'px', height: b.h + 2 * p + 'px' });
+  $('#cam').appendChild(el); rings.push({ el, from, to });
+}
+
+let ctx;
+async function setup() {
+  night = await (await fetch('assets/night.json')).json();
+  $('#sub').textContent = FILM.sub;
+  $('#title').textContent = FILM.end.title; $('#tag').textContent = FILM.end.tagline; $('#tagen').textContent = FILM.end.taglineEn;
+  $('#install').innerHTML = FILM.end.lines.map(l => l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/^(\/\S+|\$)/, '<span class="p">$1</span>')).join('<br>');
+  $('#install').style.display = FILM.end.lines.length ? '' : 'none'; $('#meta').textContent = FILM.end.meta;
+  build();
+  await document.fonts.load('600 20px SFText'); await document.fonts.load('20px SFMono'); await document.fonts.load('20px "PingFang SC"');
+  ctx = $('#cv').getContext('2d', { willReadFrequently: true });   // CPU raster: same pixels whatever order frames are drawn in
+  if (!MAP) return;
+  rects = await (await fetch('assets/rects.json')).json();
+  MAPW = rects.page.w;
+  $('#cam').style.width = MAPW + 'px';
+  const B = k => rects.blocks.find(b => b.key === k);
+  const all = p => rects.blocks.filter(b => b.key.replace(/\d+$/, '') === p);
+  const base = document.createElement('img'); base.src = 'assets/map.png'; base.className = 'base'; base.style.width = MAPW + 'px';
+  $('#cam').appendChild(base); await base.decode();
+  // chain first: the graph collapses onto these nodes
+  if (B('chain')) tile(B('chain'), MORPH1 - 1.0, 'fade');
+  const cn = all('node').sort((a, b) => a.x - b.x || a.y - b.y);
+  cn.forEach((b, i) => tile(b, MORPH1 - 0.55 + i * 0.05, 'pop'));
+  cn.filter(b => b.cls.includes('n-stuck')).forEach(b => ring(b, 11.4, 13.0, true, 6));
+  // targets in page px for the morph
+  chainTargets = (cn.length ? cn : all('row')).map(b => ({ x: b.x + b.w / 2, y: b.y + b.h / 2, w: b.w, h: b.h }));
+  if (!cn.length) shots[0].r = [40, 90, 1520, 910];
+  chainPaths = (rects.paths || []).filter(p => p.stroke !== 'none');
+  all('ms').forEach((b, i) => tile(b, 12.7 + i * 0.15, 'rise'));
+  if (B('current')) ring(B('current'), 13.5, 15.2);
+  if (B('header')) tile(B('header'), 14.9, 'wipe');
+  all('row').forEach((b, i) => tile(b, 15.0 + i * 0.2, 'wipe'));
+  if (all('row').length) ring(all('row')[0], 15.7, 17.4);
+  ['remaining', 'parts', 'changes', 'uncertain'].forEach((k, i) => { const b = B(k); if (b) tile(b, 17.2 + i * 0.15, 'fade'); });
+}
+
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function fitText(s, max) { if (ctx.measureText(s).width <= max) return s; while (s.length && ctx.measureText(s + '…').width > max) s = s.slice(0, -1); return s + '…'; }
+
+function drawGraph(t) {
+  ctx.clearRect(0, 0, W, H);
+  if (t < MORPH0) return drawNormal(t);
+  if (!MAP) { const f = 1 - lin(t, MORPH0 - 0.2, MORPH0 + 0.4); if (f > 0) { ctx.globalAlpha = f; drawNormal(MORPH0); ctx.globalAlpha = 1; } return; }
+  const f = 1 - lin(t, MORPH0, MORPH0 + 0.45);
+  if (f > 0) { ctx.globalAlpha = f; drawNormal(MORPH0); ctx.globalAlpha = 1; }
+  drawMorph(t);
+}
+function drawNormal(t) {
+  const g = gcam(t), s = g.s, P = n => ({ x: g.x + nx(n, t) * s, y: g.y + ny(n) * s });
+  const detail = clamp((s - 0.28) / 0.25);                 // cards when close, glowing dots when far
+  ctx.save();
+  // lane rails: faint guides for every lane that exists tonight
+  for (const sg of build.segs) {
+    const a = nodes.find(n => n.xi >= sg.span[0]) || nodes[1];
+    const x0 = g.x + sg.span[0] * DX(t) * s, x1 = g.x + sg.span[1] * DX(t) * s, y = g.y - sg.lane * LY * s;
+    const k = lin(t, nodes[Math.min(nodes.length - 1, sg.span[0] + 1)].at - 0.1, nodes[Math.min(nodes.length - 1, sg.span[1] + 1)].at);
+    if (k <= 0) continue;
+    if (sg.name) { ctx.globalAlpha = detail * lin(t, nodes[sg.span[0] + 1].at, nodes[sg.span[0] + 1].at + 0.3);
+      ctx.font = '600 ' + Math.round(17 * Math.max(s, 0.6)) + 'px SFMono, monospace'; ctx.fillStyle = LANE[sg.lane]; ctx.textBaseline = 'bottom';
+      ctx.fillText('⑂ ' + sg.name, x0 + 40 * s, y - 52 * s); ctx.globalAlpha = 1; }
+  }
+  for (const e of edges) {
+    const A = nodes[e.a], B = nodes[e.b];
+    const k = lin(t, B.at - 0.18, B.at + 0.05);
+    if (k <= 0) continue;
+    const a = P(A), b = P(B), hot = clamp(1 - (t - B.at) / 0.6);
+    ctx.lineWidth = (e.main ? 4 : 3) * Math.max(0.55, s);
+    ctx.strokeStyle = hot > 0 ? `rgba(255,255,255,${0.4 + 0.6 * hot})` : e.color;
+    ctx.globalAlpha = hot > 0 ? 1 : 0.75;
+    const mx = mix(a.x, b.x, eout(k)), my = mix(a.y, b.y, eout(k));
+    ctx.beginPath(); ctx.moveTo(a.x, a.y);
+    if (Math.abs(a.y - b.y) < 1) ctx.lineTo(mx, my);
+    else { const cx = (a.x + b.x) / 2; ctx.bezierCurveTo(cx, a.y, cx, b.y, b.x, b.y); }
+    ctx.stroke();
+    if (k < 1 && Math.abs(a.y - b.y) < 1) { ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(mx, my, 5 * Math.max(0.7, s), 0, 7); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1;
+  nodes.forEach(n => {
+    const k = lin(t, n.at, n.at + 0.22); if (k <= 0) return;
+    const p = P(n), hot = clamp(1 - (t - n.at) / 0.5);
+    ctx.save(); ctx.translate(p.x, p.y);
+    if (hot > 0) { ctx.shadowColor = n.color; ctx.shadowBlur = 30 * hot; }
+    // far: a glowing dot on its lane
+    if (detail < 1) { ctx.globalAlpha = 1 - detail; ctx.fillStyle = n.kind === 'merge' ? '#fff' : n.lc || n.color;
+      ctx.beginPath(); ctx.arc(0, 0, (n.kind === 'merge' ? 7 : 5.5), 0, 7); ctx.fill(); ctx.globalAlpha = detail; }
+    if (detail > 0) {
+      const sc = s * back(k); ctx.scale(sc, sc);
+      if (n.kind === 'commit') {
+        const w = 226, h = 66;
+        rr(-w / 2, -h / 2, w, h, 11); ctx.fillStyle = '#0f151b'; ctx.fill();
+        ctx.lineWidth = 2.5; ctx.strokeStyle = n.lc; ctx.stroke(); ctx.shadowBlur = 0;
+        ctx.fillStyle = n.color; ctx.fillRect(-w / 2, -h / 2 + 9, 4, h - 18);
+        ctx.font = '14px SFMono, monospace'; ctx.fillStyle = n.color; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+        ctx.fillText(n.tag, -w / 2 + 16, -h / 2 + 18);
+        ctx.font = '600 19px SFText, "PingFang SC", sans-serif'; ctx.fillStyle = hot > 0 ? '#fff' : '#dfe6ec';
+        ctx.fillText(fitText(n.label, w - 30), -w / 2 + 16, h / 2 - 20);
+      } else if (n.kind === 'merge') {
+        ctx.rotate(Math.PI / 4); rr(-17, -17, 34, 34, 6); ctx.fillStyle = '#0f151b'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = n.color; ctx.stroke();
+        ctx.rotate(-Math.PI / 4); ctx.shadowBlur = 0; ctx.font = '600 15px SFText, "PingFang SC", sans-serif'; ctx.fillStyle = n.color; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText('合并', 0, 30);
+      } else {
+        const w = 230, h = 80; rr(-w / 2, -h / 2, w, h, 40); ctx.fillStyle = '#2dd4bf'; ctx.fill(); ctx.shadowBlur = 0;
+        ctx.font = '700 30px SFText, "PingFang SC", sans-serif'; ctx.fillStyle = '#04110f'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(n.label, 0, 1);
+      }
+    }
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+// the night's graph flies apart and regroups into the clean blocker chain
+function drawMorph(t) {
+  if (t > MORPH1 + 0.2) return;
+  const g = gcam(MORPH0), m = camFor(MORPH1), N = nodes.length, C = chainTargets.length;
+  const R = rng(5);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  nodes.forEach((n, i) => {
+    const c = chainTargets[Math.min(C - 1, Math.floor(i / N * C))];
+    const tx = m.x + (c.x + (R() - 0.5) * c.w * 0.8) * m.s, ty = m.y + (c.y + (R() - 0.5) * c.h * 0.7) * m.s;
+    const sx = g.x + nx(n, MORPH0) * g.s, sy = g.y + ny(n) * g.s;
+    const delay = R() * 0.45, span = MORPH1 - MORPH0 - 0.5;
+    const k = clamp((t - MORPH0 - delay) / span), e = eio(k), e0 = eio(clamp(k - 0.12));
+    const bow = (R() - 0.5) * 300 * Math.sin(Math.PI * e);
+    const x = mix(sx, tx, e) + bow, y = mix(sy, ty, e) - Math.abs(bow) * 0.3;
+    const x0 = mix(sx, tx, e0) + bow * 0.9, y0 = mix(sy, ty, e0);
+    const a = 1 - lin(k, 0.9, 1); if (a <= 0) return;
+    ctx.globalAlpha = a; ctx.strokeStyle = n.lc || n.color; ctx.lineWidth = n.kind === 'merge' ? 3 : 2;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x, y); ctx.stroke();
+    ctx.fillStyle = n.kind === 'merge' ? '#fff' : (n.lc || n.color);
+    ctx.beginPath(); ctx.arc(x, y, n.kind === 'merge' ? 5 : 3.5, 0, 7); ctx.fill();
+  });
+  ctx.restore();
+}
+
+// on the real map: light runs along every branch of the blocker chain at once
+function drawPulses(t) {
+  if (!MAP) return;
+  const P0 = MORPH1 - 0.1, P1 = 13.2;
+  if (t < P0 || t > P1) return;
+  const c = camFor(t), fade = lin(t, P0, P0 + 0.3) * (1 - lin(t, P1 - 0.4, P1));
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  chainPaths.forEach((p, i) => {
+    const pts = p.pts.map(([x, y]) => [c.x + x * c.s, c.y + y * c.s]);
+    const col = p.dashed ? '245,158,11' : '45,212,191';
+    ctx.globalAlpha = fade * 0.55; ctx.strokeStyle = `rgb(${col})`; ctx.lineWidth = 3; ctx.setLineDash(p.dashed ? [8, 8] : []);
+    ctx.beginPath(); pts.forEach(([x, y], j) => j ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); ctx.setLineDash([]);
+    for (let r = 0; r < 2; r++) {
+      const u = ((t - P0) / 0.9 + r * 0.5 + (i % 3) * 0.07) % 1, L = pts.length - 1;
+      const hj = u * L, tail = 10;
+      for (let j = Math.max(0, Math.floor(hj - tail)); j < Math.min(L, hj); j++) {
+        const f = 1 - (hj - j) / tail; ctx.globalAlpha = fade * f;
+        ctx.strokeStyle = `rgba(${col},1)`; ctx.lineWidth = 2 + 5 * f;
+        ctx.beginPath(); ctx.moveTo(...pts[j]); ctx.lineTo(...pts[j + 1]); ctx.stroke();
+      }
+      const j = Math.min(L - 1, Math.floor(hj)), q = hj - j;
+      const hx = mix(pts[j][0], pts[j + 1][0], q), hy = mix(pts[j][1], pts[j + 1][1], q);
+      ctx.globalAlpha = fade; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(hx, hy, 5, 0, 7); ctx.fill();
+    }
+  });
+  ctx.restore();
+}
+
+const vmin = s => { const [h, m] = s.split(':').map(Number); return (h < 12 ? h + 24 : h) * 60 + m; };
+function frame(t) {
+  drawGraph(t);
+  drawPulses(t);
+  // HUD: clock follows the newest commit
+  const done = nodes.filter(n => n.kind !== 'start' && n.at <= t);
+  const lastT = done.length ? done[done.length - 1].time : (night.commits[0] || {}).t || '';
+  $('#clk').innerHTML = lastT.replace(/:(\d\d)$/, '<span class="colon">:</span>$1');
+  $('#nc').textContent = done.length;
+  $('#ns').textContent = build.segs.filter(sg => nodes[Math.min(nodes.length - 1, sg.span[0] + 1)].at <= t).length;
+  $('#hud').style.opacity = lin(t, 0.2, 0.5) * (1 - lin(t, MAP ? 8.5 : 9.3, MAP ? 8.9 : 9.7));
+  // big words
+  const big = $('#big');
+  const say = (a, b, zh, en) => { if (t >= a && t < b) { big.querySelector('.zh').textContent = zh; big.querySelector('.en').textContent = en;
+    big.style.opacity = lin(t, a, a + 0.2) * (1 - lin(t, b - 0.25, b)); big.style.transform = `scale(${mix(1.15, 1, eout(lin(t, a, a + 0.35)))})`; return true; } return false; };
+  const C = FILM.captions, slots = [[0.6, 1.9], [3.0, 4.4], [7.6, MAP ? 8.6 : 9.3], [8.65, 9.5]];
+  if (!slots.some((w, k) => C[k] && say(w[0], w[1], C[k][0], C[k][1]))) big.style.opacity = 0;
+  // flashes on the big beats
+  $('#flash').style.opacity = 0.22 * clamp(1 - (t - 0.12) / 0.18) * (t >= 0.12 ? 1 : 0) + 0.16 * clamp(1 - (t - 7.55) / 0.22) * (t >= 7.55 ? 1 : 0);
+  $('#dawn').style.opacity = lin(t, 7.8, 9.0) * (1 - lin(t, 10.4, 11.2));
+  $('#grid').style.opacity = 1 - lin(t, MORPH0, MORPH1);
+  $('#grid').style.backgroundPosition = `${(gcam(Math.min(t, MORPH0)).x * 0.3) % 36}px ${(gcam(Math.min(t, MORPH0)).y * 0.3) % 36}px`;
+  // map
+  $('#mapview').style.opacity = MAP ? lin(t, MORPH1 - 1.1, MORPH1 - 0.5) * (1 - lin(t, END - 0.3, END + 0.2)) : 0;
+  const c = MAP ? camFor(t) : { x: 0, y: 0, s: 1 };
+  $('#cam').style.transform = `translate(${c.x}px, ${c.y}px) scale(${c.s})`;
+  $('#cam .base') && ($('#cam .base').style.opacity = 0.12 + 0.88 * lin(t, 17.9, 19.0));
+  for (const T of tiles) {
+    const k = lin(t, T.at, T.at + 0.45), e = eout(k), s = T.el.style;
+    s.opacity = k > 0 ? 1 : 0;
+    if (T.kind === 'wipe') s.clipPath = `inset(0 ${100 - e * 100}% 0 0)`;
+    if (T.kind === 'rise') { s.transform = `translateY(${(1 - e) * 40}px)`; s.opacity = e; }
+    if (T.kind === 'fade') s.opacity = e;
+    if (T.kind === 'pop') { s.transform = `scale(${mix(0.5, 1, back(lin(t, T.at, T.at + 0.35)))})`; s.opacity = e; }
+  }
+  for (const R of rings) {
+    const k = lin(t, R.from, R.from + 0.25) * (1 - lin(t, R.to - 0.3, R.to));
+    R.el.style.opacity = k; R.el.style.transform = `scale(${k ? 1 + 0.025 * Math.sin((t - R.from) * 7.5) : 1})`;
+  }
+  const ch = chips.find(x => t >= x[0] - 0.2 && t < x[1] + 0.2), chip = $('#chip');
+  if (ch) { chip.querySelector('.zh').textContent = ch[2]; chip.querySelector('.en').textContent = ch[3];
+    chip.style.opacity = lin(t, ch[0] - 0.2, ch[0] + 0.15) * (1 - lin(t, ch[1] - 0.15, ch[1] + 0.2)); } else chip.style.opacity = 0;
+  // end
+  const en = lin(t, END, END + 0.6);
+  $('#end').style.opacity = en;
+  $('#logo').style.transform = `translateY(${(1 - eout(en)) * 30}px)`;
+  $('#dot').style.transform = `scale(${t > END + 0.1 ? mix(0.3, 1, back(lin(t, END + 0.1, END + 0.7))) : 0.3})`;
+  $('#install').style.opacity = lin(t, END + 0.9, END + 1.4);
+  $('#meta').style.opacity = lin(t, END + 1.3, END + 1.8);
+}
+
+async function audio() {
+  const times = nodes.map(n => ({ at: n.at, kind: n.kind === 'merge' ? 'commit' : n.kind === 'commit' ? 'step' : n.kind }));
+  return Tone.Offline(() => {
+    const master = new Tone.Gain(0.9).toDestination();
+    const verb = new Tone.Reverb({ decay: 2.5, wet: 0.28 }).connect(master);
+    const thud = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 6, envelope: { attack: 0.001, decay: 0.7, sustain: 0 }, volume: -2 }).connect(master);
+    thud.triggerAttackRelease('A0', 0.6, 0.12);
+    // pulse bass that speeds up with the graph
+    const bass = new Tone.MonoSynth({ oscillator: { type: 'sawtooth' }, filter: { Q: 2, type: 'lowpass' }, filterEnvelope: { attack: 0.002, decay: 0.12, sustain: 0, baseFrequency: 80, octaves: 3 },
+      envelope: { attack: 0.002, decay: 0.15, sustain: 0, release: 0.05 }, volume: -14 }).connect(master);
+    for (let x = 0.6, step = 0.5; x < G1 + 0.1; x += step, step = Math.max(0.12, step * 0.94)) bass.triggerAttackRelease('A1', 0.1, x);
+    // a blip per node, pitch climbing through the night
+    const blip = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.002, decay: 0.06, sustain: 0, release: 0.04 }, volume: -22 }).connect(verb);
+    const big = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.002, decay: 0.1, sustain: 0, release: 0.05 }, volume: -24 }).connect(verb);
+    const notes = ['A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6', 'D6', 'E6'];
+    let last = -1;
+    times.forEach((n, i) => { if (n.at > G1 + 0.05) return; const w = Math.max(n.at, last + 0.03); last = w;
+      const ni = Math.min(notes.length - 1, Math.floor(w / G1 * notes.length));
+      (n.kind === 'commit' ? big : blip).triggerAttackRelease(notes[ni], 0.05, w); });
+    // riser into the reveal
+    const noise = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 2.4, decay: 0.05, sustain: 0, release: 0.05 }, volume: -26 });
+    const hp = new Tone.Filter({ type: 'bandpass', frequency: 1200, Q: 0.7 }).connect(master); noise.connect(hp);
+    hp.frequency.setValueAtTime(400, 5.0); hp.frequency.exponentialRampToValueAtTime(6000, 7.5);
+    noise.triggerAttackRelease(2.45, 5.1);
+    thud.triggerAttackRelease('D1', 0.8, 7.55);
+    const pad = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle' }, envelope: { attack: 0.3, decay: 1, sustain: 0.5, release: 2.5 }, volume: -15 }).connect(verb);
+    pad.triggerAttackRelease(['D3', 'A3', 'D4', 'F#4'], 1.4, 7.6);
+    // morph: falling whoosh, then a clean chord as the map appears
+    const air = new Tone.NoiseSynth({ noise: { type: 'pink' }, envelope: { attack: 0.8, decay: 0.6, sustain: 0, release: 0.2 }, volume: -20 });
+    const bp = new Tone.Filter({ type: 'bandpass', frequency: 3000, Q: 0.9 }).connect(verb); air.connect(bp);
+    bp.frequency.setValueAtTime(3000, MORPH0); bp.frequency.exponentialRampToValueAtTime(300, MORPH1);
+    if (MAP) { air.triggerAttackRelease(1.4, MORPH0); pad.triggerAttackRelease(['G3', 'B3', 'D4', 'F#4', 'A4'], 2.0, MORPH1 - 0.1); }
+    const pluck = new Tone.PluckSynth({ attackNoise: 1, dampening: 3200, resonance: 0.92, volume: -6 }).connect(verb);
+    if (MAP) [[13.4, 'D5'], [15.6, 'A4'], [17.9, 'F#5']].forEach(([w, n]) => pluck.triggerAttack(n, w));
+    const bell = new Tone.FMSynth({ harmonicity: 3, modulationIndex: 6, envelope: { attack: 0.002, decay: 1.2, sustain: 0, release: 1 }, volume: -16 }).connect(verb);
+    if (MAP) bell.triggerAttackRelease('A6', 0.8, 13.55);
+    const low = new Tone.MembraneSynth({ pitchDecay: 0.02, octaves: 3, envelope: { attack: 0.001, decay: 0.3, sustain: 0 }, volume: -12 }).connect(master);
+    if (MAP) { low.triggerAttackRelease('D2', 0.2, 11.4); low.triggerAttackRelease('D2', 0.2, 11.65); }
+    pad.triggerAttackRelease(['D3', 'A3', 'D4', 'F#4', 'A4'], 2.6, END + 0.05);
+    thud.triggerAttackRelease('D1', 0.6, END + 0.1);
+  }, DUR, 2, 48000);
+}
+
+window.motion = { width: W, height: H, fps: FPS, duration: DUR, seed: 7, setup, frame, audio };
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>drop</title>
+<style>html, body { margin: 0; background: #0e0f12; overflow: hidden; } canvas { display: block; }</style>
+<script type="importmap">{ "imports": { "three": "./node_modules/three/build/three.module.js" } }</script>
+<!-- UMD builds: they set window.Matter and window.Tone -->
+<script src="./node_modules/matter-js/build/matter.min.js"></script>
+<script src="./node_modules/tone/build/Tone.js"></script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+
+const W = 1920, H = 1080, FPS = 30, DUR = 6;
+const STEP = 1 / 240;                       // physics step, fixed: same input → same trajectory
+const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+
+// ---- 1. physics: simulate once, keep every step (frame(t) only reads this table) ----
+const { Engine, Bodies, Composite, Events } = Matter;
+const COLORS = [0xf2b134, 0xed553b, 0x3caea3, 0x20639b, 0xe8e8e8, 0xb48ead];
+const N = 14, tracks = [], hits = [];
+function simulate() {
+  const engine = Engine.create({ gravity: { y: 1.4 } });
+  const ground = Bodies.rectangle(0, 300, 2000, 40, { isStatic: true, restitution: .3 });
+  const bodies = [];
+  for (let i = 0; i < N; i++) {
+    const s = 50 + (i * 37) % 60;
+    const b = Bodies.rectangle(-420 + (i * 131) % 840, -500 - i * 140, s, s, { angle: i * .7, restitution: .35, friction: .4 });
+    b.size = s; b.color = COLORS[i % COLORS.length]; b.born = 0.35 * i;
+    bodies.push(b); tracks.push([]);
+  }
+  Composite.add(engine.world, [ground]);
+  let t = 0;
+  Events.on(engine, 'collisionStart', e => {
+    for (const p of e.pairs) {
+      const v = Math.hypot(p.bodyA.velocity.x - p.bodyB.velocity.x, p.bodyA.velocity.y - p.bodyB.velocity.y);
+      if (v > 2) hits.push({ t, v: Math.min(1, v / 25), size: (p.bodyA.size || p.bodyB.size) });
+    }
+  });
+  const added = new Set();
+  for (let k = 0; k * STEP <= DUR + STEP; k++, t = k * STEP) {
+    bodies.forEach((b, i) => { if (!added.has(i) && t >= b.born) { Composite.add(engine.world, b); added.add(i); } });
+    Engine.update(engine, STEP * 1000);
+    bodies.forEach((b, i) => tracks[i].push(added.has(i) ? [b.position.x, b.position.y, b.angle] : null));
+  }
+  return bodies;
+}
+
+// ---- 2. three.js stage ----
+let renderer, scene, camera, meshes, bodies;
+function setup() {
+  bodies = simulate();
+  renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  renderer.setSize(W, H); renderer.setPixelRatio(1);
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
+  scene = new THREE.Scene(); scene.background = new THREE.Color(0x0e0f12); scene.fog = new THREE.Fog(0x0e0f12, 900, 2600);
+  camera = new THREE.PerspectiveCamera(35, W / H, 1, 5000);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, .7));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(-400, 900, 600); sun.castShadow = true;
+  Object.assign(sun.shadow.camera, { left: -900, right: 900, top: 900, bottom: -900, far: 3000 }); sun.shadow.mapSize.set(2048, 2048);
+  scene.add(sun);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(6000, 6000), new THREE.MeshStandardMaterial({ color: 0x1a1c22, roughness: .9 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = -280; floor.receiveShadow = true; scene.add(floor);
+  meshes = bodies.map(b => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(b.size, b.size, b.size), new THREE.MeshStandardMaterial({ color: b.color, roughness: .45, metalness: .1 }));
+    m.castShadow = true; scene.add(m); return m;
+  });
+}
+
+// ---- 3. frame(t): pure — reads the physics table and computes the camera from t ----
+function frame(t) {
+  const k = Math.min(tracks[0].length - 1, t / STEP), k0 = Math.floor(k), f = k - k0;
+  meshes.forEach((m, i) => {
+    const a = tracks[i][k0], b = tracks[i][Math.min(k0 + 1, tracks[i].length - 1)] || a;
+    m.visible = !!a; if (!a) return;
+    m.position.set(a[0] + (b[0] - a[0]) * f, -(a[1] + (b[1] - a[1]) * f), 0);
+    m.rotation.z = -(a[2] + (b[2] - a[2]) * f);
+  });
+  const p = ease(Math.min(1, t / DUR)), ang = -0.5 + p * 0.9;
+  camera.position.set(Math.sin(ang) * 1150, 120 - p * 140, Math.cos(ang) * 1150);
+  camera.lookAt(0, -170, 0);
+  renderer.render(scene, camera);
+}
+
+// ---- 4. audio: rendered offline from the same hit list, so sound and picture line up exactly ----
+async function audio() {
+  return Tone.Offline(() => {
+    const synth = new Tone.PolySynth(Tone.MembraneSynth, { pitchDecay: .02, octaves: 4, envelope: { attack: .001, decay: .25, sustain: 0, release: .1 } }).toDestination();
+    synth.maxPolyphony = 32;
+    const pad = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 1.5, release: 2 }, volume: -26 }).toDestination();
+    pad.triggerAttackRelease('A2', DUR - 1.5, 0);
+    let last = -1;
+    for (const h of hits) {
+      if (h.t - last < .03) continue;                 // collapse simultaneous contacts
+      last = h.t;
+      synth.triggerAttackRelease(h.size > 85 ? 'C2' : h.size > 65 ? 'G2' : 'D3', .2, h.t, .3 + .7 * h.v);
+    }
+  }, DUR, 2, 48000);
+}
+
+window.motion = { width: W, height: H, fps: FPS, duration: DUR, seed: 7, setup, frame, audio };
+</script>
+</body>
+</html>

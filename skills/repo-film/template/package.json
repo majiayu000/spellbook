@@ -1,0 +1,8 @@
+{
+  "name": "repo-film",
+  "private": true,
+  "description": "A repo's real git lanes grow into a flowchart, optionally collapse into its you-are-here map, then an end card.",
+  "dependencies": {
+    "tone": "15.1.22"
+  }
+}

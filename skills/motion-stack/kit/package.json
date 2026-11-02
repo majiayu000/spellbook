@@ -1,0 +1,14 @@
+{
+  "name": "motion-stack-kit",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Render a browser scene to MP4 as a pure function of time, with a reproducibility manifest.",
+  "scripts": {
+    "check": "node render.mjs --check"
+  },
+  "dependencies": {
+    "playwright": "^1.47.0"
+  },
+  "license": "MIT"
+}

@@ -17,6 +17,8 @@ Use this section for notable changes after the latest numbered release.
 
 ### Added
 
+- `motion-stack`: code-made motion films; pick the fewest libraries, write a scene as a pure function of time, render headless to MP4 with a purity check, sound rendered before frames (a broken audio() stops in seconds), two-pass loudness to -14 LUFS, and a reproducibility manifest.
+- `repo-film`: one command from a repo and a time window to a short film; real git lanes (forks, parallel branches, merges) grow into a flowchart, optionally collapse into the repo's you-are-here map, then an editable end card. Built on motion-stack.
 - `code-built-3d`: build 3D scenes from code-made parts and take them apart (technical-illustration render, isometric camera, shell removal, exploded views with parts list, endless chunks), with a vendored three.js, an endless-tower demo and a headless check script.
 - `form-motion`: ten UI micro-interactions defined by prompts, sharing one retargetable damped spring, with an offline reference catalog and a real pointer/keyboard acceptance script (155 checks).
 - `hud-interface`: game-HUD style page shell with a liquid-marble shader backdrop and optional HTML-in-Canvas glass panels, with a demo and a headless check script.

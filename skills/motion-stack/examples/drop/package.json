@@ -1,0 +1,10 @@
+{
+  "name": "motion-stack-example-drop",
+  "private": true,
+  "description": "Three.js render + Matter.js physics replayed at a fixed step + Tone.js offline sound on impacts.",
+  "dependencies": {
+    "matter-js": "0.20.0",
+    "three": "0.186.1",
+    "tone": "15.1.22"
+  }
+}

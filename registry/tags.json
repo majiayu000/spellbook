@@ -1,5 +1,5 @@
 {
-  "total_skills": 119,
+  "total_skills": 121,
   "total_tags": 37,
   "tag_counts": {
     "3d-modeling": 2,
@@ -20,7 +20,7 @@
     "frontend": 20,
     "go": 3,
     "harmonyos": 1,
-    "javascript": 8,
+    "javascript": 9,
     "multi-ai": 7,
     "observability": 3,
     "performance": 9,
@@ -231,6 +231,7 @@
       "code-film",
       "figma-to-code",
       "figma-to-react",
+      "motion-stack",
       "npm-supply-chain-check",
       "react-best-practices",
       "ui-ux-pro-max"

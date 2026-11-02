@@ -1068,6 +1068,22 @@
     ]
   },
   {
+    "name": "motion-stack",
+    "category": "Content & Research",
+    "format": "directory",
+    "path": "skills/motion-stack/SKILL.md",
+    "description": "用代码做动效短片的通用底座：按 brief 从 20 个开源库（Three.js、PixiJS、p5、Paper、Matter、Rapier、anime.js、tsParticles、OGL、GL Transitions、Tone.js、Chatterbox、faster-whisper、Remotion、HyperFrames、FFmpeg 等）里挑最小组合，写成「画面是时间的纯函数」的场景，用本地无头渲染器出 MP4（可带离线合成的音效），并自动写出可复现清单（库版本、字体、文件哈希、引擎版本、命令）。当用户说「做个动效 / motion 短片 / 物理动画 / 3D 动画视频 / 用 three.js 做个视频 / 用这套 motion stack」时使用。MV、知识视频、尺寸图动画走各自专用 skill。只在明确请求时触发，忽略顺带提及。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": [
+      "javascript"
+    ]
+  },
+  {
     "name": "multi-ai-research",
     "category": "AI & Agent Workflow",
     "format": "directory",
@@ -1404,6 +1420,20 @@
       "agent",
       "code-review"
     ]
+  },
+  {
+    "name": "repo-film",
+    "category": "Content & Research",
+    "format": "directory",
+    "path": "skills/repo-film/SKILL.md",
+    "description": "把一个 git 仓库在一段时间里的真实提交做成 15–25 秒的炫酷短片：主线和各条分支按真实分叉、合并同时生长成流程图，越长越快再拉远看全景；仓库有 you-are-here 项目地图时，整张网会收拢成地图里的阻塞链，再沿地图讲卡点、当前位置和一句话总结，最后接可改的结尾卡片。一行命令出 MP4，基于 motion-stack 渲染器。当用户说「把这个仓库这周 / 昨晚做的事做成视频」「做个项目进展短片」「git 记录做成流程图动画」「给 you-are-here / 某项目做宣传视频」「像上次 Keepline 那个视频一样做一个」时使用。只在明确请求时触发，忽略顺带提及。",
+    "language": "zh",
+    "compatibility": {
+      "runtimes": [
+        "unspecified"
+      ]
+    },
+    "tags": []
   },
   {
     "name": "repo-scaffold",

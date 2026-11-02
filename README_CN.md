@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>119 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
+  <p><strong>121 个跨 Runtime Skills | 7 个 Claude Code Agents | 一键安装</strong></p>
 
   <p>面向 Claude Code、Codex 与多智能体工作流的跨 Runtime 技能库。</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-119-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-121-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -330,6 +330,8 @@ python3 scripts/audit_skill_quality.py skill-creator
 | [`trip-planner`](./skills/trip-planner/) | 旅行行程规划 |
 | [`avoidance-coach`](./skills/avoidance-coach/) | 打破回避循环的自助练习教练（CBT/DBT/ACT，不替代心理治疗） |
 | [`code-film`](./skills/code-film/) | 用纯代码做有故事的动画短片：一个 three.js HTML 文件，画面和声音都是时间的函数，离线渲染成 MP4，自带 Clawd 角色 |
+| [`motion-stack`](./skills/motion-stack/) | 用代码做动效短片的底座：从 20 个开源库里挑最少组合，场景的画面和声音都是时间的纯函数，无头渲染成 MP4，带纯度检查、自动响度（-14 LUFS）和可复现清单 |
+| [`repo-film`](./skills/repo-film/) | 把仓库任意一段时间的真实提交做成短片：主线和分支按真实分叉、合并长成流程图，可收拢进 you-are-here 项目地图；一行命令出 MP4 |
 | [`weekly`](./skills/weekly/) | 整合 Git、Claude Code、Codex session 生成周报 |
 | [`xiaohongshu-netfeel-guardian`](./skills/xiaohongshu-netfeel-guardian/) | 去除 Claude 中文内容的翻译腔，恢复母语网感 |
 

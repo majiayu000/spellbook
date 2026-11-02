@@ -1,13 +1,13 @@
 <div align="center">
   <h1>Spellbook</h1>
-  <p><strong>119 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
+  <p><strong>121 Cross-Runtime Skills | 7 Claude Code Agents | One Command Install</strong></p>
 
   <p>A cross-runtime skill library for Claude Code, Codex, and multi-agent workflows.</p>
 
   <p>
     <a href="https://github.com/majiayu000/spellbook/stargazers"><img src="https://img.shields.io/github/stars/majiayu000/spellbook?style=flat-square&logo=github" alt="Stars"></a>
     <a href="https://github.com/majiayu000/spellbook/blob/main/LICENSE"><img src="https://img.shields.io/github/license/majiayu000/spellbook?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/skills-119-blue?style=flat-square" alt="Skills">
+    <img src="https://img.shields.io/badge/skills-121-blue?style=flat-square" alt="Skills">
     <img src="https://img.shields.io/badge/agents-7-green?style=flat-square" alt="Agents">
   </p>
 
@@ -333,6 +333,8 @@ Deploy models and diagnose local and remote environments.
 | [`trip-planner`](./skills/trip-planner/) | Travel itinerary planning |
 | [`avoidance-coach`](./skills/avoidance-coach/) | Self-help coach for breaking avoidance loops (CBT/DBT/ACT, not therapy) |
 | [`code-film`](./skills/code-film/) | Make story-driven animated short films from pure code: a three.js HTML file whose picture and sound are functions of time, rendered offline to MP4, with the Clawd character included |
+| [`motion-stack`](./skills/motion-stack/) | Code-made motion films: pick the fewest of 20 open-source libraries, write a scene whose picture and sound are pure functions of time, render headless to MP4 with purity check, auto loudness (-14 LUFS) and a reproducibility manifest |
+| [`repo-film`](./skills/repo-film/) | Turn a repo's real commits over any time window into a short film: main line and branches grow as a flowchart with true forks and merges, optionally collapse into its you-are-here project map; one command to MP4 |
 | [`weekly`](./skills/weekly/) | Weekly report from Git, Claude Code, and Codex sessions |
 | [`xiaohongshu-netfeel-guardian`](./skills/xiaohongshu-netfeel-guardian/) | Remove translation-tone from Claude's Chinese content for native readability |
 
