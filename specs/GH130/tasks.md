@@ -31,7 +31,7 @@ Tasks `SP130-T2`, `SP130-T3`, and `SP130-T4` can be planned independently, but t
 - `python3 scripts/audit_skill_quality.py skill-lifeguard`
 - `python3 scripts/audit_skill_quality.py review-gate`
 - `python3 -m py_compile scripts/*.py`
-- `env PYTHONDONTWRITEBYTECODE=1 python3 /Users/apple/Desktop/code/AI/tool/specrail/checks/check_workflow.py --repo /Users/apple/Desktop/code/AI/tool/specrail --spec-dir specs/GH130`
+- `env PYTHONDONTWRITEBYTECODE=1 python3 <specrail-checkout>/checks/check_workflow.py --repo <specrail-checkout> --spec-dir specs/GH130`
 
 ## Handoff Notes
 

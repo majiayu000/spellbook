@@ -439,8 +439,8 @@ def test_managed_physical_skill_does_not_require_a_pin(tmp_path: Path) -> None:
 
 def test_reconcile_discovers_new_project_worktree(tmp_path: Path) -> None:
     registry = tmp_path / "registry"
-    project = tmp_path / "aiproxy"
-    worktree = tmp_path / "aiproxy-feature"
+    project = tmp_path / "acme-api"
+    worktree = tmp_path / "acme-api-feature"
     for target in (project, worktree):
         target.mkdir()
     write_skill(registry / "skills", "prod-skill")
@@ -448,7 +448,7 @@ def test_reconcile_discovers_new_project_worktree(tmp_path: Path) -> None:
     policy = {
         "trigger_boundary": {"clause": " Trigger only when explicitly requested."},
         "project_scopes": {str(project): ["prod-skill"]},
-        "project_scope_globs": {str(tmp_path / "aiproxy*"): ["prod-skill"]},
+        "project_scope_globs": {str(tmp_path / "acme-api*"): ["prod-skill"]},
         "cold_storage": [],
         "duplicate_resolution": {"retire_registry_mirror": []},
     }
@@ -469,8 +469,8 @@ def test_reconcile_discovers_new_project_worktree(tmp_path: Path) -> None:
 
 def test_reconcile_removes_quarantined_and_retired_links(tmp_path: Path) -> None:
     registry = tmp_path / "registry"
-    project = tmp_path / "aiproxy"
-    worktree = tmp_path / "aiproxy-feature"
+    project = tmp_path / "acme-api"
+    worktree = tmp_path / "acme-api-feature"
     for target in (project, worktree):
         target.mkdir()
     unsafe = write_skill(registry / "skills", "unsafe-skill")
@@ -493,7 +493,7 @@ def test_reconcile_removes_quarantined_and_retired_links(tmp_path: Path) -> None
         "trigger_boundary": {"clause": " Trigger only when explicitly requested."},
         "default_scope": "global",
         "project_scopes": {str(project): ["project-skill"]},
-        "project_scope_globs": {str(tmp_path / "aiproxy*"): ["project-skill"]},
+        "project_scope_globs": {str(tmp_path / "acme-api*"): ["project-skill"]},
         "quarantined": ["unsafe-skill"],
         "retired": ["retired-skill"],
         "duplicate_resolution": {"retire_registry_mirror": []},

@@ -61,7 +61,7 @@ Inputs are user requests, repo diffs, run logs, handoffs, and skill files. Outpu
 - [ ] Unit tests: not applicable; no production library behavior changes.
 - [ ] Integration tests: `python3 scripts/validate_skills.py --check`.
 - [ ] Advisory audits: `python3 scripts/audit_skill_quality.py skill-lifeguard` and `python3 scripts/audit_skill_quality.py review-gate`.
-- [ ] SpecRail: `env PYTHONDONTWRITEBYTECODE=1 python3 /Users/apple/Desktop/code/AI/tool/specrail/checks/check_workflow.py --repo /Users/apple/Desktop/code/AI/tool/specrail --spec-dir specs/GH130`.
+- [ ] SpecRail: `env PYTHONDONTWRITEBYTECODE=1 python3 <specrail-checkout>/checks/check_workflow.py --repo <specrail-checkout> --spec-dir specs/GH130`.
 
 ## Rollback Plan
 

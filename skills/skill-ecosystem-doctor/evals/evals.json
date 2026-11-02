@@ -47,7 +47,7 @@
     {
       "id": 7,
       "name": "New worktree projection drift",
-      "prompt": "我新建了一个匹配 aiproxy* 的 worktree，检查项目级 Skill 是否需要同步，先给我 dry-run。",
+      "prompt": "我新建了一个匹配 acme-api* 的 worktree，检查项目级 Skill 是否需要同步，先给我 dry-run。",
       "expected_behavior": "Use the existing governance policy, run the reconciler without --apply, report every missing Codex and Claude project projection, and make no mutation.",
       "type": "objective"
     },

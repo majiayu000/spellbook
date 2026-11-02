@@ -72,7 +72,7 @@ def clean_project_name(slug):
     """Strip the flattened home-dir prefix from a project dir name.
 
     Works for any user's home (local or synced remote), e.g.
-    "-Users-lifcc-Desktop-code-AI-foo" -> "AI-foo".
+    "-Users-alice-Desktop-code-AI-foo" -> "AI-foo".
     """
     m = re.match(r"^-(?:Users|home)-[^-]+-(?:Desktop-code-)?", slug)
     return slug[m.end():] if m else slug
