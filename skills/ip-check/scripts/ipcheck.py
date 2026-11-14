@@ -338,6 +338,14 @@ def layer_reputation(ip):
         out["sources"]["ipapi_is"]["asn_type"] = (d.get("asn") or {}).get("type")
     except Exception:
         out["sources"]["ipapi_is"] = {"error": b[:120]}
+    # VPNDetection（免费无 key 无配额）
+    st, b = _get(f"https://api.vpndetection.io/{ip}")
+    try:
+        d = json.loads(b)
+        out["sources"]["vpndetection"] = {k: d.get(k) for k in ("is_vpn", "is_tor", "is_relay")}
+        out["sources"]["vpndetection"]["asn_type"] = (d.get("asn") or {}).get("type")
+    except Exception:
+        out["sources"]["vpndetection"] = {"error": b[:120]}
     # AbuseIPDB（需 key）
     key = os.environ.get("ABUSEIPDB_KEY")
     if key:

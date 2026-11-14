@@ -481,13 +481,17 @@ class DataLayerTests(unittest.TestCase):
             "is_vpn": False, "is_abuser": False,
             "company": {"type": "isp"}, "asn": {"type": "isp"},
         }
+        vpndetection = {"is_vpn": False, "is_tor": False, "is_relay": False, "asn": {"type": "isp"}}
         ipqs = {"fraud_score": 0, "proxy": False, "vpn": False, "tor": False}
         abuse = {"data": {"abuseConfidenceScore": 0, "totalReports": 0, "usageType": "ISP"}}
         with (
             mock.patch.dict(ipcheck.os.environ, {"ABUSEIPDB_KEY": "a", "IPQS_KEY": "q"}, clear=True),
             mock.patch.object(
                 ipcheck, "_get",
-                side_effect=[(200, json.dumps(proxycheck)), (200, json.dumps(ipapi)), (200, json.dumps(ipqs))],
+                side_effect=[
+                    (200, json.dumps(proxycheck)), (200, json.dumps(ipapi)),
+                    (200, json.dumps(vpndetection)), (200, json.dumps(ipqs)),
+                ],
             ),
             mock.patch.object(
                 ipcheck.urllib.request, "urlopen", return_value=self.Response(json.dumps(abuse))
@@ -495,6 +499,10 @@ class DataLayerTests(unittest.TestCase):
         ):
             output = ipcheck.layer_reputation("1.1.1.1")
         self.assertEqual(output["sources"]["proxycheck"]["risk"], 0)
+        self.assertEqual(
+            output["sources"]["vpndetection"],
+            {"is_vpn": False, "is_tor": False, "is_relay": False, "asn_type": "isp"},
+        )
         self.assertEqual(output["sources"]["abuseipdb"]["score"], 0)
         self.assertEqual(output["sources"]["ipqs"]["fraud_score"], 0)
 
