@@ -513,6 +513,17 @@ class DataLayerTests(unittest.TestCase):
             skipped = ipcheck.layer_reputation("1.1.1.1")
         self.assertIn("skipped", skipped["sources"]["abuseipdb"])
         self.assertIn("skipped", skipped["sources"]["ipqs"])
+        self.assertIn("error", skipped["sources"]["vpndetection"])
+
+        with (
+            mock.patch.dict(ipcheck.os.environ, {}, clear=True),
+            mock.patch.object(
+                ipcheck, "_get",
+                side_effect=[(200, "{}"), (200, "{}"), (503, json.dumps({"error": "unavailable"}))],
+            ),
+        ):
+            failed = ipcheck.layer_reputation("1.1.1.1")
+        self.assertEqual(set(failed["sources"]["vpndetection"]), {"error"})
 
     def test_services_latency_and_ptr_success_paths(self):
         probes = [
