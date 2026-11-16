@@ -194,7 +194,7 @@ Skills for orchestrating, guarding, and maintaining AI agent workflows — the c
 | [`codex-fluent`](./skills/codex-fluent/) | Codex session hygiene, archive strategy, and handoff discipline |
 | [`codex-retrospective`](./skills/codex-retrospective/) | Codex self-review of recent history to improve behavior |
 | [`model-inference-optimize`](./skills/model-inference-optimize/) | Profile and optimize model inference with quality and cost checks, using anonymized cases |
-| [`brainstorming`](./skills/brainstorming/) | Socratic dialogue for design refinement and architecture exploration |
+| [`brainstorming`](./skills/brainstorming.SKILL.md) | Socratic dialogue for design refinement and architecture exploration |
 
 See [`docs/agent-reliability-trio.md`](./docs/agent-reliability-trio.md) for the Reliable Skill + Context Engineering + Review Gate workflow.
 
@@ -253,10 +253,10 @@ Disciplined end-to-end delivery: testing, commits, health checks, and contributi
 |-------|-------------|
 | [`agent-qa-testing`](./skills/agent-qa-testing/) | Web/mobile regression runs and triage with advanced memidex memory and self-improvement |
 | [`app-user-story-qa`](./skills/app-user-story-qa/) | End-to-end app feature inventory, canonical tracker, user-story testing, fixes, and retest loop |
-| [`test-driven-development`](./skills/test-driven-development/) | Enforce RED-GREEN-REFACTOR TDD discipline |
+| [`test-driven-development`](./skills/test-driven-development.SKILL.md) | Enforce RED-GREEN-REFACTOR TDD discipline |
 | [`comprehensive-testing`](./skills/comprehensive-testing/) | Test pyramid, unit/integration/E2E/property testing, framework best practices |
 | [`git-commit-smart`](./skills/git-commit-smart/) | Generate meaningful conventional commit messages from diff |
-| [`push-all`](./skills/push-all/) | Stage, commit, and push all changes after safety checks |
+| [`push-all`](./skills/push-all.SKILL.md) | Stage, commit, and push all changes after safety checks |
 | [`project-health-auditor`](./skills/project-health-auditor/) | Codebase health, tech debt, dependency, and project risk analysis |
 | [`loop-close`](./skills/loop-close/) | Close the loop on a feature, study or experiment: name the decision it supports and the quit condition up front, then end with adopt / reject / needs-evidence and archive it |
 | [`contribution-architect`](./skills/contribution-architect/) | Move from bug fixes to architectural improvements and debt discovery |
@@ -335,7 +335,7 @@ Deploy models and diagnose local and remote environments.
 | [`code-film`](./skills/code-film/) | Make story-driven animated short films from pure code: a three.js HTML file whose picture and sound are functions of time, rendered offline to MP4, with the Clawd character included |
 | [`motion-stack`](./skills/motion-stack/) | Code-made motion films: pick the fewest of 20 open-source libraries, write a scene whose picture and sound are pure functions of time, render headless to MP4 with purity check, auto loudness (-14 LUFS) and a reproducibility manifest |
 | [`repo-film`](./skills/repo-film/) | Turn a repo's real commits over any time window into a short film: main line and branches grow as a flowchart with true forks and merges, optionally collapse into its you-are-here project map; one command to MP4 |
-| [`weekly`](./skills/weekly/) | Weekly report from Git, Claude Code, and Codex sessions |
+| [`weekly`](./skills/weekly.SKILL.md) | Weekly report from Git, Claude Code, and Codex sessions |
 | [`xiaohongshu-netfeel-guardian`](./skills/xiaohongshu-netfeel-guardian/) | Remove translation-tone from Claude's Chinese content for native readability |
 
 ### Mobile & Cross-Platform
