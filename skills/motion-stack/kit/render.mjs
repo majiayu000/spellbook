@@ -216,14 +216,21 @@ if (audio && !o['no-loudnorm']) {
   const measure = f => { const r = spawnSync(FF, ['-hide_banner', '-nostats', '-i', f, '-af', `loudnorm=I=${target}:TP=-1.5:LRA=11:print_format=json`, '-f', 'null', '-'], { encoding: 'utf8' });
     const j = r.stderr.slice(r.stderr.lastIndexOf('{')); return JSON.parse(j.slice(0, j.indexOf('}') + 1)); };
   const m1 = measure(OUT);
-  const tmp = OUT.replace(/\.mp4$/i, '') + `.loud-${process.pid}.mp4`;
-  await run(FF, ['-y', '-loglevel', 'error', '-i', OUT, '-c:v', 'copy', '-af',
-    `loudnorm=I=${target}:TP=-1.5:LRA=11:measured_I=${m1.input_i}:measured_TP=${m1.input_tp}:measured_LRA=${m1.input_lra}:measured_thresh=${m1.input_thresh}:offset=${m1.target_offset}:linear=true`,
-    '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', tmp]);
-  execFileSync('mv', [tmp, OUT]);
-  const m2 = measure(OUT);
-  loud = { target_lufs: target, before_lufs: +m1.input_i, after_lufs: +m2.input_i, after_true_peak: +m2.input_tp };
-  console.log(`\nloudness ${loud.before_lufs} → ${loud.after_lufs} LUFS (target ${target}, true peak ${loud.after_true_peak} dBTP)`);
+  // Under 400 ms (one loudness block, e.g. --from 0 --to 0.1) or silent, the measurement is -inf/inf,
+  // which the second pass rejects: keep the level as rendered and say so in the manifest.
+  if (![m1.input_i, m1.input_tp, m1.input_lra, m1.input_thresh, m1.target_offset].every(v => Number.isFinite(+v))) {
+    loud = { target_lufs: target, skipped: `too short or silent to measure (${m1.input_i} LUFS)` };
+    console.log(`\nloudness left as rendered: ${loud.skipped}`);
+  } else {
+    const tmp = OUT.replace(/\.mp4$/i, '') + `.loud-${process.pid}.mp4`;
+    await run(FF, ['-y', '-loglevel', 'error', '-i', OUT, '-c:v', 'copy', '-af',
+      `loudnorm=I=${target}:TP=-1.5:LRA=11:measured_I=${m1.input_i}:measured_TP=${m1.input_tp}:measured_LRA=${m1.input_lra}:measured_thresh=${m1.input_thresh}:offset=${m1.target_offset}:linear=true`,
+      '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', tmp]);
+    execFileSync('mv', [tmp, OUT]);
+    const m2 = measure(OUT);
+    loud = { target_lufs: target, before_lufs: +m1.input_i, after_lufs: +m2.input_i, after_true_peak: +m2.input_tp };
+    console.log(`\nloudness ${loud.before_lufs} → ${loud.after_lufs} LUFS (target ${target}, true peak ${loud.after_true_peak} dBTP)`);
+  }
 }
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
 console.log(`\r${N} frames${audio ? ' + audio' : ''} → ${OUT}  (${secs} s)`);

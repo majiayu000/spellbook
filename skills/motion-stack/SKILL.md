@@ -42,7 +42,7 @@ description: 用代码做动效短片的通用底座：按 brief 从 20 个开�
      6. 画面亮度：主体不发闷、白色不糊成一片（用保持色相的 `NeutralToneMapping`，辉光阈值放在主体最亮值之上）。
 7. **出片。** `node $KIT/render.mjs scene.html --out out/film.mp4`。场景有 `audio()` 会自动混进去；外部音频用 `--audio file.wav`。只重渲一段用 `--from 2 --to 4`。
    - 声音**先于画面**生成：`audio()` 出错会在一帧都没渲之前停下（退出码 4）并说明原因；只要画面就加 `--no-audio`。
-   - 出片后自动用两遍 loudnorm 把响度调到 -14 LUFS（真峰值 ≤ -1.5 dBTP，峰值受限时会停在 -14.x），调整前后的数值写进清单 `audio.loudness`。目标改用 `--lufs -16`，保持原样用 `--no-loudnorm`。
+   - 出片后自动用两遍 loudnorm 把响度调到 -14 LUFS（真峰值 ≤ -1.5 dBTP，峰值受限时会停在 -14.x），调整前后的数值写进清单 `audio.loudness`。声音短于 0.4 秒（如 `--from 0 --to 0.1`）或全静音时测不出响度，保持原样，`audio.loudness.skipped` 写明原因。目标改用 `--lufs -16`，保持原样用 `--no-loudnorm`。
 8. **交付前读清单** `out/film.mp4.manifest.json`：`scene_errors` 要为空，`audio.loudness.after_lufs` 在 -15 到 -13 之间，`remote_requests` 要为空（否则离线无法复现），`fonts` 要都是 `loaded`，`libraries` 里没有 `NOT INSTALLED`。交付时把 MP4、清单和项目目录一起给。
 
 `KIT=<本 skill 目录>/kit`。第一次用先 `cd $KIT && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install && node render.mjs --check`。
