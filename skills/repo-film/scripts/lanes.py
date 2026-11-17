@@ -19,7 +19,8 @@ def main():
     ap.add_argument('--max', type=int, default=400, help='keep at most this many commits (newest)')
     a = ap.parse_args()
     branch = a.branch or git(a.repo, 'rev-parse', '--abbrev-ref', 'HEAD').strip()
-    raw = git(a.repo, 'log', '--all', f'--since={a.since}', f'--until={a.until}', '--topo-order', '--reverse',
+    # branches, remote branches, tags and HEAD; --all would also pull in refs/stash and refs/notes
+    raw = git(a.repo, 'log', '--branches', '--remotes', '--tags', 'HEAD', f'--since={a.since}', f'--until={a.until}', '--topo-order', '--reverse',
               '--format=%H%x09%P%x09%ct%x09%s')
     rows = [l.split('\t', 3) for l in raw.splitlines() if l.strip()]
     if not rows:

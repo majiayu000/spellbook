@@ -89,6 +89,20 @@ class RepoFilmTests(unittest.TestCase):
         self.assertGreater(b["head"][1], b["head"][0])        # the camera follows the head
         return beats
 
+    def test_stash_and_notes_are_not_branches(self):
+        self.commit("feat: one")
+        self.git("checkout", "-q", "-b", "wip")
+        self.commit("feat: local only")
+        self.git("checkout", "-q", "main")
+        self.commit("fix: two")
+        (self.repo / "f3").write_text("uncommitted", encoding="utf-8")
+        self.git("stash", "-q")
+        self.git("notes", "add", "-m", "a note", "HEAD")
+        night = self.lanes()
+        self.assertEqual([c["label"] for c in night["commits"]], ["one", "local only", "two"])
+        self.assertEqual(night["merges"], 0)
+        self.assertEqual([s["n"] for s in night["segments"]], [1])   # the local branch still counts
+
     @unittest.skipUnless(shutil.which("node"), "Node.js is needed to run the scene template")
     def test_linear_history_grows_through_the_window(self):
         for i in range(8):
