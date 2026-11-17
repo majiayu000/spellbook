@@ -23,7 +23,8 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSy
 import { createServer } from 'node:http';
 import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { dirname, resolve, relative, join, extname, sep } from 'node:path';
+import { dirname, resolve, relative, join, extname, sep, isAbsolute } from 'node:path';
+import { homedir } from 'node:os';
 import { createRequire } from 'node:module';
 import { findChromium, findFfmpeg } from './env.mjs';
 
@@ -251,13 +252,21 @@ function files() {
   return out;
 }
 const ffv = execFileSync(FF, ['-version']).toString().split('\n')[0];
+// The manifest is handed over with the film: paths inside the project are relative to it and paths under
+// the home folder start with ~, so it does not carry the user name or home layout.
+const HOME = homedir();
+const portable = p => {
+  const r = relative(ROOT, p);
+  if (r && r !== '..' && !r.startsWith('..' + sep) && !isAbsolute(r)) return r;
+  return p === HOME || p.startsWith(HOME + sep) ? '~' + p.slice(HOME.length) : p;
+};
 const manifest = {
-  out: relative(ROOT, OUT), sha256: sha(readFileSync(OUT)), rendered: new Date().toISOString(), render_seconds: +secs,
-  command: `node ${relative(ROOT, new URL(import.meta.url).pathname)} ${process.argv.slice(2).join(' ')}`.replace(/\s+/g, ' '),
+  out: portable(OUT), sha256: sha(readFileSync(OUT)), rendered: new Date().toISOString(), render_seconds: +secs,
+  command: `node ${portable(new URL(import.meta.url).pathname)} ${process.argv.slice(2).map(a => isAbsolute(a) ? portable(a) : a).join(' ')}`.replace(/\s+/g, ' '),
   scene: relative(ROOT, SCENE), size: [W, H], fps: FPS, range: [from, to], frames: N, seed: meta.seed ?? 1, clock: o['real-clock'] ? 'real' : 'frozen',
-  audio: audio ? { from: audioFrom, file: relative(ROOT, audio), sha256: sha(readFileSync(audio)).slice(0, 16), loudness: loud } : null,
+  audio: audio ? { from: audioFrom, file: portable(audio), sha256: sha(readFileSync(audio)).slice(0, 16), loudness: loud } : null,
   libraries: deps(), files: files(), fonts, remote_requests: [...remote],
-  engine: { chromium: exe.path, chromium_version: browser.version(), webgl, ffmpeg: ffv, node: process.version, playwright: require('playwright/package.json').version },
+  engine: { chromium: portable(exe.path), chromium_version: browser.version(), webgl, ffmpeg: ffv, node: process.version, playwright: require('playwright/package.json').version },
   scene_errors: errors,
 };
 writeFileSync(OUT + '.manifest.json', JSON.stringify(manifest, null, 2));

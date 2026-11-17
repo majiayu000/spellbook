@@ -5,6 +5,7 @@ Needs Node, ffmpeg, a playwright package the kit can import and a Chromium the k
 """
 
 import json
+import os
 import shutil
 import subprocess
 import unittest
@@ -67,6 +68,36 @@ class RenderLoudnessTests(unittest.TestCase):
         loud = self.render(1, 0.3)
         self.assertNotIn("skipped", loud)
         self.assertAlmostEqual(loud["after_lufs"], -14, delta=1.5)
+
+
+@unittest.skipUnless(kit_ready(), "needs node, ffmpeg, playwright and a Chromium for the motion-stack kit")
+class ManifestPathTests(unittest.TestCase):
+    """SKILL.md says to hand the manifest over with the film: it must not carry the user's home path."""
+
+    def test_manifest_has_no_home_path(self):
+        temp = TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        home = Path(temp.name).resolve() / "home"
+        work = home / "Videos" / "film"
+        work.mkdir(parents=True)
+        (work / "scene.html").write_text(SCENE % {"seconds": 1, "tone": 0.3}, encoding="utf-8")
+        # The Chromium the kit would use, reached through the throwaway home like a browser cache there.
+        found = subprocess.run(
+            ["node", "--input-type=module", "-e",
+             f"const m = await import({json.dumps((RENDER.parent / 'env.mjs').as_uri())}); console.log(m.findChromium().path);"],
+            capture_output=True, text=True, check=True).stdout.strip()
+        (home / "browser").symlink_to(Path(found).parent, target_is_directory=True)
+        env = {**os.environ, "HOME": str(home), "CHROMIUM_PATH": str(home / "browser" / Path(found).name)}
+        # repo-film's make.mjs passes an absolute --out like this one.
+        done = subprocess.run(["node", str(RENDER), "scene.html", "--out", str(work / "out" / "film.mp4"), "--no-audio"],
+                              cwd=work, env=env, capture_output=True, text=True, timeout=300)
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        text = (work / "out" / "film.mp4.manifest.json").read_text(encoding="utf-8")
+        self.assertNotIn(str(home), text)
+        manifest = json.loads(text)
+        self.assertEqual(manifest["engine"]["chromium"], "~/browser/" + Path(found).name)
+        self.assertTrue(manifest["command"].endswith("scene.html --out out/film.mp4 --no-audio"), manifest["command"])
+        self.assertEqual(manifest["out"], "out/film.mp4")
 
 
 if __name__ == "__main__":
