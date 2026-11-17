@@ -165,6 +165,8 @@ if (o.pure) {
 
 // ---------- film ----------
 if (!FF) { console.error('ffmpeg not found: brew install ffmpeg, or --ffmpeg /path'); await done(1); }
+// H.264 in yuv420p needs even sides, and ffmpeg only says so after it has read frames: stop before the first one.
+if (W % 2 || H % 2) { console.error(`the film needs an even width and height for H.264 (yuv420p), got ${W}×${H}: change window.motion.width/height or pass --width/--height`); await done(1); }
 const OUT = resolve(o.out || 'film.mp4');
 mkdirSync(dirname(OUT), { recursive: true });
 // Audio first: it is offline and takes seconds, so a broken audio() fails here, before minutes of frames.
@@ -198,14 +200,27 @@ const silent = OUT.replace(/\.mp4$/i, '') + `.video-${process.pid}.mp4`;
 const ff = spawn(FF, ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-i', '-',
   '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', String(o.crf || 18), '-preset', 'medium', '-movflags', '+faststart', silent],
   { stdio: ['pipe', 'inherit', 'inherit'] });
+// ffmpeg can quit at any frame (an option it rejects, no encoder, a full disk): stop drawing then, instead of
+// feeding a closed pipe, waiting for a 'drain' or 'close' that already passed, and muxing a video never written.
+let ffExit = null;
+const encoded = new Promise(r => {
+  ff.on('error', e => { ffExit = e.message; r(); });
+  ff.on('close', (code, signal) => { ffExit ??= code === 0 ? 0 : `exit ${code ?? signal}`; r(); });
+});
+ff.stdin.on('error', () => {}); // EPIPE once ffmpeg has gone; its exit code says why
 const t0 = Date.now();
-for (let i = 0; i < N; i++) {
+for (let i = 0; i < N && ffExit === null; i++) {
   const buf = await draw(from + i / FPS);
-  if (!ff.stdin.write(buf)) await new Promise(r => ff.stdin.once('drain', r));
+  if (!ff.stdin.write(buf)) await Promise.race([new Promise(r => ff.stdin.once('drain', r)), encoded]);
   if (i % FPS === 0) process.stdout.write(`\rframe ${i}/${N}`);
 }
 ff.stdin.end();
-await new Promise(r => ff.on('close', r));
+await encoded;
+if (ffExit !== 0) {
+  execFileSync('rm', ['-f', silent]);
+  console.error(`\nffmpeg could not encode the video (${ffExit}), see its message above`);
+  await done(1);
+}
 
 if (audio) await run(FF, ['-y', '-loglevel', 'error', '-i', silent, '-ss', String(from), '-i', audio, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', OUT]);
 else await run(FF, ['-y', '-loglevel', 'error', '-i', silent, '-c', 'copy', OUT]);

@@ -100,5 +100,48 @@ class ManifestPathTests(unittest.TestCase):
         self.assertEqual(manifest["out"], "out/film.mp4")
 
 
+FAILING_FFMPEG = """#!/bin/sh
+# Stands in for an ffmpeg that cannot open its encoder: it leaves the empty output file and exits at once.
+for last in "$@"; do :; done
+: > "$last"
+echo "fake ffmpeg: could not open encoder" >&2
+exit 187
+"""
+
+
+@unittest.skipUnless(kit_ready(), "needs node, ffmpeg, playwright and a Chromium for the motion-stack kit")
+class EncoderFailureTests(unittest.TestCase):
+    """When the video cannot be encoded, the render stops there, says why and leaves no half-written video."""
+
+    def setUp(self):
+        temp = TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.work = Path(temp.name)
+        (self.work / "scene.html").write_text(SCENE % {"seconds": 1, "tone": 0.3}, encoding="utf-8")
+        self.failing_ffmpeg = self.work / "ffmpeg"
+        self.failing_ffmpeg.write_text(FAILING_FFMPEG, encoding="utf-8")
+        self.failing_ffmpeg.chmod(0o755)
+
+    def render(self, *args):
+        done = subprocess.run(["node", str(RENDER), "scene.html", "--out", "out/film.mp4", *args],
+                              cwd=self.work, capture_output=True, text=True, timeout=60)
+        self.assertNotEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertNotIn("\n    at ", done.stderr)  # a message, not a stack trace
+        out = self.work / "out"
+        return done, sorted(p.name for p in out.iterdir()) if out.exists() else []
+
+    def test_odd_size_stops_before_the_first_frame(self):
+        # libx264 with yuv420p needs even sides; ffmpeg itself only says so after reading frames.
+        done, left = self.render("--width", "65")
+        self.assertIn("even width and height", done.stderr)
+        self.assertNotIn("frame ", done.stdout)
+        self.assertEqual(left, [])
+
+    def test_encoder_exit_stops_the_render(self):
+        done, left = self.render("--ffmpeg", str(self.failing_ffmpeg), "--no-audio")
+        self.assertIn("exit 187", done.stderr)
+        self.assertEqual(left, [])
+
+
 if __name__ == "__main__":
     unittest.main()
