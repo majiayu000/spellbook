@@ -72,7 +72,7 @@ export function findFfmpeg() {
 export async function launch(opts = {}) {
   let chromium;
   try { ({ chromium } = require('playwright')); }
-  catch { throw new Error('playwright is not installed: run `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install` in ' + new URL('..', import.meta.url).pathname); }
+  catch { throw new Error('playwright is not installed: run `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install` in ' + new URL('.', import.meta.url).pathname); }
   const c = findChromium();
   if (!c) throw new Error('no Chromium found: run `npx playwright install chromium-headless-shell` or set CHROMIUM_PATH');
   return chromium.launch({ executablePath: c.path, ...opts });
