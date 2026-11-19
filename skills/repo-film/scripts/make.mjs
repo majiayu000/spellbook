@@ -26,12 +26,34 @@ if (!fs.existsSync(path.join(KIT, 'node_modules/playwright'))) die(`motion-stack
 const run = (cmd, a, opt = {}) => execFileSync(cmd, a, { stdio: ['ignore', 'pipe', 'inherit'], ...opt }).toString();
 
 // 1. project folder from the template
+const manifest = path.join(out, 'package.json');
+if (fs.existsSync(out) && fs.readdirSync(out).length > 0) {
+  let project;
+  try { project = JSON.parse(fs.readFileSync(manifest, 'utf8')); }
+  catch { die(`choose an empty output directory or one with a readable repo-film package.json: ${out}`); }
+  if (project?.name !== 'repo-film') die(`choose an empty output directory: ${out}`);
+}
+const modules = path.join(out, 'node_modules');
+const hadModules = fs.lstatSync(modules, { throwIfNoEntry: false });
+const hasTone = fs.existsSync(path.join(modules, 'tone'));
+if (hadModules && !hasTone) die(`existing dependencies lack Tone.js: install it in ${out} or choose a new output directory`);
 fs.mkdirSync(path.join(out, 'assets'), { recursive: true });
 fs.mkdirSync(path.join(out, 'out'), { recursive: true });
-for (const f of ['scene.html', 'package.json']) fs.copyFileSync(path.join(SKILL, 'template', f), path.join(out, f));
-if (!fs.existsSync(path.join(out, 'node_modules/tone'))) {
+let backup;
+for (const name of ['scene.html', 'package.json']) {
+  const source = path.join(SKILL, 'template', name);
+  const target = path.join(out, name);
+  if (fs.lstatSync(target, { throwIfNoEntry: false })) {
+    if (fs.readFileSync(source).equals(fs.readFileSync(target))) continue;
+    backup ??= fs.mkdtempSync(path.join(out, 'template-backup-'));
+    fs.renameSync(target, path.join(backup, name));
+  }
+  fs.copyFileSync(source, target, fs.constants.COPYFILE_EXCL);
+}
+if (backup) console.log(`previous templates → ${backup}`);
+if (!hasTone) {
   const shared = path.join(KIT, '..', 'examples/drop/node_modules');
-  if (fs.existsSync(path.join(shared, 'tone'))) { fs.rmSync(path.join(out, 'node_modules'), { force: true, recursive: true }); fs.symlinkSync(shared, path.join(out, 'node_modules')); }
+  if (fs.existsSync(path.join(shared, 'tone'))) fs.symlinkSync(shared, modules);
   else run('npm', ['install', '--silent', '--no-audit', '--no-fund'], { cwd: out });
 }
 fs.mkdirSync(path.join(out, 'fonts'), { recursive: true });

@@ -19,6 +19,7 @@ node <本 skill 目录>/scripts/make.mjs \
 - 先加 `--sheet-only` 只出关键帧拼图（`out/beats.png`），自己看一遍再出片。
 - 成片在 `<out>/out/<仓库名>-film.mp4`，1920×1080、30fps，响度约 -14 LUFS。没有地图约 13 秒，有地图约 24 秒。
 - `--out` 默认是 `~/Videos/repo-film/<目录名>-<开始日期>`，里面就是完整工程，可以直接改 `scene.html` 或 `<out>/assets/film.js` 再用 motion-stack 的 `render.mjs` 重渲。
+- `--out` 用空目录或已有的 repo-film 工程。重跑会把改过的 `scene.html` 和 `package.json` 备份到 `template-backup-*`，再刷新模板。已有 `node_modules` 缺 Tone.js 时会停下来提示安装。
 - 依赖：motion-stack skill（装在本 skill 旁边，或在 `~/.claude/skills`、`~/.codex/skills`、`~/.agents/skills` 里，也可以用 `MOTION_KIT` 指向它的 `kit/`；第一次要在 `kit/` 里 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install`）、python3、ffmpeg。Tone.js 优先复用 motion-stack 示例的 `node_modules`，没有才 `npm install`。
 
 ## 流水线
