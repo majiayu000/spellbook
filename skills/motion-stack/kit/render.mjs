@@ -23,7 +23,8 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSy
 import { createServer } from 'node:http';
 import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { dirname, resolve, relative, join, extname, sep } from 'node:path';
+import { dirname, resolve, relative, join, extname, sep, isAbsolute } from 'node:path';
+import { homedir } from 'node:os';
 import { createRequire } from 'node:module';
 import { findChromium, findFfmpeg } from './env.mjs';
 
@@ -164,6 +165,8 @@ if (o.pure) {
 
 // ---------- film ----------
 if (!FF) { console.error('ffmpeg not found: brew install ffmpeg, or --ffmpeg /path'); await done(1); }
+// H.264 in yuv420p needs even sides, and ffmpeg only says so after it has read frames: stop before the first one.
+if (W % 2 || H % 2) { console.error(`the film needs an even width and height for H.264 (yuv420p), got ${W}×${H}: change window.motion.width/height or pass --width/--height`); await done(1); }
 const OUT = resolve(o.out || 'film.mp4');
 mkdirSync(dirname(OUT), { recursive: true });
 // Audio first: it is offline and takes seconds, so a broken audio() fails here, before minutes of frames.
@@ -197,14 +200,27 @@ const silent = OUT.replace(/\.mp4$/i, '') + `.video-${process.pid}.mp4`;
 const ff = spawn(FF, ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-i', '-',
   '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', String(o.crf || 18), '-preset', 'medium', '-movflags', '+faststart', silent],
   { stdio: ['pipe', 'inherit', 'inherit'] });
+// ffmpeg can quit at any frame (an option it rejects, no encoder, a full disk): stop drawing then, instead of
+// feeding a closed pipe, waiting for a 'drain' or 'close' that already passed, and muxing a video never written.
+let ffExit = null;
+const encoded = new Promise(r => {
+  ff.on('error', e => { ffExit = e.message; r(); });
+  ff.on('close', (code, signal) => { ffExit ??= code === 0 ? 0 : `exit ${code ?? signal}`; r(); });
+});
+ff.stdin.on('error', () => {}); // EPIPE once ffmpeg has gone; its exit code says why
 const t0 = Date.now();
-for (let i = 0; i < N; i++) {
+for (let i = 0; i < N && ffExit === null; i++) {
   const buf = await draw(from + i / FPS);
-  if (!ff.stdin.write(buf)) await new Promise(r => ff.stdin.once('drain', r));
+  if (!ff.stdin.write(buf)) await Promise.race([new Promise(r => ff.stdin.once('drain', r)), encoded]);
   if (i % FPS === 0) process.stdout.write(`\rframe ${i}/${N}`);
 }
 ff.stdin.end();
-await new Promise(r => ff.on('close', r));
+await encoded;
+if (ffExit !== 0) {
+  execFileSync('rm', ['-f', silent]);
+  console.error(`\nffmpeg could not encode the video (${ffExit}), see its message above`);
+  await done(1);
+}
 
 if (audio) await run(FF, ['-y', '-loglevel', 'error', '-i', silent, '-ss', String(from), '-i', audio, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', OUT]);
 else await run(FF, ['-y', '-loglevel', 'error', '-i', silent, '-c', 'copy', OUT]);
@@ -216,14 +232,21 @@ if (audio && !o['no-loudnorm']) {
   const measure = f => { const r = spawnSync(FF, ['-hide_banner', '-nostats', '-i', f, '-af', `loudnorm=I=${target}:TP=-1.5:LRA=11:print_format=json`, '-f', 'null', '-'], { encoding: 'utf8' });
     const j = r.stderr.slice(r.stderr.lastIndexOf('{')); return JSON.parse(j.slice(0, j.indexOf('}') + 1)); };
   const m1 = measure(OUT);
-  const tmp = OUT.replace(/\.mp4$/i, '') + `.loud-${process.pid}.mp4`;
-  await run(FF, ['-y', '-loglevel', 'error', '-i', OUT, '-c:v', 'copy', '-af',
-    `loudnorm=I=${target}:TP=-1.5:LRA=11:measured_I=${m1.input_i}:measured_TP=${m1.input_tp}:measured_LRA=${m1.input_lra}:measured_thresh=${m1.input_thresh}:offset=${m1.target_offset}:linear=true`,
-    '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', tmp]);
-  execFileSync('mv', [tmp, OUT]);
-  const m2 = measure(OUT);
-  loud = { target_lufs: target, before_lufs: +m1.input_i, after_lufs: +m2.input_i, after_true_peak: +m2.input_tp };
-  console.log(`\nloudness ${loud.before_lufs} → ${loud.after_lufs} LUFS (target ${target}, true peak ${loud.after_true_peak} dBTP)`);
+  // Under 400 ms (one loudness block, e.g. --from 0 --to 0.1) or silent, the measurement is -inf/inf,
+  // which the second pass rejects: keep the level as rendered and say so in the manifest.
+  if (![m1.input_i, m1.input_tp, m1.input_lra, m1.input_thresh, m1.target_offset].every(v => Number.isFinite(+v))) {
+    loud = { target_lufs: target, skipped: `too short or silent to measure (${m1.input_i} LUFS)` };
+    console.log(`\nloudness left as rendered: ${loud.skipped}`);
+  } else {
+    const tmp = OUT.replace(/\.mp4$/i, '') + `.loud-${process.pid}.mp4`;
+    await run(FF, ['-y', '-loglevel', 'error', '-i', OUT, '-c:v', 'copy', '-af',
+      `loudnorm=I=${target}:TP=-1.5:LRA=11:measured_I=${m1.input_i}:measured_TP=${m1.input_tp}:measured_LRA=${m1.input_lra}:measured_thresh=${m1.input_thresh}:offset=${m1.target_offset}:linear=true`,
+      '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart', tmp]);
+    execFileSync('mv', [tmp, OUT]);
+    const m2 = measure(OUT);
+    loud = { target_lufs: target, before_lufs: +m1.input_i, after_lufs: +m2.input_i, after_true_peak: +m2.input_tp };
+    console.log(`\nloudness ${loud.before_lufs} → ${loud.after_lufs} LUFS (target ${target}, true peak ${loud.after_true_peak} dBTP)`);
+  }
 }
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
 console.log(`\r${N} frames${audio ? ' + audio' : ''} → ${OUT}  (${secs} s)`);
@@ -244,13 +267,21 @@ function files() {
   return out;
 }
 const ffv = execFileSync(FF, ['-version']).toString().split('\n')[0];
+// The manifest is handed over with the film: paths inside the project are relative to it and paths under
+// the home folder start with ~, so it does not carry the user name or home layout.
+const HOME = homedir();
+const portable = p => {
+  const r = relative(ROOT, p);
+  if (r && r !== '..' && !r.startsWith('..' + sep) && !isAbsolute(r)) return r;
+  return p === HOME || p.startsWith(HOME + sep) ? '~' + p.slice(HOME.length) : p;
+};
 const manifest = {
-  out: relative(ROOT, OUT), sha256: sha(readFileSync(OUT)), rendered: new Date().toISOString(), render_seconds: +secs,
-  command: `node ${relative(ROOT, new URL(import.meta.url).pathname)} ${process.argv.slice(2).join(' ')}`.replace(/\s+/g, ' '),
+  out: portable(OUT), sha256: sha(readFileSync(OUT)), rendered: new Date().toISOString(), render_seconds: +secs,
+  command: `node ${portable(new URL(import.meta.url).pathname)} ${process.argv.slice(2).map(a => isAbsolute(a) ? portable(a) : a).join(' ')}`.replace(/\s+/g, ' '),
   scene: relative(ROOT, SCENE), size: [W, H], fps: FPS, range: [from, to], frames: N, seed: meta.seed ?? 1, clock: o['real-clock'] ? 'real' : 'frozen',
-  audio: audio ? { from: audioFrom, file: relative(ROOT, audio), sha256: sha(readFileSync(audio)).slice(0, 16), loudness: loud } : null,
+  audio: audio ? { from: audioFrom, file: portable(audio), sha256: sha(readFileSync(audio)).slice(0, 16), loudness: loud } : null,
   libraries: deps(), files: files(), fonts, remote_requests: [...remote],
-  engine: { chromium: exe.path, chromium_version: browser.version(), webgl, ffmpeg: ffv, node: process.version, playwright: require('playwright/package.json').version },
+  engine: { chromium: portable(exe.path), chromium_version: browser.version(), webgl, ffmpeg: ffv, node: process.version, playwright: require('playwright/package.json').version },
   scene_errors: errors,
 };
 writeFileSync(OUT + '.manifest.json', JSON.stringify(manifest, null, 2));

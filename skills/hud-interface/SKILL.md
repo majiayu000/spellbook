@@ -47,7 +47,7 @@ description: "游戏 HUD 式界面：黑白纸墨加一个薄荷强调色，斜�
 - **两种属性拼写都写上**：`<canvas content="drawable" layoutsubtree>`，子元素加 `drawable`。
 - **WebGL 只接受不可变存储**：先 `texStorage2D(TEXTURE_2D, 1, RGBA8, w, h)`，再 `texElementSubImage2D(TEXTURE_2D, 0, 0, 0, el, {width, height})`。直接用 `texElementImage2D` 会报 internalformat 错误；按说明里的参数顺序传，会报 "not of type Element"。尺寸变化时要重新分配贴图。
 - **在 `paint` 事件里上传贴图**。尺寸变化后调用 `canvas.requestPaint()`。
-- **点击要对准**：3D 上下文不会自动定位元素，每次 paint 后调用 `canvas.updateElementGeometry(el, {canvasTransform: new DOMMatrix().scale(dpr)})`，dpr 为 1 和 2 都已验过。
+- **点击要对准**：3D 上下文不会自动定位元素，每次 paint 后调用 `canvas.updateElementGeometry(el, {canvasTransform: new DOMMatrix()})`。这个变换按 CSS 像素算，不要乘 dpr：Chrome 158 会照原样生效，乘了 dpr 的话，dpr 为 2 时点击区域会放大一倍，点行的位置会落到面板外；Chrome 156 忽略这个变换。2026-11-17 在 Chrome 156 和 158 上，dpr 为 1 和 2 都验过（`tests/test_hud_interface_glass.py`）。
 - **画布高度不会跟着子元素变**：要观察面板尺寸，把高度同步给 canvas（`hud.js` 已处理）。
 - 跨源图片、系统颜色、拼写标记、visited 链接、次像素抗锯齿都不会被画进去。
 

@@ -23,7 +23,7 @@ node <本 skill 目录>/scripts/make.mjs \
 
 ## 流水线
 
-1. `scripts/lanes.py`：只读 git（`--all`，所以本地分支也算）。`--branch` 的 first-parent 链是主线（第 0 道），其余提交按 first-parent 串成分支段；每段从分叉点到合并点占一个区间，区间重叠的段分到不同的道（上下交替）。分支名从 `Merge branch 'x' into y` 里读，读不到就不标。超过 `--max`（默认 400）只留最新的。
+1. `scripts/lanes.py`：只读 git（本地分支、远程分支、标签和 HEAD，所以本地分支也算；stash、notes 不算）。`--branch` 的 first-parent 链是主线（第 0 道），其余提交按 first-parent 串成分支段；每段从分叉点到合并点占一个区间，区间重叠的段分到不同的道（上下交替）。分支名从 `Merge branch 'x' into y` 里读，读不到就不标。超过 `--max`（默认 400）只留最新的。
 2. `scripts/capture.mjs`：有地图时，把地图临时排成单栏（阻塞链不再横向滚动，能完整显示），截 2 倍图，并记下各区块位置和阻塞链每条连线的路径。只改截图时的样式，不改地图文件。
 3. `make.mjs` 按数据生成字幕和结尾卡片，写进 `<out>/assets/film.js`，再用 `--config` 覆盖。
 4. 渲染：关键帧拼图 → 纯度检查（正放和倒放必须一致）→ MP4。响度由 motion-stack 渲染器自动调到 -14 LUFS，数值在成片旁的 `.manifest.json` 里。

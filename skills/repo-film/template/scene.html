@@ -99,8 +99,10 @@ const nx = (n, t) => n.xi * DX(t), ny = n => -n.lane * LY;
 
 function build() {
   const C = night.commits, N = C.length;
-  const K1 = Math.min(...C.filter(c => c.lane !== 0).map(c => c.x)) - 1, T1 = 1.9;   // the lone main-line stretch flies by
-  const at = k => k <= K1 ? G0 + (T1 - G0) * Math.pow(k / K1, 0.8) : T1 + (G1 - T1) * (1 - Math.pow(1 - (k - K1) / (N - 1 - K1), 1.6));
+  // the lone main-line stretch flies by; with no branch at all the whole line grows over G0..G1
+  const side = C.filter(c => c.lane !== 0).map(c => c.x);
+  const K1 = side.length ? Math.min(...side) - 1 : 0, T1 = side.length ? 1.9 : G0;
+  const at = k => k <= K1 ? G0 + (T1 - G0) * (K1 > 0 ? Math.pow(k / K1, 0.8) : 1) : T1 + (G1 - T1) * (1 - Math.pow(1 - (k - K1) / (N - 1 - K1), 1.6));
   nodes.push({ kind: 'start', xi: -1.6, lane: 0, at: 0.12, label: FILM.startLabel, color: '#2dd4bf' });
   C.forEach(c => nodes.push({ kind: c.merge ? 'merge' : 'commit', xi: c.x, lane: c.lane, at: at(c.x), label: c.label,
     tag: c.t + '  ' + c.type, color: c.merge ? LANE[c.lane] : (TYPE[c.type] || '#2dd4bf'), lc: LANE[c.lane], time: c.t }));

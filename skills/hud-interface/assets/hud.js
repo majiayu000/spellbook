@@ -134,8 +134,9 @@ void main(){vec2 uv=gl_FragCoord.xy/res;uv.y=1.-uv.y;vec2 c=uv-.5;
     cv.addEventListener('paint', () => {
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.texElementSubImage2D(gl.TEXTURE_2D, 0, 0, 0, panel, { width: cv.width, height: cv.height });
-      // WebGL does not place the element for hit testing; map it 1:1 onto the canvas (CSS px → device px).
-      cv.updateElementGeometry(panel, { canvasTransform: new DOMMatrix().scale(dpr) });
+      // WebGL does not place the element for hit testing; map it 1:1 onto the canvas. The transform is in
+      // CSS px, not device px: Chrome 158 applies it as given, so scale(dpr) put the hit boxes at 2× on Retina.
+      cv.updateElementGeometry(panel, { canvasTransform: new DOMMatrix() });
       kick();
     });
     cv.addEventListener('pointermove', e => { const r = cv.getBoundingClientRect(); m = [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; hoverTo = 1; kick(); });
