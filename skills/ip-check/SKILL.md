@@ -54,7 +54,7 @@ python3 <script> <IP> --proxy socks5://user:pass@host:port     # IP 与代理分
 | rdap | rdap.org → RIR | 注册库(ARIN=北美好 / RIPE=欧洲需警惕)、org、lease_flag、country |
 | geo | ipinfo + ip-api + ipwho | 三库判定国家是否一致(consensus)还是分歧(split) |
 | asn | ipinfo org + rdap | ASN 是否真 ISP、org 是否与 ASN 主体一致 |
-| reputation | proxycheck + ipapi.is (+IPQS +AbuseIPDB) | proxy/vpn/datacenter 标记、risk 分、欺诈分 |
+| reputation | proxycheck + ipapi.is + VPNDetection (+IPQS +AbuseIPDB) | proxy/vpn/datacenter 标记、risk 分、欺诈分 |
 | dnsbl | Spamhaus/Barracuda/SORBS/SpamCop | 垃圾邮件黑名单(自带 DNS 劫持检测) |
 | ptr | dig -x | 反向 DNS 是否有真住宅域名格式(hsd1/cable/dsl) |
 | bgp | RIPEstat | 实际由哪个 ASN 宣告该前缀 |
@@ -74,7 +74,7 @@ python3 <script> <IP> --proxy socks5://user:pass@host:port     # IP 与代理分
    - `asn.is_real_isp == true` 且 `asn.org_matches_asn == true` → ✅。
    - `asn.is_real_isp == true` 但 `asn.org_matches_asn == false`(org 是陌生第三方名,如 Treochoy9/AviationAI)→ ⚠️ 租赁段特征,可用但有漂移风险,不是直接挂。
    - `asn.is_real_isp == false`(ASN 不在真 ISP 白名单)→ **不单独否决**,白名单只覆盖北美主流 ISP,合法的欧洲/亚洲/中小 ISP 会漏判。结合 reputation 综合看:若同时命中 datacenter/hosting → 退货;否则归 ⚠️ 慎用,提示"ASN 非主流 ISP,人工确认是否真住宅"。
-4. **风控分干净** — proxycheck `risk==0`、`proxy/vpn=no`、`type` 非 hosting;ipapi.is 各 is_* 全 false;有 IPQS 时 `fraud_score` 低。任一命中 datacenter 或 abuser = ❌。
+4. **风控分干净** — proxycheck `risk==0`、`proxy/vpn=no`、`type` 非 hosting;ipapi.is 各 is_* 全 false;VPNDetection `is_vpn`/`is_tor`/`is_relay` 全 false 且 `asn_type` 非 hosting;有 IPQS 时 `fraud_score` 低。任一命中 datacenter 或 abuser = ❌。
 
 **辅助信号(加权,不单独否决):**
 
