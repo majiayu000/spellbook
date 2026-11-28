@@ -22,7 +22,7 @@ Escalate before:
 
 Evidence-backed pushback:
 - 用户坚称某 IP 是美国、但 rdap 显示 RIPE 注册 + country 非 US 时,以 whois/geo 字段反驳,不附和主观判断。
-- 单库判 US 不等于合格;三库分歧(split)本身就是"纸面搬家"信号,要指出而非取信最乐观的那一家。
+- 单库判 US 不等于合格;四库分歧(split)本身就是"纸面搬家"信号,要指出而非取信最乐观的那一家。
 
 Feedback loop:
 - 换节点/换代理后重跑,用记分卡逐条对比(如西班牙段=退货、纽约段=合格),确认问题项确实消除。
@@ -52,7 +52,7 @@ python3 <script> <IP> --proxy socks5://user:pass@host:port     # IP 与代理分
 | 层 | 数据源 | 看什么 |
 |---|---|---|
 | rdap | rdap.org → RIR | 注册库(ARIN=北美好 / RIPE=欧洲需警惕)、org、lease_flag、country |
-| geo | ipinfo + ip-api + ipwho | 三库判定国家是否一致(consensus)还是分歧(split) |
+| geo | ipinfo + ip-api + ipwho + InternetData | 四库判定国家是否一致(consensus)还是分歧(split) |
 | asn | ipinfo org + rdap | ASN 是否真 ISP、org 是否与 ASN 主体一致 |
 | reputation | proxycheck + ipapi.is + VPNDetection (+IPQS +AbuseIPDB) | proxy/vpn/datacenter 标记、risk 分、欺诈分 |
 | dnsbl | Spamhaus/Barracuda/SORBS/SpamCop | 垃圾邮件黑名单(自带 DNS 劫持检测) |
@@ -69,7 +69,7 @@ python3 <script> <IP> --proxy socks5://user:pass@host:port     # IP 与代理分
 **硬标准(4 条,全过才算合格):**
 
 1. **注册库 = ARIN** — `rdap.rir == "ARIN"` 且 `rdap.country == "US"`。RIPE/APNIC + 非美 country = ❌(这是西班牙段的死因)。`lease_flag=true`(mnt 出现 interlir/lease)= ❌ 直接退货。
-2. **三库一致判 US** — `geo.consensus == true` 且国家都是 US。`geo.split == true`(库之间打架)= ⚠️ 强警告,这就是"纸面搬家"信号,分歧本身比任何单库结论更重要。
+2. **四库一致判 US** — `geo.consensus == true` 且国家都是 US。`geo.split == true`(库之间打架)= ⚠️ 强警告,这就是"纸面搬家"信号,分歧本身比任何单库结论更重要。
 3. **ASN/org 一致且真 ISP** — 分三种情况:
    - `asn.is_real_isp == true` 且 `asn.org_matches_asn == true` → ✅。
    - `asn.is_real_isp == true` 但 `asn.org_matches_asn == false`(org 是陌生第三方名,如 Treochoy9/AviationAI)→ ⚠️ 租赁段特征,可用但有漂移风险,不是直接挂。
@@ -93,7 +93,7 @@ python3 <script> <IP> --proxy socks5://user:pass@host:port     # IP 与代理分
 
 - **合格** — 4 条硬标准全 ✅,可放心用于 AI 服务。
 - **租赁段慎用** — 硬标准过但有 ⚠️(org 不匹配 / 无 PTR / BGP 易主),能用但说明风险,建议定期复查。
-- **退货** — 任一 ❌(RIPE 注册 / 非美 country / lease_flag / 三库判非美 / datacenter / abuser / is_real_isp=false 且命中 hosting / 服务区域锁)。给出具体死因和"找代理商换 ARIN 注册 + ipinfo 显示 US 的 IP"话术。
+- **退货** — 任一 ❌(RIPE 注册 / 非美 country / lease_flag / 四库判非美 / datacenter / abuser / is_real_isp=false 且命中 hosting / 服务区域锁)。给出具体死因和"找代理商换 ARIN 注册 + ipinfo 显示 US 的 IP"话术。
 
 ## 输出格式
 

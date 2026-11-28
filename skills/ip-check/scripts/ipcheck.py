@@ -278,7 +278,7 @@ def layer_rdap(ip):
     return out
 
 
-# ---------- 第 2 层：地理三库 ----------
+# ---------- 第 2 层：地理四库 ----------
 def layer_geo(ip):
     out = {"layer": "geo", "status": "ok", "sources": {}}
     st, b = _get(f"https://ipinfo.io/{ip}/json")
@@ -296,6 +296,15 @@ def layer_geo(ip):
         d = json.loads(b); out["sources"]["ipwho"] = {"country": d.get("country_code"), "region": d.get("region"), "city": d.get("city"), "connection": (d.get("connection") or {}).get("isp")}
     except Exception:
         out["sources"]["ipwho"] = {"error": b[:120]}
+    # InternetData（免费无 key，条款与隐私见 https://internetdata.io/terms 和 https://internetdata.io/privacy）
+    st, b = _get(f"https://api.internetdata.io/{ip}")
+    try:
+        d = json.loads(b)
+        if st != 200 or not isinstance(d.get("location"), dict):
+            raise ValueError
+        out["sources"]["internetdata"] = {"country": d["location"].get("country") or None, "asn": (d.get("asn") or {}).get("asn"), "company": (d.get("company") or {}).get("name")}
+    except Exception:
+        out["sources"]["internetdata"] = {"error": f"HTTP {st}: {b[:120]}"}
     countries = [v.get("country") for v in out["sources"].values() if isinstance(v, dict) and v.get("country")]
     out["countries"] = countries
     out["consensus"] = len(set(countries)) == 1 and len(countries) >= 2

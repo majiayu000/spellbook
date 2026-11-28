@@ -448,11 +448,20 @@ class DataLayerTests(unittest.TestCase):
             (200, json.dumps({"country": "US", "region": "VA", "city": "A", "org": "AS1 Comcast"})),
             (200, json.dumps({"countryCode": "US", "regionName": "VA", "city": "A", "isp": "Comcast", "proxy": False, "hosting": False})),
             (200, json.dumps({"country_code": "US", "region": "VA", "city": "A", "connection": {"isp": "Comcast"}})),
+            (200, json.dumps({
+                "location": {"country": "US"},
+                "asn": {"asn": 7922, "name": "Comcast Cable"},
+                "company": {"name": "Comcast Cable"},
+            })),
         ]
         with mock.patch.object(ipcheck, "_get", side_effect=geo_responses):
             geo = ipcheck.layer_geo("1.1.1.1")
         self.assertTrue(geo["consensus"])
         self.assertFalse(geo["split"])
+        self.assertEqual(
+            geo["sources"]["internetdata"],
+            {"country": "US", "asn": 7922, "company": "Comcast Cable"},
+        )
 
         asn = ipcheck.layer_asn(geo, rdap)
         self.assertTrue(asn["is_real_isp"])
@@ -462,6 +471,27 @@ class DataLayerTests(unittest.TestCase):
         with mock.patch.object(ipcheck, "_get", return_value=(200, json.dumps(bgp_payload))):
             bgp = ipcheck.layer_bgp("1.1.1.1")
         self.assertEqual(bgp["announced_by"][0]["asn"], 1)
+
+    def test_geo_internetdata_split_and_error_are_explicit(self):
+        us = json.dumps({"country": "US", "region": "VA", "city": "A", "org": "AS1 Comcast"})
+        us_ipapi = json.dumps({"countryCode": "US", "regionName": "VA", "city": "A"})
+        us_ipwho = json.dumps({"country_code": "US", "region": "VA", "city": "A"})
+        internetdata = json.dumps({"location": {"country": "ES"}, "asn": {"asn": 1}, "company": {"name": "X"}})
+        with mock.patch.object(
+            ipcheck, "_get",
+            side_effect=[(200, us), (200, us_ipapi), (200, us_ipwho), (200, internetdata)],
+        ):
+            geo = ipcheck.layer_geo("1.1.1.1")
+        self.assertTrue(geo["split"])
+        self.assertFalse(geo["consensus"])
+
+        with mock.patch.object(
+            ipcheck, "_get",
+            side_effect=[(200, us), (200, us_ipapi), (200, us_ipwho), (429, json.dumps({"error": "limit"}))],
+        ):
+            geo = ipcheck.layer_geo("1.1.1.1")
+        self.assertIn("error", geo["sources"]["internetdata"])
+        self.assertTrue(geo["consensus"])
 
     def test_rdap_fallback_and_parse_errors_are_explicit(self):
         payload = {"handle": "NET-2", "country": "US", "links": [{"href": "https://rdap.arin.net"}]}
